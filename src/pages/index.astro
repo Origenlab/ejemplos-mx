@@ -12,12 +12,13 @@ import PageLayout from "@layouts/PageLayout.astro";
 import Hero from "@components/Hero.astro";
 import SectionMenu from "@components/SectionMenu.astro";
 import SectionHeading from "@components/SectionHeading.astro";
+import CategoryCard from "@components/CategoryCard.astro";
 import ProductCard from "@components/ProductCard.astro";
 import ServiceCard from "@components/ServiceCard.astro";
 import FAQAccordion from "@components/FAQAccordion.astro";
 import CTABanner from "@components/CTABanner.astro";
 import GuiaNota from "@components/GuiaNota.astro";
-import { SITE, TAXONOMY, KEYWORDS, NAV, WA_MESSAGES, waUrl } from "@config/site";
+import { SITE, KEYWORDS, NAV, WA_MESSAGES, SHOWCASE, waUrl } from "@config/site";
 import { buildKeywordTitle, buildKeywordDescription, metaAudit } from "@lib/seo";
 import { getCollection } from "astro:content";
 
@@ -237,29 +238,46 @@ const faqs: { question: string; answer: string }[] = [
     </div>
   </section>
 
-  {/* ═══ 3) LO QUE OFRECES — grid desde TAXONOMY (fuente única) ═══ */}
+  {/* ═══ 3) LO QUE OFRECES — vitrina de categorías (cards 4 por fila) ═══
+       Cada categoría se presenta como producto: imagen + copy de venta + atajos a
+       sus subcategorías + CTA. Data-driven desde SHOWCASE (site.ts). */}
   <section class="section section--surface">
     <div class="container">
       <SectionHeading
-        eyebrow="Estructura"
-        title="Lo que ofreces"
-        desc="Estas tarjetas se generan desde TAXONOMY.categories. Añade o quita una categoría en site.ts y la navegación, el footer y este grid se actualizan juntos."
+        eyebrow="Catálogo"
+        title="Lo que ofreces, por categoría"
+        desc="Cada tarjeta presenta una categoría como si fuera un producto: una imagen real, un texto que une beneficio y palabra clave, y accesos directos a sus subcategorías. Así el visitante —y Google— entienden tu oferta de un vistazo."
       />
-      <div class="grid">
-        {TAXONOMY.categories.map((cat) => (
-          <ProductCard
-            title={cat.label}
+      <div class="showcase">
+        {SHOWCASE.map((cat, i) => (
+          <CategoryCard
+            label={cat.label}
             href={cat.href}
+            image={cat.image}
+            imageAlt={cat.imageAlt}
             badge={cat.badge}
-            description={`Sección "${cat.label}" del sitio. El enlace y la etiqueta vienen de TAXONOMY en site.ts.`}
+            blurb={cat.blurb}
+            subcategories={cat.subcategories}
+            ctaLabel={cat.ctaLabel}
+            index={i}
           />
         ))}
       </div>
-      <GuiaNota titulo="Fuente única: TAXONOMY" archivo="src/config/site.ts">
+      <GuiaNota titulo="Componente CategoryCard + datos SHOWCASE" archivo="src/config/site.ts · src/components/CategoryCard.astro">
         <p>
-          La navegación (Header), el pie (Footer) y este grid leen la MISMA
-          <code>TAXONOMY.categories</code>. Patrón SSoT: un solo lugar para editar
-          la taxonomía, sin duplicar listas por el sitio.
+          Estas tarjetas (4 por fila en escritorio) se generan desde
+          <code>SHOWCASE</code> en <code>site.ts</code>: una sola lista define
+          imagen, título, texto, subcategorías y CTA de cada categoría. Agrega o
+          quita una tarjeta ahí y la vitrina se actualiza sola (SSoT).
+        </p>
+        <p>
+          Diseñada para <strong>marketing + SEO</strong>: <code>imageAlt</code>
+          describe la imagen con la keyword (SEO de imágenes), el título es un
+          <code>&lt;h3&gt;</code> (jerarquía H1→H2→H3), el texto une beneficio y
+          keyword sin apilar, y las <strong>subcategorías son enlaces internos</strong>
+          con anchor text real que reparten autoridad a las páginas hijas. En esta
+          demo apuntan a <code>/productos/</code>; en un sitio real cada subcategoría
+          lleva a su propia URL.
         </p>
       </GuiaNota>
     </div>
@@ -557,6 +575,11 @@ const faqs: { question: string; answer: string }[] = [
 
   /* ── Grid de tarjetas ── */
   .grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
+
+  /* ── Vitrina de categorías — 4 por fila en escritorio (2 en tablet, 1 en móvil) ── */
+  .showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
+  @media (min-width: 640px) { .showcase { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .showcase { grid-template-columns: repeat(4, 1fr); } }
 
   /* ── Estaciones (pasos) ── */
   .estaciones { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-3); }

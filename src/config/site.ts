@@ -288,6 +288,111 @@ export const NAV: readonly NavItem[] = [
   { label: 'Contacto', href: '/contacto/' },
 ];
 
+// ── SHOWCASE — vitrina de categorías de la home (cards con subcategorías) ─────
+// ============================================================================
+// Alimenta la sección "Lo que ofreces" de la home: una fila de tarjetas (4 por
+// fila en escritorio) donde CADA categoría se presenta como producto: imagen +
+// título + texto de venta + accesos directos a sus subcategorías + CTA. Patrón
+// de catálogo profesional (meseci.com.mx).
+//
+// POR QUÉ ASÍ (marketing + SEO):
+//   • imagen        → entra por los ojos; usa foto real del cliente, optimizada
+//                     (AVIF/WebP). El `imageAlt` describe la imagen CON la keyword
+//                     (alt = accesibilidad + SEO de imágenes, NO relleno).
+//   • label (H3)    → encabezado de la tarjeta. Jerarquía: H1 hero → H2 sección →
+//                     H3 tarjeta. Lleva la keyword de la categoría.
+//   • blurb         → 1–2 frases que combinan BENEFICIO + keyword + señal de
+//                     confianza. Escribe para la persona; la keyword entra natural,
+//                     NO apilada. ~120–160 chars.
+//   • subcategories → enlaces internos con ANCHOR TEXT real ("Cascos", "Botas").
+//                     Mejoran el rastreo y reparten autoridad a las páginas hijas;
+//                     al usuario le dan el atajo exacto a lo que busca.
+//   • href / CTA    → a la landing de la categoría. En esta demo apuntan al
+//                     catálogo (`/productos/`) para no romper enlaces; en un sitio
+//                     real cada categoría y subcategoría llevan a SU propia URL.
+//
+// DEMO: textos e imágenes son de ejemplo (genéricos). Reemplázalos por la oferta
+// real del cliente. Para añadir/quitar una tarjeta, edita SOLO este array: la
+// home se regenera sola (data-driven, SSoT).
+export type ShowcaseSub = { label: string; href: string };
+export type ShowcaseCategory = {
+  slug: string;
+  label: string;        // título de la tarjeta (H3). Lleva la keyword de la categoría.
+  href: string;         // landing de la categoría (CTA + título enlazan aquí).
+  image: string;        // ruta bajo /public. Optimiza el peso (AVIF/WebP) en producción.
+  imageAlt: string;     // alt descriptivo con keyword (a11y + SEO de imagen).
+  badge?: string;       // etiqueta corta de gancho (entrega, certificación, plan…).
+  blurb: string;        // copy de venta: beneficio + keyword + confianza (~120–160).
+  subcategories: readonly ShowcaseSub[]; // enlaces hijos (anchor text real).
+  ctaLabel?: string;    // texto del botón principal de la tarjeta.
+};
+export const SHOWCASE: readonly ShowcaseCategory[] = [
+  {
+    slug: 'suministro',
+    label: 'Suministro de Equipo',
+    href: '/productos/',
+    image: '/images/productos/equipo-base.svg',
+    imageAlt: 'Equipo profesional certificado listo para entrega',
+    badge: 'Stock inmediato',
+    blurb:
+      'Equipo profesional certificado, en stock y listo para entrega inmediata en toda la república. Te asesoramos sin costo para elegir el modelo correcto a la primera.',
+    subcategories: [
+      { label: 'Línea profesional', href: '/productos/' },
+      { label: 'Accesorios', href: '/productos/' },
+      { label: 'Refacciones', href: '/productos/' },
+    ],
+    ctaLabel: 'Ver catálogo',
+  },
+  {
+    slug: 'instalacion',
+    label: 'Instalación Profesional',
+    href: '/productos/',
+    image: '/images/servicios/instalacion-demo.svg',
+    imageAlt: 'Técnico certificado realizando una instalación profesional',
+    badge: 'Certificada',
+    blurb:
+      'Instalación con técnicos certificados para proyectos residenciales, comerciales e industriales. Cumplimos la normativa y entregamos en tiempo, sin paros en tu operación.',
+    subcategories: [
+      { label: 'Residencial', href: '/productos/' },
+      { label: 'Comercial', href: '/productos/' },
+      { label: 'Industrial', href: '/productos/' },
+    ],
+    ctaLabel: 'Ver instalación',
+  },
+  {
+    slug: 'mantenimiento',
+    label: 'Mantenimiento Programado',
+    href: '/productos/',
+    image: '/images/servicios/mantenimiento-demo.svg',
+    imageAlt: 'Especialista en mantenimiento preventivo de equipo',
+    badge: 'Planes anuales',
+    blurb:
+      'Planes de mantenimiento preventivo y correctivo que alargan la vida útil de tu equipo y evitan fallas costosas. Con reportes, recordatorios y respuesta ágil cuando la necesitas.',
+    subcategories: [
+      { label: 'Preventivo', href: '/productos/' },
+      { label: 'Correctivo', href: '/productos/' },
+      { label: 'Emergencias 24/7', href: '/productos/' },
+    ],
+    ctaLabel: 'Ver planes',
+  },
+  {
+    slug: 'asesoria',
+    label: 'Asesoría y Normatividad',
+    href: '/productos/',
+    image: '/images/servicios/asesoria-general-demo.svg',
+    imageAlt: 'Asesor técnico revisando documentación de cumplimiento',
+    badge: 'Sin costo',
+    blurb:
+      'Diagnóstico técnico y acompañamiento para cumplir la normativa vigente sin contratiempos. Dejamos tu documentación lista para auditorías y capacitamos a tu equipo.',
+    subcategories: [
+      { label: 'Diagnóstico', href: '/productos/' },
+      { label: 'Cumplimiento', href: '/productos/' },
+      { label: 'Capacitación', href: '/productos/' },
+    ],
+    ctaLabel: 'Solicitar asesoría',
+  },
+];
+
 // ── BRANCHES — sucursales (opcional) ─────────────────────────────────────────
 // Consumido por: Footer (bloque "Sucursales"). Si el negocio no tiene sucursales,
 // déjalo como []; el Footer omite el bloque. Cada sucursal: { label, address, mapsUrl? }.
