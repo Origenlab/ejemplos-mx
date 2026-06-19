@@ -1,0 +1,212 @@
+---
+// Footer.astro — Footer profesional de 4 columnas con contacto enriquecido, sucursales, banda de certificaciones y bottom bar. ORIGEN: PROYECTORED/src/components/global/Footer.astro (el más completo: BRANCHES, schedule, badges de cobertura, todo desde config).
+// 100% data-driven desde config/site (SITE, CONTACT, BRANCHES?, PRODUCT_CATEGORIES, SERVICES, SECTORS, COVERAGE_STATES, waUrl, WA_MESSAGES). Pasa `certifications` por props (varían por negocio).
+import { SITE, CONTACT, BRANCHES, PRODUCT_CATEGORIES, SERVICES, SECTORS, COVERAGE_STATES, waUrl, WA_MESSAGES } from '@config/site'
+
+interface Cert { label: string; title?: string }
+interface Branch { label: string; address: string; mapsUrl?: string }
+interface Props {
+  /** Normas/certificaciones para la banda inferior (varían por negocio). */
+  certifications?: Cert[]
+  /** Sucursales. Si no se pasa, usa BRANCHES de config; si está vacío, omite el bloque. */
+  branches?: Branch[]
+  /** Ruta del logo. */
+  logo?: string
+  /** Tagline SEO del bottom bar. */
+  seoTagline?: string
+}
+
+// BRANCHES es opcional en config (export del scaffold, default []).
+const cfgBranches: Branch[] = BRANCHES ?? []
+
+const {
+  certifications = [],
+  branches = cfgBranches,
+  logo = (SITE as any).logo ?? '/images/brand/logo.svg',
+  seoTagline = SITE.tagline,
+} = Astro.props
+
+const currentYear = new Date().getFullYear()
+const waDefault = waUrl(WA_MESSAGES.cotizacion ?? WA_MESSAGES.default)
+const schedule = CONTACT.schedule as { weekdays?: string; saturday?: string; sunday?: string } | undefined
+
+const WA_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`
+---
+
+<footer class="footer" role="contentinfo">
+  <div class="footer__accent-bar" aria-hidden="true"></div>
+
+  <div class="footer__body">
+    <div class="footer__grid">
+
+      <div class="footer__brand">
+        <a href="/" class="footer__logo-link" aria-label={`${SITE.name} — Ir al inicio`}>
+          <img src={logo} alt={SITE.name} width="203" height="48" loading="lazy" decoding="async" class="footer__logo-img" />
+        </a>
+        <p class="footer__brand-desc">{SITE.description}</p>
+
+        <address class="footer__contact" aria-label="Datos de contacto">
+          <a href={waDefault} class="footer__contact-row footer__contact-row--cta" target="_blank" rel="noopener noreferrer" aria-label={`Abrir WhatsApp: ${CONTACT.phone}`}>
+            <span class="footer__contact-icon footer__contact-icon--wa" aria-hidden="true"><Fragment set:html={WA_SVG} /></span>
+            <span class="footer__contact-text"><strong>{CONTACT.phone}</strong><em>WhatsApp — cotización inmediata</em></span>
+          </a>
+
+          <a href={(CONTACT as any).emailHref ?? `mailto:${CONTACT.email}`} class="footer__contact-row">
+            <span class="footer__contact-icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+            <span class="footer__contact-text"><strong>{CONTACT.email}</strong></span>
+          </a>
+
+          {branches.length > 0 && (
+            <div class="footer__branches" role="group" aria-label="Sucursales">
+              <span class="footer__branches-label">Sucursales</span>
+              {branches.map((branch) => (
+                <a href={branch.mapsUrl ?? '#'} class="footer__contact-row footer__branch" target="_blank" rel="noopener noreferrer" aria-label={`Ver ${branch.label} en Google Maps`}>
+                  <span class="footer__contact-icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+                  <span class="footer__contact-text"><strong class="footer__branch-name">{branch.label}</strong><span class="footer__branch-address">{branch.address}</span></span>
+                </a>
+              ))}
+            </div>
+          )}
+
+          {schedule && (
+            <div class="footer__contact-row footer__contact-row--schedule">
+              <span class="footer__contact-icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+              <div class="footer__schedule-grid">
+                {schedule.weekdays && <span class="footer__schedule-row"><span class="footer__schedule-day">{schedule.weekdays.split('  ')[0]}</span><span class="footer__schedule-hours">{schedule.weekdays.split('  ')[1]}</span></span>}
+                {schedule.saturday && <span class="footer__schedule-row"><span class="footer__schedule-day">{schedule.saturday.split('  ')[0]}</span><span class="footer__schedule-hours">{schedule.saturday.split('  ')[1]}</span></span>}
+                {schedule.sunday && <span class="footer__schedule-row"><span class="footer__schedule-day">{schedule.sunday.split('  ')[0]}</span><span class="footer__schedule-hours footer__schedule-hours--dim">{schedule.sunday.split('  ')[1]}</span></span>}
+              </div>
+            </div>
+          )}
+        </address>
+      </div>
+
+      <nav class="footer__col" aria-label="Productos">
+        <h3 class="footer__col-heading"><span class="footer__col-heading-accent" aria-hidden="true"></span>Productos</h3>
+        <ul class="footer__nav-list" role="list">
+          <li><a href="/productos/" class="footer__nav-link footer__nav-link--all">Ver catálogo completo<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a></li>
+          {PRODUCT_CATEGORIES.map((cat) => (
+            <li><a href={cat.href} class="footer__nav-link">{cat.label}{(cat as any).badge && <span class="footer__nav-badge">{(cat as any).badge}</span>}</a></li>
+          ))}
+        </ul>
+      </nav>
+
+      <nav class="footer__col" aria-label="Servicios">
+        <h3 class="footer__col-heading"><span class="footer__col-heading-accent" aria-hidden="true"></span>Servicios</h3>
+        <ul class="footer__nav-list" role="list">
+          {SERVICES.map((svc) => (<li><a href={`/servicios/${svc.id}/`} class="footer__nav-link">{svc.label}</a></li>))}
+        </ul>
+        <h3 class="footer__col-heading footer__col-heading--mt"><span class="footer__col-heading-accent" aria-hidden="true"></span>Sectores</h3>
+        <ul class="footer__nav-list" role="list">
+          {SECTORS.map((sec) => (<li><a href={`/sectores/${sec.slug}/`} class="footer__nav-link">{sec.label}</a></li>))}
+        </ul>
+      </nav>
+
+      <nav class="footer__col" aria-label="Cobertura y Empresa">
+        <h3 class="footer__col-heading"><span class="footer__col-heading-accent" aria-hidden="true"></span>Cobertura</h3>
+        <ul class="footer__nav-list footer__coverage-list" role="list">
+          {COVERAGE_STATES.map((state) => (
+            <li><a href={`/cobertura/${state.slug}/`} class="footer__nav-link">{state.label}
+              {(state as any).type && <span class={`footer__coverage-badge footer__coverage-badge--${(state as any).type}`}>{(state as any).type === 'operativo' ? 'Operativo' : 'Comercial'}</span>}
+            </a></li>
+          ))}
+        </ul>
+        <h3 class="footer__col-heading footer__col-heading--mt"><span class="footer__col-heading-accent" aria-hidden="true"></span>Empresa</h3>
+        <ul class="footer__nav-list" role="list">
+          <li><a href="/nosotros/" class="footer__nav-link">Nosotros</a></li>
+          <li><a href="/servicios/" class="footer__nav-link">Todos los servicios</a></li>
+          <li><a href="/productos/" class="footer__nav-link">Catálogo de productos</a></li>
+          <li><a href="/blog/" class="footer__nav-link">Blog</a></li>
+          <li><a href="/contacto/" class="footer__nav-link">Contacto y cotización</a></li>
+        </ul>
+      </nav>
+
+    </div>
+  </div>
+
+  {certifications.length > 0 && (
+    <div class="footer__cert-band" aria-label="Normativas y certificaciones">
+      <div class="footer__cert-inner">
+        <span class="footer__cert-label">Cumplimiento normativo:</span>
+        <ul class="footer__cert-list" role="list">
+          {certifications.map((cert) => (<li><span class="footer__cert-item" title={cert.title} aria-label={cert.title}>{cert.label}</span></li>))}
+        </ul>
+      </div>
+    </div>
+  )}
+
+  <div class="footer__bottom">
+    <div class="footer__bottom-inner">
+      <p class="footer__copy">© {currentYear} {SITE.name}. Todos los derechos reservados.</p>
+      <p class="footer__seo-tagline">{seoTagline}</p>
+      <a href={waDefault} class="footer__bottom-wa" target="_blank" rel="noopener noreferrer" aria-label="Contactar por WhatsApp">
+        <Fragment set:html={WA_SVG} />{CONTACT.phone}
+      </a>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer { --ft-white: #fff; --ft-text: rgba(255,255,255,.6); --ft-text-hover: rgba(255,255,255,.95); --ft-bg: #0d0d0d; --ft-bg-cert: #111; --ft-bg-bottom: #000; --ft-border: rgba(255,255,255,.07); --ft-accent: var(--color-red, #C41E24); --ft-accent-dim: rgba(196,30,36,.18);
+    background: var(--ft-bg); color: var(--ft-text); }
+  .footer__accent-bar { height: 3px; background: linear-gradient(90deg, var(--ft-accent) 0%, transparent 80%); }
+  .footer__body { padding: 3.5rem 0 3rem; }
+  .footer__grid { display: grid; grid-template-columns: minmax(260px, 1.5fr) 1fr 1fr 1fr; gap: 3rem 2.5rem; align-items: start; max-width: var(--container-max, 1400px); margin-inline: auto; padding-inline: var(--container-px, 1.5rem); }
+  .footer__logo-link { display: inline-block; margin-bottom: 1.25rem; }
+  .footer__logo-img { height: 48px; width: auto; display: block; }
+  .footer__brand-desc { font-size: var(--text-sm, .875rem); line-height: 1.7; color: rgba(255,255,255,.5); margin-bottom: 1.5rem; max-width: 34ch; }
+  .footer__contact { display: flex; flex-direction: column; gap: .875rem; font-style: normal; }
+  .footer__contact-row { display: flex; align-items: flex-start; gap: .625rem; text-decoration: none; color: var(--ft-text); font-size: .8125rem; line-height: 1.45; }
+  a.footer__contact-row:hover { color: var(--ft-text-hover); }
+  .footer__contact-row--cta { background: rgba(37,211,102,.08); border: 1px solid rgba(37,211,102,.18); border-radius: var(--radius-md, 6px); padding: .625rem .75rem; }
+  .footer__contact-row--cta:hover { background: rgba(37,211,102,.14); border-color: rgba(37,211,102,.35); color: rgba(255,255,255,.95); }
+  .footer__contact-icon { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; color: rgba(255,255,255,.4); margin-top: 1px; }
+  .footer__contact-icon--wa { color: #25d366; width: 28px; height: 28px; }
+  .footer__contact-text { display: flex; flex-direction: column; gap: .125rem; }
+  .footer__contact-text strong { color: var(--ft-white); font-weight: var(--weight-semibold, 600); font-size: .9rem; }
+  .footer__contact-text em { font-style: normal; font-size: var(--text-xs, .75rem); color: rgba(37,211,102,.8); }
+  .footer__branches { display: flex; flex-direction: column; gap: .5rem; padding-top: .25rem; border-top: 1px solid var(--ft-border); }
+  .footer__branches-label { display: block; font-size: .65rem; font-weight: var(--weight-bold, 700); letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.4); padding: .5rem 0 .125rem; }
+  .footer__branch { align-items: flex-start; padding: .375rem .5rem .375rem 0; border-radius: var(--radius-sm, 4px); }
+  .footer__branch-name { font-size: .78rem; font-weight: var(--weight-semibold, 600); color: rgba(255,255,255,.92); line-height: 1.3; }
+  .footer__branch-address { font-size: .78rem; line-height: 1.45; color: rgba(255,255,255,.55); }
+  .footer__contact-row--schedule { align-items: flex-start; }
+  .footer__schedule-grid { display: flex; flex-direction: column; gap: .25rem; }
+  .footer__schedule-row { display: flex; gap: .75rem; align-items: center; }
+  .footer__schedule-day { font-size: .8rem; color: rgba(255,255,255,.55); min-width: 60px; }
+  .footer__schedule-hours { font-size: .8rem; color: rgba(255,255,255,.8); font-weight: var(--weight-medium, 500); }
+  .footer__schedule-hours--dim { color: rgba(255,255,255,.4); font-weight: 400; font-style: italic; }
+  .footer__col-heading { display: flex; align-items: center; gap: .5rem; font-size: var(--text-xs, .75rem); font-weight: var(--weight-bold, 700); color: var(--ft-white); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 1.25rem; }
+  .footer__col-heading--mt { margin-top: 2rem; }
+  .footer__col-heading-accent { display: block; width: 16px; height: 2px; background: var(--ft-accent); border-radius: 2px; flex-shrink: 0; }
+  .footer__nav-list { display: flex; flex-direction: column; gap: .5rem; list-style: none; padding: 0; margin: 0; }
+  .footer__nav-link { display: flex; align-items: center; gap: .4rem; font-size: var(--text-sm, .875rem); color: var(--ft-text); text-decoration: none; line-height: 1.4; padding: .125rem 0; position: relative; }
+  .footer__nav-link:hover { color: var(--ft-text-hover); padding-left: 6px; }
+  .footer__nav-link--all { font-weight: var(--weight-semibold, 600); color: rgba(255,255,255,.75); font-size: .8125rem; }
+  .footer__nav-badge { font-size: .625rem; font-weight: var(--weight-bold, 700); letter-spacing: .05em; color: var(--ft-accent); background: var(--ft-accent-dim); border: 1px solid rgba(196,30,36,.25); border-radius: 3px; padding: 1px 5px; white-space: nowrap; margin-left: auto; flex-shrink: 0; }
+  .footer__coverage-badge { font-size: .6rem; font-weight: var(--weight-semibold, 600); letter-spacing: .04em; border-radius: 3px; padding: 1px 5px; white-space: nowrap; margin-left: auto; flex-shrink: 0; text-transform: uppercase; }
+  .footer__coverage-badge--operativo { color: #22c55e; background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.2); }
+  .footer__coverage-badge--comercial { color: rgba(255,255,255,.5); background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); }
+  .footer__cert-band { background: var(--ft-bg-cert); border-top: 1px solid var(--ft-border); border-bottom: 1px solid var(--ft-border); padding: 1rem 0; }
+  .footer__cert-inner { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; max-width: var(--container-max, 1400px); margin-inline: auto; padding-inline: var(--container-px, 1.5rem); }
+  .footer__cert-label { font-size: .7rem; font-weight: var(--weight-bold, 700); letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.35); white-space: nowrap; flex-shrink: 0; }
+  .footer__cert-list { display: flex; flex-wrap: wrap; gap: .5rem; list-style: none; padding: 0; margin: 0; }
+  .footer__cert-item { display: inline-block; font-size: .6875rem; font-weight: var(--weight-semibold, 600); letter-spacing: .04em; color: rgba(255,255,255,.45); border: 1px solid rgba(255,255,255,.1); border-radius: var(--radius-sm, 4px); padding: 3px 8px; cursor: default; }
+  .footer__cert-item:hover { color: rgba(255,255,255,.8); border-color: var(--ft-accent); background: var(--ft-accent-dim); }
+  .footer__bottom { background: var(--ft-bg-bottom); padding: 1.125rem 0; }
+  .footer__bottom-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; max-width: var(--container-max, 1400px); margin-inline: auto; padding-inline: var(--container-px, 1.5rem); }
+  .footer__copy, .footer__seo-tagline { font-size: var(--text-xs, .75rem); color: rgba(255,255,255,.3); line-height: 1.5; }
+  .footer__seo-tagline { text-align: center; flex: 1; }
+  .footer__bottom-wa { display: inline-flex; align-items: center; gap: .4rem; font-size: var(--text-xs, .75rem); font-weight: var(--weight-semibold, 600); color: rgba(37,211,102,.7); text-decoration: none; white-space: nowrap; flex-shrink: 0; }
+  .footer__bottom-wa:hover { color: #25d366; }
+  @media (max-width: 1100px) {
+    .footer__grid { grid-template-columns: 1fr 1fr; gap: 2.5rem 2rem; }
+    .footer__brand { grid-column: 1 / -1; max-width: 560px; }
+  }
+  @media (max-width: 860px) { .footer__seo-tagline { display: none; } }
+  @media (max-width: 640px) {
+    .footer__body { padding: 2.5rem 0 2rem; }
+    .footer__grid { grid-template-columns: 1fr; gap: 2rem; }
+    .footer__bottom-inner { flex-direction: column; align-items: center; text-align: center; gap: .625rem; }
+  }
+</style>

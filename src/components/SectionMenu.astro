@@ -1,0 +1,183 @@
+---
+// ============================================================================
+// SectionMenu.astro — Menú de secciones bajo el hero ("section nav bar").
+// ----------------------------------------------------------------------------
+// QUÉ ES Y POR QUÉ VA AQUÍ
+// Barra de navegación horizontal que se coloca JUSTO debajo del hero y muestra,
+// de un vistazo, las secciones más importantes del sitio como botones grandes
+// que copan el 100% del ancho. Patrón tomado de sitios de catálogo profesionales
+// (p. ej. meseci.com.mx): el hero presenta y, sin volver al Header, el visitante
+// elige a dónde ir. Sube el CTR a las secciones clave y acorta el camino a la
+// conversión.
+//
+// REEMPLAZA a la antigua "franja de garantías" (los badges ⚡/📝/📈/💬/✔). En vez
+// de presumir cualidades del sistema, damos NAVEGACIÓN útil: más profesional y
+// más orientado a negocio.
+//
+// REGLA CANÓNICA: «el hero presenta, la franja convierte». El último botón NO es
+// una sección: es el CTA de conversión (WhatsApp), visualmente destacado.
+//
+// DATA-DRIVEN (SSoT): en la home, los `items` se construyen desde NAV (site.ts),
+// la MISMA fuente que alimenta el Header. Si agregas o quitas una sección en NAV,
+// esta barra se actualiza sola. El `cta` se arma con waUrl(WA_MESSAGES.cotizar)
+// (regla D4: nunca un enlace wa.me escrito a mano).
+//
+// PROPS (swappables, con valores DEMO para que el componente renderice solo):
+//   items?     → MenuItem[]  botones de sección { label, href, sub?, icon? }.
+//   cta?       → MenuCta      botón de conversión { label, href, sub?, external? }.
+//   ariaLabel? → etiqueta accesible del <nav> (default: "Secciones del sitio").
+//
+// ACCESIBLE: <nav aria-label>, cada botón es un <a> con foco visible; los íconos
+// son aria-hidden. ESTILO: tokens de src/styles/tokens.css (fuente única de
+// diseño). Mobile-first: los botones se apilan en móvil y copan el ancho en
+// escritorio (flex:1, alturas iguales).
+// ============================================================================
+export type MenuItem = { label: string; href: string; sub?: string; icon?: string };
+export type MenuCta = { label: string; href: string; sub?: string; external?: boolean };
+
+interface Props {
+  items?: MenuItem[];
+  cta?: MenuCta;
+  ariaLabel?: string;
+}
+
+const {
+  items = [
+    { label: "Productos", href: "/productos/", sub: "Catálogo del sitio" },
+    { label: "Servicios", href: "/servicios/", sub: "Lo que ofreces" },
+    { label: "Cobertura", href: "/cobertura/", sub: "Zonas que atiendes" },
+    { label: "Blog", href: "/blog/", sub: "Guías y artículos" },
+  ],
+  cta = { label: "Cotizar por WhatsApp", href: "#", sub: "Respuesta inmediata", external: true },
+  ariaLabel = "Secciones del sitio",
+} = Astro.props;
+---
+
+<nav class="secmenu" aria-label={ariaLabel}>
+  <div class="secmenu__inner">
+    <ul class="secmenu__bar">
+      {/* Botones de sección — uno por cada entrada de `items` (desde NAV en la home) */}
+      {items.map((it) => (
+        <li class="secmenu__cell">
+          <a class="secbtn" href={it.href}>
+            <span class="secbtn__top">
+              {it.icon && <span class="secbtn__icon" aria-hidden="true">{it.icon}</span>}
+              <span class="secbtn__label">{it.label}</span>
+            </span>
+            {it.sub && <span class="secbtn__sub">{it.sub}</span>}
+          </a>
+        </li>
+      ))}
+
+      {/* CTA de conversión — destacado en color de marca, con ícono de WhatsApp */}
+      {cta && (
+        <li class="secmenu__cell secmenu__cell--cta">
+          <a
+            class="secbtn secbtn--cta"
+            href={cta.href}
+            {...(cta.external ? { target: "_blank", rel: "noopener" } : {})}
+          >
+            <span class="secbtn__top">
+              <span class="secbtn__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-2.9.8.8-2.8-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1-.2.2-.6.8-.8 1-.1.1-.3.2-.5 0-.2-.1-1-.4-1.9-1.2-.7-.6-1.2-1.4-1.3-1.6-.1-.2 0-.4.1-.5l.4-.4c.1-.2.2-.3.2-.5s0-.3-.1-.4l-.8-1.9c-.2-.5-.4-.4-.5-.4h-.5c-.2 0-.4.1-.7.3-.2.2-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.8 2.7 4.3 3.8.6.3 1.1.4 1.5.5.6.2 1.2.2 1.6.1.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1-.1-.1-.2-.2-.4-.3z"/></svg>
+              </span>
+              <span class="secbtn__label">{cta.label}</span>
+            </span>
+            {cta.sub && <span class="secbtn__sub">{cta.sub}</span>}
+          </a>
+        </li>
+      )}
+    </ul>
+  </div>
+</nav>
+
+<style>
+  /* Barra full-width bajo el hero: el fondo va de borde a borde y el contenido
+     se centra al 90% (regla de homologación de ancho). */
+  .secmenu {
+    background: var(--c-surface);
+    border-top: 1px solid var(--c-border);
+    border-bottom: 1px solid var(--c-border);
+  }
+  .secmenu__inner {
+    max-width: var(--container-max);
+    margin-inline: auto;
+    padding-inline: var(--container-px);
+    padding-block: var(--sp-4);
+  }
+
+  /* Fila de botones. Mobile-first: 1 columna (apilados). En pantallas anchas
+     copan el ancho equitativamente y envuelven si no caben. */
+  .secmenu__bar {
+    list-style: none; margin: 0; padding: 0;
+    display: flex; flex-wrap: wrap; gap: var(--sp-3);
+    align-items: stretch;
+  }
+  .secmenu__cell { display: flex; flex: 1 1 100%; }
+
+  /* Botón de sección */
+  .secbtn {
+    flex: 1;
+    display: flex; flex-direction: column; gap: 4px;
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--c-white);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition), box-shadow var(--transition),
+                border-color var(--transition), background var(--transition);
+  }
+  .secbtn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--c-primary);
+  }
+  .secbtn:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; }
+
+  .secbtn__top { display: flex; align-items: center; gap: var(--sp-2); }
+  .secbtn__icon { display: inline-flex; color: var(--c-primary); flex: none; }
+  .secbtn__label {
+    font-family: var(--font-heading);
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-base);
+    color: var(--c-ink);
+    line-height: var(--leading-snug);
+  }
+  .secbtn:hover .secbtn__label { color: var(--c-primary-dark); }
+  .secbtn__sub {
+    font-size: var(--text-xs);
+    color: var(--c-muted);
+    line-height: var(--leading-snug);
+  }
+
+  /* CTA de conversión: relleno en color de marca para que destaque del resto. */
+  .secbtn--cta {
+    background: var(--c-primary);
+    border-color: var(--c-primary);
+    box-shadow: var(--shadow-md);
+  }
+  .secbtn--cta .secbtn__icon { color: #fff; }
+  .secbtn--cta .secbtn__label { color: #fff; }
+  .secbtn--cta .secbtn__sub { color: rgba(255, 255, 255, .85); }
+  .secbtn--cta:hover {
+    background: var(--c-primary-dark);
+    border-color: var(--c-primary-dark);
+  }
+  .secbtn--cta:hover .secbtn__label { color: #fff; }
+
+  /* ≥560px: los botones pasan a fila y copan el ancho (cada uno crece por igual). */
+  @media (min-width: 560px) {
+    .secmenu__cell { flex: 1 1 160px; }
+  }
+  /* ≥768px: un poco más de aire vertical en la banda. */
+  @media (min-width: 768px) {
+    .secmenu__inner { padding-block: var(--sp-5); }
+  }
+
+  /* Respeta usuarios que prefieren menos movimiento. */
+  @media (prefers-reduced-motion: reduce) {
+    .secbtn { transition: none; }
+    .secbtn:hover { transform: none; }
+  }
+</style>

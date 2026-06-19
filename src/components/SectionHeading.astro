@@ -1,0 +1,71 @@
+---
+// SectionHeading.astro — Encabezado de sección reutilizable: eyebrow con barra de acento, H2 con segunda línea resaltada, descripción. ORIGEN: PROYECTORED/src/components/ui/SectionHeader.astro + SectionHeaderDuo.astro (fusionados: layout 'simple' centrado/izquierda y layout 'duo' en dos columnas).
+// Componente atómico de UI — sin dependencias de config. Estilos scoped con tokens.
+interface Props {
+  id?: string
+  eyebrow?: string
+  /** Primera línea del título (obligatoria). */
+  title: string
+  /** Segunda línea, resaltada con color de acento. */
+  titleAccent?: string
+  desc?: string
+  /** 'simple' (1 columna) | 'duo' (título a la izquierda, body a la derecha). */
+  layout?: 'simple' | 'duo'
+  /** Sólo para 'simple': alineación. */
+  align?: 'center' | 'left'
+  /** Sólo para 'duo': párrafos de la columna derecha. */
+  body?: string[]
+  /** true → texto claro sobre fondo oscuro. */
+  dark?: boolean
+  /** Etiqueta semántica del encabezado de bloque. */
+  as?: 'h2' | 'h3'
+}
+const { id, eyebrow, title, titleAccent, desc, layout = 'simple', align = 'center', body = [], dark = false, as = 'h2' } = Astro.props
+const Tag = as
+---
+
+<header class:list={['sech', `sech--${layout}`, layout === 'simple' && `sech--${align}`, { 'sech--dark': dark }]}>
+  <div class="sech__head">
+    {eyebrow && <p class="sech__eyebrow"><span class="sech__eyebrow-bar" aria-hidden="true"></span>{eyebrow}</p>}
+    <Tag class="sech__title" id={id}>
+      {title}{titleAccent && <><br /><span class="sech__accent">{titleAccent}</span></>}
+    </Tag>
+    {layout === 'simple' && desc && <p class="sech__desc">{desc}</p>}
+  </div>
+  {layout === 'duo' && (desc || body.length > 0) && (
+    <div class="sech__body">
+      {desc && <p class="sech__body-lead">{desc}</p>}
+      {body.map((p: string) => <p class="sech__body-p">{p}</p>)}
+    </div>
+  )}
+</header>
+
+<style>
+  .sech { margin-bottom: var(--sp-8, 2rem); }
+  .sech__eyebrow { display: inline-flex; align-items: center; gap: var(--sp-2, .5rem); font-size: var(--text-xs, .8125rem); font-weight: var(--weight-bold, 700); text-transform: uppercase; letter-spacing: .08em; color: var(--color-red, var(--c-primary, #C41E24)); margin: 0 0 var(--sp-3, .75rem); }
+  .sech__eyebrow-bar { width: 20px; height: 2px; background: currentColor; border-radius: 2px; }
+  .sech__title { font-size: var(--text-3xl, clamp(2rem, 3.5vw, 3rem)); font-weight: var(--weight-black, 800); line-height: var(--leading-tight, 1.2); letter-spacing: -.02em; color: var(--c-ink, var(--color-gray-900, #111827)); margin: 0; }
+  .sech__accent { color: var(--color-red, var(--c-primary, #C41E24)); }
+  .sech__desc { font-size: var(--text-lg, 1.125rem); color: var(--text-muted, var(--c-muted, #6b7280)); line-height: var(--leading-relaxed, 1.7); margin: var(--sp-4, 1rem) 0 0; max-width: 60ch; }
+
+  /* simple */
+  .sech--center { text-align: center; }
+  .sech--center .sech__eyebrow { justify-content: center; }
+  .sech--center .sech__desc { margin-inline: auto; }
+  .sech--left { text-align: left; }
+
+  /* duo: 2 columnas */
+  .sech--duo { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2rem, 5vw, 4rem); align-items: end; }
+  .sech--duo .sech__desc { max-width: none; }
+  .sech__body { display: flex; flex-direction: column; gap: var(--sp-4, 1rem); }
+  .sech__body-lead, .sech__body-p { font-size: var(--text-base, 1.0625rem); color: var(--text-muted, var(--c-muted, #6b7280)); line-height: var(--leading-relaxed, 1.7); margin: 0; }
+  .sech__body-lead { color: var(--c-ink-2, var(--color-gray-700, #374151)); }
+
+  /* dark */
+  .sech--dark .sech__title { color: #fff; }
+  .sech--dark .sech__desc, .sech--dark .sech__body-lead, .sech--dark .sech__body-p { color: rgba(255,255,255,.75); }
+
+  @media (max-width: 768px) {
+    .sech--duo { grid-template-columns: 1fr; gap: var(--sp-5, 1.25rem); align-items: start; }
+  }
+</style>

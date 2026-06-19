@@ -1,24 +1,41 @@
-# build output
-dist/
+# .gitignore — canónico Master System. Origen: patrón E6 (sin artefactos de build versionados, sin secretos).
 
-# generated types
-.astro/
-
-# dependencies
+# ── Dependencias ─────────────────────────────────────────────────────────────
 node_modules/
 
-# logs
+# ── Salida de build (NUNCA versionar dist/ — anti-patrón E6: MESASPICNIC ~179, RESOIL _html_backup) ──
+dist/
+.astro/
+.output/
+.vercel/
+.netlify/
+
+# ── Caché ────────────────────────────────────────────────────────────────────
+node_modules/.vite/
+.cache/
+*.tsbuildinfo
+
+# ── ⚠️ ANTI-SECRETOS — NUNCA commitear credenciales ──────────────────────────
+# Variables de entorno y tokens van SIEMPRE en .env (ignorado), nunca en el
+# código ni en astro.config/wrangler.toml. Anti-patrón E6: token expuesto
+# (RENTADEILUMINACION). Recomendado: hook pre-commit que bloquee patrones de
+# secreto (gho_/ghp_/sk-/AKIA/BEGIN PRIVATE KEY/api_key/bearer). En CI, los
+# secretos se referencian como ${{ secrets.NOMBRE }}, jamás en texto plano.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.json
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# environment variables
-.env
-.env.production
-
-# macOS-specific files
+# ── Sistema operativo / editor ───────────────────────────────────────────────
 .DS_Store
-
-# jetbrains setting folder
+Thumbs.db
 .idea/
+*.swp

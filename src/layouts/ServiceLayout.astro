@@ -1,0 +1,452 @@
+---
+{/* ServiceLayout — ficha de servicio schema-driven: 10 bloques opcionales, TOC scroll-spy, sidebar. L4 | Origen: CLINICADEBELLEZA (ServiceLayout, el más flexible) */}
+
+// ============================================================================
+// ServiceLayout.astro — FICHA DE SERVICIO (L4) SCHEMA-DRIVEN.
+//
+// El layout MÁS FLEXIBLE del Master System (origen CLINICADEBELLEZA). Una sola
+// plantilla genera fichas ricas y diferenciadas: cada SECCIÓN se renderiza solo
+// si su bloque trae datos. Así una ficha mínima usa 3 bloques y una completa 10,
+// sin tocar el layout. El contenido vive en la Content Collection `servicios`
+// (frontmatter Zod, ver content.config.ts) y se pasa por props desde
+// pagina-servicio.astro.
+//
+// Extiende PageLayout (Header + Breadcrumbs + Footer + WhatsAppFloat).
+//
+// Los 10 BLOQUES OPCIONALES (todos arrays; si vacío → la sección no se pinta):
+//   1. protocolSteps   — pasos del protocolo paso a paso
+//   2. timeline        — línea de resultados esperados
+//   3. preCare/postCare— cuidados pre y post sesión
+//   4. faqs            — preguntas frecuentes (alimenta FAQPage JSON-LD)
+//   5. comparison      — tabla comparativa (casa vs alternativa vs nosotros)
+//   6. modalities      — variantes/modalidades del servicio
+//   7. clinicalCases   — perfiles de cliente / casos
+//   8. treatmentZones  — zonas/áreas de aplicación
+//   9. myths           — mitos vs realidad
+//  10. commitments + safetyProtocol — compromisos del cliente y seguridad
+//
+// SCHEMA: pageType="service". buildSchema arma Service + (FAQPage si hay faqs) +
+// BreadcrumbList (una sola vez). Si necesitas MedicalProcedure u otro tipo, se
+// configura por arquetipo en lib/seo.ts — NO se fabrica rating (B4).
+// ============================================================================
+
+import PageLayout from "./PageLayout.astro";
+import SectionHeading from "@components/SectionHeading.astro";
+import FAQAccordion from "@components/FAQAccordion.astro";
+import CTABanner from "@components/CTABanner.astro";
+import RelatedLinks from "@components/RelatedLinks.astro";
+import { SITE, waUrl } from "@config/site";
+
+export interface Props {
+  // ── Identidad / SEO ──
+  slug: string;
+  title: string;
+  description: string;
+  category: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  image?: string;
+  canonical?: string;
+  // ── Hero ──
+  heroLede?: string;
+  heroTagline?: string;
+  duration?: string;
+  sessions?: string;
+  price?: string;
+  // ── Bloques base ──
+  benefits?: string[];
+  indications?: string[];
+  contraindications?: string[];
+  // ── 10 bloques editoriales opcionales (origen CLINICADEBELLEZA) ──
+  protocolSteps?: { n: string; title: string; text: string }[];
+  timeline?: { when: string; label: string; text: string }[];
+  preCare?: string[];
+  postCare?: string[];
+  faqs?: { q: string; a: string }[];
+  comparison?: { aspect: string; a?: string; b?: string; us: string }[];
+  modalities?: { name: string; kicker?: string; text: string; note?: string }[];
+  clinicalCases?: { name: string; profile: string; plan?: string[]; target: string }[];
+  treatmentZones?: { name: string; sessions?: string; text: string }[];
+  myths?: { myth: string; reality: string }[];
+  commitments?: { title: string; text: string; weight?: string }[];
+  safetyProtocol?: { title: string; text: string }[];
+  // ── Interlinking ──
+  related?: { label: string; href: string; description?: string }[];
+}
+
+const {
+  slug,
+  title,
+  description,
+  category,
+  seoTitle,
+  seoDescription,
+  image,
+  canonical,
+  heroLede,
+  heroTagline,
+  duration,
+  sessions,
+  price,
+  benefits = [],
+  indications = [],
+  contraindications = [],
+  protocolSteps = [],
+  timeline = [],
+  preCare = [],
+  postCare = [],
+  faqs = [],
+  comparison = [],
+  modalities = [],
+  clinicalCases = [],
+  treatmentZones = [],
+  myths = [],
+  commitments = [],
+  safetyProtocol = [],
+  related = [],
+} = Astro.props;
+
+// CTA contextual: mensaje de WhatsApp pre-armado con el nombre del servicio.
+const waLink = waUrl(`Hola, me interesa el servicio ${title}. ¿Me dan más información?`);
+
+// Breadcrumbs (también alimentan el BreadcrumbList vía PageLayout→buildSchema).
+const breadcrumbs = [
+  { label: "Servicios", href: "/servicios" },
+  { label: title },
+];
+
+// ── TOC scroll-spy: solo lista las secciones con datos (origen CLINICADEBELLEZA) ──
+const toc: { id: string; label: string }[] = [
+  { id: "resumen", label: "Resumen" },
+  ...(benefits.length || indications.length || contraindications.length
+    ? [{ id: "beneficios", label: "Beneficios e indicaciones" }]
+    : []),
+  ...(clinicalCases.length ? [{ id: "casos", label: "Casos / perfiles" }] : []),
+  ...(myths.length ? [{ id: "mitos", label: "Mitos vs realidad" }] : []),
+  ...(commitments.length ? [{ id: "compromisos", label: "Tu compromiso" }] : []),
+  ...(safetyProtocol.length ? [{ id: "seguridad", label: "Seguridad" }] : []),
+  ...(treatmentZones.length ? [{ id: "zonas", label: "Zonas de aplicación" }] : []),
+  ...(modalities.length ? [{ id: "modalidades", label: "Modalidades" }] : []),
+  ...(comparison.length ? [{ id: "comparativa", label: "Comparativa" }] : []),
+  ...(protocolSteps.length ? [{ id: "protocolo", label: "Cómo funciona" }] : []),
+  ...(timeline.length ? [{ id: "resultados", label: "Resultados" }] : []),
+  ...(preCare.length || postCare.length ? [{ id: "cuidados", label: "Cuidados" }] : []),
+  ...(faqs.length ? [{ id: "preguntas", label: "Preguntas frecuentes" }] : []),
+];
+
+// schemaData para buildSchema (Service + FAQPage). Claves EXACTAS del contrato
+// lib/seo.ts: service { name, description, path, serviceType?, image? }.
+// NO se fabrica rating (B4): `reviews` solo si hay reseñas reales verificables.
+const schemaData = {
+  service: {
+    name: title,
+    description,
+    path: `/servicios/${slug}`,
+    serviceType: category,
+    image,
+  },
+  ...(faqs.length ? { faqs: faqs.map((f) => ({ question: f.q, answer: f.a })) } : {}),
+};
+---
+
+<PageLayout
+  title={seoTitle ?? title}
+  description={seoDescription ?? description}
+  image={image}
+  canonical={canonical}
+  pageType="service"
+  schemaData={schemaData}
+  breadcrumbs={breadcrumbs}
+>
+  {/* ── HERO ── */}
+  <header class="svc-hero">
+    <div class="container svc-hero__grid">
+      <div class="svc-hero__main">
+        {heroTagline && <p class="svc-hero__kicker">{heroTagline}</p>}
+        <h1 class="svc-hero__title">{title}</h1>
+        <p class="svc-hero__lede">{heroLede ?? description}</p>
+        <div class="svc-hero__actions">
+          <a class="btn btn--primary" href={waLink}>Cotizar por WhatsApp</a>
+          <a class="btn btn--ghost" href="/contacto">Agendar</a>
+        </div>
+      </div>
+      {(duration || sessions || price) && (
+        <aside class="svc-hero__meta">
+          <dl>
+            {duration && (<><dt>Duración</dt><dd>{duration}</dd></>)}
+            {sessions && (<><dt>Sesiones</dt><dd>{sessions}</dd></>)}
+            {price && (<><dt>Desde</dt><dd>{price}</dd></>)}
+          </dl>
+        </aside>
+      )}
+    </div>
+  </header>
+
+  {/* ── TOC scroll-spy (sticky) — solo secciones con datos ── */}
+  {toc.length > 1 && (
+    <nav class="svc-toc" aria-label="Contenido de esta página">
+      <div class="container">
+        <ul>
+          {toc.map((t) => (
+            <li><a href={`#${t.id}`}>{t.label}</a></li>
+          ))}
+        </ul>
+      </div>
+    </nav>
+  )}
+
+  {/* ── CUERPO 2-col: contenido + sidebar sticky ── */}
+  <div class="container svc-body">
+    <article class="svc-content">
+
+      {/* I. Resumen (siempre) */}
+      <section id="resumen" class="svc-section">
+        <SectionHeading eyebrow="Resumen" title={`Qué es ${title}`} />
+        <p>{description}</p>
+        <slot />{/* contenido MDX/markdown libre de la ficha */}
+      </section>
+
+      {/* II. Beneficios / indicaciones / contraindicaciones */}
+      {(benefits.length || indications.length || contraindications.length) > 0 && (
+        <section id="beneficios" class="svc-section">
+          <SectionHeading eyebrow="Por qué elegirlo" title="Beneficios e indicaciones" />
+          <div class="svc-cols">
+            {benefits.length > 0 && (
+              <div><h3>Beneficios</h3><ul class="svc-list">{benefits.map((b) => <li>{b}</li>)}</ul></div>
+            )}
+            {indications.length > 0 && (
+              <div><h3>Indicaciones</h3><ul class="svc-list">{indications.map((i) => <li>{i}</li>)}</ul></div>
+            )}
+            {contraindications.length > 0 && (
+              <div><h3>Contraindicaciones</h3><ul class="svc-list svc-list--warn">{contraindications.map((c) => <li>{c}</li>)}</ul></div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ★ Casos / perfiles */}
+      {clinicalCases.length > 0 && (
+        <section id="casos" class="svc-section">
+          <SectionHeading eyebrow="Para quién" title="Casos y perfiles" />
+          <div class="svc-grid">
+            {clinicalCases.map((c) => (
+              <article class="svc-card">
+                <h3>{c.name}</h3>
+                <p class="svc-card__profile">{c.profile}</p>
+                {c.plan && c.plan.length > 0 && <ul class="svc-list">{c.plan.map((p) => <li>{p}</li>)}</ul>}
+                <p class="svc-card__target"><strong>Objetivo:</strong> {c.target}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ❖ Mitos vs realidad */}
+      {myths.length > 0 && (
+        <section id="mitos" class="svc-section">
+          <SectionHeading eyebrow="Aclaraciones" title="Mitos vs realidad" />
+          <div class="svc-myths">
+            {myths.map((m) => (
+              <div class="svc-myth">
+                <p class="svc-myth__false">Mito: {m.myth}</p>
+                <p class="svc-myth__true">Realidad: {m.reality}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ◐ Compromisos */}
+      {commitments.length > 0 && (
+        <section id="compromisos" class="svc-section">
+          <SectionHeading eyebrow="Tu parte" title="Compromisos para un buen resultado" />
+          <div class="svc-grid">
+            {commitments.map((c) => (
+              <article class="svc-card">
+                {c.weight && <span class="svc-badge">{c.weight}</span>}
+                <h3>{c.title}</h3>
+                <p>{c.text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ⚕ Protocolo de seguridad */}
+      {safetyProtocol.length > 0 && (
+        <section id="seguridad" class="svc-section">
+          <SectionHeading eyebrow="Seguridad" title="Protocolo de seguridad" />
+          <div class="svc-grid">
+            {safetyProtocol.map((s) => (
+              <article class="svc-card"><h3>{s.title}</h3><p>{s.text}</p></article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ▲ Zonas de aplicación */}
+      {treatmentZones.length > 0 && (
+        <section id="zonas" class="svc-section">
+          <SectionHeading eyebrow="Dónde" title="Zonas de aplicación" />
+          <div class="svc-grid">
+            {treatmentZones.map((z) => (
+              <article class="svc-card">
+                <h3>{z.name}</h3>
+                {z.sessions && <p class="svc-card__meta">{z.sessions}</p>}
+                <p>{z.text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ◆ Modalidades */}
+      {modalities.length > 0 && (
+        <section id="modalidades" class="svc-section">
+          <SectionHeading eyebrow="Variantes" title="Modalidades disponibles" />
+          <div class="svc-grid">
+            {modalities.map((m) => (
+              <article class="svc-card">
+                {m.kicker && <span class="svc-card__kicker">{m.kicker}</span>}
+                <h3>{m.name}</h3>
+                <p>{m.text}</p>
+                {m.note && <p class="svc-card__meta">{m.note}</p>}
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* • Comparativa */}
+      {comparison.length > 0 && (
+        <section id="comparativa" class="svc-section">
+          <SectionHeading eyebrow="Compara" title="Comparativa" />
+          <table class="svc-table">
+            <thead><tr><th>Aspecto</th><th>Opción A</th><th>Opción B</th><th>{SITE.brand}</th></tr></thead>
+            <tbody>
+              {comparison.map((row) => (
+                <tr><td>{row.aspect}</td><td>{row.a ?? "—"}</td><td>{row.b ?? "—"}</td><td><strong>{row.us}</strong></td></tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      {/* III. Protocolo paso a paso */}
+      {protocolSteps.length > 0 && (
+        <section id="protocolo" class="svc-section">
+          <SectionHeading eyebrow="Proceso" title="Cómo funciona, paso a paso" />
+          <ol class="svc-steps">
+            {protocolSteps.map((s) => (
+              <li><span class="svc-steps__n">{s.n}</span><div><h3>{s.title}</h3><p>{s.text}</p></div></li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      {/* IV. Línea de resultados */}
+      {timeline.length > 0 && (
+        <section id="resultados" class="svc-section">
+          <SectionHeading eyebrow="Qué esperar" title="Línea de resultados" />
+          <ul class="svc-timeline">
+            {timeline.map((t) => (
+              <li><span class="svc-timeline__when">{t.when}</span><div><strong>{t.label}</strong><p>{t.text}</p></div></li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* V. Cuidados pre/post */}
+      {(preCare.length || postCare.length) > 0 && (
+        <section id="cuidados" class="svc-section">
+          <SectionHeading eyebrow="Recomendaciones" title="Antes y después" />
+          <div class="svc-cols">
+            {preCare.length > 0 && (<div><h3>Antes de la sesión</h3><ul class="svc-list">{preCare.map((p) => <li>{p}</li>)}</ul></div>)}
+            {postCare.length > 0 && (<div><h3>Después de la sesión</h3><ul class="svc-list">{postCare.map((p) => <li>{p}</li>)}</ul></div>)}
+          </div>
+        </section>
+      )}
+
+      {/* VI. FAQ (alimenta el FAQPage JSON-LD vía schemaData) */}
+      {faqs.length > 0 && (
+        <section id="preguntas" class="svc-section">
+          <SectionHeading eyebrow="Dudas" title="Preguntas frecuentes" />
+          <FAQAccordion items={faqs.map((f) => ({ question: f.q, answer: f.a }))} />
+        </section>
+      )}
+    </article>
+
+    {/* Sidebar sticky: CTA + datos rápidos + interlinking (origen CLINICADEBELLEZA, 6 widgets) */}
+    <aside class="svc-sidebar">
+      <div class="svc-widget svc-widget--cta">
+        <h2>¿Te interesa {title}?</h2>
+        <p>Cotiza sin compromiso. Te respondemos por WhatsApp.</p>
+        <a class="btn btn--primary btn--block" href={waLink}>Cotizar ahora</a>
+      </div>
+      {related.length > 0 && (
+        <div class="svc-widget">
+          <h2>Servicios relacionados</h2>
+          <RelatedLinks links={related.map((r) => ({ label: r.label, href: r.href, desc: r.description }))} />
+        </div>
+      )}
+    </aside>
+  </div>
+
+  {/* CTA de cierre */}
+  <CTABanner
+    heading="Da el primer paso"
+    desc="Resolvemos tus dudas y armamos un plan a tu medida."
+    btns={[{ label: "Escríbenos por WhatsApp", href: waLink, icon: "wa", primary: true, external: true }]}
+  />
+</PageLayout>
+
+<style>
+  /* CSS vanilla con tokens var(--token). El design-system maestro vive en
+     src/styles/tokens.css (una sola fuente, C2). Aquí solo estructura. */
+  .svc-hero { padding: var(--space-12) 0 var(--space-8); background: var(--color-surface); }
+  .svc-hero__grid { display: grid; grid-template-columns: 1fr; gap: var(--space-6); }
+  .svc-hero__kicker { color: var(--color-accent); text-transform: uppercase; letter-spacing: .12em; font-size: var(--text-sm); }
+  .svc-hero__title { font-family: var(--font-heading); font-size: var(--text-fluid-4xl); line-height: 1.1; }
+  .svc-hero__lede { color: var(--color-text-muted); max-width: var(--container-prose); margin-top: var(--space-3); }
+  .svc-hero__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-5); }
+  .svc-hero__meta dl { display: grid; grid-template-columns: auto 1fr; gap: var(--space-2) var(--space-4); padding: var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-bg); }
+  .svc-hero__meta dt { color: var(--color-text-muted); font-size: var(--text-sm); }
+  .svc-hero__meta dd { font-weight: 600; }
+
+  .svc-toc { position: sticky; top: var(--header-height, 72px); z-index: var(--z-sticky, 50); background: var(--color-bg); border-bottom: 1px solid var(--color-border); }
+  .svc-toc ul { display: flex; gap: var(--space-4); overflow-x: auto; padding: var(--space-3) 0; list-style: none; margin: 0; }
+  .svc-toc a { white-space: nowrap; color: var(--color-text-muted); text-decoration: none; font-size: var(--text-sm); }
+  .svc-toc a:hover { color: var(--color-accent); }
+
+  .svc-body { display: grid; grid-template-columns: 1fr; gap: var(--space-8); padding: var(--space-10) 0; }
+  .svc-section { margin-bottom: var(--space-10); scroll-margin-top: calc(var(--header-height, 72px) + var(--space-8)); }
+  .svc-cols { display: grid; grid-template-columns: 1fr; gap: var(--space-6); }
+  .svc-grid { display: grid; grid-template-columns: 1fr; gap: var(--space-4); }
+  .svc-list { padding-left: var(--space-5); }
+  .svc-list--warn li::marker { color: var(--color-accent); }
+  .svc-card { padding: var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+  .svc-badge, .svc-card__kicker { display: inline-block; font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .08em; color: var(--color-accent); margin-bottom: var(--space-2); }
+  .svc-steps { list-style: none; padding: 0; display: grid; gap: var(--space-4); }
+  .svc-steps li { display: flex; gap: var(--space-4); }
+  .svc-steps__n { flex: 0 0 auto; width: 2.5rem; height: 2.5rem; display: grid; place-items: center; border-radius: var(--radius-full); background: var(--color-accent); color: #fff; font-weight: 700; }
+  .svc-timeline { list-style: none; padding: 0; display: grid; gap: var(--space-4); }
+  .svc-timeline li { display: flex; gap: var(--space-4); }
+  .svc-timeline__when { flex: 0 0 6rem; color: var(--color-accent); font-weight: 600; }
+  .svc-table { width: 100%; border-collapse: collapse; }
+  .svc-table th, .svc-table td { padding: var(--space-3); border-bottom: 1px solid var(--color-border); text-align: left; }
+  .svc-myth { padding: var(--space-4); border-left: 3px solid var(--color-accent); margin-bottom: var(--space-3); }
+  .svc-myth__false { color: var(--color-text-muted); text-decoration: line-through; }
+  .svc-sidebar { display: grid; gap: var(--space-5); align-content: start; }
+  .svc-widget { padding: var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-lg); }
+  .svc-widget--cta { background: var(--color-surface); }
+  .btn--block { width: 100%; }
+
+  /* 2 columnas en desktop (sidebar sticky a la derecha). Mobile-first arriba. */
+  @media (min-width: 1024px) {
+    .svc-hero__grid { grid-template-columns: 1.6fr 1fr; align-items: center; }
+    .svc-body { grid-template-columns: minmax(0, 1fr) 22rem; }
+    .svc-cols { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .svc-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+    .svc-sidebar { position: sticky; top: calc(var(--header-height, 72px) + var(--space-4)); }
+  }
+</style>

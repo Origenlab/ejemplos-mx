@@ -1,0 +1,67 @@
+---
+// ProductCard.astro — Tarjeta de producto del catálogo: imagen con overlay + badge de norma + título + descripción + CTA "Ver detalles". ORIGEN: PROYECTORED .ccard (CatalogoProductos/CatalogoServicios) extraído a componente autónomo + RelatedProducts de MESECI.
+// Pensada para grids de catálogo (auto-fit minmax). Imagen estática con width/height (anti-CLS). Para WhatsApp directo usa waUrl en el href que pases.
+interface Props {
+  title: string
+  href: string                 // /productos/<slug>
+  image?: string
+  imageAlt?: string
+  /** Badge superior (ej. norma o categoría). */
+  badge?: string
+  description?: string
+  /** Texto del CTA. */
+  ctaLabel?: string
+  /** Posición del card en el grid (para loading eager en los primeros). */
+  index?: number
+  /** Recurso LCP (primer card del primer grid). */
+  priority?: boolean
+}
+const { title, href, image, imageAlt, badge, description, ctaLabel = 'Ver detalles', index = 99, priority = false } = Astro.props
+const eager = priority || index < 4
+---
+
+<article class="pcard" aria-label={title}>
+  <a href={href} class="pcard__link">
+    {image && (
+      <div class="pcard__media">
+        <img
+          src={image}
+          alt={imageAlt ?? title}
+          width="640" height="360"
+          loading={eager ? 'eager' : 'lazy'}
+          decoding="async"
+          fetchpriority={priority ? 'high' : undefined}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 320px"
+          class="pcard__img"
+        />
+        <span class="pcard__overlay" aria-hidden="true"></span>
+        {badge && <span class="pcard__badge">{badge}</span>}
+      </div>
+    )}
+    <div class="pcard__body">
+      <h3 class="pcard__title">{title}</h3>
+      {description && <p class="pcard__desc">{description}</p>}
+      <span class="pcard__cta">
+        {ctaLabel}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </span>
+    </div>
+  </a>
+</article>
+
+<style>
+  .pcard { background: var(--c-white, #fff); border: 1px solid var(--c-border, var(--border, #e8e8e8)); border-radius: var(--radius-xl, 1rem); overflow: hidden; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+  .pcard:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,.1); border-color: color-mix(in srgb, var(--color-red, #C41E24) 30%, transparent); }
+  .pcard__link { display: flex; flex-direction: column; height: 100%; text-decoration: none; }
+  .pcard__media { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: var(--color-gray-100, #f4f4f5); }
+  .pcard__img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s ease; }
+  .pcard:hover .pcard__img { transform: scale(1.04); }
+  .pcard__overlay { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, rgba(0,0,0,.18) 100%); }
+  .pcard__badge { position: absolute; top: var(--sp-3, .75rem); left: var(--sp-3, .75rem); font-size: var(--text-xs, .6875rem); font-weight: var(--weight-bold, 700); letter-spacing: .04em; text-transform: uppercase; color: #fff; background: var(--color-red, var(--c-primary, #C41E24)); padding: .25rem .55rem; border-radius: var(--radius-sm, .25rem); }
+  .pcard__body { display: flex; flex-direction: column; flex-grow: 1; padding: var(--sp-5, 1.25rem); }
+  .pcard__title { font-size: var(--text-lg, 1.0625rem); font-weight: var(--weight-semibold, 600); line-height: var(--leading-snug, 1.35); color: var(--c-ink, var(--color-gray-900, #111827)); margin: 0 0 var(--sp-2, .5rem); }
+  .pcard__desc { font-size: var(--text-sm, .875rem); color: var(--text-muted, var(--c-muted, #6b7280)); line-height: var(--leading-normal, 1.5); margin: 0 0 auto; }
+  .pcard__cta { display: inline-flex; align-items: center; gap: var(--sp-2, .5rem); margin-top: var(--sp-4, 1rem); font-size: var(--text-sm, .875rem); font-weight: var(--weight-semibold, 600); color: var(--color-red, var(--c-primary, #C41E24)); }
+  .pcard:hover .pcard__cta { color: var(--color-red-dark, var(--c-primary-dark, #A01820)); gap: .65rem; }
+  .pcard__link:focus-visible { outline: 2px solid var(--color-red, var(--c-primary, #C41E24)); outline-offset: 2px; }
+</style>

@@ -1,0 +1,169 @@
+---
+{/* ArticleLayout — artículo de blog (colección .mdx): hero, prose, autor/fechas, relacionados. L? blog | Origen: BOMBERO (BlogMdxLayout) + EVENTECH (Article schema) */}
+
+// ============================================================================
+// ArticleLayout.astro — ARTÍCULO DE BLOG.
+//
+// Renderiza un post de la Content Collection `blog` (.mdx con frontmatter
+// tipado). El blog SIEMPRE vive en colección .mdx, NUNCA como .astro sueltos
+// (anti-patrón D3 confirmado en MESASPICNIC/RENTADEILUMINACION).
+//
+// Extiende PageLayout. Schema: pageType="article" → buildSchema emite Article
+// (con datePublished/dateModified/author/publisher) + BreadcrumbList (una vez).
+// El cuerpo del artículo se inyecta por <slot/> (lo renderiza <Content /> en la
+// página de la ruta dinámica del blog).
+// ============================================================================
+
+import PageLayout from "./PageLayout.astro";
+import RelatedLinks from "@components/RelatedLinks.astro";
+import CTABanner from "@components/CTABanner.astro";
+import { SITE, waUrl } from "@config/site";
+
+export interface Props {
+  title: string;
+  description: string;
+  category?: string;
+  /** Fecha de publicación (ISO o Date). Alimenta el Article JSON-LD. */
+  pubDate: string | Date;
+  /** Fecha de última edición; default = pubDate. */
+  updatedDate?: string | Date;
+  author?: string;
+  image?: string;
+  imageAlt?: string;
+  canonical?: string;
+  tags?: string[];
+  /** Artículos / servicios relacionados (interlinking). */
+  related?: { label: string; href: string; description?: string }[];
+}
+
+const {
+  title,
+  description,
+  category,
+  pubDate,
+  updatedDate,
+  author = SITE.brand,
+  image,
+  imageAlt,
+  canonical,
+  tags = [],
+  related = [],
+} = Astro.props;
+
+const published = new Date(pubDate);
+const updated = updatedDate ? new Date(updatedDate) : published;
+const fmt = (d: Date) =>
+  d.toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" });
+
+const breadcrumbs = [
+  { label: "Blog", href: "/blog" },
+  { label: title },
+];
+
+// schemaData → Article. Claves EXACTAS del contrato lib/seo.ts:
+// article { title, description, path, image?, datePublished, dateModified?,
+// author?, section? }. La fecha también va a og:article:* vía BaseLayout/buildMeta.
+const schemaData = {
+  article: {
+    title,
+    description,
+    path: canonical ?? Astro.url.pathname,
+    image,
+    datePublished: published.toISOString(),
+    dateModified: updated.toISOString(),
+    author,
+    ...(category ? { section: category } : {}),
+  },
+};
+
+const waLink = waUrl(`Hola, leí "${title}" en su blog y tengo una pregunta.`);
+---
+
+<PageLayout
+  title={title}
+  description={description}
+  image={image}
+  canonical={canonical}
+  pageType="article"
+  schemaData={schemaData}
+  breadcrumbs={breadcrumbs}
+>
+  <article class="post">
+    <header class="post__header">
+      <div class="container">
+        {category && <a class="post__cat" href={`/blog/categoria/${category}`}>{category}</a>}
+        <h1 class="post__title">{title}</h1>
+        <p class="post__lede">{description}</p>
+        <p class="post__meta">
+          Por {author} · <time datetime={published.toISOString()}>{fmt(published)}</time>
+          {updated.getTime() !== published.getTime() && (
+            <> · Actualizado <time datetime={updated.toISOString()}>{fmt(updated)}</time></>
+          )}
+        </p>
+      </div>
+    </header>
+
+    {image && (
+      <figure class="post__hero">
+        <img src={image} alt={imageAlt ?? title} width="1200" height="630" fetchpriority="high" />
+      </figure>
+    )}
+
+    <div class="container post__body">
+      {/* prose: el cuerpo del .mdx entra por el slot */}
+      <div class="prose">
+        <slot />
+      </div>
+
+      <aside class="post__sidebar">
+        {tags.length > 0 && (
+          <div class="post__widget">
+            <h2>Temas</h2>
+            <ul class="post__tags">{tags.map((t) => <li><a href={`/blog/tag/${t}`}>#{t}</a></li>)}</ul>
+          </div>
+        )}
+        {related.length > 0 && (
+          <div class="post__widget">
+            <h2>Sigue leyendo</h2>
+            <RelatedLinks links={related.map((r) => ({ label: r.label, href: r.href, desc: r.description }))} />
+          </div>
+        )}
+        <div class="post__widget post__widget--cta">
+          <h2>¿Te quedó una duda?</h2>
+          <p>Escríbenos y te orientamos sin compromiso.</p>
+          <a class="btn btn--primary btn--block" href={waLink}>Preguntar por WhatsApp</a>
+        </div>
+      </aside>
+    </div>
+  </article>
+
+  <CTABanner
+    heading="¿Listo para dar el siguiente paso?"
+    desc="Cuéntanos qué necesitas y te respondemos hoy mismo."
+    btns={[{ label: "Contáctanos", href: waLink, icon: "wa", primary: true, external: true }]}
+  />
+</PageLayout>
+
+<style>
+  /* CSS vanilla con tokens. El estilo tipográfico de .prose vive en
+     src/styles/typography.css (fuente única). */
+  .post__header { padding: var(--space-10) 0 var(--space-6); }
+  .post__cat { color: var(--color-accent); text-transform: uppercase; letter-spacing: .08em; font-size: var(--text-sm); text-decoration: none; }
+  .post__title { font-family: var(--font-heading); font-size: var(--text-fluid-4xl); line-height: 1.1; margin: var(--space-2) 0; }
+  .post__lede { color: var(--color-text-muted); max-width: var(--container-prose); font-size: var(--text-lg); }
+  .post__meta { color: var(--color-text-muted); font-size: var(--text-sm); margin-top: var(--space-3); }
+  .post__hero img { width: 100%; height: auto; border-radius: var(--radius-lg); }
+  .post__body { display: grid; grid-template-columns: 1fr; gap: var(--space-8); padding: var(--space-8) 0; }
+  .prose { max-width: var(--container-prose); }
+  .post__sidebar { display: grid; gap: var(--space-5); align-content: start; }
+  .post__widget { padding: var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-lg); }
+  .post__widget--cta { background: var(--color-surface); }
+  .post__tags { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .post__tags a { font-size: var(--text-sm); color: var(--color-text-muted); text-decoration: none; }
+  .btn--block { width: 100%; }
+
+  @media (min-width: 1024px) {
+    .post__body { grid-template-columns: minmax(0, 1fr) 20rem; }
+    .post__sidebar { position: sticky; top: calc(var(--header-height, 72px) + var(--space-4)); }
+  }
+</style>

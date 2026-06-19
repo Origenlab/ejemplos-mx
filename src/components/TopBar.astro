@@ -1,178 +1,186 @@
 ---
-// TopBar.astro — Barra superior (GUÍA GRÁFICA)
-// Funciona como plantilla auto-explicada: cada zona muestra QUÉ debe ir
-// en ese lugar. Reemplaza los placeholders por el contenido real.
+// TopBar.astro — Barra utilitaria superior del sistema Ejemplos.mx.
+// ============================================================================
+// Va ANTES de <Header /> en el layout: define la franja de --topbar-height y el
+// Header se pega justo debajo (top: var(--topbar-height)).
 //
-// Props opcionales para ir reemplazando los placeholders sin tocar el HTML:
-interface Props {
-  palabraClave?: string;   // Palabra clave / nombre principal del proyecto
-  telefonos?: string[];    // Teléfonos de contacto (formato visible)
-  whatsapp?: string;       // Número WhatsApp en formato internacional sin signos: 52XXXXXXXXXX
-}
+// SSoT: TODO el contenido sale de src/config/site.ts (SITE / CONTACT / WA_MESSAGES).
+// Los enlaces se arman con telUrl() y waUrl() — NUNCA un `tel:` o `wa.me` a mano
+// (regla dura D4). Cambias el dato en site.ts y se actualiza en todo el sitio.
+//
+// MODO GUÍA (prop `guia`): numera cada punto de la barra y añade debajo una
+// leyenda que explica QUÉ va en cada lugar y DE QUÉ DATO sale. Es material de la
+// plantilla-guía. En un sitio de cliente se usa <TopBar /> (sin `guia`) y la
+// leyenda desaparece por completo.
+// ============================================================================
+import { SITE, CONTACT, waUrl, telUrl, WA_MESSAGES } from '@config/site'
 
-const {
-  palabraClave = "PALABRA CLAVE PRINCIPAL",
-  telefonos = ["(000) 000 0000", "(000) 000 0000"],
-  whatsapp = "520000000000",
-} = Astro.props;
+interface Props {
+  /** Modo guía: marcadores numerados + leyenda explicativa por punto. Default false (producción). */
+  guia?: boolean
+}
+const { guia = false } = Astro.props
+const schedule = CONTACT.schedule?.display as string | undefined
+
+// Puntos del topbar — fuente única de la leyenda (vive junto al markup que documenta).
+const PUNTOS = [
+  {
+    n: 1,
+    nombre: 'Propuesta principal',
+    que: 'Lo primero que se lee: una frase corta que posiciona la marca. El logotipo NO va aquí — va en el Header, justo debajo.',
+    dato: 'SITE.tagline',
+  },
+  {
+    n: 2,
+    nombre: 'Horario',
+    que: 'Señal de disponibilidad y confianza. Se oculta en móvil para priorizar el teléfono y WhatsApp.',
+    dato: 'CONTACT.schedule.display',
+  },
+  {
+    n: 3,
+    nombre: 'Teléfono',
+    que: 'Contacto directo con clic-para-llamar. El enlace tel: lo construye telUrl(), no se escribe a mano.',
+    dato: 'CONTACT.phone · telUrl()',
+  },
+  {
+    n: 4,
+    nombre: 'WhatsApp',
+    que: 'CTA principal de contacto. El enlace SIEMPRE se arma con waUrl(); el mensaje precargado sale de WA_MESSAGES.',
+    dato: 'waUrl(WA_MESSAGES.cotizar)',
+  },
+]
 ---
 
-<header class="topbar">
-  <div class="topbar__inner">
+<aside class:list={['topbar', { 'is-guia': guia }]} aria-label="Información de contacto">
+  <div class="tb-inner">
+    <span class="tb-promo">
+      {guia && <span class="tb-mark" aria-hidden="true">1</span>}
+      <span class="tb-promo__txt">{SITE.tagline}</span>
+    </span>
 
-    {/* ───────────── ZONA 1 · Palabra clave principal ───────────── */}
-    <div class="zona zona--marca">
-      <span class="zona__tag">1 · Lo primero que se ve</span>
-      <div class="marca">{palabraClave}</div>
-      <p class="zona__desc">
-        Aquí va la <strong>palabra clave / nombre principal</strong> del proyecto.
-        Es el primer elemento que mira el usuario.
-      </p>
-    </div>
+    {schedule && (
+      <span class="tb-center">
+        <span class="tb-item tb-schedule">
+          {guia && <span class="tb-mark" aria-hidden="true">2</span>}
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          {schedule}
+        </span>
+      </span>
+    )}
 
-    {/* ───────────── ZONA 2 · Teléfonos ───────────── */}
-    <div class="zona zona--tel">
-      <span class="zona__tag">2 · Teléfonos</span>
-      <div class="tel-list">
-        {telefonos.map((t) => (
-          <a class="tel" href={`tel:${t.replace(/[^0-9+]/g, "")}`}>
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-              <path fill="currentColor" d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.4 21 3 13.6 3 4.5c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.4 0 .8-.3 1l-2.2 2.1z"/>
-            </svg>
-            <span>{t}</span>
-          </a>
-        ))}
-      </div>
-      <p class="zona__desc">
-        Teléfonos de contacto directo. Clic para <strong>llamar</strong>.
-      </p>
-    </div>
-
-    {/* ───────────── ZONA 3 · WhatsApp ───────────── */}
-    <div class="zona zona--wa">
-      <span class="zona__tag">3 · Contacto rápido</span>
-      <a
-        class="btn-wa"
-        href={`https://wa.me/${whatsapp}`}
-        target="_blank"
-        rel="noopener"
-      >
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-          <path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-2.9.8.8-2.8-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1-.2.2-.6.8-.8 1-.1.1-.3.2-.5 0-.2-.1-1-.4-1.9-1.2-.7-.6-1.2-1.4-1.3-1.6-.1-.2 0-.4.1-.5l.4-.4c.1-.2.2-.3.2-.5s0-.3-.1-.4l-.8-1.9c-.2-.5-.4-.4-.5-.4h-.5c-.2 0-.4.1-.7.3-.2.2-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.8 2.7 4.3 3.8.6.3 1.1.4 1.5.5.6.2 1.2.2 1.6.1.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1-.1-.1-.2-.2-.4-.3z"/>
-        </svg>
-        <span>WhatsApp</span>
+    <div class="tb-right">
+      <a href={telUrl()} class="tb-item tb-phone" aria-label={`Llamar al ${CONTACT.phone}`}>
+        {guia && <span class="tb-mark" aria-hidden="true">3</span>}
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8a19.79 19.79 0 01-3.07-8.67A2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.92v2z"/></svg>
+        {CONTACT.phone}
       </a>
-      <p class="zona__desc">
-        Botón de <strong>contacto directo por WhatsApp</strong>.
+      <a href={waUrl(WA_MESSAGES.cotizar)} class="tb-item tb-wa" target="_blank" rel="noopener noreferrer" aria-label="Contactar por WhatsApp">
+        {guia && <span class="tb-mark" aria-hidden="true">4</span>}
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        WhatsApp
+      </a>
+    </div>
+  </div>
+</aside>
+
+{guia && (
+  <div class="tbg" role="note" aria-label="Guía del topbar">
+    <div class="tbg-inner">
+      <p class="tbg__tag"><span aria-hidden="true">🧭</span> Guía · Topbar</p>
+      <p class="tbg__intro">
+        Barra utilitaria superior (la franja por encima del menú). Cada punto se alimenta de
+        <code>src/config/site.ts</code> (fuente única); no se escribe a mano. Esto es lo que va en cada lugar:
+      </p>
+      <ol class="tbg__list">
+        {PUNTOS.map((p) => (
+          <li class="tbg__pt">
+            <span class="tbg__num">{p.n}</span>
+            <div class="tbg__pt-body">
+              <p class="tbg__nombre">{p.nombre}</p>
+              <p class="tbg__que">{p.que}</p>
+              <p class="tbg__dato"><span>Dato</span> <code>{p.dato}</code></p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <p class="tbg__edit">
+        <span>Edita en</span> <code>src/components/TopBar.astro</code> · <code>src/config/site.ts</code>
       </p>
     </div>
-
   </div>
-</header>
+)}
 
 <style>
+  /* ── Barra real ─────────────────────────────────────────────────────────── */
   .topbar {
-    width: 100%;
-    background: #ffffff;
-    border-bottom: 1px solid #e5e7eb;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    position: sticky; top: 0; z-index: 501;
+    background: var(--c-primary); color: #fff;
+    font-size: var(--text-sm); font-weight: var(--weight-medium);
+    height: var(--topbar-height); display: flex; align-items: center;
+  }
+  /* En modo guía la barra no se pega, para que la leyenda quede contigua. */
+  .topbar.is-guia { position: static; }
+
+  .tb-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--sp-4); width: 100%; max-width: var(--container-max);
+    margin-inline: auto; padding-inline: var(--container-px);
+  }
+  .tb-promo { display: flex; align-items: center; gap: var(--sp-2); opacity: .92; min-width: 0; flex: 1; }
+  .tb-promo__txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tb-center, .tb-right { flex-shrink: 0; }
+  .tb-right { display: flex; align-items: center; gap: var(--sp-5); }
+  .tb-item { display: flex; align-items: center; gap: var(--sp-1); color: #fff; text-decoration: none; white-space: nowrap; }
+  .tb-item:hover { opacity: .82; color: #fff; }
+  .tb-item:focus-visible { outline: 2px solid #fff; outline-offset: 2px; border-radius: var(--radius-sm); }
+  .tb-wa { background: rgba(255,255,255,.16); padding: .2rem .7rem; border-radius: var(--radius-full); font-weight: var(--weight-semibold); }
+  .tb-wa:hover { background: rgba(255,255,255,.28); opacity: 1; }
+
+  /* ── Marcadores (modo guía) ───────────────────────────────────────────────── */
+  .tb-mark {
+    flex-shrink: 0; display: inline-grid; place-items: center;
+    width: 18px; height: 18px; border-radius: var(--radius-full);
+    background: #fff; color: var(--c-primary);
+    font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: .6875rem;
   }
 
-  .topbar__inner {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 14px 20px;
-    display: flex;
-    align-items: stretch;
-    gap: 16px;
-    flex-wrap: wrap;
+  /* ── Leyenda guía ─────────────────────────────────────────────────────────── */
+  .tbg { background: var(--c-surface); border-bottom: 1px solid var(--c-border); }
+  .tbg-inner { max-width: var(--container-max); margin-inline: auto; padding: var(--sp-4) var(--container-px) var(--sp-5); }
+  .tbg__tag {
+    display: inline-flex; align-items: center; gap: var(--sp-1); margin: 0 0 var(--sp-2);
+    font-family: var(--font-heading); font-size: var(--text-xs); font-weight: var(--weight-bold);
+    letter-spacing: .08em; text-transform: uppercase; color: var(--c-primary);
   }
-
-  /* Cada zona se ve como un recuadro-guía punteado con su etiqueta */
-  .zona {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 14px 16px 12px;
-    border: 1.5px dashed #c7cdd6;
-    border-radius: 10px;
-    background: #fafbfc;
+  .tbg__intro { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); max-width: 70ch; }
+  .tbg__intro code, .tbg__dato code, .tbg__edit code {
+    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace; font-size: .85em;
+    background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+    padding: .05em .4em; color: var(--c-primary-dark);
   }
-
-  .zona--marca { flex: 1 1 280px; }
-  .zona--tel   { flex: 1 1 220px; }
-  .zona--wa    { flex: 0 1 220px; }
-
-  .zona__tag {
-    position: absolute;
-    top: -10px;
-    left: 12px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .3px;
-    text-transform: uppercase;
-    color: #475569;
-    background: #eef2f7;
-    border: 1px solid #d7dee8;
-    border-radius: 999px;
-    padding: 2px 9px;
+  .tbg__list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-3); grid-template-columns: 1fr; }
+  .tbg__pt {
+    display: flex; gap: var(--sp-3); align-items: start;
+    background: var(--c-white); border: 1px solid var(--c-border);
+    border-radius: var(--radius-md); padding: var(--sp-3) var(--sp-4);
   }
-
-  .zona__desc {
-    margin: 0;
-    font-size: 12px;
-    line-height: 1.35;
-    color: #6b7280;
+  .tbg__num {
+    flex-shrink: 0; display: inline-grid; place-items: center;
+    width: 24px; height: 24px; border-radius: var(--radius-full);
+    background: var(--c-primary); color: #fff;
+    font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: var(--text-sm);
   }
-  .zona__desc strong { color: #374151; }
+  .tbg__pt-body { display: grid; gap: 2px; min-width: 0; }
+  .tbg__nombre { margin: 0; font-family: var(--font-heading); font-weight: var(--weight-semibold); color: var(--c-ink); font-size: var(--text-base); }
+  .tbg__que { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
+  .tbg__dato { margin: 4px 0 0; font-size: var(--text-xs); color: var(--c-muted); display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+  .tbg__dato span, .tbg__edit span { text-transform: uppercase; letter-spacing: .06em; font-weight: var(--weight-semibold); color: var(--c-muted); }
+  .tbg__edit { margin: var(--sp-4) 0 0; display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--text-xs); color: var(--c-muted); }
 
-  /* Zona 1: palabra clave principal */
-  .marca {
-    font-size: 24px;
-    font-weight: 800;
-    letter-spacing: .5px;
-    color: #111827;
-    line-height: 1.1;
-  }
-
-  /* Zona 2: teléfonos */
-  .tel-list { display: flex; flex-direction: column; gap: 4px; }
-  .tel {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    font-size: 15px;
-    font-weight: 600;
-    color: #111827;
-    text-decoration: none;
-  }
-  .tel svg { color: #2563eb; flex: none; }
-  .tel:hover { color: #2563eb; }
-
-  /* Zona 3: WhatsApp */
-  .btn-wa {
-    align-self: flex-start;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: #25d366;
-    color: #ffffff;
-    font-weight: 700;
-    font-size: 15px;
-    text-decoration: none;
-    padding: 9px 16px;
-    border-radius: 8px;
-    box-shadow: 0 1px 2px rgba(0,0,0,.12);
-    transition: background .15s ease;
-  }
-  .btn-wa:hover { background: #1ebe5d; }
-  .btn-wa svg { color: #fff; flex: none; }
-
-  /* Responsive */
-  @media (max-width: 760px) {
-    .topbar__inner { flex-direction: column; }
-    .zona--wa, .zona--tel, .zona--marca { flex: 1 1 auto; }
-    .btn-wa { align-self: stretch; justify-content: center; }
-  }
+  /* ── Responsive ───────────────────────────────────────────────────────────── */
+  @media (max-width: 900px) { .tb-promo, .tb-center { display: none; } }
+  @media (max-width: 480px) { .tb-schedule, .tb-phone { display: none; } }
+  /* Leyenda guía: 1 col (móvil) → 2 col (tablet) → fila de 4 cards (desktop). */
+  @media (min-width: 600px)  { .tbg__list { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1000px) { .tbg__list { grid-template-columns: repeat(4, 1fr); } }
 </style>

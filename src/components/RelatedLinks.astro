@@ -1,0 +1,68 @@
+---
+// RelatedLinks.astro — Cross-linking interno data-driven por taxonomía (hub-and-spoke SEO). ORIGEN: PROYECTORED/src/components/sections/CategoriasRelacionadas.astro (excluye la categoría actual, distribuye link equity). Patrón canónico B6 del ecosistema.
+// Por defecto lee PRODUCT_CATEGORIES de config/site y excluye `current`. También acepta `links` manuales (otras taxonomías: servicios, sectores, artículos).
+import { PRODUCT_CATEGORIES } from '@config/site'
+
+interface LinkItem {
+  slug?: string
+  label: string
+  href: string
+  desc?: string
+}
+interface Props {
+  /** Slug a excluir del listado (la página actual). */
+  current?: string
+  /** Límite de tarjetas. */
+  limit?: number
+  title?: string
+  desc?: string
+  /** Links manuales. Si se pasan, se usan en lugar de PRODUCT_CATEGORIES. */
+  links?: LinkItem[]
+}
+const { current = '', limit = 4, title = 'Explora también', desc, links } = Astro.props
+
+const source: LinkItem[] = links ?? PRODUCT_CATEGORIES.map((c) => ({
+  slug: c.slug, label: c.label, href: c.href, desc: (c as any).badge ?? undefined,
+}))
+const items = source.filter((l) => l.slug !== current).slice(0, limit)
+---
+
+{items.length > 0 && (
+  <section class="rel" aria-label={title}>
+    <div class="rel__inner">
+      <header class="rel__head">
+        <h2 class="rel__title">{title}</h2>
+        {desc && <p class="rel__desc">{desc}</p>}
+      </header>
+      <ul class="rel__grid" role="list">
+        {items.map((item) => (
+          <li>
+            <a href={item.href} class="rel__card">
+              <span class="rel__card-label">{item.label}</span>
+              {item.desc && <span class="rel__card-desc">{item.desc}</span>}
+              <span class="rel__card-arrow" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+)}
+
+<style>
+  .rel { padding: var(--section-py, clamp(3rem, 6vw, 5rem)) 0; background: var(--color-gray-50, #fafafa); border-top: 1px solid var(--c-border, var(--border, #e8e8e8)); }
+  .rel__inner { max-width: var(--container-max, 1400px); margin-inline: auto; padding-inline: var(--container-px, 1.5rem); }
+  .rel__head { margin-bottom: var(--sp-6, 1.5rem); }
+  .rel__title { font-size: var(--text-2xl, 1.5rem); font-weight: var(--weight-bold, 700); color: var(--c-ink, var(--color-gray-900, #111827)); margin: 0; }
+  .rel__desc { font-size: var(--text-sm, .9375rem); color: var(--text-muted, var(--c-muted, #6b7280)); margin: var(--sp-2, .5rem) 0 0; }
+  .rel__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--sp-4, 1rem); list-style: none; padding: 0; margin: 0; }
+  .rel__card { display: flex; flex-direction: column; gap: var(--sp-1, .25rem); padding: var(--sp-5, 1.25rem); background: var(--c-white, #fff); border: 1px solid var(--c-border, var(--border, #e8e8e8)); border-radius: var(--radius-lg, .75rem); text-decoration: none; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; position: relative; }
+  .rel__card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,.08); border-color: color-mix(in srgb, var(--color-red, #C41E24) 30%, transparent); }
+  .rel__card-label { font-size: var(--text-base, 1rem); font-weight: var(--weight-semibold, 600); color: var(--c-ink, var(--color-gray-900, #111827)); }
+  .rel__card-desc { font-size: var(--text-xs, .75rem); font-weight: var(--weight-bold, 700); letter-spacing: .03em; text-transform: uppercase; color: var(--color-red, var(--c-primary, #C41E24)); }
+  .rel__card-arrow { position: absolute; top: var(--sp-5, 1.25rem); right: var(--sp-5, 1.25rem); color: var(--text-muted, var(--c-muted, #9ca3af)); transition: transform .18s ease, color .18s ease; }
+  .rel__card:hover .rel__card-arrow { color: var(--color-red, var(--c-primary, #C41E24)); transform: translateX(3px); }
+  .rel__card:focus-visible { outline: 2px solid var(--color-red, var(--c-primary, #C41E24)); outline-offset: 2px; }
+</style>

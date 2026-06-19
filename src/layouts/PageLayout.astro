@@ -1,0 +1,81 @@
+---
+{/* PageLayout — chrome estándar: Header + Breadcrumbs + <slot/> + Footer + WhatsAppFloat. Extiende BaseLayout | Origen: BOMBERO (Base→Page limpio) */}
+
+// ============================================================================
+// PageLayout.astro — CHROME ESTÁNDAR del sitio.
+//
+// Extiende BaseLayout y añade el "marco" que comparten casi todas las páginas:
+// Header, Breadcrumbs (opcional), <main>, Footer y el botón flotante de
+// WhatsApp. Las páginas de tipo (ProductLayout, ServiceLayout, ArticleLayout,
+// directorio) extienden ESTE layout, no BaseLayout directamente.
+//
+// Componentes: se referencian con el alias @components/* (los crea el agente de
+// componentes; aquí solo se invocan por nombre). Mapea @components en tsconfig.json:
+//   "paths": { "@components/*": ["src/components/*"] }
+//
+// CONTRATO: mismas props que BaseLayout + `breadcrumbs?`.
+//   breadcrumbs = [{ label, href? }]. El componente Breadcrumbs los pinta y el
+//   JSON-LD BreadcrumbList lo emite buildSchema UNA sola vez (B3) — NO lo emite
+//   el componente Breadcrumbs, para evitar el doble BreadcrumbList (anti-patrón
+//   confirmado en BOMBERO y RENTADEILUMINACION).
+// ============================================================================
+
+import BaseLayout from "./BaseLayout.astro";
+import TopBar from "@components/TopBar.astro";
+import Header from "@components/Header.astro";
+import Footer from "@components/Footer.astro";
+import Breadcrumbs from "@components/Breadcrumbs.astro";
+import WhatsAppFloat from "@components/WhatsAppFloat.astro";
+import type { PageType, SchemaData } from "@lib/seo";
+
+export interface Props {
+  title?: string;
+  /** Tripleta de keywords [kw1, kw2, kw3] (regla de metas). Ver KEYWORDS en site.ts. */
+  keywords?: readonly string[];
+  description?: string;
+  canonical?: string;
+  image?: string;
+  pageType?: PageType;
+  schemaData?: SchemaData;
+  noindex?: boolean;
+  /**
+   * Migas de pan (para el componente visual). { label, href }.
+   * Si se omite o queda vacío, no se renderiza la barra ni el BreadcrumbList.
+   */
+  breadcrumbs?: { label: string; href?: string }[];
+}
+
+const { breadcrumbs = [], ...baseProps } = Astro.props;
+
+// Las migas alimentan el BreadcrumbList del schema (lo emite buildSchema UNA
+// sola vez, B3 — el componente Breadcrumbs NO debe emitir su propio JSON-LD).
+// El componente visual usa { label, href }; el schema usa { name, path }.
+const schemaData: SchemaData = {
+  ...(baseProps.schemaData ?? {}),
+  ...(breadcrumbs.length > 0
+    ? {
+        breadcrumbs: [
+          { name: "Inicio", path: "/" },
+          ...breadcrumbs.map((b) => ({ name: b.label, path: b.href ?? "" })),
+        ],
+      }
+    : {}),
+};
+---
+
+<BaseLayout {...baseProps} schemaData={schemaData}>
+  {/* TopBar: barra utilitaria. `guia` = modo plantilla-guía (anota cada punto). */}
+  {/* En un sitio de cliente, cambia <TopBar guia /> por <TopBar />. */}
+  <TopBar guia />
+  <Header />
+
+  {/* Barra de migas (entre header y contenido). Visual; el JSON-LD lo emite buildSchema. */}
+  {breadcrumbs.length > 0 && <Breadcrumbs items={breadcrumbs} />}
+
+  <main id="main-content">
+    <slot />
+  </main>
+
+  <Footer />
+  <WhatsAppFloat />
+</BaseLayout>

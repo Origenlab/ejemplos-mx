@@ -1,0 +1,113 @@
+---
+// GuiaNota.astro — Anotación didáctica "modo guía" del sitio plantilla.
+// ============================================================================
+// Aside profesional que explica, en el sitio mismo, qué hace cada bloque y
+// dónde editarlo. Es el patrón con el que cada sección del index se autoexplica.
+// EXCLUSIVO de la plantilla-guía: en un sitio de cliente se elimina por completo
+// (no aporta a la conversión; es material de formación interna de Ejemplos.mx).
+//
+// Props:
+//   titulo  — encabezado de la nota (qué se está explicando).
+//   archivo — ruta del archivo a editar (se muestra en monoespaciado). Opcional.
+//   <slot/> — la explicación en sí (texto/HTML).
+//
+// Accesible: role="note" + aria-label. Mobile-first. Estilo con tokens.
+// ============================================================================
+interface Props {
+  titulo: string
+  archivo?: string
+}
+const { titulo, archivo } = Astro.props
+---
+
+<aside class="guia" role="note" aria-label={`Guía: ${titulo}`}>
+  <p class="guia__tag" aria-hidden="true"><span class="guia__icon">🧭</span> GUÍA</p>
+  <div class="guia__body">
+    <h3 class="guia__titulo">{titulo}</h3>
+    <div class="guia__texto"><slot /></div>
+    {archivo && (
+      <p class="guia__archivo">
+        <span class="guia__archivo-label">Edita en</span>
+        <code>{archivo}</code>
+      </p>
+    )}
+  </div>
+</aside>
+
+<style>
+  .guia {
+    /* borde izquierdo con --c-primary, fondo --c-surface */
+    border-left: 4px solid var(--c-primary);
+    background: var(--c-surface);
+    border-radius: var(--radius-md);
+    padding: var(--sp-4) var(--sp-5);
+    margin: var(--sp-5) 0;
+    display: grid;
+    gap: var(--sp-2);
+  }
+  .guia__tag {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    align-self: start;
+    margin: 0;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-bold);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--c-primary);
+  }
+  .guia__icon { font-size: 1rem; line-height: 1; }
+  .guia__body { display: grid; gap: var(--sp-2); }
+  .guia__titulo {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: var(--text-base);
+    font-weight: var(--weight-semibold);
+    color: var(--c-ink);
+  }
+  .guia__texto {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-relaxed);
+    color: var(--c-ink-2);
+  }
+  .guia__texto :global(p) { margin: 0 0 var(--sp-2); }
+  .guia__texto :global(p:last-child) { margin-bottom: 0; }
+  .guia__texto :global(code) {
+    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+    font-size: .85em;
+    background: var(--c-white);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-sm);
+    padding: .05em .35em;
+  }
+  .guia__archivo {
+    margin: var(--sp-1) 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: var(--text-xs);
+  }
+  .guia__archivo-label {
+    color: var(--c-muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    font-weight: var(--weight-semibold);
+  }
+  .guia__archivo code {
+    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+    font-size: .8125rem;
+    color: var(--c-primary-dark);
+    background: var(--c-white);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-sm);
+    padding: .15em .5em;
+    word-break: break-all;
+  }
+  @media (min-width: 768px) {
+    .guia { padding: var(--sp-5) var(--sp-6); }
+    .guia__titulo { font-size: var(--text-lg); }
+  }
+</style>

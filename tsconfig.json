@@ -1,5 +1,16 @@
 {
+  "//": "tsconfig.json — TypeScript strict + PATH ALIASES. Canónico: PROYECTORED/tsconfig.json (extiende astro/tsconfigs/strict). Los alias evitan imports frágiles ../../ y funcionan a cualquier profundidad de ruta. DEBEN coincidir con los de astro.config.mjs (resolve.alias).",
   "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@config/*": ["src/config/*"],
+      "@lib/*": ["src/lib/*"],
+      "@layouts/*": ["src/layouts/*"],
+      "@components/*": ["src/components/*"],
+      "@content/*": ["src/content/*"]
+    }
+  },
   "include": [".astro/types.d.ts", "**/*"],
   "exclude": ["dist"]
 }

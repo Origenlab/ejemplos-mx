@@ -1,0 +1,111 @@
+---
+// CTABanner.astro — Banner de conversión configurable con 3 variantes (red/dark/light), botones tipados con íconos e insignia de confianza. ORIGEN: MESECI/src/components/CTABanner.astro (CTA maestro del ecosistema + 7 presets en cta-presets.ts).
+// Contrato: los botones de WhatsApp deben construirse con waUrl(WA_MESSAGES.x) desde config/site (ver cta-presets.ts). Sin números hardcodeados.
+interface BtnDef {
+  label: string
+  href: string
+  icon?: 'wa' | 'arrow' | 'phone' | 'catalog' | 'info' | 'quote'
+  primary?: boolean      // true = fondo sólido; false = ghost/borde
+  external?: boolean     // true = target _blank (WhatsApp, externos)
+}
+interface Props {
+  heading: string
+  desc?: string
+  btns?: BtnDef[]
+  badge?: string                          // línea de confianza bajo los botones
+  variant?: 'red' | 'dark' | 'light'
+  centered?: boolean                      // true = texto y botones centrados
+}
+const { heading, desc, btns = [], badge, variant = 'red', centered = false } = Astro.props
+
+const ICONS: Record<string, string> = {
+  wa: `<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`,
+  arrow: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`,
+  phone: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 12 19.79 19.79 0 0 1 1.93 3.42 2 2 0 0 1 3.9 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`,
+  catalog: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,
+  info: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+  quote: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+}
+---
+
+<section class:list={['cta-banner', `cta-banner--${variant}`, centered && 'cta-banner--centered']} aria-labelledby="cta-banner-heading">
+  <div class="cta-banner__inner">
+    <div class="cta-banner__text">
+      <h2 id="cta-banner-heading" class="cta-banner__heading">{heading}</h2>
+      {desc && <p class="cta-banner__desc">{desc}</p>}
+    </div>
+    <div class="cta-banner__actions">
+      <div class="cta-banner__btns">
+        {btns.map((btn) => (
+          <a
+            href={btn.href}
+            class:list={['cta-btn', btn.primary ? 'cta-btn--primary' : 'cta-btn--ghost']}
+            target={btn.external ? '_blank' : undefined}
+            rel={btn.external ? 'noopener noreferrer' : undefined}
+          >
+            {btn.icon && <Fragment set:html={ICONS[btn.icon] ?? ''} />}
+            {btn.label}
+          </a>
+        ))}
+      </div>
+      {badge && (
+        <p class="cta-banner__badge">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          {badge}
+        </p>
+      )}
+    </div>
+  </div>
+</section>
+
+<style>
+  .cta-banner { padding: 4.5rem 0; position: relative; overflow: hidden; }
+  .cta-banner--red { background: var(--color-red, #C41E24); }
+  .cta-banner--red::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 80% at 80% 50%, rgba(255,255,255,.06) 0%, transparent 60%); pointer-events: none; }
+  .cta-banner--dark { background: linear-gradient(155deg, #0C0C0C 0%, #180A0D 55%, #0C0C0C 100%); }
+  .cta-banner--dark::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 50% 70% at 70% 50%, color-mix(in srgb, var(--color-red, #C41E24) 20%, transparent) 0%, transparent 60%); pointer-events: none; }
+  .cta-banner--light { background: var(--color-gray-50, #F9FAFB); border-top: 1px solid var(--border, #E4E4E7); border-bottom: 1px solid var(--border, #E4E4E7); }
+
+  .cta-banner__inner { display: flex; align-items: center; justify-content: space-between; gap: 3rem; position: relative; z-index: 1; max-width: var(--container-max, 1400px); margin-inline: auto; padding-inline: var(--container-px, 1.5rem); }
+  .cta-banner--centered .cta-banner__inner { flex-direction: column; text-align: center; align-items: center; }
+
+  .cta-banner__heading { font-size: clamp(1.375rem, 2.5vw, 1.875rem); font-weight: var(--weight-black, 800); letter-spacing: -.03em; line-height: 1.15; margin-bottom: .5rem; }
+  .cta-banner--red .cta-banner__heading, .cta-banner--dark .cta-banner__heading { color: #fff; }
+  .cta-banner--light .cta-banner__heading { color: var(--color-gray-900, #111827); }
+  .cta-banner__desc { font-size: .9375rem; line-height: 1.65; max-width: 58ch; margin: 0; }
+  .cta-banner--red .cta-banner__desc, .cta-banner--dark .cta-banner__desc { color: rgba(255,255,255,.72); }
+  .cta-banner--light .cta-banner__desc { color: var(--color-gray-500, #6B7280); }
+
+  .cta-banner__actions { display: flex; flex-direction: column; align-items: flex-end; gap: .75rem; flex-shrink: 0; }
+  .cta-banner--centered .cta-banner__actions { align-items: center; }
+  .cta-banner__btns { display: flex; gap: .75rem; flex-wrap: wrap; }
+  .cta-banner--centered .cta-banner__btns { justify-content: center; }
+
+  .cta-btn { display: inline-flex; align-items: center; gap: .45rem; padding: .8125rem 1.625rem; font-size: .9375rem; font-weight: var(--weight-bold, 700); border-radius: var(--radius-md, 6px); text-decoration: none; white-space: nowrap; transition: all .18s ease; }
+  .cta-banner--red .cta-btn--primary, .cta-banner--dark .cta-btn--primary { background: #fff; color: var(--color-red, #C41E24); border: 2px solid #fff; }
+  .cta-banner--red .cta-btn--primary:hover, .cta-banner--dark .cta-btn--primary:hover { background: rgba(255,255,255,.9); }
+  .cta-banner--light .cta-btn--primary { background: var(--color-red, #C41E24); color: #fff; border: 2px solid var(--color-red, #C41E24); }
+  .cta-banner--light .cta-btn--primary:hover { background: var(--color-red-dark, #9B0D22); border-color: var(--color-red-dark, #9B0D22); }
+  .cta-banner--red .cta-btn--ghost, .cta-banner--dark .cta-btn--ghost { background: transparent; color: rgba(255,255,255,.88); border: 2px solid rgba(255,255,255,.35); }
+  .cta-banner--red .cta-btn--ghost:hover, .cta-banner--dark .cta-btn--ghost:hover { border-color: rgba(255,255,255,.7); background: rgba(255,255,255,.08); color: #fff; }
+  .cta-banner--light .cta-btn--ghost { background: #fff; color: var(--color-gray-700, #374151); border: 2px solid var(--color-gray-200, #D1D5DB); }
+  .cta-banner--light .cta-btn--ghost:hover { border-color: var(--color-red, #C41E24); color: var(--color-red, #C41E24); }
+  .cta-btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  .cta-banner--light .cta-btn:focus-visible { outline-color: var(--color-red, #C41E24); }
+
+  .cta-banner__badge { display: flex; align-items: center; gap: .35rem; font-size: var(--text-xs, .75rem); font-weight: var(--weight-medium, 500); letter-spacing: .01em; margin: 0; }
+  .cta-banner--red .cta-banner__badge, .cta-banner--dark .cta-banner__badge { color: rgba(255,255,255,.5); }
+  .cta-banner--light .cta-banner__badge { color: var(--color-gray-400, #9CA3AF); }
+
+  @media (max-width: 900px) {
+    .cta-banner__inner { flex-direction: column; text-align: center; }
+    .cta-banner__actions { align-items: center; }
+    .cta-banner__btns { justify-content: center; }
+    .cta-banner__desc { max-width: 100%; }
+  }
+  @media (max-width: 560px) {
+    .cta-banner { padding: 3.5rem 0; }
+    .cta-banner__btns { flex-direction: column; width: 100%; }
+    .cta-btn { justify-content: center; width: 100%; }
+  }
+</style>

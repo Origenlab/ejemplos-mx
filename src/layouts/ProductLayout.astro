@@ -1,0 +1,222 @@
+---
+{/* ProductLayout — ficha de producto schema-driven con bloques opcionales + sidebar. L4 | Origen: BOMBERO (ProductoLayout, generalizado y desinflado del god-layout de 40 props) */}
+
+// ============================================================================
+// ProductLayout.astro — FICHA DE PRODUCTO (L4) SCHEMA-DRIVEN.
+//
+// Generaliza el ProductoLayout de BOMBERO PERO evitando su anti-patrón: aquel
+// expone ~40 props. Aquí seguimos el principio de CLINICADEBELLEZA — pocos
+// campos base + bloques opcionales que solo se pintan si traen datos. El
+// contenido vive en la Content Collection `productos` (frontmatter Zod).
+//
+// Extiende PageLayout. Schema: pageType="product" → buildSchema emite Product +
+// Offer (precio "bajo cotización" si no hay precio público) + FAQPage si hay
+// faqs + BreadcrumbList (una vez). Conversión WhatsApp-first (D4): sin carrito.
+// ============================================================================
+
+import PageLayout from "./PageLayout.astro";
+import SectionHeading from "@components/SectionHeading.astro";
+import FAQAccordion from "@components/FAQAccordion.astro";
+import CTABanner from "@components/CTABanner.astro";
+import RelatedLinks from "@components/RelatedLinks.astro";
+import { waUrl, telUrl } from "@config/site";
+
+export interface Props {
+  slug: string;
+  title: string;
+  description: string;
+  category: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  image?: string;
+  canonical?: string;
+  /** Badge de norma/certificación (ej. 'NOM-154' / 'NFPA 1971'). */
+  badge?: string;
+  /** Precio público; si se omite, el CTA usa "bajo cotización" (modelo del cluster). */
+  price?: string;
+  // ── Bloques opcionales ──
+  gallery?: { src: string; alt: string }[];
+  features?: string[];
+  specs?: { label: string; value: string }[];
+  applications?: string[];
+  certifications?: string[];
+  faqs?: { q: string; a: string }[];
+  related?: { label: string; href: string; description?: string }[];
+}
+
+const {
+  slug,
+  title,
+  description,
+  category,
+  seoTitle,
+  seoDescription,
+  image,
+  canonical,
+  badge,
+  price,
+  gallery = [],
+  features = [],
+  specs = [],
+  applications = [],
+  certifications = [],
+  faqs = [],
+  related = [],
+} = Astro.props;
+
+const waLink = waUrl(`Hola, quiero cotizar: ${title}. ¿Precio y disponibilidad?`);
+
+const breadcrumbs = [
+  { label: "Productos", href: "/productos" },
+  { label: title },
+];
+
+// schemaData → Product + Offer + (FAQPage). Claves EXACTAS del contrato
+// lib/seo.ts: product { name, description, path, images[], sku?, category?,
+// price? }. Sin `price` → buildSchema emite Offer "bajo cotización". NO se
+// fabrica rating (B4): `reviews` solo si hay reseñas reales verificables.
+const productImages = [image, ...gallery.map((g) => g.src)].filter(Boolean) as string[];
+const schemaData = {
+  product: {
+    name: title,
+    description,
+    path: `/productos/${slug}`,
+    images: productImages,
+    sku: slug,
+    category,
+    ...(price ? { price } : {}),
+  },
+  ...(faqs.length ? { faqs: faqs.map((f) => ({ question: f.q, answer: f.a })) } : {}),
+};
+---
+
+<PageLayout
+  title={seoTitle ?? title}
+  description={seoDescription ?? description}
+  image={image}
+  canonical={canonical}
+  pageType="product"
+  schemaData={schemaData}
+  breadcrumbs={breadcrumbs}
+>
+  {/* ── HERO: galería + datos clave ── */}
+  <header class="prod-hero">
+    <div class="container prod-hero__grid">
+      <div class="prod-hero__media">
+        {image && <img src={image} alt={title} width="640" height="480" fetchpriority="high" />}
+        {gallery.length > 0 && (
+          <div class="prod-hero__thumbs">
+            {gallery.map((g) => <img src={g.src} alt={g.alt} loading="lazy" width="120" height="90" />)}
+          </div>
+        )}
+      </div>
+      <div class="prod-hero__main">
+        {badge && <span class="prod-badge">{badge}</span>}
+        <h1 class="prod-hero__title">{title}</h1>
+        <p class="prod-hero__lede">{description}</p>
+        {features.length > 0 && (
+          <ul class="prod-features">{features.map((f) => <li>{f}</li>)}</ul>
+        )}
+        <p class="prod-price">{price ?? "Precio bajo cotización"}</p>
+        <div class="prod-hero__actions">
+          <a class="btn btn--primary" href={waLink}>Cotizar por WhatsApp</a>
+          <a class="btn btn--ghost" href="/contacto">Más información</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container prod-body">
+    <article class="prod-content">
+      <section class="prod-section">
+        <SectionHeading eyebrow="Descripción" title={`Acerca de ${title}`} />
+        <slot />{/* contenido libre de la ficha (markdown/MDX) */}
+      </section>
+
+      {specs.length > 0 && (
+        <section class="prod-section">
+          <SectionHeading eyebrow="Detalle" title="Especificaciones" />
+          <table class="prod-table">
+            <tbody>{specs.map((s) => <tr><th>{s.label}</th><td>{s.value}</td></tr>)}</tbody>
+          </table>
+        </section>
+      )}
+
+      {applications.length > 0 && (
+        <section class="prod-section">
+          <SectionHeading eyebrow="Usos" title="Aplicaciones" />
+          <ul class="prod-list">{applications.map((a) => <li>{a}</li>)}</ul>
+        </section>
+      )}
+
+      {certifications.length > 0 && (
+        <section class="prod-section">
+          <SectionHeading eyebrow="Cumplimiento" title="Certificaciones y normas" />
+          <ul class="prod-list">{certifications.map((c) => <li>{c}</li>)}</ul>
+        </section>
+      )}
+
+      {faqs.length > 0 && (
+        <section class="prod-section">
+          <SectionHeading eyebrow="Dudas" title="Preguntas frecuentes" />
+          <FAQAccordion items={faqs.map((f) => ({ question: f.q, answer: f.a }))} />
+        </section>
+      )}
+    </article>
+
+    {/* Sidebar sticky: CTA + interlinking (productos relacionados) */}
+    <aside class="prod-sidebar">
+      <div class="prod-widget prod-widget--cta">
+        <h2>Cotiza {title}</h2>
+        <p class="prod-widget__price">{price ?? "Precio bajo cotización"}</p>
+        <a class="btn btn--primary btn--block" href={waLink}>Pedir cotización</a>
+        <a class="btn btn--ghost btn--block" href={telUrl()}>Llamar</a>
+      </div>
+      {related.length > 0 && (
+        <div class="prod-widget">
+          <h2>También te puede servir</h2>
+          <RelatedLinks links={related.map((r) => ({ label: r.label, href: r.href, desc: r.description }))} />
+        </div>
+      )}
+    </aside>
+  </div>
+
+  <CTABanner
+    heading={`¿Necesitas ${category} para tu proyecto?`}
+    desc="Mándanos lo que buscas y te cotizamos con precio, disponibilidad y tiempos de entrega."
+    btns={[{ label: "Cotizar por WhatsApp", href: waLink, icon: "wa", primary: true, external: true }]}
+  />
+</PageLayout>
+
+<style>
+  /* CSS vanilla con tokens (tokens.css es la fuente única, C2). */
+  .prod-hero { padding: var(--space-10) 0; }
+  .prod-hero__grid { display: grid; grid-template-columns: 1fr; gap: var(--space-6); }
+  .prod-hero__media img { width: 100%; height: auto; border-radius: var(--radius-lg); }
+  .prod-hero__thumbs { display: flex; gap: var(--space-2); margin-top: var(--space-3); }
+  .prod-hero__thumbs img { width: 5rem; height: auto; border-radius: var(--radius-md); border: 1px solid var(--color-border); }
+  .prod-badge { display: inline-block; background: var(--color-accent); color: #fff; padding: .25rem .6rem; border-radius: var(--radius-full); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .06em; }
+  .prod-hero__title { font-family: var(--font-heading); font-size: var(--text-fluid-3xl); line-height: 1.1; margin-top: var(--space-2); }
+  .prod-hero__lede { color: var(--color-text-muted); margin: var(--space-3) 0; }
+  .prod-features { padding-left: var(--space-5); margin: var(--space-3) 0; }
+  .prod-price { font-size: var(--text-xl); font-weight: 700; color: var(--color-primary); }
+  .prod-hero__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-4); }
+
+  .prod-body { display: grid; grid-template-columns: 1fr; gap: var(--space-8); padding-bottom: var(--space-10); }
+  .prod-section { margin-bottom: var(--space-8); }
+  .prod-table { width: 100%; border-collapse: collapse; }
+  .prod-table th, .prod-table td { padding: var(--space-3); border-bottom: 1px solid var(--color-border); text-align: left; }
+  .prod-table th { color: var(--color-text-muted); font-weight: 600; width: 40%; }
+  .prod-list { padding-left: var(--space-5); }
+  .prod-sidebar { display: grid; gap: var(--space-5); align-content: start; }
+  .prod-widget { padding: var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-lg); }
+  .prod-widget--cta { background: var(--color-surface); }
+  .prod-widget__price { font-size: var(--text-lg); font-weight: 700; color: var(--color-primary); margin: var(--space-2) 0 var(--space-3); }
+  .btn--block { width: 100%; margin-top: var(--space-2); }
+
+  @media (min-width: 1024px) {
+    .prod-hero__grid { grid-template-columns: 1fr 1fr; align-items: start; }
+    .prod-body { grid-template-columns: minmax(0, 1fr) 22rem; }
+    .prod-sidebar { position: sticky; top: calc(var(--header-height, 72px) + var(--space-4)); }
+  }
+</style>

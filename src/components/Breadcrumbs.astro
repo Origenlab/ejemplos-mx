@@ -1,0 +1,43 @@
+---
+// Breadcrumbs.astro — Migas de pan visuales con microdata schema.org BreadcrumbList. ORIGEN: PROYECTORED/src/components/ui/Breadcrumb.astro (componente único del ecosistema, microdata inline).
+// IMPORTANTE: este componente NO emite el bloque JSON-LD <script type="application/ld+json">. El BreadcrumbList JSON-LD lo genera seo.ts/el Layout en UN SOLO lugar (anti-patrón B3: breadcrumb duplicado en BaseLayout y en Breadcrumbs). Aquí sólo microdata visible para no duplicar.
+interface BreadcrumbItem {
+  label: string
+  href?: string   // sin href → es el item actual (página)
+}
+interface Props {
+  items: BreadcrumbItem[]
+}
+const { items } = Astro.props
+---
+
+<div class="breadcrumb-bar">
+  <nav aria-label="Migas de pan" class="breadcrumb">
+    <ol class="breadcrumb__list" itemscope itemtype="https://schema.org/BreadcrumbList">
+      {items.map((item, index) => (
+        <li class="breadcrumb__item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+          {item.href ? (
+            <a href={item.href} class="breadcrumb__link" itemprop="item"><span itemprop="name">{item.label}</span></a>
+          ) : (
+            <span class="breadcrumb__current" aria-current="page" itemprop="name">{item.label}</span>
+          )}
+          <meta itemprop="position" content={String(index + 1)} />
+          {index < items.length - 1 && (
+            <svg class="breadcrumb__sep" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          )}
+        </li>
+      ))}
+    </ol>
+  </nav>
+</div>
+
+<style>
+  .breadcrumb-bar { background: var(--c-surface, var(--color-gray-50, #fafafa)); border-bottom: 1px solid var(--c-border, var(--border, #e8e8e8)); }
+  .breadcrumb { max-width: var(--container-max, 1400px); margin-inline: auto; padding: var(--sp-3, .75rem) var(--container-px, 1.5rem); }
+  .breadcrumb__list { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1, .25rem); list-style: none; margin: 0; padding: 0; }
+  .breadcrumb__item { display: inline-flex; align-items: center; gap: var(--sp-1, .25rem); }
+  .breadcrumb__link { font-size: var(--text-xs, .8125rem); color: var(--text-muted, var(--c-muted, #6b7280)); text-decoration: none; }
+  .breadcrumb__link:hover { color: var(--color-red, var(--c-primary, #C41E24)); text-decoration: underline; }
+  .breadcrumb__current { font-size: var(--text-xs, .8125rem); color: var(--c-ink, var(--color-gray-900, #111827)); font-weight: var(--weight-medium, 500); }
+  .breadcrumb__sep { color: var(--text-muted, var(--c-muted, #9ca3af)); flex-shrink: 0; }
+</style>

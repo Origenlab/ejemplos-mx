@@ -1,0 +1,62 @@
+---
+// Ficha de producto — Nivel L4 (Inicio → Categoría → Ficha)
+// Ruta dinámica ÚNICA: sirve TODAS las fichas de la colección `productos`.
+// No se edita por producto; el contenido sale de src/content/productos/<slug>.md
+// (frontmatter validado con Zod .strict()). Toda la estructura, el JSON-LD
+// Product+Offer, los breadcrumbs y la conversión WhatsApp viven en ProductLayout.
+import { getCollection, render } from 'astro:content';
+import ProductLayout from '@layouts/ProductLayout.astro';
+import GuiaNota from '@components/GuiaNota.astro';
+
+export async function getStaticPaths() {
+  const productos = await getCollection('productos', ({ data }) => !data.draft);
+
+  return productos.map((producto) => {
+    // Interlinking (B6): relacionados = hermanos de la colección (excluye el actual).
+    const related = productos
+      .filter((p) => p.id !== producto.id)
+      .slice(0, 3)
+      .map((p) => ({
+        label: p.data.title,
+        href: `/productos/${p.id}`,
+        description: p.data.description,
+      }));
+
+    return { params: { slug: producto.id }, props: { producto, related } };
+  });
+}
+
+const { producto, related } = Astro.props;
+const { Content } = await render(producto);
+const d = producto.data;
+
+// faqs del esquema ({question,answer}) → forma que espera ProductLayout ({q,a}).
+const faqs = d.faqs?.map((f) => ({ q: f.question, a: f.answer }));
+---
+
+<ProductLayout
+  slug={producto.id}
+  title={d.title}
+  description={d.description}
+  category={d.category}
+  seoTitle={d.seoTitle}
+  seoDescription={d.seoDescription}
+  image={d.image}
+  badge={d.brand}
+  price={d.price}
+  faqs={faqs}
+  related={related}
+>
+  <GuiaNota titulo="Ficha de producto · Nivel L4" archivo={`src/content/productos/${producto.id}.md`}>
+    <p>
+      Esta página <strong>se genera sola</strong> por cada archivo de
+      <code>src/content/productos/</code>. La ruta <code>[...slug].astro</code> sirve todas
+      las fichas; el título, la imagen, el precio, las FAQs y los productos relacionados
+      salen del frontmatter validado por Zod. El precio es opcional: si se omite, el CTA
+      pasa a <em>“bajo cotización”</em> por WhatsApp (vía <code>waUrl()</code>), nunca una
+      cifra inventada. Para cambiar este producto, edita el <code>.md</code> — no este archivo.
+    </p>
+  </GuiaNota>
+
+  <Content />
+</ProductLayout>

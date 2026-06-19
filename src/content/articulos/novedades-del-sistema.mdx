@@ -1,0 +1,20 @@
+---
+title: "Novedades del sistema de producción web"
+description: "Segundo artículo DEMO, en la categoría novedades, para mostrar cómo el blog lista varias entradas ordenadas por fecha de publicación y filtradas por borrador."
+category: "novedades"
+heroImage: "/images/articulos/novedades-del-sistema.svg"
+pubDate: 2026-02-01
+author: "Ejemplos.mx"
+tags: ["novedades", "changelog"]
+---
+
+# Novedades del sistema
+
+Artículo **DEMO** de la categoría *novedades*. Cada `.mdx` que agregues a
+`src/content/articulos/` se vuelve una entrada del blog.
+
+## Cómo se ordena el blog
+
+El listado de blog (parte futura de la plantilla) usa `getCollection('articulos')`,
+filtra los `draft: true` y ordena por `pubDate` descendente. Aquí solo
+demostramos que la colección valida y compila.

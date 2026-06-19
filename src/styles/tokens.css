@@ -1,0 +1,108 @@
+/* tokens.css — FUENTE ÚNICA de design tokens del sistema Ejemplos.mx.
+   Canónico: familia --c-* / --sp-* (origen PROYECTORED). Importar UNA sola vez en BaseLayout.
+   Resuelve el anti-patrón C2 (doble fuente de tokens). NO redefinir estos valores en otro archivo.
+   El bloque "PUENTE DE ALIAS" mapea nombres heredados (MESECI --color-*, --space-*) al canónico
+   para que los componentes extraídos rendericen sin reescritura. Migrar a nombres canónicos es deuda de roadmap. */
+
+:root {
+  /* ---------- COLOR (marca) ---------- */
+  --c-primary: #5b3df5;          /* Ejemplos.mx — índigo de marca (plantilla). Sustituir por el color del cliente. */
+  --c-primary-light: #7c66f7;
+  --c-primary-dark: #3f28c2;
+  --c-accent: var(--c-primary);
+  /* Canal RGB del primario para rgba(var(--c-primary-rgb), a). Mantener
+     sincronizado con --c-primary (#5b3df5 = 91,61,245). Lo usan Header/CTA. */
+  --c-primary-rgb: 91, 61, 245;
+
+  /* ---------- COLOR (tinta / neutros) ---------- */
+  --c-ink: #14181f;              /* texto principal */
+  --c-ink-2: #3a424e;            /* texto secundario */
+  --c-muted: #6b7280;            /* texto tenue / captions */
+  --c-border: #e5e7eb;
+  --c-surface: #f7f8fa;          /* fondos de sección */
+  --c-white: #ffffff;
+  --c-bg: #ffffff;
+  --color-bg: #ffffff;           /* alias usado por ServiceLayout (fondo de dl/toc) */
+
+  /* ---------- TIPOGRAFÍA ---------- */
+  --font-heading: 'Outfit', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --text-xs: .75rem;   --text-sm: .875rem;  --text-base: 1rem;
+  --text-lg: 1.125rem; --text-xl: 1.25rem;  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem; --text-4xl: 2.25rem;
+  --text-fluid-3xl: clamp(1.6rem, 1.1rem + 2.2vw, 2.25rem);
+  --text-fluid-4xl: clamp(2rem, 1.3rem + 3vw, 3rem);
+
+  --weight-regular: 400; --weight-medium: 500; --weight-semibold: 600;
+  --weight-bold: 700; --weight-black: 800;
+  --leading-tight: 1.2; --leading-snug: 1.35; --leading-normal: 1.5; --leading-relaxed: 1.7;
+
+  /* ---------- ESPACIADO (escala canónica --sp-*) ---------- */
+  --sp-1: .25rem; --sp-2: .5rem;  --sp-3: .75rem; --sp-4: 1rem;
+  --sp-5: 1.5rem; --sp-6: 2rem;   --sp-8: 3rem;   --sp-10: 4rem; --sp-12: 6rem;
+
+  /* ---------- RADIOS / BORDES ---------- */
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-xl: 20px; --radius-full: 999px;
+  --border: 1px solid var(--c-border);
+
+  /* ---------- LAYOUT ---------- */
+  --container-max: 90%;          /* Ancho del sitio = 90% del viewport, centrado con margin-inline:auto → gutters ~5% izq/der. %-based (antes 1200px fijo). */
+  --container-prose: 720px;      /* Ancho de lectura (prose en artículos). Se mantiene en px por legibilidad (line-length); NO es el ancho del sitio. */
+  --container-px: clamp(1rem, 4vw, 2rem);  /* Padding interior dentro del 90%. */
+  --topbar-height: 36px;
+  --header-height: 64px;
+  /* Padding vertical estándar de sección (RelatedLinks/FAQAccordion). */
+  --section-py: clamp(3rem, 6vw, 5rem);
+
+  /* ---------- Z-INDEX ---------- */
+  --z-sticky: 50;                /* barras sticky internas (TOC de servicio, etc.) */
+
+  /* ---------- SOMBRAS / TRANSICIONES ---------- */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.06);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.10);
+  --transition: .2s ease;
+  --transition-base: .2s ease;   /* alias usado por pagina-directorio (hover cards) */
+
+  /* ============ PUENTE DE ALIAS (heredados → canónico) ============ */
+  /* Permite que componentes extraídos de MESECI/otros funcionen sin reescritura. */
+  --color-red: var(--c-primary);
+  --color-red-dark: var(--c-primary-dark);
+  --color-red-light: var(--c-primary-light);
+  --color-primary: var(--c-primary);
+  --color-accent: var(--c-accent);
+  --color-text-muted: var(--c-muted);
+  --text-muted: var(--c-muted);
+  --color-border: var(--c-border);
+  --color-surface: var(--c-surface);
+  --color-gray-50: #f9fafb; --color-gray-100: #f3f4f6; --color-gray-200: #e5e7eb;
+  --color-gray-400: #9ca3af; --color-gray-500: #6b7280;
+  --color-gray-700: #374151; --color-gray-900: #111827;
+  --space-1: var(--sp-1); --space-2: var(--sp-2); --space-3: var(--sp-3);
+  --space-4: var(--sp-4); --space-5: var(--sp-5); --space-6: var(--sp-6);
+  --space-8: var(--sp-8); --space-10: var(--sp-10); --space-12: var(--sp-12);
+  --ft-accent: var(--font-heading); --ft-text: var(--font-body); --ft-border: var(--c-border);
+}
+
+/* ============================================================================
+   RESET BASE (global) — homologación. Único reset del sistema; vive aquí porque
+   tokens.css es la ÚNICA hoja global (se importa una vez en BaseLayout).
+   - box-sizing:border-box → el 90% del sitio incluye el padding (gutters exactos).
+   - body margin:0 → sin el margen de 8px del navegador.
+   - font/color base → aplica la pila --font-body a todo (antes el texto sin
+     componente caía a serif del navegador).
+   ============================================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--c-ink);
+  background: var(--c-bg);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+img, picture, video, canvas { max-width: 100%; }

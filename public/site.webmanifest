@@ -1,0 +1,12 @@
+{
+  "name": "Ejemplos.mx",
+  "short_name": "Ejemplos.mx",
+  "description": "Sitio plantilla y guía de Ejemplos.mx para construir sitios Astro.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#d32f2f",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

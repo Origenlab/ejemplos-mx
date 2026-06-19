@@ -1,0 +1,173 @@
+---
+// Categoría "Productos" — Nivel L2 (Inicio → Categoría → Ficha)
+// Landing del dominio del catálogo. El grid NO está escrito a mano: sale de la
+// colección `productos`. pageType="category" → JSON-LD CollectionPage + ItemList
+// (lo emite seo.ts vía buildSchema). Datos de contacto/WhatsApp: SSoT en site.ts.
+import PageLayout from '@layouts/PageLayout.astro';
+import Hero from '@components/Hero.astro';
+import SectionHeading from '@components/SectionHeading.astro';
+import ProductCard from '@components/ProductCard.astro';
+import RelatedLinks from '@components/RelatedLinks.astro';
+import FAQAccordion from '@components/FAQAccordion.astro';
+import CTABanner from '@components/CTABanner.astro';
+import GuiaNota from '@components/GuiaNota.astro';
+import { getCollection } from 'astro:content';
+import { waUrl, WA_MESSAGES } from '@config/site';
+
+const productos = (await getCollection('productos', ({ data }) => !data.draft)).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+
+// items → alimentan a la vez el ItemList del JSON-LD (buildSchema 'category').
+const items = productos.map((p) => ({
+  name: p.data.title,
+  path: `/productos/${p.id}`,
+  image: p.data.image,
+  description: p.data.description,
+}));
+
+// FAQs en texto plano: la MISMA fuente nutre el acordeón visible y el FAQPage del schema.
+const faqs = [
+  {
+    question: '¿Los datos de este catálogo son reales?',
+    answer:
+      'No. Es una plantilla-guía; los productos son DEMO. Reemplázalos en src/content/productos/ antes de publicar cualquier sitio real.',
+  },
+  {
+    question: '¿Cómo agrego un producto nuevo al catálogo?',
+    answer:
+      'Crea un archivo .md en src/content/productos/ con el frontmatter requerido (título, descripción, categoría e imagen). El grid de esta página y su ficha individual se generan solos.',
+  },
+  {
+    question: '¿Por qué algunas fichas no muestran precio?',
+    answer:
+      'El campo price es opcional. Si se omite, el sistema usa el modelo "bajo cotización" por WhatsApp en lugar de inventar una cifra.',
+  },
+];
+
+const schemaData = {
+  list: {
+    name: 'Productos',
+    description:
+      'Catálogo DEMO de la plantilla: página de categoría (L2) que lista las fichas de la colección de productos.',
+    path: '/productos',
+    items,
+  },
+  faqs,
+};
+---
+
+<PageLayout
+  title="Productos"
+  description="Catálogo DEMO de la plantilla: página de categoría (L2) que lista las fichas de producto desde la colección, sin tocar código."
+  pageType="category"
+  schemaData={schemaData}
+  breadcrumbs={[{ label: 'Productos' }]}
+>
+  <Hero
+    badge="Categoría · Nivel L2"
+    title="Catálogo de"
+    accent="productos"
+    subtitle="Página de categoría de la plantilla-guía: lista automáticamente cada ficha de la colección de productos. Todos los datos son DEMO."
+    ctas={[
+      { text: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.productos), variant: 'primary', whatsapp: true },
+      { text: 'Ver servicios', href: '/servicios', variant: 'outline' },
+    ]}
+  />
+
+  <section class="section">
+    <div class="container">
+      <GuiaNota titulo="Qué es esta página (categoría · L2)" archivo="src/pages/productos/index.astro">
+        <p>
+          Es una <strong>landing de categoría</strong>: el segundo nivel de la jerarquía
+          (Inicio → Categoría → Ficha). El grid de abajo no se escribe a mano — sale de
+          <code>getCollection('productos')</code> y se ordena por el campo <code>order</code>.
+          Agrega o quita un <code>.md</code> en <code>src/content/productos/</code> y esta
+          página se actualiza sola. El teléfono y el WhatsApp salen de <code>site.ts</code>
+          (SSoT), nunca escritos aquí.
+        </p>
+      </GuiaNota>
+
+      <SectionHeading
+        eyebrow="Catálogo"
+        title="Fichas en la"
+        titleAccent="colección"
+        desc="Cada tarjeta enlaza a su ficha de producto (L4). El badge muestra la subcategoría del esquema: equipos · accesorios · general."
+      />
+
+      <div class="grid">
+        {
+          productos.map((p, i) => (
+            <ProductCard
+              title={p.data.title}
+              href={`/productos/${p.id}`}
+              image={p.data.image}
+              imageAlt={p.data.title}
+              badge={p.data.category}
+              description={p.data.description}
+              index={i}
+              priority={i === 0}
+            />
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--surface">
+    <div class="container">
+      <RelatedLinks
+        current="productos"
+        title="Otras secciones del sitio"
+        desc="Interlinking automático a las demás categorías de la taxonomía (site.ts)."
+      />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <FAQAccordion items={faqs} title="Preguntas frecuentes" openFirst />
+    </div>
+  </section>
+
+  <CTABanner
+    heading="¿Listo para convertir este catálogo en uno real?"
+    desc="Reemplaza los productos DEMO por los del cliente y publica. Estructura, contenido en Markdown y conversión ya están resueltos."
+    btns={[
+      { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.productos), icon: 'wa', primary: true, external: true },
+      { label: 'Ver servicios', href: '/servicios', icon: 'arrow' },
+    ]}
+    badge="Datos DEMO — reemplázalos antes de publicar"
+    variant="dark"
+    centered={true}
+  />
+</PageLayout>
+
+<style>
+  /* Utilidades estructurales (mismos tokens que el index; tokens.css = fuente única). */
+  .container {
+    max-width: var(--container-max);
+    margin-inline: auto;
+    padding-inline: var(--container-px);
+  }
+  .section {
+    padding: var(--sp-8) 0;
+  }
+  .section--surface {
+    background: var(--c-surface);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--sp-5);
+    margin-top: var(--sp-6);
+  }
+  @media (min-width: 768px) {
+    .section {
+      padding: var(--sp-10) 0;
+    }
+    .grid {
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    }
+  }
+</style>
