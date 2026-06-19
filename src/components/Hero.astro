@@ -1,0 +1,186 @@
+---
+// Hero.astro — Bloque principal a 2 columnas (GUÍA GRÁFICA)
+// Mismo lenguaje "modo guía" que TopBar: cada zona muestra QUÉ va en ese
+// lugar y por qué. Reemplaza los valores de ejemplo por los reales.
+//
+// Estructura:
+//   Columna 1 → H1 (único) + párrafo introductorio corto. SIN botones
+//               (los CTA van en un bloque DEBAJO del hero).
+//   Columna 2 → 2 párrafos de presentación de la empresa. El 1.º arranca
+//               con una KEYWORD de los 3 módulos del title meta; luego
+//               cuenta años · qué hace · cómo lo hace. Tono profesional,
+//               conciso y humano.
+//
+// Props (swappables, igual que TopBar):
+interface Props {
+  /** Las 3 keywords/módulos del <title> meta. Definen el copy SEO. */
+  keywords?: [string, string, string];
+  /** H1 — único en la página. Lleva la keyword principal. */
+  titulo?: string;
+  /** Párrafo introductorio corto bajo el H1 (columna 1). */
+  intro?: string;
+  /** Párrafo 1 (columna 2). Empieza con una keyword del title meta. */
+  parrafo1?: string;
+  /** Párrafo 2 (columna 2). El "cómo" y el diferenciador. */
+  parrafo2?: string;
+}
+
+const {
+  keywords = ["Contabilidad", "Auditoría", "Asesoría Fiscal"],
+  titulo = "Contabilidad clara para que tu negocio crezca sin sustos fiscales",
+  intro =
+    "Traducimos los números en decisiones: cumplimiento puntual ante el SAT y visibilidad real de tu empresa, mes a mes.",
+  parrafo1 =
+    "Contabilidad, auditoría y asesoría fiscal bajo un mismo techo. Desde 2008 acompañamos a pequeñas y medianas empresas a llevar sus libros al día y a entender, sin tecnicismos, qué dicen realmente sus números. No te entregamos un reporte que nadie explica: cada mes nos sentamos contigo a revisar cómo va el negocio y qué conviene hacer después.",
+  parrafo2 =
+    "¿Cómo lo logramos? Con un equipo de contadores certificados, procesos de auditoría interna y una asesoría fiscal preventiva que detecta riesgos antes de que se conviertan en multas. Trabajamos cerca, respondemos rápido y cuidamos cada peso como si fuera nuestro, porque sabemos que detrás de cada declaración hay un proyecto que no puede detenerse.",
+} = Astro.props;
+
+// title meta sugerido (los 3 módulos + marca) — referencia para el <title>
+const tituloMetaSugerido = `${keywords.join(", ")} | Marca · Ciudad`;
+---
+
+<section class="hero">
+  <div class="hero__inner">
+
+    {/* ───────────── COLUMNA 1 · H1 + intro ───────────── */}
+    <div class="zona zona--titulo">
+      <span class="zona__tag">1 · Título principal (H1) + intro</span>
+
+      <h1 class="hero__title">{titulo}</h1>
+      <p class="hero__intro">{intro}</p>
+
+      <p class="zona__desc">
+        Un <strong>solo H1</strong> en toda la página, con la keyword principal.
+        Debajo, un párrafo introductorio corto. <strong>Sin botones</strong>:
+        los CTA van en un bloque <em>debajo</em> del hero.
+      </p>
+    </div>
+
+    {/* ───────────── COLUMNA 2 · Presentación empresa (2 párrafos) ───────────── */}
+    <div class="zona zona--empresa">
+      <span class="zona__tag">2 · Presentación de la empresa (2 párrafos)</span>
+
+      <div class="kw-row" aria-hidden="true">
+        {keywords.map((k) => <span class="kw">{k}</span>)}
+      </div>
+
+      <p class="hero__p">{parrafo1}</p>
+      <p class="hero__p">{parrafo2}</p>
+
+      <p class="zona__desc">
+        Dos párrafos. La <strong>1.ª palabra</strong> arranca con una keyword de
+        los 3 módulos del title meta. Luego: <strong>años · qué hace · cómo lo
+        hace</strong>. Profesional, conciso y humano.
+        <em>Reemplaza años y cifras de ejemplo por los reales.</em><br />
+        <span class="zona__meta">title meta sugerido: “{tituloMetaSugerido}”</span>
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<style>
+  .hero {
+    width: 100%;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .hero__inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 56px 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+
+  /* Recuadro-guía punteado con etiqueta (igual que TopBar) */
+  .zona {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 22px 22px 18px;
+    border: 1.5px dashed #c7cdd6;
+    border-radius: 12px;
+    background: #fafbfc;
+  }
+
+  .zona__tag {
+    position: absolute;
+    top: -10px;
+    left: 14px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+    color: #475569;
+    background: #eef2f7;
+    border: 1px solid #d7dee8;
+    border-radius: 999px;
+    padding: 2px 9px;
+  }
+
+  .zona__desc {
+    margin: 6px 0 0;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #6b7280;
+  }
+  .zona__desc strong { color: #374151; }
+  .zona__desc em { color: #9ca3af; font-style: italic; }
+  .zona__meta {
+    display: inline-block;
+    margin-top: 4px;
+    font-family: ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: #94a3b8;
+  }
+
+  /* Columna 1 */
+  .hero__title {
+    margin: 0;
+    font-size: clamp(28px, 3.4vw, 40px);
+    line-height: 1.12;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: #111827;
+  }
+  .hero__intro {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.55;
+    color: #4b5563;
+  }
+
+  /* Columna 2 */
+  .kw-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .kw {
+    font-size: 12px;
+    font-weight: 700;
+    color: #2563eb;
+    background: #eff4ff;
+    border: 1px solid #dbe6ff;
+    border-radius: 999px;
+    padding: 3px 10px;
+  }
+  .hero__p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.65;
+    color: #374151;
+  }
+
+  /* Responsive: una sola columna (mismo breakpoint que TopBar) */
+  @media (max-width: 760px) {
+    .hero__inner {
+      grid-template-columns: 1fr;
+      padding: 36px 20px;
+      gap: 22px;
+    }
+  }
+</style>

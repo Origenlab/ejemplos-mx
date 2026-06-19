@@ -1,0 +1,178 @@
+---
+// TopBar.astro — Barra superior (GUÍA GRÁFICA)
+// Funciona como plantilla auto-explicada: cada zona muestra QUÉ debe ir
+// en ese lugar. Reemplaza los placeholders por el contenido real.
+//
+// Props opcionales para ir reemplazando los placeholders sin tocar el HTML:
+interface Props {
+  palabraClave?: string;   // Palabra clave / nombre principal del proyecto
+  telefonos?: string[];    // Teléfonos de contacto (formato visible)
+  whatsapp?: string;       // Número WhatsApp en formato internacional sin signos: 52XXXXXXXXXX
+}
+
+const {
+  palabraClave = "PALABRA CLAVE PRINCIPAL",
+  telefonos = ["(000) 000 0000", "(000) 000 0000"],
+  whatsapp = "520000000000",
+} = Astro.props;
+---
+
+<header class="topbar">
+  <div class="topbar__inner">
+
+    {/* ───────────── ZONA 1 · Palabra clave principal ───────────── */}
+    <div class="zona zona--marca">
+      <span class="zona__tag">1 · Lo primero que se ve</span>
+      <div class="marca">{palabraClave}</div>
+      <p class="zona__desc">
+        Aquí va la <strong>palabra clave / nombre principal</strong> del proyecto.
+        Es el primer elemento que mira el usuario.
+      </p>
+    </div>
+
+    {/* ───────────── ZONA 2 · Teléfonos ───────────── */}
+    <div class="zona zona--tel">
+      <span class="zona__tag">2 · Teléfonos</span>
+      <div class="tel-list">
+        {telefonos.map((t) => (
+          <a class="tel" href={`tel:${t.replace(/[^0-9+]/g, "")}`}>
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path fill="currentColor" d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.4 21 3 13.6 3 4.5c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.4 0 .8-.3 1l-2.2 2.1z"/>
+            </svg>
+            <span>{t}</span>
+          </a>
+        ))}
+      </div>
+      <p class="zona__desc">
+        Teléfonos de contacto directo. Clic para <strong>llamar</strong>.
+      </p>
+    </div>
+
+    {/* ───────────── ZONA 3 · WhatsApp ───────────── */}
+    <div class="zona zona--wa">
+      <span class="zona__tag">3 · Contacto rápido</span>
+      <a
+        class="btn-wa"
+        href={`https://wa.me/${whatsapp}`}
+        target="_blank"
+        rel="noopener"
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-2.9.8.8-2.8-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1-.2.2-.6.8-.8 1-.1.1-.3.2-.5 0-.2-.1-1-.4-1.9-1.2-.7-.6-1.2-1.4-1.3-1.6-.1-.2 0-.4.1-.5l.4-.4c.1-.2.2-.3.2-.5s0-.3-.1-.4l-.8-1.9c-.2-.5-.4-.4-.5-.4h-.5c-.2 0-.4.1-.7.3-.2.2-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.8 2.7 4.3 3.8.6.3 1.1.4 1.5.5.6.2 1.2.2 1.6.1.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1-.1-.1-.2-.2-.4-.3z"/>
+        </svg>
+        <span>WhatsApp</span>
+      </a>
+      <p class="zona__desc">
+        Botón de <strong>contacto directo por WhatsApp</strong>.
+      </p>
+    </div>
+
+  </div>
+</header>
+
+<style>
+  .topbar {
+    width: 100%;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .topbar__inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 14px 20px;
+    display: flex;
+    align-items: stretch;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  /* Cada zona se ve como un recuadro-guía punteado con su etiqueta */
+  .zona {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px 12px;
+    border: 1.5px dashed #c7cdd6;
+    border-radius: 10px;
+    background: #fafbfc;
+  }
+
+  .zona--marca { flex: 1 1 280px; }
+  .zona--tel   { flex: 1 1 220px; }
+  .zona--wa    { flex: 0 1 220px; }
+
+  .zona__tag {
+    position: absolute;
+    top: -10px;
+    left: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+    color: #475569;
+    background: #eef2f7;
+    border: 1px solid #d7dee8;
+    border-radius: 999px;
+    padding: 2px 9px;
+  }
+
+  .zona__desc {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.35;
+    color: #6b7280;
+  }
+  .zona__desc strong { color: #374151; }
+
+  /* Zona 1: palabra clave principal */
+  .marca {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: .5px;
+    color: #111827;
+    line-height: 1.1;
+  }
+
+  /* Zona 2: teléfonos */
+  .tel-list { display: flex; flex-direction: column; gap: 4px; }
+  .tel {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #111827;
+    text-decoration: none;
+  }
+  .tel svg { color: #2563eb; flex: none; }
+  .tel:hover { color: #2563eb; }
+
+  /* Zona 3: WhatsApp */
+  .btn-wa {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #25d366;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 15px;
+    text-decoration: none;
+    padding: 9px 16px;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.12);
+    transition: background .15s ease;
+  }
+  .btn-wa:hover { background: #1ebe5d; }
+  .btn-wa svg { color: #fff; flex: none; }
+
+  /* Responsive */
+  @media (max-width: 760px) {
+    .topbar__inner { flex-direction: column; }
+    .zona--wa, .zona--tel, .zona--marca { flex: 1 1 auto; }
+    .btn-wa { align-self: stretch; justify-content: center; }
+  }
+</style>
