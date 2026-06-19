@@ -163,7 +163,8 @@ const faqs: { question: string; answer: string }[] = [
        Reemplaza la antigua franja de badges. Botones que copan el ancho con las
        secciones clave del sitio + un CTA de WhatsApp. Es un componente aparte
        (SectionMenu) y se alimenta de `menuSecciones`/`menuCta` (derivados de NAV
-       arriba). El fondo va full-width; el contenido se centra al 90%. */}
+       arriba). Va de borde a borde (100% del ancho), con los botones repartidos
+       por % a lo largo de todo el viewport (estilo meseci.com.mx). */}
   <SectionMenu items={menuSecciones} cta={menuCta} />
 
   <section class="band">
