@@ -1,0 +1,773 @@
+---
+// ============================================================================
+// /modulos/breadcrumbs — PÁGINA DEL MÓDULO «Migas de pan».
+// ----------------------------------------------------------------------------
+// Cuarta de la serie /modulos/* (topbar · header · hero · breadcrumbs), MISMO
+// molde (docs/MODULOS.md). NOTA propia de las migas: el contenido no es global
+// ni per-página de tipo «contenido editorial»; es la ruta del visitante en la
+// jerarquía del sitio. Cada página la define UNA vez en su prop `breadcrumbs`
+// y a partir de ahí trabajan dos consumidores: el componente Breadcrumbs.astro
+// (la barra visible con microdata) y buildSchema() en lib/seo.ts (el JSON-LD
+// BreadcrumbList que se emite UNA sola vez — regla dura B3). Lo único SSoT
+// del cierre es el CTA, armado con waUrl(WA_MESSAGES).
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+
+// Menú de cierre (mismo patrón que el resto de la serie): navegación + el sitio.
+// «El menú reparte; el último botón —WhatsApp— convierte».
+const cierreItems = [
+  { label: 'Todos los módulos', href: '/modulos', sub: 'Índice de la serie' },
+  { label: 'Módulo Hero', href: '/modulos/hero', sub: 'La primera impresión' },
+  { label: 'Módulo Header', href: '/modulos/header', sub: 'Logo y navegación' },
+  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
+]
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), sub: 'Respuesta inmediata', external: true }
+
+// Las 4 piezas de las migas — MISMA fuente que la leyenda guía del componente
+// (Breadcrumbs.astro · PUNTOS). El número mapea con los pines del ejemplo en vivo.
+const partes = [
+  {
+    n: 1,
+    nombre: 'Raíz (Inicio)',
+    que: 'El primer eslabón, siempre enlazado a la home. Es el punto de partida de la ruta y el «volver al inicio» que todos esperan al inicio de una jerarquía. El componente lo antepone automáticamente: la página solo declara su rastro.',
+    dato: "items[0] · href '/'",
+  },
+  {
+    n: 2,
+    nombre: 'Eslabón intermedio',
+    que: 'Cada nivel ancestro entre la home y la página actual (categoría, subcategoría). Son enlaces de verdad: dejan saltar a cualquier nivel superior sin tocar el botón «atrás» del navegador.',
+    dato: 'items[].href',
+  },
+  {
+    n: 3,
+    nombre: 'Separador',
+    que: 'El icono (›) entre eslabones. Es decorativo —va con aria-hidden— y solo marca la dirección de la jerarquía; nunca es un enlace ni se lee con lector de pantalla.',
+    dato: 'SVG · aria-hidden',
+  },
+  {
+    n: 4,
+    nombre: 'Página actual',
+    que: 'El último eslabón: la página donde estás. No enlaza (ya estás ahí) y se marca con aria-current="page" para que los lectores de pantalla la anuncien como destino actual.',
+    dato: 'item sin href · aria-current',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Orientación de un vistazo',
+    desc: 'En las páginas internas, las migas responden la pregunta que el visitante trae sin formularla: «¿dónde estoy parado dentro del sitio?». Una sola línea, leída en un segundo, ubica la jerarquía y ahorra explorar el menú para entenderlo.',
+  },
+  {
+    titulo: 'Camino de vuelta sin penalizar',
+    desc: 'Cada nivel superior es un enlace, así que dejan saltar a la categoría o a la home sin usar el botón «atrás» del navegador. Bajan la fricción para explorar laterales del sitio y suelen mejorar las páginas vistas por sesión.',
+  },
+  {
+    titulo: 'Jerarquía legible para el buscador',
+    desc: 'El BreadcrumbList del schema (JSON-LD) le dice a Google la posición de la página dentro de la estructura. Cuando se cumplen los requisitos, ese rastro aparece bajo el título en los resultados, en lugar de la URL cruda.',
+  },
+]
+
+const sis = [
+  'Refleja la JERARQUÍA del sitio, no el historial: Inicio › Categoría › Página, no «la página anterior».',
+  'Que el último eslabón sea la página actual, sin enlace y con aria-current="page".',
+  'Mantén etiquetas cortas y reconocibles: «Servicios», no «Nuestros servicios profesionales».',
+  'Coloca las migas justo debajo del header, antes del hero o del título de la página interna.',
+  'Define la ruta una sola vez en la prop breadcrumbs; el JSON-LD lo emite buildSchema (regla B3).',
+]
+const nos = [
+  'No las uses en la home: ahí no aportan, son ruido.',
+  'No las conviertas en un segundo menú con todas las secciones; son la RUTA de esta página.',
+  'No emitas el BreadcrumbList JSON-LD desde el componente: ya lo hace el layout (no dupliques).',
+  'No marques el último eslabón como enlace (ya estás ahí) ni le pongas un separador después.',
+  'No mezcles las migas con el título de la sección ni con un panel «volver»: cada cosa en su sitio.',
+]
+
+// Variantes de migas (galería). Réplica en vivo abajo, mismo orden. Patrones
+// reales de la industria (NN/g «Breadcrumbs: 11 design guidelines», Material
+// Design 3 «Top app bar / Hierarchical navigation», Baymard Institute).
+const disenos = [
+  {
+    nombre: 'Texto con separador (›)',
+    tag: 'Sitio de negocio · Servicios',
+    desc: 'La de esta plantilla. Cada nivel es texto, separado por un chevron ligero (›) con aria-hidden. Discretas y universales: el ojo ya las tiene aprendidas, así que no compiten con el contenido. La opción más segura para casi cualquier sitio.',
+  },
+  {
+    nombre: 'Con icono «home» en la raíz',
+    tag: 'E-commerce · Catálogo',
+    desc: 'El primer eslabón se reemplaza por un icono de casa enlazado a la home; el resto sigue como texto. Compacta la ruta y refuerza el atajo «volver al inicio», que en tiendas grandes es uno de los enlaces más usados de toda la página.',
+  },
+  {
+    nombre: 'Cápsulas (pills)',
+    tag: 'SaaS · Paneles',
+    desc: 'Cada eslabón vive en una cápsula con fondo suave, separada por un chevron. Da más peso visual y un blanco táctil generoso —cómodo de tocar—; encaja en apps y paneles donde la jerarquía es información operativa, no adorno.',
+  },
+  {
+    nombre: 'Compactas: «atrás + actual»',
+    tag: 'Móvil · Detalle de producto',
+    desc: 'En móvil, las migas largas se sustituyen por una flecha «atrás» al nivel inmediato superior + el nombre de la página actual. Mantiene el camino de vuelta sin obligar al texto a multilínea; el rastro completo queda para el escritorio.',
+  },
+  {
+    nombre: 'Colapsadas con «…»',
+    tag: 'Catálogo profundo · Wiki',
+    desc: 'Cuando la jerarquía es muy profunda, los niveles intermedios se colapsan en «…» que se expanden al tocar. Las puntas siempre visibles (Inicio y la página actual) dan contexto sin desbordar la línea.',
+  },
+  {
+    nombre: 'Truncado con tooltip',
+    tag: 'Documentación · CMS',
+    desc: 'Cada eslabón se trunca con ellipsis si su etiqueta es larga; al pasar el cursor (o con el teclado) aparece el nombre completo en un tooltip. Útil cuando los títulos no se pueden acortar pero la ruta debe caber en una sola línea.',
+  },
+]
+
+// ── Recetas de implementación — strings que pinta <Receta> ────────────────────
+const recetaPagina = `---
+// Cada página declara SU rastro UNA sola vez en la prop breadcrumbs.
+// El componente antepone «Inicio» en el visual y buildSchema arma el JSON-LD.
+import PageLayout from '@layouts/PageLayout.astro'
+---
+
+<PageLayout
+  title="Diseño de logotipo — Servicios"
+  description="…"
+  pageType="service"
+  breadcrumbs={[
+    { label: 'Servicios', href: '/servicios' },
+    { label: 'Diseño de logotipo' },        // sin href = página actual
+  ]}
+>
+  {/* …contenido de la página… */}
+</PageLayout>`
+
+const recetaMicrodata = `<!-- BARRA VISIBLE · ol con microdata schema.org/BreadcrumbList
+     El último <li> NO tiene <a> y va con aria-current="page".
+     El separador es SVG decorativo (aria-hidden), nunca un enlace. -->
+<nav aria-label="Migas de pan">
+  <ol itemscope itemtype="https://schema.org/BreadcrumbList">
+
+    <li itemprop="itemListElement" itemscope
+        itemtype="https://schema.org/ListItem">
+      <a href="/" itemprop="item"><span itemprop="name">Inicio</span></a>
+      <meta itemprop="position" content="1" />
+    </li>
+
+    <svg aria-hidden="true" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+
+    <li itemprop="itemListElement" itemscope
+        itemtype="https://schema.org/ListItem">
+      <span aria-current="page" itemprop="name">Diseño de logotipo</span>
+      <meta itemprop="position" content="2" />
+    </li>
+
+  </ol>
+</nav>`
+
+const recetaJsonLd = `// lib/seo.ts — breadcrumbSchema(): el JSON-LD BreadcrumbList,
+// emitido UNA sola vez por buildSchema() (regla dura B3 del proyecto).
+// El componente Breadcrumbs.astro NO emite su propio script para
+// evitar el doble BreadcrumbList (anti-patrón).
+export function breadcrumbSchema(items: { name: string; path: string }[]) {
+  return {
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((c, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: c.name,
+      item: c.path ? new URL(c.path, SITE.url).toString() : undefined,
+    })),
+  };
+}
+
+// En buildSchema():
+if (data.breadcrumbs?.length) {
+  out.push({ '@context': CTX, ...breadcrumbSchema(data.breadcrumbs) });
+}`
+
+const recetaScroll = `/* MIGAS MÓVIL · una sola línea con scroll horizontal
+   Si los eslabones no caben, la lista se desliza en horizontal en
+   lugar de partirse en varias líneas. La barra de scroll se oculta
+   para que el efecto quede como en una app, sin línea gris. */
+
+.breadcrumb__list {
+  display: flex;
+  flex-wrap: nowrap;                      /* no multilínea */
+  overflow-x: auto;
+  scrollbar-width: none;                  /* Firefox */
+  -webkit-overflow-scrolling: touch;      /* inercia iOS */
+}
+.breadcrumb__list::-webkit-scrollbar { display: none; }   /* WebKit */
+.breadcrumb__item { white-space: nowrap; }                /* no parte la etiqueta */`
+
+const recetaTruncado = `/* MIGAS MÓVIL · truncar eslabones largos con ellipsis
+   Cada enlace tiene un ancho máximo y, si su texto se pasa,
+   se corta con «…». El nombre completo queda en el atributo
+   title para verlo al pasar el cursor o con teclado. */
+
+@media (max-width: 600px) {
+  .breadcrumb__link,
+  .breadcrumb__current {
+    max-width: 14ch;            /* ~14 caracteres por eslabón */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: bottom;
+  }
+}`
+
+const recetaColapsado = `<!-- MIGAS MUY PROFUNDAS · colapsar el medio con «…»
+     Con <details> nativo, sin una línea de JavaScript: las puntas
+     (Inicio y la página actual) siempre visibles; los intermedios
+     se expanden al tocar el «…». Accesible y progresivo. -->
+<nav aria-label="Migas de pan">
+  <ol class="breadcrumb__list">
+    <li><a href="/">Inicio</a></li>
+    <li aria-hidden="true">›</li>
+
+    <li>
+      <details class="bc-colapso">
+        <summary aria-label="Ver niveles intermedios">…</summary>
+        <a href="/productos">Productos</a>
+        <a href="/productos/uniformes">Uniformes</a>
+        <a href="/productos/uniformes/escolares">Escolares</a>
+      </details>
+    </li>
+
+    <li aria-hidden="true">›</li>
+    <li><span aria-current="page">Primaria</span></li>
+  </ol>
+</nav>`
+---
+
+<PageLayout
+  title="Las Migas de pan — la ruta de la página"
+  description="Qué son las migas de pan, para qué sirven, qué llevan (raíz, eslabones, separador, página actual) y dónde van — más cómo se construyen: una prop por página, microdata schema.org en la barra y JSON-LD BreadcrumbList centralizado en buildSchema."
+  pageType="page"
+  guia={false}
+  breadcrumbs={[{ label: 'Módulos', href: '/modulos' }, { label: 'Migas de pan' }]}
+>
+  <Hero
+    badge="Módulo del sitio · Migas de pan"
+    title="Las Migas de pan:"
+    accent="dónde estás y cómo volver"
+    subtitle="La línea fina bajo el header de las páginas internas. En un vistazo dicen en qué parte del sitio estás y dejan saltar a cualquier nivel superior, sin recurrir al botón «atrás» del navegador."
+    descRight={[
+      'Esta página no es una ficha técnica más: es el módulo entero, abierto y explicado. Qué problema resuelve y por qué se gana su lugar bajo el header, de qué piezas se compone, dónde encaja en el layout y cómo está construido —el recorrido completo, del criterio de diseño a la implementación.',
+      'Con una diferencia respecto a los módulos del chrome: las migas no son globales (como el topbar o el header) ni de contenido editorial (como el hero). Son la RUTA del visitante en la jerarquía. Cada página la declara una sola vez en su prop breadcrumbs, y de ahí salen a la vez la barra visible (con microdata) y el JSON-LD BreadcrumbList, que el layout emite una única vez —jamás duplicado—.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Definición"
+        title="¿Qué son las migas de pan?"
+        desc="La ruta de la página: una línea de eslabones que muestran, desde la home hasta donde estás, el camino jerárquico del sitio."
+        body={[
+          'Las migas de pan (breadcrumbs) son una línea breve y discreta que aparece bajo el header en las páginas internas. Listan, de izquierda a derecha, los niveles del sitio que llevan a la página actual: Inicio › Sección › Subsección › Página. Cada nivel superior es un enlace; el último, la página donde estás, no enlaza —ya estás ahí—.',
+          'Su nombre nace de cuento: las migajas que deja Hansel para volver a casa. La metáfora encaja: no son un menú ni una decoración —son el rastro que el visitante puede seguir hacia atrás—. Por eso reflejan la JERARQUÍA del sitio, no el historial del navegador: si llegaste a una página desde otra rama, las migas siguen mostrando su sitio natural en el árbol, no de dónde venías.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Función e importancia"
+        title="¿Para qué sirven?"
+        desc="Hacen tres trabajos a la vez: ubicar al visitante en la jerarquía, darle un camino rápido de vuelta a cualquier nivel y alimentar el rastro que el buscador muestra en los resultados."
+        body={[
+          'Su función es resolver, en una sola línea, dos preguntas que cualquier visitante trae cuando aterriza en una página interna —sea por un menú, por Google o por un enlace compartido—: «¿dónde estoy?» y «¿cómo subo un nivel?». Sin migas, esas dos respuestas obligan a explorar el menú o a darle al botón «atrás» con suerte; con ellas, son una mirada.',
+          'Y de propina, hacen un tercer trabajo invisible al ojo. La misma ruta, expresada como BreadcrumbList en el JSON-LD, le dice a Google la posición de la página dentro de la estructura del sitio. Cuando el motor cumple sus requisitos, esa cadena aparece bajo el título en los resultados, en lugar de la URL cruda —más limpio, más legible, mejor clic—. Una pieza pequeña con peso fuera de proporción a su tamaño.',
+        ]}
+      />
+      <div class="bene">
+        {beneficios.map((b) => (
+          <article class="bene__card">
+            <h3 class="bene__title">{b.titulo}</h3>
+            <p class="bene__desc">{b.desc}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3) ¿QUÉ LLEVA? — anatomía con ejemplo en vivo ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Anatomía"
+        title="¿Qué llevan las migas?"
+        desc="Cuatro piezas: la raíz (Inicio), cada eslabón intermedio (categoría, subcategoría), el separador entre ellos y la página actual al final."
+        body={[
+          'Cada pieza tiene un papel claro. La raíz ancla la ruta a la home —el punto de partida que todos esperan—; los eslabones intermedios son enlaces que dejan saltar a cualquier nivel superior; el separador es una flecha decorativa que marca la dirección de la jerarquía; y el último eslabón es la página actual: ni enlace ni separador después, porque ya llegaste.',
+          'Abajo, el ejemplo en vivo —réplica anotada de una ruta real (Inicio › Servicios › Diseño de logotipo)—. Cada punto numerado se desglosa en su tarjeta: qué resuelve y de qué dato del componente sale. A diferencia del hero, los textos no se inventan: son el rastro jerárquico de la página, declarado UNA sola vez en la prop breadcrumbs del layout.',
+        ]}
+      />
+
+      {/* Ejemplo en vivo de las migas (réplica a escala del componente Breadcrumbs). */}
+      <div class="bcx" role="img" aria-label="Ejemplo de migas de pan: raíz, eslabón intermedio, separador y página actual">
+        <nav class="bcx__bar" aria-hidden="true">
+          <span class="bcx__lnk"><span class="bcx__n">1</span>Inicio</span>
+          <span class="bcx__sep" aria-hidden="true">›</span>
+          <span class="bcx__lnk"><span class="bcx__n">2</span>Servicios</span>
+          <span class="bcx__sep bcx__sep--mark" aria-hidden="true"><span class="bcx__n bcx__n--mid">3</span>›</span>
+          <span class="bcx__cur"><span class="bcx__n">4</span>Diseño de logotipo</span>
+        </nav>
+      </div>
+
+      <div class="partes">
+        {partes.map((p) => (
+          <article class="parte">
+            <span class="parte__num">{p.n}</span>
+            <div class="parte__body">
+              <h3 class="parte__nombre">{p.nombre}</h3>
+              <p class="parte__que">{p.que}</p>
+              <p class="parte__dato"><span>Dato</span> <code>{p.dato}</code></p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3b) VARIANTES ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Variantes"
+        title="Otros diseños y aplicaciones"
+        desc="Las de esta plantilla son texto con separador, pero la ruta se viste distinto según el tipo de sitio y la profundidad del catálogo."
+        body={[
+          'No hay un único modelo: hay una misma idea —el rastro jerárquico de una página— que cada tipo de proyecto ajusta a su contexto. Una tienda con catálogo profundo gana con un icono casa y rutas colapsables; una app prefiere cápsulas que se tocan cómodo; un sitio editorial se queda con el clásico texto + chevron, sobrio y sin estorbar la lectura.',
+          'Abajo, seis variantes reales —cada una con su réplica en vivo y el tipo de proyecto donde rinde mejor—. Sirven para reconocer cuál encaja con tu caso y ver cómo el mismo molde cambia de cara sin perder su función: orientar y dejar volver.',
+        ]}
+      />
+
+      <GaleriaDisenos ariaLabel="Variantes de migas de pan">
+        {/* 0 · Texto con separador (la de esta plantilla) */}
+        <DisenoCard {...disenos[0]}>
+          <div class="bcv bcv--clasico" role="img" aria-label="Migas clásicas: texto con separador chevron">
+            <span class="bcv__lnk">Inicio</span>
+            <span class="bcv__sep" aria-hidden="true">›</span>
+            <span class="bcv__lnk">Servicios</span>
+            <span class="bcv__sep" aria-hidden="true">›</span>
+            <span class="bcv__cur">Diseño</span>
+          </div>
+        </DisenoCard>
+
+        {/* 1 · Con icono home */}
+        <DisenoCard {...disenos[1]}>
+          <div class="bcv bcv--home" role="img" aria-label="Migas con icono de casa en la raíz">
+            <span class="bcv__home" aria-hidden="true">⌂</span>
+            <span class="bcv__sep" aria-hidden="true">›</span>
+            <span class="bcv__lnk">Productos</span>
+            <span class="bcv__sep" aria-hidden="true">›</span>
+            <span class="bcv__lnk">Calzado</span>
+            <span class="bcv__sep" aria-hidden="true">›</span>
+            <span class="bcv__cur">Botas</span>
+          </div>
+        </DisenoCard>
+
+        {/* 2 · Cápsulas (pills) */}
+        <DisenoCard {...disenos[2]}>
+          <div class="bcv bcv--pills" role="img" aria-label="Migas en cápsulas con chevron entre ellas">
+            <span class="bcv__pill">Panel</span>
+            <span class="bcv__sep" aria-hidden="true">›</span>
+            <span class="bcv__pill">Clientes</span>
+            <span class="bcv__sep" aria-hidden="true">›</span>
+            <span class="bcv__pill bcv__pill--cur">Detalle</span>
+          </div>
+        </DisenoCard>
+
+        {/* 3 · Compactas «atrás + actual» */}
+        <DisenoCard {...disenos[3]}>
+          <div class="bcv bcv--back" role="img" aria-label="Migas compactas: flecha atrás y página actual">
+            <span class="bcv__back" aria-hidden="true">←</span>
+            <span class="bcv__lnk">Catálogo</span>
+            <span class="bcv__sp"></span>
+            <span class="bcv__cur bcv__cur--r">Bota industrial</span>
+          </div>
+        </DisenoCard>
+
+        {/* 4 · Colapsadas con «…» */}
+        <DisenoCard {...disenos[4]}>
+          <div class="bcv bcv--col" role="img" aria-label="Migas con niveles intermedios colapsados en puntos suspensivos">
+            <span class="bcv__lnk">Inicio</span>
+            <span class="bcv__sep" aria-hidden="true">›</span>
+            <span class="bcv__ellip" aria-hidden="true">…</span>
+            <span class="bcv__sep" aria-hidden="true">›</span>
+            <span class="bcv__lnk">Uniformes</span>
+            <span class="bcv__sep" aria-hidden="true">›</span>
+            <span class="bcv__cur">Primaria</span>
+          </div>
+        </DisenoCard>
+
+        {/* 5 · Truncado con tooltip */}
+        <DisenoCard {...disenos[5]}>
+          <div class="bcv bcv--trunc" role="img" aria-label="Migas con etiquetas largas truncadas con ellipsis">
+            <span class="bcv__lnk">Inicio</span>
+            <span class="bcv__sep" aria-hidden="true">›</span>
+            <span class="bcv__lnk bcv__lnk--tr">Documentación técn…</span>
+            <span class="bcv__sep" aria-hidden="true">›</span>
+            <span class="bcv__cur bcv__cur--tr">Guía de inst…</span>
+            <span class="bcv__tip" aria-hidden="true">Documentación técnica</span>
+          </div>
+        </DisenoCard>
+      </GaleriaDisenos>
+    </div>
+  </section>
+
+  {/* ── 3c) RESPONSIVE Y MÓVIL ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="Cómo se comportan en el teléfono"
+        desc="La pantalla del teléfono no perdona una ruta larga. Por debajo de 640 px las migas dejan de fluir en multilínea y eligen un patrón: scroll horizontal, truncado, colapso o «atrás + actual»."
+        body={[
+          'En escritorio las migas viven cómodas en una sola línea, con espacio de sobra. En el teléfono, una ruta de cuatro o cinco eslabones se parte en dos y tres líneas si la dejas fluir —y de paso roba altura al contenido—. Por eso conviene elegir, según el sitio, una estrategia: hacerlas scrollables, truncar cada eslabón, colapsar el medio o cambiar al patrón compacto «← atrás + página actual».',
+          'Las cuatro están abajo, cada una con su vista en el teléfono y una receta comentada lista para adaptar. La que ya trae el componente de esta plantilla es la primera (flex-wrap natural en dos líneas, que es lo más seguro cuando la ruta es corta). Las otras tres se aplican como capa adicional en proyectos con catálogos profundos o títulos largos.',
+        ]}
+      />
+
+      <div class="pats">
+        {/* 1 · Scroll horizontal */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Migas en una sola línea con scroll horizontal en móvil">
+              <div class="bcm bcm--bar">
+                <span class="bcm__row bcm__row--scroll">
+                  <span>Inicio</span><span class="bcm__sep">›</span>
+                  <span>Productos</span><span class="bcm__sep">›</span>
+                  <span>Calzado</span><span class="bcm__sep">›</span>
+                  <span>Industrial</span><span class="bcm__sep">›</span>
+                  <b>Bota dieléctrica</b>
+                </span>
+              </div>
+              <span class="bcm__hint" aria-hidden="true">⇢ desliza para ver más</span>
+              <div class="skel"><span></span><span></span><span></span></div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · Una sola línea con scroll</h3>
+            <p class="pat__desc">Si la ruta no cabe, en lugar de partirse en varias líneas se vuelve <strong>scrollable</strong> en horizontal —como una app—. Se ocultan las barras de scroll para que el efecto quede limpio y se mantiene la inercia táctil en iOS.</p>
+            <Receta titulo="CSS · scroll horizontal sin barra" lang="css" code={recetaScroll} />
+          </div>
+        </article>
+
+        {/* 2 · Truncar con ellipsis */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Migas con etiquetas truncadas con puntos suspensivos">
+              <div class="bcm bcm--bar">
+                <span class="bcm__row">
+                  <span>Inicio</span><span class="bcm__sep">›</span>
+                  <span class="bcm__tr">Document…</span><span class="bcm__sep">›</span>
+                  <b class="bcm__tr">Guía de in…</b>
+                </span>
+              </div>
+              <div class="skel"><span></span><span></span><span></span><span></span></div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · Truncar eslabones largos</h3>
+            <p class="pat__desc">Cada enlace recibe un ancho máximo (≈ 14 caracteres) y, si su etiqueta se pasa, se corta con «…». El nombre completo queda accesible en el atributo <code>title</code> y se ve al pasar el cursor o con el teclado.</p>
+            <Receta titulo="CSS · ellipsis por eslabón" lang="css" code={recetaTruncado} />
+          </div>
+        </article>
+
+        {/* 3 · Colapso del medio */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Migas con niveles intermedios colapsados en puntos suspensivos">
+              <div class="bcm bcm--bar">
+                <span class="bcm__row">
+                  <span>Inicio</span><span class="bcm__sep">›</span>
+                  <span class="bcm__ellip">…</span><span class="bcm__sep">›</span>
+                  <span>Uniformes</span><span class="bcm__sep">›</span>
+                  <b>Primaria</b>
+                </span>
+              </div>
+              <span class="bcm__hint" aria-hidden="true">toca «…» para ver los niveles intermedios</span>
+              <div class="skel"><span></span><span></span><span></span></div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · Colapsar el medio</h3>
+            <p class="pat__desc">Cuando la jerarquía es profunda, los niveles intermedios se ocultan tras un «…» que se expande al tocar. Las puntas (Inicio y la página actual) quedan siempre visibles: contexto suficiente sin saturar la pantalla. Se resuelve con <code>&lt;details&gt;</code> nativo, sin JavaScript.</p>
+            <Receta titulo="HTML · &lt;details&gt; colapsando el medio" lang="html" code={recetaColapsado} />
+          </div>
+        </article>
+
+        {/* 4 · «atrás + actual» */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Migas compactas en móvil: flecha atrás al nivel padre y nombre de la página actual">
+              <div class="bcm bcm--bar">
+                <span class="bcm__row bcm__row--back">
+                  <span class="bcm__back" aria-hidden="true">←</span>
+                  <span class="bcm__lnk">Catálogo</span>
+                  <span class="bcm__sp"></span>
+                  <b class="bcm__r">Bota industrial</b>
+                </span>
+              </div>
+              <div class="skel"><span></span><span></span><span></span><span></span></div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">4 · «← Atrás + página actual»</h3>
+            <p class="pat__desc">En catálogos y detalle de producto, la ruta larga se reemplaza en móvil por una flecha al nivel inmediato superior y, a la derecha, el nombre de la página actual. Mantiene el camino de vuelta sin pedirle al texto que ocupe dos líneas. El rastro completo regresa en escritorio.</p>
+            <Receta titulo="CSS · alterna patrón con @media" lang="css" code={`/* En el teléfono, oculta los niveles intermedios y muestra
+   solo el botón ← + la página actual. En escritorio reaparece
+   la ruta completa. Mismo HTML, dos comportamientos. */
+
+@media (max-width: 600px) {
+  .breadcrumb__list { justify-content: space-between; }
+  .breadcrumb__item:not(:first-child):not(:last-child),
+  .breadcrumb__sep { display: none; }       /* solo padre + actual */
+  .breadcrumb__item:first-child a::before {
+    content: '← ';                          /* flecha atrás */
+  }
+}`} />
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 4) ¿DÓNDE VA? ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Posición"
+        title="¿Dónde se colocan?"
+        desc="En las páginas internas, justo bajo el header y antes del hero o del título. Una sola vez por página; nunca en la home, donde no aportan."
+        body={[
+          'El orden del armado es deliberado y se respeta en todo el sitio. PageLayout apila el chrome siempre igual: primero el topbar (la barra utilitaria), debajo el header (marca y navegación), enseguida las migas y, recién entonces, el contenido. Las migas viven en una franja sutil —fondo de superficie con un hilo de borde inferior—, lo bastante presentes para encontrarse, lo bastante calladas para no competir con el hero.',
+          'No van en la home: ahí no hay nivel superior y serían ruido. Tampoco encima del header o intercaladas con el contenido: su sitio es la franja entre el chrome y el cuerpo, donde el ojo ya las espera. En esta plantilla, basta con que la página pase la prop <code>breadcrumbs</code> al layout: si está, se pinta la barra y se emite el BreadcrumbList; si no, ninguno de los dos aparece —cero ruido en páginas que no las necesitan—.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 5) CÓMO SE ARMA ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Implementación"
+        title="Cómo están construidas"
+        desc="Una sola declaración por página alimenta dos consumidores: el componente visible (con microdata) y el JSON-LD BreadcrumbList, emitido una única vez por el layout."
+        body={[
+          'Las migas viven en Breadcrumbs.astro y se pintan automáticamente cuando una página declara la prop breadcrumbs en su layout. Esa prop es una lista mínima: cada entrada lleva un label y, salvo la última (la página actual), un href. El componente antepone la raíz «Inicio» en el visual, así que la página no necesita repetirla; el último eslabón —sin href— se marca con aria-current="page" y queda en color de tinta, sin enlace.',
+          'Aquí entra una regla dura del proyecto (B3, anti-patrón confirmado en otros codebases): el BreadcrumbList del JSON-LD se emite UNA sola vez. Lo hace buildSchema() en lib/seo.ts cuando recibe la prop, no el componente visual —si los dos lo emitieran, el rich result de Google se duplicaría y los validadores marcarían error—. Por eso la barra del Breadcrumbs.astro lleva microdata (itemtype/itemprop) en el HTML, suficiente para acompañar el JSON-LD sin chocar con él.',
+        ]}
+      />
+
+      <div class="recetas">
+        <Receta titulo="Astro · la prop breadcrumbs de la página" lang="astro" code={recetaPagina} />
+        <Receta titulo="HTML · barra visible con microdata" lang="html" code={recetaMicrodata} />
+        <Receta titulo="TypeScript · BreadcrumbList centralizado (lib/seo.ts)" lang="ts" code={recetaJsonLd} />
+      </div>
+
+      <div class="prose">
+        <p>
+          En concreto: <code>PageLayout</code> recibe <code>breadcrumbs</code>, transforma la lista al
+          formato del schema (<code>{`{ name, path }`}</code>) anteponiendo <code>{`{ name: 'Inicio', path: '/' }`}</code>,
+          la pasa a <code>BaseLayout</code> dentro de <code>schemaData</code>, y a la vez se la entrega al
+          componente visual <code>Breadcrumbs.astro</code> para que pinte la barra.
+        </p>
+        <p>
+          El componente visual lleva un <strong>modo guía</strong> opcional (<code>guia=&#123;true&#125;</code>) que
+          pinta una ruta de EJEMPLO con marcadores numerados y una leyenda debajo —es lo que viste arriba
+          a escala—, pensado para páginas que documentan el sitio. En producción se usa con
+          <code>guia=&#123;false&#125;</code> (lo que hace esta página de la serie): la ruta REAL, sin marcas ni
+          leyendas, con su microdata BreadcrumbList. El JSON-LD se sigue emitiendo donde corresponde:
+          en el <code>&lt;head&gt;</code>, una sola vez por <code>buildSchema()</code>.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 6) BUENAS PRÁCTICAS ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Buenas prácticas"
+        title="Qué hacer y qué evitar"
+        desc="La diferencia entre unas migas que orientan y unas que confunden está en un puñado de hábitos —y en no caer dos veces en el mismo error de duplicar el schema—."
+        body={[
+          'Ninguno de estos hábitos es capricho: salen de mirar cómo usa la gente las migas y de los requisitos del rich result en Google. Unas migas que funcionan reflejan la jerarquía del sitio, no el historial; tienen etiquetas cortas y reconocibles; y dejan claro que el último eslabón es la página actual —sin enlace, con aria-current—.',
+          'Donde el equipo se tropieza más seguido es en duplicar el BreadcrumbList del JSON-LD: lo emiten en el componente Y en el layout. Google marca duplicado, y a veces no muestra ninguno. La plantilla lo previene de fábrica (el componente NO emite script), pero conviene saberlo si copias trozos a otro proyecto. Abajo, lo que conviene y lo que conviene evitar, enfrentados.',
+        ]}
+      />
+      <div class="dodont">
+        <article class="dd dd--si">
+          <h3 class="dd__title"><span class="dd__icon" aria-hidden="true">✓</span> Sí conviene</h3>
+          <ul class="dd__list">
+            {sis.map((s) => <li>{s}</li>)}
+          </ul>
+        </article>
+        <article class="dd dd--no">
+          <h3 class="dd__title"><span class="dd__icon" aria-hidden="true">✕</span> Mejor evita</h3>
+          <ul class="dd__list">
+            {nos.map((s) => <li>{s}</li>)}
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* Cierre */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+</PageLayout>
+
+<style>
+  /* Utilidades estructurales (tokens.css = fuente única; scoped por página). */
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* ── Beneficios ── */
+  .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .bene { grid-template-columns: repeat(3, 1fr); } }
+  .bene__card { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); }
+  .bene__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .bene__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Ejemplo en vivo de las migas (réplica a escala del componente) ── */
+  .bcx {
+    margin-top: var(--sp-6); padding: var(--sp-5) var(--sp-4);
+    background: var(--c-white); border: 1px solid var(--c-border);
+    border-radius: var(--radius-md); box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    overflow-x: auto;
+  }
+  .bcx__bar { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); font-size: var(--text-sm); white-space: nowrap; }
+  .bcx__lnk { display: inline-flex; align-items: center; gap: 4px; color: var(--c-ink-2); }
+  .bcx__cur { display: inline-flex; align-items: center; gap: 4px; color: var(--c-ink); font-weight: var(--weight-medium); }
+  .bcx__sep { color: var(--c-muted); }
+  .bcx__sep--mark { display: inline-flex; align-items: center; gap: 4px; }
+  .bcx__n {
+    flex-shrink: 0; display: inline-grid; place-items: center; width: 18px; height: 18px;
+    border-radius: var(--radius-full); background: var(--c-primary); color: #fff;
+    font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: .6875rem;
+  }
+  .bcx__n--mid { background: var(--c-muted); }
+
+  /* ── Cards de las 4 partes ── */
+  .partes { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-5); }
+  @media (min-width: 600px) { .partes { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1000px) { .partes { grid-template-columns: repeat(4, 1fr); } }
+  .parte { display: flex; gap: var(--sp-3); align-items: start; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-4); }
+  .parte__num { flex-shrink: 0; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: var(--radius-full); background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: var(--text-sm); }
+  .parte__body { display: grid; gap: 4px; min-width: 0; }
+  .parte__nombre { margin: 0; font-family: var(--font-heading); font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .parte__que { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
+  .parte__dato { margin: 4px 0 0; display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--text-xs); color: var(--c-muted); }
+  .parte__dato span { text-transform: uppercase; letter-spacing: .06em; font-weight: var(--weight-semibold); }
+  .parte__dato code, .prose code {
+    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace; font-size: .85em;
+    background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+    padding: .05em .4em; color: var(--c-primary-dark);
+  }
+
+  /* ── Recetas de la sección «Cómo se arma» (apiladas, ancho completo) ── */
+  .recetas { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
+
+  /* ── Prose técnica ── */
+  .prose { max-width: 75ch; margin-top: var(--sp-6); }
+  .prose p { margin: 0 0 var(--sp-4); font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .prose strong { color: var(--c-ink); font-weight: var(--weight-semibold); }
+  .prose em { color: var(--c-ink-2); font-style: italic; }
+
+  /* ── Sí / No ── */
+  .dodont { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .dodont { grid-template-columns: 1fr 1fr; } }
+  .dd { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); }
+  .dd__title { margin: 0 0 var(--sp-3); display: flex; align-items: center; gap: var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .dd__icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-full); font-size: var(--text-sm); }
+  .dd--si .dd__icon { background: rgba(34,197,94,.14); color: #16a34a; }
+  .dd--no .dd__icon { background: rgba(239,68,68,.12); color: #dc2626; }
+  .dd__list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-2); }
+  .dd__list li { position: relative; padding-left: var(--sp-5); font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
+  .dd__list li::before { content: ''; position: absolute; left: 0; top: .55em; width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--c-muted); }
+
+  /* ── Mockups de variantes de migas (dentro de <GaleriaDisenos>) ──────────── */
+  .bcv {
+    position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    width: 100%; min-height: 44px; padding: var(--sp-3) var(--sp-3);
+    border-radius: var(--radius-sm); border: 1px solid var(--c-border); background: var(--c-white);
+    color: var(--c-ink); font-size: var(--text-xs); white-space: nowrap; overflow: hidden;
+  }
+  .bcv__lnk { color: var(--c-ink-2); }
+  .bcv__cur { color: var(--c-ink); font-weight: var(--weight-semibold); }
+  .bcv__sep { color: var(--c-muted); }
+  .bcv__home { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: var(--radius-sm); background: var(--c-surface); border: 1px solid var(--c-border); color: var(--c-ink); font-size: 14px; }
+
+  /* 2 · Pills */
+  .bcv--pills .bcv__pill { padding: .2rem .6rem; border-radius: var(--radius-full); background: var(--c-surface); border: 1px solid var(--c-border); color: var(--c-ink-2); }
+  .bcv--pills .bcv__pill--cur { background: var(--c-ink); color: #fff; border-color: var(--c-ink); }
+
+  /* 3 · Back compactas */
+  .bcv--back { justify-content: flex-start; }
+  .bcv__back { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: var(--radius-full); background: var(--c-surface); border: 1px solid var(--c-border); color: var(--c-ink); font-size: 13px; }
+  .bcv__sp { margin-left: auto; }
+  .bcv__cur--r { color: var(--c-ink); font-weight: var(--weight-semibold); }
+
+  /* 4 · Colapsadas */
+  .bcv__ellip { display: inline-grid; place-items: center; min-width: 22px; height: 18px; padding: 0 .35rem; border-radius: var(--radius-full); background: var(--c-surface); border: 1px solid var(--c-border); color: var(--c-ink-2); font-weight: var(--weight-bold); letter-spacing: 1px; }
+
+  /* 5 · Truncado con tooltip */
+  .bcv--trunc { padding-bottom: var(--sp-5); }
+  .bcv__lnk--tr, .bcv__cur--tr { max-width: 16ch; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: bottom; }
+  .bcv__tip { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); padding: .1rem .5rem; border-radius: var(--radius-sm); background: var(--c-ink); color: #fff; font-size: 10px; white-space: nowrap; }
+
+  /* ── Sección Responsive: teléfono | explicación + receta ─────────────────── */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pat__desc code { font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace; font-size: .85em; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
+  .pat__desc strong { color: var(--c-ink); font-weight: var(--weight-semibold); }
+
+  /* ── Mockups MÓVIL (dentro de <MarcoMovil>) ──────────────────────────────── */
+  .bcm--bar { padding: 10px 12px; background: var(--c-surface); border-bottom: 1px solid var(--c-border); }
+  .bcm__row { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--c-ink-2); max-width: 100%; }
+  .bcm__row b { color: var(--c-ink); font-weight: var(--weight-semibold); }
+  .bcm__row--scroll { flex-wrap: nowrap; overflow-x: auto; white-space: nowrap; padding-bottom: 2px; }
+  .bcm__row--scroll::-webkit-scrollbar { display: none; }
+  .bcm__row--back { width: 100%; }
+  .bcm__sep { color: var(--c-muted); }
+  .bcm__tr { max-width: 9ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: bottom; }
+  .bcm__ellip { display: inline-grid; place-items: center; min-width: 20px; height: 16px; padding: 0 .3rem; border-radius: var(--radius-full); background: var(--c-white); border: 1px solid var(--c-border); color: var(--c-ink-2); font-weight: var(--weight-bold); letter-spacing: 1px; }
+  .bcm__back { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: var(--radius-full); background: var(--c-white); border: 1px solid var(--c-border); color: var(--c-ink); font-size: 13px; }
+  .bcm__lnk { color: var(--c-ink-2); }
+  .bcm__sp { margin-left: auto; }
+  .bcm__r { color: var(--c-ink); font-weight: var(--weight-semibold); }
+  .bcm__hint { display: block; padding: 6px 12px 0; font-size: 9px; color: var(--c-muted); }
+
+  /* Esqueleto de página (relleno bajo las migas). */
+  .skel { display: grid; gap: 9px; padding: 14px 13px; }
+  .skel span { height: 10px; border-radius: 5px; background: var(--c-surface); }
+  .skel span:nth-child(1) { width: 72%; } .skel span:nth-child(2) { width: 100%; }
+  .skel span:nth-child(3) { width: 88%; } .skel span:nth-child(4) { width: 56%; }
+</style>
