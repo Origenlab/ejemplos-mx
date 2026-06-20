@@ -14,6 +14,7 @@ import SectionMenu from "@components/SectionMenu.astro";
 import SectionHeading from "@components/SectionHeading.astro";
 import CategoryCard from "@components/CategoryCard.astro";
 import CategoryDetail from "@components/CategoryDetail.astro";
+import CompanyAbout from "@components/CompanyAbout.astro";
 import FAQAccordion from "@components/FAQAccordion.astro";
 import CTABanner from "@components/CTABanner.astro";
 import GuiaNota from "@components/GuiaNota.astro";
@@ -129,6 +130,37 @@ const cat3Detalle = {
       { src: "/images/showcase/texto-venta-contenido-markdown.avif", alt: "Los enlaces y el botón al cierre del texto de venta" },
     ],
   },
+};
+
+// ── Sobre la empresa (módulo de confianza: qué/cómo + cifras) ──
+// Contenido DEMO de la plantilla-guía. En un sitio real: cifras REALES (nunca
+// inventadas, regla del sistema) y datos del negocio desde site.ts.
+const empresa = {
+  eyebrow: "La empresa",
+  title: "Qué hacemos y",
+  titleAccent: "cómo lo hacemos",
+  lead: "El bloque que cuenta quién está detrás del negocio: a qué se dedica, cómo trabaja y por qué se puede confiar en él. Es de los más decisivos de la página —la gente le compra a quien entiende y le da confianza—.",
+  que: {
+    title: "Qué hacemos",
+    body: [
+      "Aquí va, en lenguaje claro y sin tecnicismos, a qué se dedica el negocio y para quién: el producto o servicio principal, el problema que resuelve y el tipo de cliente al que sirve. Dos o tres frases bastan para que cualquiera entienda en segundos qué ofreces y si está en el lugar correcto.",
+      "Es la base de la confianza: nadie le compra a lo que no entiende. Habla de beneficios concretos, no de una lista de tareas, e incluye con naturalidad la palabra clave de tu actividad.",
+    ],
+  },
+  como: {
+    title: "Cómo lo hacemos",
+    pillars: [
+      { title: "El método", desc: "Resume tu forma de trabajar en pasos claros: cómo entregas, en qué te apoyas y qué te hace distinto del resto." },
+      { title: "La prueba", desc: "Respáldalo con hechos —procesos, materiales, tiempos, garantías— en vez de adjetivos vacíos como «los mejores»." },
+      { title: "La cercanía", desc: "Habla como una persona, no como un folleto: trato directo, lenguaje claro y solo la promesa que de verdad puedes cumplir." },
+    ],
+  },
+  stats: [
+    { value: "+10", label: "años de experiencia" },
+    { value: "+500", label: "proyectos entregados" },
+    { value: "98%", label: "clientes que repiten" },
+    { value: "24 h", label: "tiempo de respuesta" },
+  ],
 };
 
 // ── Menú de secciones (barra "section nav" bajo el hero) ─────────────────────
@@ -427,6 +459,50 @@ const faqs: { question: string; answer: string }[] = [
           izquierda · galería derecha, sin alternar): el título y la imagen principal
           salen de <code>SHOWCASE[i]</code> y el resto —párrafos, puntos y galería— de
           su objeto <code>catNDetalle</code> en esta misma página. En móvil se apila.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ═══ 2d) SOBRE LA EMPRESA — bloque de confianza (qué/cómo + cifras) ═══
+       Módulo CompanyAbout: autocontenido (header + 2 columnas + cifras + CTA).
+       Datos demo en `empresa` (arriba). En un sitio real: cifras REALES desde site.ts. */}
+  <section class="section section--surface">
+    <div class="container">
+      <CompanyAbout
+        eyebrow={empresa.eyebrow}
+        title={empresa.title}
+        titleAccent={empresa.titleAccent}
+        lead={empresa.lead}
+        que={empresa.que}
+        como={empresa.como}
+        stats={empresa.stats}
+        cta={{ label: "Hablar con nosotros", href: waLink, external: true }}
+      />
+      <GuiaNota titulo="Componente CompanyAbout (sobre la empresa)" archivo="src/components/CompanyAbout.astro · src/pages/index.astro">
+        <p>
+          Responde la pregunta que todo visitante se hace antes de comprar:
+          <strong>¿quién está detrás y puedo confiar?</strong> Por eso es de los
+          bloques más indispensables —en muchos giros pesa más que el catálogo—. Va
+          en la home y, sobre todo, en una página propia «Nosotros». Junta tres
+          piezas: <strong>qué haces</strong> (propuesta de valor),
+          <strong>cómo lo haces</strong> (tu método y diferencia) y la
+          <strong>prueba</strong> (cifras y hechos).
+        </p>
+        <p>
+          Regla de oro: <strong>hechos, no adjetivos</strong>. «10 años y 500
+          proyectos» convence; «somos los mejores» no dice nada. Las cifras de aquí
+          son de EJEMPLO: cámbialas por las tuyas <strong>reales</strong> —nunca
+          inventes números, es regla del sistema—. Escribe para una persona, mete con
+          naturalidad la palabra clave de tu actividad y cierra con una sola acción.
+        </p>
+        <p>
+          Apoya tu <strong>marketing</strong> (propuesta de valor + prueba social en
+          un mismo bloque) y tu <strong>posicionamiento</strong>: es el contenido de
+          experiencia y confianza que los buscadores valoran para entender quién
+          eres, y el lugar natural del <em>schema de Organización</em> que ya emite el
+          sistema. Edita texto y cifras en el objeto <code>empresa</code> de esta
+          página; el diseño vive en el componente.
         </p>
       </GuiaNota>
     </div>
