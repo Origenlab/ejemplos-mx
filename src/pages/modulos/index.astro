@@ -56,7 +56,7 @@ const MOD_META: Record<string, { image: string; chips: string[] }> = {
   'header':              { image: `${IMG}/productos/desarrollo-web-astro-profesional.avif`,        chips: ['Logotipo', 'Navegación', 'Menú móvil'] },
   'breadcrumbs':         { image: `${IMG}/showcase/enlaces-internos-navegacion-web.avif`,          chips: ['Ruta', 'Jerarquía', 'Volver'] },
   'hero':                { image: `${IMG}/showcase/jerarquia-titulos-seo-pagina-web.avif`,         chips: ['H1 único', 'Subtítulo', 'Llamada'] },
-  'menu-secciones':      { image: `${IMG}/servicios/implementacion-deploy-sitio-astro.avif`,       chips: ['Botones', 'Saltos', 'CTA'] },
+  'section-menu':        { image: `${IMG}/servicios/implementacion-deploy-sitio-astro.avif`,       chips: ['Botones', 'Saltos', 'CTA'] },
   'titulo-seccion':      { image: `${IMG}/showcase/texto-venta-contenido-markdown.avif`,           chips: ['Eyebrow', 'Título', 'Descripción'] },
   'cards-categoria':     { image: `${IMG}/productos/componentes-plantilla-astro-markdown.avif`,    chips: ['Foto', 'Título', 'Chips'] },
   'categoria-a-fondo':   { image: `${IMG}/productos/sitio-web-rapido-astro.avif`,                  chips: ['Dos columnas', 'Galería', 'CTA'] },
@@ -153,7 +153,7 @@ const AFONDO: Record<string, { body: string[]; points: string[] }> = {
       '«El hero presenta, la franja convierte»: los CTAs viven debajo',
     ],
   },
-  'menu-secciones': {
+  'section-menu': {
     body: [
       'Es la franja de botones que va justo bajo el hero: atajos a las secciones de la página para que el visitante salte a lo que busca sin volver al header. Es el patrón de los catálogos —entras y, de inmediato, ves por dónde moverte—.',
       'Es data-driven: los botones se generan desde NAV, la misma fuente del header, así que agregar o quitar una sección actualiza el menú y esta franja a la vez. El último botón es el CTA de conversión (WhatsApp), armado con waUrl(): de nuevo, el hero presenta y la franja convierte.',

@@ -238,7 +238,7 @@ export const MODULOS: readonly Modulo[] = [
   { slug: 'header',              label: 'Header',                  href: '/modulos/header',              desc: 'Logotipo + navegación principal: el mapa del sitio, en cada página.', estado: 'listo' },
   { slug: 'breadcrumbs',         label: 'Migas de pan',            href: '/modulos/breadcrumbs',         desc: 'Dónde estás y el camino de vuelta: el rastro de navegación en páginas internas.', estado: 'listo' },
   { slug: 'hero',                label: 'Hero',                    href: '/modulos/hero',                desc: 'La primera impresión: un H1 único con tu propuesta de valor.', estado: 'listo' },
-  { slug: 'menu-secciones',      label: 'Menú de secciones',       href: '/modulos/menu-secciones',      desc: 'La franja de botones bajo el hero para saltar a cada sección.', estado: 'proximo' },
+  { slug: 'section-menu',        label: 'Menú de secciones',       href: '/modulos/section-menu',        desc: 'La franja de botones bajo el hero para saltar a cada sección.', estado: 'listo' },
   { slug: 'titulo-seccion',      label: 'Título de sección',       href: '/modulos/titulo-seccion',      desc: 'El encabezado que abre cada bloque: eyebrow, título y descripción.', estado: 'proximo' },
   { slug: 'cards-categoria',     label: 'Cards de categoría',      href: '/modulos/cards-categoria',     desc: 'La vitrina del catálogo: cada categoría como una tarjeta con foto.', estado: 'proximo' },
   { slug: 'categoria-a-fondo',   label: 'Categoría a fondo',       href: '/modulos/categoria-a-fondo',   desc: 'Dos columnas que amplían una categoría con texto y galería.', estado: 'proximo' },

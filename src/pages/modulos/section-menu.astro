@@ -1,0 +1,851 @@
+---
+// ============================================================================
+// /modulos/section-menu — PÁGINA DEL MÓDULO «Menú de secciones».
+// ----------------------------------------------------------------------------
+// Quinta de la serie /modulos/* (topbar · header · breadcrumbs · hero · menu),
+// MISMO molde (docs/MODULOS.md). NOTA propia del menú de secciones: a diferencia
+// del hero (contenido per-página) o del topbar/header (chrome global), esta
+// franja es un MÓDULO DE NAVEGACIÓN compartido. En la home se alimenta de NAV
+// (la MISMA fuente que el Header) para que «agregar una sección al menú =
+// agregar una sección a la franja»; en páginas internas se reutiliza como
+// cierre/interlinking con OTROS datos. La regla canónica «el hero presenta,
+// la franja convierte» vive aquí: el último botón siempre es el CTA (WhatsApp,
+// armado con waUrl(WA_MESSAGES.cotizar) — regla D4, nunca wa.me a mano).
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+
+// Menú de cierre (mismo patrón que el resto de la serie): navegación + sitio.
+// «El menú reparte; el último botón —WhatsApp— convierte».
+const cierreItems = [
+  { label: 'Todos los módulos', href: '/modulos', sub: 'Índice de la serie' },
+  { label: 'Módulo Hero', href: '/modulos/hero', sub: 'La primera impresión' },
+  { label: 'Módulo Header', href: '/modulos/header', sub: 'Logo y navegación' },
+  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
+]
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), sub: 'Respuesta inmediata', external: true }
+
+// Las 4 piezas de la franja — mapean con los pines del ejemplo en vivo.
+const partes = [
+  {
+    n: 1,
+    nombre: 'Botón de sección',
+    que: 'Un atajo a una de las secciones grandes del sitio (Productos, Servicios, Cobertura, Blog…). Llena su celda, se centra y muestra el destino con una sola etiqueta corta. En la home, esta lista de botones se genera desde NAV: el mismo array que alimenta el header.',
+    dato: 'items[].label · href',
+  },
+  {
+    n: 2,
+    nombre: 'Sublabel',
+    que: 'Una micro-descripción debajo de la etiqueta («Catálogo del sitio», «Lo que ofreces»). Aclara qué hay detrás del botón sin obligar a entrar; es opcional, pero hace mucho con dos o tres palabras.',
+    dato: 'items[].sub',
+  },
+  {
+    n: 3,
+    nombre: 'Divisores',
+    que: 'Las líneas que separan los botones. En móvil son horizontales (apilados); en escritorio (≥768 px), verticales (una sola fila). Se dibujan con border de las celdas, sin pintar el botón mismo: la barra queda continua.',
+    dato: '.secmenu__cell · border',
+  },
+  {
+    n: 4,
+    nombre: 'CTA de conversión',
+    que: 'El último botón, en color de marca. No es una sección más: es la acción —Cotizar por WhatsApp—. Su enlace no se teclea: lo arma waUrl() con el mensaje precargado de WA_MESSAGES, para que la conversación empiece con contexto.',
+    dato: 'cta · waUrl(WA_MESSAGES.cotizar)',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Atajo a la sección que busca',
+    desc: 'En lugar de obligar a volver al menú del header, el visitante encuentra los destinos clave —catálogo, servicios, blog— justo donde el ojo ya bajó después del hero. Menos pasos, menos rebote, más páginas vistas por sesión.',
+  },
+  {
+    titulo: 'Conversión a un clic',
+    desc: 'El último botón es Cotizar por WhatsApp, destacado en color de marca. La regla canónica del sitio se aplica literalmente aquí: «el hero presenta, la franja convierte». Si el visitante decidió, no tiene que bajar a buscar dónde escribir.',
+  },
+  {
+    titulo: 'Una sola fuente, cero desincronización',
+    desc: 'En la home los botones nacen de NAV —el mismo array que alimenta el header—. Agregar una sección al menú la añade automáticamente a la franja; quitarla la borra. El menú y la franja siempre dicen lo mismo, sin mantenerse a mano.',
+  },
+]
+
+const sis = [
+  'Deriva los botones de la MISMA fuente que el header (NAV en site.ts); no escribas una segunda lista a mano.',
+  'Mantén el CTA de conversión como ÚLTIMO botón y arma su enlace con waUrl() (regla D4).',
+  'Limita la franja a 4–6 botones: si la lista crece, gana ruido y pierde atajo.',
+  'Mantén la etiqueta corta y reconocible («Productos», no «Nuestro catálogo de productos»).',
+  'Apila en móvil de fábrica: una fila a ancho completo por botón, con buen objetivo táctil.',
+]
+const nos = [
+  'No metas el logotipo ni el menú principal aquí: este módulo NO sustituye al header.',
+  'No conviertas la franja en un mini-menú con todas las secciones del sitio: son ATAJOS, no un mapa.',
+  'No pongas dos CTAs de conversión compitiendo: uno solo, al final, con color de marca.',
+  'No tecles el wa.me a mano en el CTA: usa waUrl(WA_MESSAGES.cotizar) (regla D4).',
+  'No la dupliques inmediatamente bajo el header: su sitio es debajo del hero, no encima de él.',
+]
+
+// Variantes de menú de secciones (galería). Réplica en vivo abajo, mismo orden.
+// Las 6 son configuraciones REALES del componente (items + cta con valores
+// distintos). Donde una variante requiere modificar el componente, se anota
+// como «extensión propuesta» y se señala en su tarjeta y en GuiaNota.
+const disenos = [
+  {
+    nombre: 'Cuádruple con CTA (esta plantilla)',
+    tag: 'Negocio · Servicios',
+    desc: 'El de la home: cuatro botones de sección + un CTA al final en color de marca, repartidos por igual en una sola fila en escritorio y apilados en móvil. Configuración real del componente: items (4) + cta. Es la más segura y la que mejor cumple la regla «el hero presenta, la franja convierte».',
+  },
+  {
+    nombre: 'Con icono por sección',
+    tag: 'E-commerce · Catálogo',
+    desc: 'Cada botón añade el prop opcional icon (emoji o glifo) a la izquierda de la etiqueta. Refuerza el reconocimiento visual sin texto extra; útil cuando los destinos son tipos distintos (producto, servicio, cita, soporte). Configuración real: items[].icon = "🛒" / "🛠" / "📍" / "📰".',
+  },
+  {
+    nombre: 'Solo enlaces (sin CTA)',
+    tag: 'Editorial · Blog · Marca',
+    desc: 'Cuando la página no busca una acción inmediata, se omite la prop cta y la franja queda 100% navegacional: cinco o seis atajos a destinos editoriales. El componente lo soporta de fábrica —cta es opcional—. Patrón típico de sitios de contenido.',
+  },
+  {
+    nombre: 'Anclas a secciones (scroll)',
+    tag: 'Landing · One-page',
+    desc: 'Los hrefs apuntan a anclas de la propia página (#catalogo, #servicios, #faq, #contacto) en vez de a otras rutas. Convierte la franja en un índice rápido para landings largas. Configuración real: items[].href = "#id-de-la-sección".',
+  },
+  {
+    nombre: 'Cierre (interlinking)',
+    tag: 'Todas las páginas',
+    desc: 'El MISMO componente, OTROS datos: se usa al final de una página para repartir hacia las páginas internas que el menú del hero no toca (fichas, contacto), con un CTA distinto (WA_MESSAGES.contacto). Patrón real, ya en producción en la home.',
+  },
+  {
+    nombre: 'Sub-CTA (acción secundaria)',
+    tag: 'SaaS · Captura',
+    desc: 'Extensión propuesta: en lugar de un único CTA al final, dos —uno principal (color de marca) y uno secundario (fantasma)—. Hoy el componente solo acepta un cta; para esta variante habría que añadir un prop ctaSecundario o aceptar un array. Pensada para landings con doble intención (Cotizar / Ver demo).',
+  },
+]
+
+// ── Recetas de implementación — strings que pinta <Receta> ───────────────────
+// Las tres formas en que esta franja se usa en el sitio: hard-coded (uso
+// puntual), data-driven desde NAV (la home), y con anclas a secciones (landing).
+const recetaUso = `---
+// USO BÁSICO · pásale items + cta y listo. El componente
+// se encarga del responsive (apilados en móvil, una fila
+// en escritorio) y del destacado del CTA. No necesita más.
+import SectionMenu from '@components/SectionMenu.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+
+const items = [
+  { label: 'Productos', href: '/productos', sub: 'Catálogo del sitio' },
+  { label: 'Servicios', href: '/servicios', sub: 'Lo que ofreces' },
+  { label: 'Cobertura', href: '/cobertura', sub: 'Zonas que atiendes' },
+  { label: 'Blog',      href: '/blog',      sub: 'Guías y artículos' },
+]
+const cta = {
+  label: 'Cotizar por WhatsApp',
+  href: waUrl(WA_MESSAGES.cotizar),     // regla D4 · nunca wa.me a mano
+  sub: 'Respuesta inmediata',
+  external: true,
+}
+---
+
+<SectionMenu items={items} cta={cta} ariaLabel="Secciones del sitio" />`
+
+const recetaDataDriven = `---
+// DATA-DRIVEN DESDE NAV · cómo lo hace la home (src/pages/index.astro).
+// Una sola fuente (NAV en site.ts) alimenta el HEADER y esta FRANJA, así
+// que agregar una sección al menú la añade aquí también, sin tocar nada.
+import { NAV, WA_MESSAGES, waUrl } from '@config/site'
+import SectionMenu from '@components/SectionMenu.astro'
+
+// Quitamos "Contacto" (vive en el CTA) y mapeamos al formato del menú.
+const items = NAV
+  .filter((n) => n.label !== 'Contacto')
+  .map((n) => ({
+    label: n.label,
+    href:  n.href,
+    sub:   n.allLabel ?? undefined,    // p. ej. "Ver catálogo completo"
+  }))
+
+const cta = {
+  label: 'Cotizar por WhatsApp',
+  href:  waUrl(WA_MESSAGES.cotizar),
+  sub:   'Respuesta inmediata',
+  external: true,
+}
+---
+
+<SectionMenu items={items} cta={cta} />`
+
+const recetaAnclas = `---
+// ANCLAS A SECCIONES · convierte la franja en índice de la propia página.
+// Útil en landings largas: el botón hace scroll suave a la sección con ese id.
+// Recuerda poner el id en cada <section> destino (id="catalogo", etc.).
+const indice = [
+  { label: 'Catálogo',  href: '#catalogo',  sub: 'Lo que ofrecemos' },
+  { label: 'Servicios', href: '#servicios', sub: 'Cómo lo hacemos' },
+  { label: 'Reseñas',   href: '#resenas',   sub: 'Lo que dicen' },
+  { label: 'FAQ',       href: '#faq',       sub: 'Dudas comunes' },
+]
+---
+
+<SectionMenu items={indice} cta={cta} />
+
+<style is:global>
+  /* Scroll suave para todos los anchors de la página. */
+  html { scroll-behavior: smooth; }
+
+  /* Compensa el header si lo tienes sticky, para que el ancla
+     no quede tapada por la barra al hacer el salto. */
+  :target { scroll-margin-top: var(--header-height, 64px); }
+</style>`
+
+// ── Recetas para los patrones móviles (apartado «Responsive y móvil») ─────────
+const recetaApilado = `/* MÓVIL · APILADO (lo que ya hace el componente)
+   Mobile-first: la barra es column, cada botón al 100 %.
+   Los divisores se vuelven horizontales (border-bottom de
+   la celda) y se quitan en la última. */
+
+.secmenu__bar {
+  display: flex;
+  flex-direction: column;       /* apilados en móvil */
+}
+.secmenu__cell {
+  display: flex;
+  border-bottom: 1px solid var(--c-border);
+}
+.secmenu__cell:last-child { border-bottom: none; }
+
+/* A 768 px y más, pasa a una sola fila con divisores verticales. */
+@media (min-width: 768px) {
+  .secmenu__bar  { flex-direction: row; }
+  .secmenu__cell { flex: 1 1 0; min-width: 0;
+                   border-bottom: none;
+                   border-right: 1px solid var(--c-border); }
+  .secmenu__cell:last-child { border-right: none; }
+}`
+
+const recetaScroll = `/* MÓVIL · SCROLL HORIZONTAL (extensión opcional)
+   Cuando hay 5–6 botones y no caben apilados sin que la
+   página se haga muy alta, los convertimos en una sola fila
+   scrollable —tipo chips—. Snap para que cada botón se
+   alinee al soltar el dedo. La barra de scroll se oculta. */
+
+@media (max-width: 767px) {
+  .secmenu__bar {
+    flex-direction: row;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;     /* inercia iOS */
+    scrollbar-width: none;                 /* Firefox */
+  }
+  .secmenu__bar::-webkit-scrollbar { display: none; }
+
+  .secmenu__cell {
+    flex: 0 0 60vw;             /* cada botón ≈ 60 % del ancho */
+    scroll-snap-align: start;
+    border-bottom: none;
+    border-right: 1px solid var(--c-border);
+  }
+}`
+
+const recetaGrid = `/* MÓVIL · GRID 2×2 (extensión opcional)
+   Cuando hay exactamente 4 secciones + CTA, en móvil
+   convienen 2 columnas (4 botones en cuadrícula) y el CTA
+   ocupa la fila completa de abajo. Ahorra altura sin tocar
+   ningún botón a nivel componente. */
+
+@media (max-width: 640px) {
+  .secmenu__bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .secmenu__cell {
+    border-right: 1px solid var(--c-border);
+    border-bottom: 1px solid var(--c-border);
+  }
+  /* Filas: 2 columnas; última fila (el CTA) ocupa las 2. */
+  .secmenu__cell--cta {
+    grid-column: 1 / -1;
+    border-right: none;
+    border-bottom: none;
+  }
+}`
+
+const recetaSticky = `/* SCROLL · STICKY BAJO EL HEADER (extensión opcional)
+   En landings largas, la franja se queda fija al borde
+   superior una vez la página ha hecho scroll. Useful como
+   índice persistente; combina bien con la variante «anclas». */
+
+.secmenu {
+  position: sticky;
+  top: var(--header-height, 64px);      /* justo bajo el header */
+  z-index: var(--z-sticky, 20);
+  background: var(--c-white);           /* opaco para que tape */
+  box-shadow: 0 1px 0 var(--c-border);
+}
+
+/* Si el usuario prefiere menos movimiento, no flotamos. */
+@media (prefers-reduced-motion: reduce) {
+  .secmenu { position: static; }
+}`
+---
+
+<PageLayout
+  title="El Menú de secciones — la franja que convierte bajo el hero"
+  description="Qué es la franja de menú de secciones, para qué sirve, qué lleva (botones, sublabel, divisores, CTA) y dónde va — más cómo se construye: un solo componente que se alimenta de NAV en site.ts (la misma fuente que el header) y un CTA armado con waUrl, según la regla «el hero presenta, la franja convierte»."
+  pageType="page"
+  guia={false}
+  breadcrumbs={[{ label: 'Módulos', href: '/modulos' }, { label: 'Menú de secciones' }]}
+>
+  <Hero
+    badge="Módulo del sitio · Menú de secciones"
+    title="El Menú de secciones:"
+    accent="la franja que convierte"
+    subtitle="La barra de botones grandes que va justo bajo el hero. Son los atajos a las secciones clave del sitio y, al final, la acción —Cotizar por WhatsApp—. La regla canónica del proyecto se lee aquí en voz alta: el hero presenta, esta franja convierte."
+    descRight={[
+      'Esta página no es una ficha técnica: es el módulo entero, abierto y explicado. Qué problema resuelve y por qué se ganó su lugar pegado al hero, de qué piezas se compone, cómo se comporta en el teléfono, dónde encaja en el armado de la página y, al final, cómo está construido por dentro —del criterio de diseño a la línea de código—.',
+      'Con una particularidad que conviene marcar desde el principio: no es un menú alternativo, es un MÓDULO de navegación que se reutiliza. En la home se alimenta de NAV —la misma fuente que el header— para que el menú y la franja nunca se desincronicen; en otras páginas se reusa como cierre/interlinking con otros datos. Una sola pieza, dos trabajos: arriba reparte hacia las secciones; abajo, hacia las páginas internas.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Definición"
+        title="¿Qué es el menú de secciones?"
+        desc="La franja de botones de borde a borde que se asienta justo bajo el hero. Son atajos a las secciones grandes del sitio y, al final, el botón de conversión —destacado en color de marca—."
+        body={[
+          'El menú de secciones (o «section nav») es la barra horizontal que aparece pegada al hero, ocupando todo el ancho del viewport. Cada botón es un destino —Productos, Servicios, Cobertura, Blog—; el último, en color de marca, es la acción: Cotizar por WhatsApp. Vista de lejos, parece una continuación del hero; vista de cerca, hace un trabajo propio: enseñar el camino y acortar el siguiente paso.',
+          'No se inventó aquí: es un patrón consolidado de los catálogos profesionales —el visitante entra, lee la promesa del hero y, sin volver al header, ya tiene a la vista por dónde moverse o cómo escribir—. En esta plantilla, esa franja sustituyó a la antigua «banda de garantías» con badges (⚡/📝/📈/💬/✔): en vez de presumir cualidades, ofrece navegación útil. Más profesional, más orientada al negocio.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Función e importancia"
+        title="¿Para qué sirve?"
+        desc="Hace tres trabajos a la vez: ofrece atajos a las secciones clave, mantiene la conversión a un clic y refuerza el patrón de lectura «hero arriba, acción debajo»."
+        body={[
+          'Su función es cerrar la brecha entre la promesa y el siguiente paso. El hero engancha; pero entre el hero y el contenido suele haber un espacio en blanco donde el visitante decide si baja, vuelve al menú o se va. Esta franja es lo que llena ese espacio con utilidad: «si te interesó, esto es lo que hay; y si ya decidiste, escribe aquí». Resume el sitio en una línea de botones.',
+          'Y por eso pesa fuera de proporción a su tamaño. Es la primera oportunidad real de conversión —el CTA queda a un clic del primer pantallazo— y, a la vez, el primer reparto de tráfico a las secciones internas, lo que mejora las páginas vistas por sesión y reduce el rebote. En proyectos donde el catálogo es el corazón del sitio, esta franja suele mover más clics que cualquier botón del header.',
+        ]}
+      />
+      <div class="bene">
+        {beneficios.map((b) => (
+          <article class="bene__card">
+            <h3 class="bene__title">{b.titulo}</h3>
+            <p class="bene__desc">{b.desc}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3) ¿QUÉ LLEVA? — anatomía con ejemplo en vivo ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Anatomía"
+        title="¿Qué lleva la franja?"
+        desc="Cuatro piezas: los botones de sección (con su etiqueta y sublabel), los divisores que los separan y el CTA de conversión que cierra la fila."
+        body={[
+          'Cada pieza cumple un papel claro. El botón ofrece el atajo a una sección; el sublabel matiza el destino en dos o tres palabras; los divisores marcan que es una barra continua —no una lista de chips suelta—; y el CTA cierra la fila con la acción de marca. Nada sobra, y el orden de lectura se mantiene: secciones, después conversión.',
+          'Abajo, el ejemplo en vivo —réplica anotada a escala del componente—. Cada punto numerado se desglosa en su tarjeta: qué resuelve y de qué prop del componente sale. A diferencia del hero, en la home los textos no son inventados: vienen de NAV, la misma fuente del header, así que actualizar el menú actualiza esta franja automáticamente.',
+        ]}
+      />
+
+      {/* Ejemplo en vivo del menú de secciones (réplica a escala del componente). */}
+      <div class="smx" role="img" aria-label="Ejemplo de menú de secciones: botones de sección, sublabel, divisores y CTA">
+        <div class="smx__cell">
+          <span class="smx__n">1</span>
+          <span class="smx__lbl">Productos</span>
+          <span class="smx__sub"><span class="smx__n smx__n--mid">2</span>Catálogo del sitio</span>
+        </div>
+        <span class="smx__sep" aria-hidden="true"><span class="smx__n smx__n--mid">3</span></span>
+        <div class="smx__cell">
+          <span class="smx__lbl">Servicios</span>
+          <span class="smx__sub">Lo que ofreces</span>
+        </div>
+        <span class="smx__sep" aria-hidden="true"></span>
+        <div class="smx__cell">
+          <span class="smx__lbl">Cobertura</span>
+          <span class="smx__sub">Zonas que atiendes</span>
+        </div>
+        <span class="smx__sep" aria-hidden="true"></span>
+        <div class="smx__cell">
+          <span class="smx__lbl">Blog</span>
+          <span class="smx__sub">Guías y artículos</span>
+        </div>
+        <div class="smx__cell smx__cell--cta">
+          <span class="smx__n smx__n--cta">4</span>
+          <span class="smx__lbl smx__lbl--cta">Cotizar por WhatsApp</span>
+          <span class="smx__sub smx__sub--cta">Respuesta inmediata</span>
+        </div>
+      </div>
+
+      <div class="partes">
+        {partes.map((p) => (
+          <article class="parte">
+            <span class="parte__num">{p.n}</span>
+            <div class="parte__body">
+              <h3 class="parte__nombre">{p.nombre}</h3>
+              <p class="parte__que">{p.que}</p>
+              <p class="parte__dato"><span>Dato</span> <code>{p.dato}</code></p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3b) VARIANTES ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Variantes"
+        title="Otros diseños y aplicaciones"
+        desc="La de esta plantilla son cuatro secciones + un CTA, pero la franja cambia de cara según lo que la página necesita repartir: catálogo, contenido, anclas, doble acción."
+        body={[
+          'No hay un único modelo: hay una misma idea —una franja de atajos bajo el hero con la acción al final— que cada tipo de proyecto ajusta a su intención. Una tienda añade iconos por sección; un blog quita el CTA y deja solo enlaces editoriales; una landing convierte los hrefs en anclas para usarla como índice; un SaaS suma una segunda acción al final.',
+          'Abajo, seis variantes —cinco son configuraciones REALES del componente (cambiando solo los props items y cta), y la última es una extensión propuesta que requeriría añadir un prop al componente—. Cada una con su réplica en vivo y el tipo de proyecto donde rinde mejor.',
+        ]}
+      />
+
+      <GaleriaDisenos ariaLabel="Variantes de menú de secciones">
+        {/* 0 · Cuádruple con CTA (esta plantilla) */}
+        <DisenoCard {...disenos[0]}>
+          <div class="smv smv--clasico" role="img" aria-label="Cuatro secciones más CTA en color de marca">
+            <span class="smv__b">Productos</span>
+            <span class="smv__sep" aria-hidden="true"></span>
+            <span class="smv__b">Servicios</span>
+            <span class="smv__sep" aria-hidden="true"></span>
+            <span class="smv__b">Cobertura</span>
+            <span class="smv__sep" aria-hidden="true"></span>
+            <span class="smv__b">Blog</span>
+            <span class="smv__b smv__b--cta">Cotizar</span>
+          </div>
+        </DisenoCard>
+
+        {/* 1 · Con icono por sección */}
+        <DisenoCard {...disenos[1]}>
+          <div class="smv smv--icon" role="img" aria-label="Cada sección con un icono a la izquierda de la etiqueta">
+            <span class="smv__b"><i aria-hidden="true">🛒</i>Tienda</span>
+            <span class="smv__sep" aria-hidden="true"></span>
+            <span class="smv__b"><i aria-hidden="true">🛠</i>Servicios</span>
+            <span class="smv__sep" aria-hidden="true"></span>
+            <span class="smv__b"><i aria-hidden="true">📍</i>Cobertura</span>
+            <span class="smv__sep" aria-hidden="true"></span>
+            <span class="smv__b"><i aria-hidden="true">📰</i>Blog</span>
+            <span class="smv__b smv__b--cta">Cotizar</span>
+          </div>
+        </DisenoCard>
+
+        {/* 2 · Solo enlaces (sin CTA) */}
+        <DisenoCard {...disenos[2]}>
+          <div class="smv smv--noc" role="img" aria-label="Franja con cinco enlaces, sin CTA">
+            <span class="smv__b">Revista</span>
+            <span class="smv__sep" aria-hidden="true"></span>
+            <span class="smv__b">Editoriales</span>
+            <span class="smv__sep" aria-hidden="true"></span>
+            <span class="smv__b">Autores</span>
+            <span class="smv__sep" aria-hidden="true"></span>
+            <span class="smv__b">Reseñas</span>
+            <span class="smv__sep" aria-hidden="true"></span>
+            <span class="smv__b">Tienda</span>
+          </div>
+        </DisenoCard>
+
+        {/* 3 · Anclas a secciones (scroll) */}
+        <DisenoCard {...disenos[3]}>
+          <div class="smv smv--anchor" role="img" aria-label="Botones con anclas a secciones de la misma página">
+            <span class="smv__b"><b>#</b>Catálogo</span>
+            <span class="smv__sep" aria-hidden="true"></span>
+            <span class="smv__b"><b>#</b>Servicios</span>
+            <span class="smv__sep" aria-hidden="true"></span>
+            <span class="smv__b"><b>#</b>Reseñas</span>
+            <span class="smv__sep" aria-hidden="true"></span>
+            <span class="smv__b"><b>#</b>FAQ</span>
+            <span class="smv__b smv__b--cta">Cotizar</span>
+          </div>
+        </DisenoCard>
+
+        {/* 4 · Cierre (interlinking) */}
+        <DisenoCard {...disenos[4]}>
+          <div class="smv smv--end" role="img" aria-label="Misma franja, usada al cierre con otros enlaces internos">
+            <span class="smv__b">Fichas</span>
+            <span class="smv__sep" aria-hidden="true"></span>
+            <span class="smv__b">Contacto</span>
+            <span class="smv__sep" aria-hidden="true"></span>
+            <span class="smv__b">Casos</span>
+            <span class="smv__sep" aria-hidden="true"></span>
+            <span class="smv__b">Inicio</span>
+            <span class="smv__b smv__b--cta">Escribir</span>
+          </div>
+        </DisenoCard>
+
+        {/* 5 · Sub-CTA (extensión propuesta) */}
+        <DisenoCard {...disenos[5]}>
+          <div class="smv smv--dual" role="img" aria-label="Dos CTAs al final: uno principal y uno secundario">
+            <span class="smv__b">Producto</span>
+            <span class="smv__sep" aria-hidden="true"></span>
+            <span class="smv__b">Precios</span>
+            <span class="smv__sep" aria-hidden="true"></span>
+            <span class="smv__b">Casos</span>
+            <span class="smv__b smv__b--cta smv__b--cta-ghost">Ver demo</span>
+            <span class="smv__b smv__b--cta">Probar gratis</span>
+          </div>
+        </DisenoCard>
+      </GaleriaDisenos>
+    </div>
+  </section>
+
+  {/* ── 3c) RESPONSIVE Y MÓVIL ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="Cómo se comporta en el teléfono"
+        desc="En móvil la franja no se encoge: cambia de modo. Apilados a ancho completo de fábrica, o —si la página lo pide— scroll horizontal, grid 2×2, o sticky bajo el header."
+        body={[
+          'En escritorio la franja vive cómoda como una sola fila de cinco celdas. En el teléfono, esa misma fila no cabe sin apretar los botones a tamaños no tocables, así que el componente cambia de modo: por defecto se apila —cada botón al 100 % del ancho, con divisores horizontales—. Es lo más seguro cuando hay 4–5 botones cortos, y lo que ya hace el componente de la plantilla.',
+          'A partir de ahí, hay tres patrones que conviene conocer y aplicar como capa adicional según el caso: scroll horizontal con snap (cuando la lista es larga), grid 2×2 (cuando hay justo 4 secciones + CTA y quieres ahorrar altura) y sticky bajo el header (en landings largas, para mantenerla siempre a la vista). Las cuatro están abajo, cada una con su vista en el teléfono y una receta comentada lista para adaptar.',
+        ]}
+      />
+
+      <div class="pats">
+        {/* 1 · Apilado (default del componente) */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Franja apilada en móvil: cada botón a ancho completo">
+              <div class="smm smm--stack">
+                <div class="smm__b">Productos<small>Catálogo del sitio</small></div>
+                <div class="smm__b">Servicios<small>Lo que ofreces</small></div>
+                <div class="smm__b">Cobertura<small>Zonas que atiendes</small></div>
+                <div class="smm__b">Blog<small>Guías y artículos</small></div>
+                <div class="smm__b smm__b--cta">Cotizar por WhatsApp<small>Respuesta inmediata</small></div>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · Apilado a ancho completo</h3>
+            <p class="pat__desc">Es lo que ya hace el componente de fábrica. Mobile-first: la barra es <code>flex-direction: column</code> y cada celda ocupa el ancho. Los divisores horizontales se dibujan con el <code>border-bottom</code> de la celda; en la última, se quita. A 768 px y más, pasa a una sola fila con divisores verticales.</p>
+            <Receta titulo="CSS · apilado a una sola fila (default)" lang="css" code={recetaApilado} />
+          </div>
+        </article>
+
+        {/* 2 · Scroll horizontal */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Franja con scroll horizontal y snap en móvil">
+              <div class="smm smm--scroll">
+                <div class="smm__row">
+                  <div class="smm__c">Productos<small>Catálogo</small></div>
+                  <div class="smm__c">Servicios<small>Lo que hacemos</small></div>
+                  <div class="smm__c">Cobertura<small>Zonas</small></div>
+                  <div class="smm__c">Blog<small>Guías</small></div>
+                  <div class="smm__c smm__c--cta">Cotizar<small>WhatsApp</small></div>
+                </div>
+                <span class="smm__hint" aria-hidden="true">⇢ desliza para ver más</span>
+              </div>
+              <div class="skel"><span></span><span></span><span></span></div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · Scroll horizontal con snap (extensión)</h3>
+            <p class="pat__desc">Cuando la franja tiene 5–6 botones y apilarlos haría la pantalla demasiado alta, conviene una sola fila scrollable —tipo chips—. El <code>scroll-snap-type: x mandatory</code> alinea cada botón al soltar el dedo; la barra de scroll se oculta para que el efecto quede como en una app.</p>
+            <Receta titulo="CSS · una fila scrollable + snap" lang="css" code={recetaScroll} />
+          </div>
+        </article>
+
+        {/* 3 · Grid 2×2 */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Franja en grid 2 por 2 en móvil, con CTA a ancho completo abajo">
+              <div class="smm smm--grid">
+                <div class="smm__g">Productos</div>
+                <div class="smm__g">Servicios</div>
+                <div class="smm__g">Cobertura</div>
+                <div class="smm__g">Blog</div>
+                <div class="smm__g smm__g--cta">Cotizar por WhatsApp</div>
+              </div>
+              <div class="skel"><span></span><span></span><span></span><span></span></div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · Grid 2×2 con CTA debajo (extensión)</h3>
+            <p class="pat__desc">Cuando hay exactamente 4 secciones + CTA, en móvil conviene una cuadrícula de 2 columnas (los 4 botones de sección) y el CTA ocupando la fila de abajo a ancho completo. Ahorra altura sin tocar nada a nivel componente: solo CSS por encima.</p>
+            <Receta titulo="CSS · grid 2 columnas + CTA full" lang="css" code={recetaGrid} />
+          </div>
+        </article>
+
+        {/* 4 · Sticky bajo el header */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Franja sticky bajo el header al hacer scroll">
+              <div class="smm smm--sticky">
+                <span class="smm__hdr" aria-hidden="true">Header</span>
+                <div class="smm__row">
+                  <div class="smm__c smm__c--xs">Catálogo</div>
+                  <div class="smm__c smm__c--xs">Servicios</div>
+                  <div class="smm__c smm__c--xs">FAQ</div>
+                  <div class="smm__c smm__c--xs smm__c--cta">Cotizar</div>
+                </div>
+              </div>
+              <div class="skel skel--shift"><span></span><span></span><span></span><span></span><span></span></div>
+              <span class="smm__updown" aria-hidden="true">↑ fija al bajar</span>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">4 · Sticky bajo el header (extensión)</h3>
+            <p class="pat__desc">En landings largas, la franja se queda pegada al borde superior una vez la página empieza a hacer scroll. Combinada con la variante «anclas», convierte la barra en un índice persistente. Se desactiva con <code>prefers-reduced-motion</code> para no incomodar a quienes prefieren menos animación.</p>
+            <Receta titulo="CSS · sticky + reduced-motion" lang="css" code={recetaSticky} />
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 4) ¿DÓNDE VA? ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Posición"
+        title="¿Dónde se coloca?"
+        desc="Una sola vez por página, justo debajo del hero, antes del contenido del cuerpo. De borde a borde —no respeta el container del 90 %—, para que parezca una continuación del hero."
+        body={[
+          'El orden del armado es deliberado y se respeta en todo el sitio. PageLayout apila el chrome siempre igual: topbar, header, migas (en internas) y hero. Esta franja entra inmediatamente después del hero, como su réplica de acción —el visitante baja un milímetro y ya tiene a la vista por dónde moverse o cómo escribir—. En el cuerpo siguiente vive el catálogo, las reseñas, FAQ y todo lo demás.',
+          'A diferencia del resto del sitio, esta franja va FULL-WIDTH (100 % del viewport, sin contenedor central). Es una decisión visual: si la dejaras dentro del container del 90 %, parecería un elemento más del cuerpo; al borde, el ojo la lee como continuación del hero. Y, salvo el patrón sticky de la sección anterior, no es fija: se desplaza con el contenido. En la home aparece dos veces —arriba bajo el hero, abajo como cierre/interlinking—; en otras páginas, basta con una.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 5) CÓMO SE ARMA ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Implementación"
+        title="Cómo está construido"
+        desc="Un componente reutilizable de tres props: items, cta y ariaLabel. En la home se alimenta de NAV; el CTA se arma con waUrl. Misma pieza, dos usos: arriba reparte hacia secciones, abajo hacia páginas internas."
+        body={[
+          'El componente vive en SectionMenu.astro y expone una API pequeña a propósito: items (la lista de botones), cta (el de conversión, opcional) y ariaLabel (la etiqueta accesible del <nav>). El responsive lo resuelve el propio componente —apila en móvil, una fila en escritorio—, y el CTA se distingue solo cuando llega la prop. No hace falta más para los tres usos habituales (atajos del hero, anclas, cierre).',
+          'La regla canónica está cableada en el diseño, no en la documentación: la prop cta nunca se teclea como wa.me; siempre se arma con waUrl(WA_MESSAGES.cotizar) (regla D4 del proyecto). Y en la home, items no se escribe a mano: se filtra y mapea desde NAV —la misma fuente del header—. Así, agregar una sección al menú principal la añade automáticamente a esta franja; quitarla la elimina. Una sola edición, dos sitios actualizados.',
+        ]}
+      />
+
+      <div class="recetas">
+        <Receta titulo="Astro · uso básico desde una página" lang="astro" code={recetaUso} />
+        <Receta titulo="Astro · data-driven desde NAV (la home)" lang="astro" code={recetaDataDriven} />
+        <Receta titulo="Astro · anclas a secciones (landing one-page)" lang="astro" code={recetaAnclas} />
+      </div>
+
+      <div class="prose">
+        <p>
+          En concreto: el componente recorre <code>items</code> con <code>Array.prototype.map</code> y emite
+          un <code>&lt;li&gt;</code> por cada uno, con su <code>&lt;a&gt;</code> centrado y, si tiene
+          <code>sub</code>, una segunda línea por debajo. Si llega la prop <code>cta</code>, añade una
+          última celda con <code>.secbtn--cta</code> que cambia el fondo a <code>var(--c-primary)</code> y
+          el texto a blanco. Para enlaces externos (<code>external: true</code>), se añade
+          <code>target="_blank"</code> y <code>rel="noopener"</code> de oficio.
+        </p>
+        <p>
+          La accesibilidad es de fábrica: el contenedor es un <code>&lt;nav aria-label&gt;</code>, cada
+          botón es un <code>&lt;a&gt;</code> con foco visible (<code>:focus-visible</code>) y los iconos van con
+          <code>aria-hidden="true"</code>. El SVG de WhatsApp del CTA está inline en el componente y se
+          colorea con <code>currentColor</code>, así sigue al color del texto del botón en todos los
+          estados (hover, focus). Para usuarios con <code>prefers-reduced-motion</code>, se desactivan
+          las transiciones de fondo. Cero JavaScript: es HTML + CSS estático, generado en build.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 6) BUENAS PRÁCTICAS ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Buenas prácticas"
+        title="Qué hacer y qué evitar"
+        desc="La diferencia entre una franja que convierte y una que estorba cabe en un puñado de hábitos —empezando por no duplicar el menú del header—."
+        body={[
+          'Ninguno de estos hábitos es capricho: salen de mirar dónde tropieza el equipo cuando reusa el componente. Una franja útil mantiene 4–6 botones, tiene un único CTA al final y se alimenta de la misma fuente que el header. Una que estorba acumula botones, compite con el menú principal o duplica el wa.me a mano (y rompe la regla D4 del proyecto al primer cambio de número).',
+          'La buena noticia es que casi todo se sostiene solo cuando se respeta la fuente única (NAV) y waUrl(). Abajo, lo que conviene y lo que conviene evitar, enfrentados.',
+        ]}
+      />
+      <div class="dodont">
+        <article class="dd dd--si">
+          <h3 class="dd__title"><span class="dd__icon" aria-hidden="true">✓</span> Sí conviene</h3>
+          <ul class="dd__list">
+            {sis.map((s) => <li>{s}</li>)}
+          </ul>
+        </article>
+        <article class="dd dd--no">
+          <h3 class="dd__title"><span class="dd__icon" aria-hidden="true">✕</span> Mejor evita</h3>
+          <ul class="dd__list">
+            {nos.map((s) => <li>{s}</li>)}
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* Cierre */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+</PageLayout>
+
+<style>
+  /* Utilidades estructurales (tokens.css = fuente única; scoped por página). */
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* ── Beneficios ── */
+  .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .bene { grid-template-columns: repeat(3, 1fr); } }
+  .bene__card { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); }
+  .bene__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .bene__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Ejemplo en vivo del menú de secciones (réplica a escala del componente) ── */
+  .smx {
+    display: grid; grid-template-columns: repeat(4, 1fr) auto; align-items: stretch;
+    margin-top: var(--sp-6);
+    background: var(--c-white); border: 1px solid var(--c-border);
+    border-radius: var(--radius-md); box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    overflow: hidden;
+  }
+  .smx__cell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: var(--sp-4); text-align: center; position: relative; }
+  .smx__lbl { font-family: var(--font-heading); font-weight: var(--weight-semibold); font-size: var(--text-base); color: var(--c-ink); }
+  .smx__sub { font-size: var(--text-xs); color: var(--c-muted); display: inline-flex; align-items: center; gap: 4px; }
+  .smx__sep { width: 1px; background: var(--c-border); display: grid; place-items: center; }
+  .smx__cell--cta { background: var(--c-primary); }
+  .smx__lbl--cta { color: #fff; }
+  .smx__sub--cta { color: rgba(255,255,255,.85); }
+  .smx__n {
+    flex-shrink: 0; display: inline-grid; place-items: center; width: 18px; height: 18px;
+    border-radius: var(--radius-full); background: var(--c-primary); color: #fff;
+    font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: .6875rem;
+  }
+  .smx__n--mid { background: var(--c-muted); }
+  .smx__n--cta { background: #fff; color: var(--c-primary); }
+  /* Posición de algunos pines como floaters dentro de la primera celda. */
+  .smx__cell:first-child .smx__n { position: absolute; top: 6px; left: 6px; }
+  .smx__cell--cta .smx__n { position: absolute; top: 6px; left: 6px; }
+  @media (max-width: 720px) {
+    .smx { grid-template-columns: 1fr; }
+    .smx__sep { width: 100%; height: 1px; }
+    .smx__cell:first-child .smx__n,
+    .smx__cell--cta .smx__n { position: static; }
+  }
+
+  /* ── Cards de las 4 partes ── */
+  .partes { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-5); }
+  @media (min-width: 600px) { .partes { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1000px) { .partes { grid-template-columns: repeat(4, 1fr); } }
+  .parte { display: flex; gap: var(--sp-3); align-items: start; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-4); }
+  .parte__num { flex-shrink: 0; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: var(--radius-full); background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: var(--text-sm); }
+  .parte__body { display: grid; gap: 4px; min-width: 0; }
+  .parte__nombre { margin: 0; font-family: var(--font-heading); font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .parte__que { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
+  .parte__dato { margin: 4px 0 0; display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--text-xs); color: var(--c-muted); }
+  .parte__dato span { text-transform: uppercase; letter-spacing: .06em; font-weight: var(--weight-semibold); }
+  .parte__dato code, .prose code, .pat__desc code {
+    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace; font-size: .85em;
+    background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+    padding: .05em .4em; color: var(--c-primary-dark);
+  }
+
+  /* ── Recetas de la sección «Cómo se arma» (apiladas, ancho completo) ── */
+  .recetas { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
+
+  /* ── Prose técnica ── */
+  .prose { max-width: 75ch; margin-top: var(--sp-6); }
+  .prose p { margin: 0 0 var(--sp-4); font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .prose strong { color: var(--c-ink); font-weight: var(--weight-semibold); }
+
+  /* ── Sí / No ── */
+  .dodont { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .dodont { grid-template-columns: 1fr 1fr; } }
+  .dd { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); }
+  .dd__title { margin: 0 0 var(--sp-3); display: flex; align-items: center; gap: var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .dd__icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-full); font-size: var(--text-sm); }
+  .dd--si .dd__icon { background: rgba(34,197,94,.14); color: #16a34a; }
+  .dd--no .dd__icon { background: rgba(239,68,68,.12); color: #dc2626; }
+  .dd__list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-2); }
+  .dd__list li { position: relative; padding-left: var(--sp-5); font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
+  .dd__list li::before { content: ''; position: absolute; left: 0; top: .55em; width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--c-muted); }
+
+  /* ── Mockups de variantes (dentro de <GaleriaDisenos>) ───────────────────── */
+  .smv {
+    display: flex; align-items: stretch; width: 100%; min-height: 56px;
+    border-radius: var(--radius-sm); border: 1px solid var(--c-border);
+    background: var(--c-white); overflow: hidden; font-size: var(--text-xs);
+  }
+  .smv__b { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: var(--sp-2) var(--sp-2); color: var(--c-ink); font-weight: var(--weight-semibold); white-space: nowrap; }
+  .smv__b i { font-style: normal; }
+  .smv__b b { color: var(--c-primary); font-weight: var(--weight-bold); }
+  .smv__sep { width: 1px; background: var(--c-border); align-self: stretch; }
+  .smv__b--cta { background: var(--c-primary); color: #fff; }
+  .smv__b--cta-ghost { background: transparent; color: var(--c-ink); border-left: 1px solid var(--c-border); }
+
+  /* ── Sección Responsive: teléfono | explicación + receta ─────────────────── */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Mockups MÓVIL (dentro de <MarcoMovil>) ──────────────────────────────── */
+  .smm { font-size: 11px; }
+  .smm__b { display: grid; gap: 2px; padding: 11px 14px; border-bottom: 1px solid var(--c-border); color: var(--c-ink); font-weight: var(--weight-semibold); text-align: center; }
+  .smm__b small { color: var(--c-muted); font-weight: var(--weight-normal); font-size: 9px; }
+  .smm__b--cta { background: var(--c-primary); color: #fff; border-bottom: none; }
+  .smm__b--cta small { color: rgba(255,255,255,.85); }
+
+  /* 2 · Scroll */
+  .smm--scroll { padding: 10px 0 0; }
+  .smm__row { display: flex; gap: 8px; padding: 0 12px 8px; overflow-x: auto; scrollbar-width: none; }
+  .smm__row::-webkit-scrollbar { display: none; }
+  .smm__c { flex: 0 0 100px; display: grid; gap: 2px; padding: 10px 8px; text-align: center; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); color: var(--c-ink); font-weight: var(--weight-semibold); }
+  .smm__c small { color: var(--c-muted); font-weight: var(--weight-normal); font-size: 9px; }
+  .smm__c--cta { background: var(--c-primary); border-color: var(--c-primary); color: #fff; }
+  .smm__c--cta small { color: rgba(255,255,255,.85); }
+  .smm__hint { display: block; padding: 4px 12px 8px; font-size: 9px; color: var(--c-muted); }
+
+  /* 3 · Grid 2×2 */
+  .smm--grid { display: grid; grid-template-columns: 1fr 1fr; }
+  .smm__g { padding: 14px 10px; text-align: center; border-right: 1px solid var(--c-border); border-bottom: 1px solid var(--c-border); color: var(--c-ink); font-weight: var(--weight-semibold); }
+  .smm__g:nth-child(even) { border-right: none; }
+  .smm__g--cta { grid-column: 1 / -1; background: var(--c-primary); color: #fff; border-right: none; border-bottom: none; }
+
+  /* 4 · Sticky */
+  .smm--sticky { background: var(--c-white); border-bottom: 1px solid var(--c-border); box-shadow: 0 1px 6px rgba(0,0,0,.06); }
+  .smm__hdr { display: block; padding: 6px 12px; font-size: 9px; color: var(--c-muted); border-bottom: 1px solid var(--c-border); }
+  .smm__c--xs { flex: 1 1 0; padding: 8px 6px; min-width: 0; font-size: 10px; }
+  .smm--sticky .smm__row { padding: 8px; gap: 6px; overflow: visible; }
+  .smm__updown { position: absolute; inset: auto 0 8px 0; text-align: center; font-size: 10px; color: var(--c-muted); }
+
+  /* Esqueleto de página (relleno bajo la franja). */
+  .skel { display: grid; gap: 9px; padding: 14px 13px; }
+  .skel span { height: 10px; border-radius: 5px; background: var(--c-surface); }
+  .skel span:nth-child(1) { width: 72%; } .skel span:nth-child(2) { width: 100%; }
+  .skel span:nth-child(3) { width: 88%; } .skel span:nth-child(4) { width: 56%; }
+  .skel--shift span:nth-child(5) { width: 80%; }
+</style>
