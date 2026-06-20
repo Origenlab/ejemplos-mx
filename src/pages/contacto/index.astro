@@ -1,0 +1,163 @@
+---
+// ============================================================================
+// /contacto/ — Página de contacto.
+// ----------------------------------------------------------------------------
+// Reúne los canales de contacto (WhatsApp, teléfono, correo) + NAP + horario,
+// TODO desde CONTACT/SITE en site.ts (SSoT). El WhatsApp se arma con waUrl() y el
+// teléfono con telUrl(); nunca se hardcodea un número. Datos DEMO en la plantilla.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import { SITE, CONTACT, waUrl, telUrl, WA_MESSAGES } from '@config/site'
+
+// Canales de contacto — data-driven. Cada uno con su acción (href) y su ícono.
+const canales = [
+  {
+    k: 'wa', titulo: 'WhatsApp', dato: CONTACT.phone, sub: 'Respuesta inmediata en horario hábil',
+    href: waUrl(WA_MESSAGES.contacto), external: true, cta: 'Abrir chat',
+  },
+  {
+    k: 'tel', titulo: 'Teléfono', dato: CONTACT.phone, sub: 'Llámanos de lunes a viernes',
+    href: telUrl(), external: false, cta: 'Llamar ahora',
+  },
+  {
+    k: 'mail', titulo: 'Correo', dato: CONTACT.email, sub: 'Para propuestas y documentos',
+    href: `mailto:${CONTACT.email}`, external: false, cta: 'Enviar correo',
+  },
+]
+
+const cierreItems = [
+  { label: 'Productos', href: '/productos', sub: 'Catálogo del sitio' },
+  { label: 'Servicios', href: '/servicios', sub: 'Lo que ofrecemos' },
+  { label: 'Cobertura', href: '/cobertura', sub: 'Zonas que atendemos' },
+  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
+]
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), sub: 'Respuesta inmediata', external: true }
+
+const ICON = {
+  wa: '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884"/></svg>',
+  tel: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 12 19.79 19.79 0 0 1 1.93 3.42 2 2 0 0 1 3.9 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+  mail: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>',
+}
+---
+
+<PageLayout
+  title="Contacto"
+  description="Contacta a Ejemplos.mx por WhatsApp, teléfono o correo. Horario de atención y domicilio. Respuesta inmediata para cotizaciones y dudas. Datos DEMO de la plantilla."
+  pageType="page"
+  breadcrumbs={[{ label: 'Contacto' }]}
+  guia={false}
+>
+  <Hero
+    badge="Hablemos"
+    title="Ponte en"
+    accent="contacto"
+    subtitle="Elige el canal que te resulte más cómodo: WhatsApp para respuesta inmediata, teléfono para hablarlo o correo para enviarnos documentos."
+    descRight={[
+      'La página de contacto tiene un solo trabajo: quitar fricción. Por eso muestra cada canal con su acción a un clic —abrir el chat, marcar, redactar el correo— y no esconde el dato detrás de un formulario. Mientras menos pasos haya entre la intención y el mensaje, más conversaciones empiezan.',
+      'Todos los datos —teléfono, correo, domicilio y horario— salen de una sola fuente de verdad (CONTACT en site.ts), así que coinciden aquí, en el footer y en los datos estructurados. ⚠️ Son datos DEMO de la plantilla: reemplázalos por los reales del cliente antes de publicar.',
+    ]}
+  />
+
+  <section class="section">
+    <div class="container">
+      <GuiaNota titulo="Qué es esta página (contacto)" archivo="src/pages/contacto/index.astro">
+        <p>
+          Reúne los <strong>canales de contacto</strong> y los datos del negocio (NAP: nombre, dirección,
+          teléfono) + horario. Todo sale de <code>CONTACT</code> en <code>site.ts</code> (SSoT): el
+          WhatsApp se arma con <code>waUrl()</code> y el teléfono con <code>telUrl()</code>, nunca un
+          número escrito a mano. Cambia el dato una vez y se actualiza en todo el sitio.
+        </p>
+      </GuiaNota>
+
+      <SectionHeading
+        layout="duo"
+        eyebrow="Canales"
+        title="Tres formas de empezar la conversación"
+        desc="WhatsApp, teléfono y correo. Cada uno con su acción directa, sin formularios de por medio."
+        body={[
+          'No todas las personas quieren lo mismo: una prefiere un mensaje rápido, otra una llamada y otra dejar todo por escrito. Ofrecer los tres canales —con su acción a un clic— respeta esa diferencia y aumenta la probabilidad de que la persona dé el primer paso.',
+          'El WhatsApp lleva un mensaje pre-cargado según la intención (contacto, cotización), para que la conversación arranque con contexto y el asesor entre en materia. Es un detalle pequeño que sube la calidad de cada solicitud que llega.',
+        ]}
+      />
+
+      <div class="canales">
+        {canales.map((c) => (
+          <a class="canal" href={c.href} target={c.external ? '_blank' : undefined} rel={c.external ? 'noopener noreferrer' : undefined}>
+            <span class="canal__icon" set:html={ICON[c.k as keyof typeof ICON]} />
+            <span class="canal__body">
+              <span class="canal__titulo">{c.titulo}</span>
+              <span class="canal__dato">{c.dato}</span>
+              <span class="canal__sub">{c.sub}</span>
+            </span>
+            <span class="canal__cta">{c.cta} →</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Dónde y cuándo"
+        title="Domicilio y horario de atención"
+        desc="La referencia física del negocio y las horas en que respondemos."
+        body={[
+          'Mostrar un domicilio y un horario reales transmite que detrás del sitio hay un negocio establecido. Para SEO local, además, estos datos alimentan el JSON-LD de negocio local y deben ser idénticos a los de tu ficha de Google.',
+          'En la plantilla son datos de ejemplo. Al construir un sitio real, reemplázalos por la dirección, las coordenadas y el horario verdaderos del cliente: la coherencia del NAP en todo internet es un factor de posicionamiento local.',
+        ]}
+      />
+
+      <div class="nap">
+        <div class="nap__block">
+          <h3 class="nap__title">Domicilio</h3>
+          <p class="nap__text">{CONTACT.street}<br />{CONTACT.city}, {CONTACT.state}, C.P. {CONTACT.postalCode}</p>
+        </div>
+        <div class="nap__block">
+          <h3 class="nap__title">Horario</h3>
+          <p class="nap__text">{CONTACT.hours.weekdays}<br />{CONTACT.hours.saturday}<br />{CONTACT.hours.sunday}</p>
+        </div>
+        <div class="nap__block">
+          <h3 class="nap__title">Atiende</h3>
+          <p class="nap__text">{SITE.name}<br />{SITE.tagline}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando el sitio" />
+</PageLayout>
+
+<style>
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* Canales — tarjetas-enlace en grid 1→3. */
+  .canales { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .canales { grid-template-columns: repeat(3, 1fr); } }
+  .canal {
+    display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-5);
+    background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-lg);
+    text-decoration: none; transition: border-color .15s, transform .15s, box-shadow .15s;
+  }
+  .canal:hover { border-color: var(--c-primary); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+  .canal__icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: var(--radius-md); background: var(--c-primary-light); color: var(--c-primary); }
+  .canal__body { display: grid; gap: 2px; }
+  .canal__titulo { font-family: var(--font-heading); font-weight: var(--weight-bold); color: var(--c-ink); font-size: var(--text-base); }
+  .canal__dato { font-weight: var(--weight-semibold); color: var(--c-ink-2); }
+  .canal__sub { font-size: var(--text-sm); color: var(--c-muted); }
+  .canal__cta { margin-top: auto; font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--c-primary); }
+
+  /* NAP — 3 bloques. */
+  .nap { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .nap { grid-template-columns: repeat(3, 1fr); } }
+  .nap__title { font-family: var(--font-heading); font-size: var(--text-base); font-weight: var(--weight-bold); color: var(--c-ink); margin: 0 0 var(--sp-2); }
+  .nap__text { font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); margin: 0; }
+</style>

@@ -1,0 +1,49 @@
+---
+// ============================================================================
+// /blog/<slug> — Artículo de blog.
+// ----------------------------------------------------------------------------
+// Ruta dinámica ÚNICA: sirve TODOS los artículos de la colección `articulos`
+// (.mdx). El cuerpo se renderiza con <Content />; la estructura, el Article
+// JSON-LD y los breadcrumbs viven en ArticleLayout. Para publicar, agrega un
+// .mdx en src/content/articulos/ — no se edita este archivo.
+// ============================================================================
+import { getCollection, render } from 'astro:content'
+import ArticleLayout from '@layouts/ArticleLayout.astro'
+
+export async function getStaticPaths() {
+  const articulos = await getCollection('articulos', ({ data }) => !data.draft)
+
+  return articulos.map((articulo) => {
+    // Relacionados: hermanos de la colección (interlinking), excluye el actual.
+    const related = articulos
+      .filter((a) => a.id !== articulo.id)
+      .slice(0, 3)
+      .map((a) => ({
+        label: a.data.title,
+        href: `/blog/${a.id}`,
+        description: a.data.description,
+      }))
+
+    return { params: { slug: articulo.id }, props: { articulo, related } }
+  })
+}
+
+const { articulo, related } = Astro.props
+const { Content } = await render(articulo)
+const d = articulo.data
+---
+
+<ArticleLayout
+  title={d.title}
+  description={d.description}
+  category={d.category}
+  pubDate={d.pubDate}
+  updatedDate={d.updatedDate}
+  author={d.author}
+  image={d.heroImage}
+  imageAlt={d.title}
+  tags={d.tags}
+  related={related}
+>
+  <Content />
+</ArticleLayout>

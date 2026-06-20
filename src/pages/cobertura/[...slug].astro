@@ -1,0 +1,115 @@
+---
+// ============================================================================
+// /cobertura/<slug> — Detalle de zona (página de SEO local).
+// ----------------------------------------------------------------------------
+// Ruta dinámica generada desde COVERAGE_STATES (TAXONOMY en site.ts, SSoT) —
+// "manda el menú": los slugs son los de COVERAGE_STATES (cdmx · edomex), los
+// mismos que enlaza el dropdown del Header. Contenido de apoyo DEMO en el archivo.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import FAQAccordion from '@components/FAQAccordion.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import { COVERAGE_STATES, SERVICES, waUrl, WA_MESSAGES } from '@config/site'
+
+export async function getStaticPaths() {
+  return COVERAGE_STATES.map((z) => ({ params: { slug: z.slug }, props: { zona: z } }))
+}
+
+const { zona } = Astro.props
+const { slug, label, type } = zona
+const tipo = type === 'operativo' ? 'operativa' : 'comercial'
+
+const faqs = [
+  { question: `¿La cobertura en ${label} es real?`, answer: 'No. Es una plantilla-guía: el contenido es DEMO. Reemplázalo por la cobertura, las colonias y los tiempos reales del cliente antes de publicar.' },
+  { question: '¿Qué diferencia hay entre zona operativa y comercial?', answer: 'En una zona operativa damos servicio directo en sitio; en una comercial atendemos a distancia o con cobertura parcial. El tipo sale de COVERAGE_STATES en site.ts.' },
+  { question: `¿Atienden fuera de ${label}?`, answer: 'Escríbenos tu ubicación por WhatsApp y te confirmamos la cobertura. Muchos servicios se prestan a distancia sin importar la zona.' },
+]
+
+const otras = COVERAGE_STATES.filter((z) => z.slug !== slug)
+const cierreItems = [
+  ...otras.map((z) => ({ label: z.label, href: `/cobertura/${z.slug}`, sub: 'Otra zona' })),
+  { label: 'Toda la cobertura', href: '/cobertura', sub: 'Volver al mapa' },
+  { label: 'Servicios', href: '/servicios', sub: 'Lo que ofrecemos' },
+]
+const cierreCta = { label: `Cotizar en ${label}`, href: waUrl(WA_MESSAGES.cotizar), sub: 'Respuesta inmediata', external: true }
+---
+
+<PageLayout
+  title={`Cobertura en ${label}`}
+  description={`Cobertura ${tipo} en ${label}: zona atendida por Ejemplos.mx con el patrón de SEO local. Servicios disponibles y contacto directo. Datos DEMO de la plantilla.`}
+  pageType="page"
+  breadcrumbs={[{ label: 'Cobertura', href: '/cobertura' }, { label }]}
+  guia={false}
+>
+  <Hero
+    badge={`Zona ${tipo}`}
+    title="Cobertura en"
+    accent={label}
+    subtitle={`Atendemos ${label} con el mismo estándar de servicio. Esta es la página de zona: el patrón con el que un negocio cubre cada ubicación.`}
+    descRight={[
+      `Esta es una página de zona dedicada a ${label}. Su trabajo de SEO local es responder a quien busca un servicio en esta ubicación específica, con contenido propio en lugar de una mención genérica. Una URL por zona, con su nombre y sus datos, posiciona mejor que una sola página que intente cubrirlas todas.`,
+      'El contenido de apoyo es DEMO. En un sitio real, aquí van las colonias o municipios cubiertos, los tiempos de respuesta y cualquier particularidad de la zona. Cuanto más específico y verdadero sea, mejor responde a la búsqueda local y más confianza genera.',
+    ]}
+  />
+
+  <section class="section">
+    <div class="container">
+      <GuiaNota titulo="Qué es esta página (zona · SEO local)" archivo="src/pages/cobertura/[...slug].astro">
+        <p>
+          Una sola ruta dinámica (<code>[...slug].astro</code>) genera la página de <strong>todas</strong>
+          las zonas. Los slugs son los de <code>COVERAGE_STATES</code> en <code>site.ts</code>
+          (cdmx · edomex), los mismos del menú. El texto es DEMO; en un sitio real conviene moverlo a la
+          Content Collection <code>zonas</code> con esos slugs para enriquecer cada ubicación.
+        </p>
+      </GuiaNota>
+
+      <SectionHeading
+        layout="duo"
+        eyebrow="Qué cubrimos"
+        title={`Servicio en ${label}`}
+        desc="El alcance en esta zona y por qué una página dedicada importa para el SEO local."
+        body={[
+          `Atendemos ${label} como zona ${tipo}. En una implementación real, este bloque detalla el alcance concreto: colonias o municipios cubiertos, tiempos de respuesta y modalidad de atención. La especificidad es la que convierte y la que posiciona.`,
+          'Mantener una página por zona es sostenible porque todas comparten plantilla y se generan desde una sola fuente de datos. Solo cambia el contenido propio de cada ubicación; la estructura y el diseño se reutilizan idénticos.',
+        ]}
+      />
+
+      <div class="servicios-zona">
+        <p class="servicios-zona__lead">Servicios disponibles en {label}:</p>
+        <ul class="chips">
+          {SERVICES.map((s) => (
+            <li><a class="chip" href={`/servicios/${s.id}`}>{s.label}</a></li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--surface">
+    <div class="container">
+      <FAQAccordion items={faqs} title={`Preguntas sobre la cobertura en ${label}`} openFirst />
+    </div>
+  </section>
+
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Otras zonas y servicios" />
+</PageLayout>
+
+<style>
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  .servicios-zona { margin-top: var(--sp-6); }
+  .servicios-zona__lead { font-weight: var(--weight-semibold); color: var(--c-ink); margin: 0 0 var(--sp-3); }
+  .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  .chip {
+    display: inline-flex; padding: var(--sp-2) var(--sp-4); border-radius: var(--radius-full);
+    background: var(--c-white); border: 1px solid var(--c-border); color: var(--c-ink-2);
+    font-size: var(--text-sm); font-weight: var(--weight-medium); text-decoration: none; transition: border-color .15s, color .15s;
+  }
+  .chip:hover { border-color: var(--c-primary); color: var(--c-primary); }
+</style>

@@ -1,0 +1,163 @@
+---
+// ============================================================================
+// /servicios/<id> — Detalle de servicio (Nivel L4).
+// ----------------------------------------------------------------------------
+// Ruta dinámica generada desde SERVICES (TAXONOMY en site.ts, SSoT) — "manda el
+// menú": los slugs son los `id` de SERVICES (consultoria · implementacion ·
+// soporte), idénticos a los que enlaza el dropdown del Header. El contenido de
+// apoyo (qué incluye, proceso) es DEMO y vive en este archivo como mapa local.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import FAQAccordion from '@components/FAQAccordion.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import { SERVICES, waUrl, WA_MESSAGES } from '@config/site'
+
+export async function getStaticPaths() {
+  return SERVICES.map((s) => ({ params: { slug: s.id }, props: { servicio: s } }))
+}
+
+const { servicio } = Astro.props
+const { id, label, desc } = servicio
+
+// Contenido de apoyo DEMO por servicio (qué incluye). Reemplázalo por el real.
+const DETALLE: Record<string, { incluye: string[]; lede: string }> = {
+  consultoria: {
+    lede: 'Antes de construir, decidir bien. Definimos qué tiene que lograr tu sitio y cómo lo logrará.',
+    incluye: ['Diagnóstico del objetivo de negocio', 'Arquitectura de información y mapa de páginas', 'Definición de alcance, contenido y conversión'],
+  },
+  implementacion: {
+    lede: 'De la definición al sitio publicado: construcción rápida, editable y lista para crecer.',
+    incluye: ['Construcción del sitio en Astro', 'Contenido en Markdown, separado del diseño', 'Publicación, dominio y puesta en marcha'],
+  },
+  soporte: {
+    lede: 'Un sitio vivo se cuida. Mantenemos, mejoramos y publicamos contigo después del lanzamiento.',
+    incluye: ['Mantenimiento técnico y mejoras', 'Publicación continua de contenido', 'Monitoreo, respaldos y soporte'],
+  },
+}
+const det = DETALLE[id] ?? { lede: desc, incluye: ['Alcance a medida', 'Acompañamiento técnico', 'Entrega documentada'] }
+
+// Proceso genérico (3 pasos) — mismo molde para todo servicio.
+const proceso = [
+  { n: '01', t: 'Diagnóstico', d: 'Entendemos el objetivo y el contexto para proponer con fundamento, no a ciegas.' },
+  { n: '02', t: 'Propuesta y ejecución', d: 'Definimos alcance y entregables claros, y ejecutamos sobre un sistema probado.' },
+  { n: '03', t: 'Entrega y seguimiento', d: 'Entregamos documentado y acompañamos para que puedas operar con autonomía.' },
+]
+
+const faqs = [
+  { question: '¿Los datos de este servicio son reales?', answer: 'No. Es una plantilla-guía: el contenido es DEMO. Reemplázalo por el alcance y las condiciones reales del cliente antes de publicar.' },
+  { question: '¿Cómo se cotiza?', answer: 'Cada proyecto se cotiza según su alcance. Escríbenos por WhatsApp con tu necesidad y te damos una propuesta con entregables y tiempos claros.' },
+  { question: '¿Puedo combinar varios servicios?', answer: 'Sí. Consultoría, implementación y soporte están pensados para encadenarse: decidir, construir y mantener, como un ciclo continuo.' },
+]
+
+// Relacionados — los otros servicios (interlinking).
+const otros = SERVICES.filter((s) => s.id !== id)
+
+const cierreItems = [
+  ...otros.map((s) => ({ label: s.label, href: `/servicios/${s.id}`, sub: 'Otro servicio' })),
+  { label: 'Todos los servicios', href: '/servicios', sub: 'Volver al catálogo' },
+  { label: 'Contacto', href: '/contacto', sub: 'Hablemos de tu proyecto' },
+]
+const cierreCta = { label: 'Cotizar este servicio', href: waUrl(WA_MESSAGES.servicios), sub: 'Respuesta inmediata', external: true }
+---
+
+<PageLayout
+  title={`${label} — servicio`}
+  description={desc}
+  pageType="page"
+  breadcrumbs={[{ label: 'Servicios', href: '/servicios' }, { label }]}
+  guia={false}
+>
+  <Hero
+    badge="Servicio"
+    title={label}
+    accent=""
+    subtitle={det.lede}
+    descRight={[
+      desc,
+      'Esta página de detalle es el cuarto nivel de la jerarquía (Inicio → Servicios → Detalle). Aquí la persona que ya mostró interés encuentra lo concreto: qué incluye el servicio, cómo se trabaja y las dudas frecuentes. El contenido de apoyo es DEMO de la plantilla.',
+    ]}
+  />
+
+  <section class="section">
+    <div class="container">
+      <GuiaNota titulo="Qué es esta página (detalle de servicio · L4)" archivo="src/pages/servicios/[...slug].astro">
+        <p>
+          Una sola ruta dinámica (<code>[...slug].astro</code>) genera el detalle de
+          <strong>todos</strong> los servicios. Los slugs son los <code>id</code> de
+          <code>SERVICES</code> en <code>site.ts</code> (consultoria · implementacion · soporte) — los
+          mismos que enlaza el menú. El texto de apoyo es DEMO; en un sitio real conviene moverlo a una
+          Content Collection <code>servicios</code> con esos slugs.
+        </p>
+      </GuiaNota>
+
+      <SectionHeading
+        layout="duo"
+        eyebrow="Qué incluye"
+        title={`Qué resuelve ${label}`}
+        desc="El alcance concreto del servicio: lo que recibes y por qué importa."
+        body={[
+          det.lede,
+          'La lista de la derecha es el alcance DEMO de este servicio. En un proyecto real define entregables verificables —no promesas vagas—: lo que se entrega, en qué formato y cuándo. Un alcance claro evita malentendidos y mejora la relación desde el inicio.',
+        ]}
+      />
+
+      <ul class="incluye">
+        {det.incluye.map((it) => (
+          <li class="incluye__item">
+            <span class="incluye__check" aria-hidden="true">✓</span>
+            <span>{it}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        eyebrow="Cómo trabajamos"
+        title="Un proceso claro en tres"
+        titleAccent="pasos"
+        desc="El mismo método para todo servicio: diagnosticar, ejecutar y acompañar."
+      />
+      <div class="proceso">
+        {proceso.map((p) => (
+          <article class="paso">
+            <span class="paso__n">{p.n}</span>
+            <h3 class="paso__t">{p.t}</h3>
+            <p class="paso__d">{p.d}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <FAQAccordion items={faqs} title="Preguntas frecuentes" openFirst />
+    </div>
+  </section>
+
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Otros servicios y contacto" />
+</PageLayout>
+
+<style>
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  .incluye { list-style: none; margin: var(--sp-6) 0 0; padding: 0; display: grid; gap: var(--sp-3); max-width: 60ch; }
+  .incluye__item { display: flex; gap: var(--sp-3); align-items: start; font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .incluye__check { flex-shrink: 0; display: grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-full); background: var(--c-primary-light); color: var(--c-primary); font-weight: var(--weight-bold); font-size: var(--text-sm); }
+
+  .proceso { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .proceso { grid-template-columns: repeat(3, 1fr); } }
+  .paso { padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-lg); }
+  .paso__n { font-family: var(--font-heading); font-size: var(--text-xl); font-weight: var(--weight-black); color: var(--c-primary); }
+  .paso__t { font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-bold); color: var(--c-ink); margin: var(--sp-2) 0; }
+  .paso__d { font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); margin: 0; }
+</style>

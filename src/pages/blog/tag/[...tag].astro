@@ -1,0 +1,96 @@
+---
+// ============================================================================
+// /blog/tag/<tag> — Archivo de etiqueta del blog.
+// ----------------------------------------------------------------------------
+// ArticleLayout enlaza cada tag de un artículo a /blog/tag/<tag>. Esta ruta
+// dinámica genera esos archivos: una página por etiqueta USADA, con sus
+// artículos. El slug es el tag tal cual (coincide con el href del layout).
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import CategoryCard from '@components/CategoryCard.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import { getCollection } from 'astro:content'
+import { waUrl, WA_MESSAGES } from '@config/site'
+
+export async function getStaticPaths() {
+  const posts = (await getCollection('articulos', ({ data }) => !data.draft)).sort(
+    (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+  )
+  const tags = [...new Set(posts.flatMap((p) => p.data.tags ?? []))]
+  return tags.map((tag) => ({
+    params: { tag },
+    props: { tag, posts: posts.filter((p) => (p.data.tags ?? []).includes(tag)) },
+  }))
+}
+
+const { tag, posts } = Astro.props
+
+const cierreItems = [
+  { label: 'Todo el blog', href: '/blog', sub: 'Ver todos los artículos' },
+  { label: 'Servicios', href: '/servicios', sub: 'Lo que ofrecemos' },
+  { label: 'Contacto', href: '/contacto', sub: 'Hablemos de tu proyecto' },
+  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
+]
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.blog), sub: 'Respuesta inmediata', external: true }
+---
+
+<PageLayout
+  title={`Tema: ${tag} — blog`}
+  description={`Artículos del blog de Ejemplos.mx etiquetados con «${tag}». Archivo de etiqueta generado automáticamente desde la colección de artículos.`}
+  pageType="page"
+  breadcrumbs={[{ label: 'Blog', href: '/blog' }, { label: `#${tag}` }]}
+  guia={false}
+>
+  <Hero
+    badge="Blog · Tema"
+    title="Tema:"
+    accent={`#${tag}`}
+    subtitle={`Artículos etiquetados con «${tag}». Las etiquetas conectan artículos de distintas categorías que comparten un mismo asunto.`}
+    descRight={[
+      'Las etiquetas son una segunda capa de organización, transversal a las categorías: un mismo tema (por ejemplo, «astro» o «markdown») puede aparecer en guías y en novedades. Agrupar por etiqueta ayuda a quien busca algo muy específico a encontrar todo lo relacionado, sin importar la sección.',
+      'Esta página se genera sola desde la colección: lista los artículos que incluyen esta etiqueta. Conviene usar pocas etiquetas consistentes —no inventar una nueva por artículo— para que cada archivo tenga contenido suficiente y valor real. Contenido DEMO de la plantilla.',
+    ]}
+  />
+
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Archivo de etiqueta"
+        title={`Artículos con «${tag}»`}
+        desc={`${posts.length} ${posts.length === 1 ? 'artículo' : 'artículos'} con esta etiqueta.`}
+        body={[
+          'Las etiquetas cruzan las categorías: relacionan contenidos por un asunto puntual aunque vivan en secciones distintas. Bien usadas, tejen una red de enlaces internos que ayuda tanto a la persona como al rastreo del buscador.',
+          'La clave es la disciplina: un conjunto corto y estable de etiquetas vale más que decenas de etiquetas únicas. Cada una debe agrupar varios artículos para justificar su página de archivo.',
+        ]}
+      />
+      <div class="grid">
+        {posts.map((a, i) => (
+          <CategoryCard
+            label={a.data.title}
+            href={`/blog/${a.id}`}
+            image={a.data.heroImage}
+            imageAlt={a.data.title}
+            badge={a.data.category}
+            blurb={a.data.description}
+            ctaLabel="Leer artículo"
+            index={i}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando el blog" />
+</PageLayout>
+
+<style>
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+  .grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 640px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+</style>

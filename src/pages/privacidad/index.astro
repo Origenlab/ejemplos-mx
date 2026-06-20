@@ -1,0 +1,136 @@
+---
+// ============================================================================
+// /privacidad/ — Aviso de privacidad (página legal).
+// ----------------------------------------------------------------------------
+// Página estática de la serie LEGAL (privacidad · términos · cookies). Extiende
+// PageLayout. El contenido es DEMO/placeholder: estructura y lenguaje listos,
+// pero los datos del responsable (NAP) salen de CONTACT (site.ts, SSoT) y el
+// texto legal debe revisarlo un profesional antes de publicar.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import { SITE, CONTACT, waUrl, WA_MESSAGES } from '@config/site'
+
+const actualizado = '20 de junio de 2026'
+
+const cierreItems = [
+  { label: 'Términos y condiciones', href: '/terminos', sub: 'El acuerdo de uso' },
+  { label: 'Política de cookies', href: '/cookies', sub: 'Qué guardamos y por qué' },
+  { label: 'Contacto', href: '/contacto', sub: 'Ejerce tus derechos ARCO' },
+  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
+]
+const cierreCta = { label: 'Escríbenos por WhatsApp', href: waUrl(WA_MESSAGES.contacto), sub: 'Dudas de privacidad', external: true }
+---
+
+<PageLayout
+  title="Aviso de privacidad"
+  description="Aviso de privacidad de Ejemplos.mx: qué datos personales recabamos, con qué finalidad, cómo los protegemos y cómo ejercer tus derechos ARCO. Documento DEMO de la plantilla."
+  pageType="page"
+  breadcrumbs={[{ label: 'Aviso de privacidad' }]}
+  guia={false}
+>
+  <Hero
+    badge="Legal · Privacidad"
+    title="Aviso de"
+    accent="privacidad"
+    subtitle="Cómo tratamos tus datos personales: qué recabamos, para qué, cómo los cuidamos y cómo ejerces tus derechos en todo momento."
+    descRight={[
+      'Este aviso explica, en lenguaje claro, qué información personal pedimos, con qué finalidad la usamos y bajo qué reglas la compartimos o la resguardamos. La transparencia no es un trámite: es la base de la confianza con quien deja sus datos en un formulario o un mensaje.',
+      'El responsable del tratamiento y sus medios de contacto salen de una sola fuente de verdad (site.ts), así que el dato es siempre el mismo en cada página. ⚠️ Texto DEMO de la plantilla: revísalo con un profesional y ajústalo a tu operación real antes de publicar.',
+    ]}
+  />
+
+  <section class="section">
+    <div class="container">
+      <GuiaNota titulo="Qué es esta página (legal · placeholder)" archivo="src/pages/privacidad/index.astro">
+        <p>
+          Es una de las tres páginas <strong>legales</strong> que todo sitio profesional necesita
+          (aviso de privacidad, términos y política de cookies). El texto es <strong>DEMO</strong>:
+          la estructura y el tono están listos, pero el contenido jurídico debe adaptarse a tu
+          operación y revisarse por un abogado. Los datos de contacto del responsable salen de
+          <code>CONTACT</code> en <code>site.ts</code> (SSoT), nunca escritos a mano aquí.
+        </p>
+      </GuiaNota>
+
+      <SectionHeading
+        layout="duo"
+        eyebrow="El documento"
+        title="Tu información, tratada con cuidado"
+        desc="Un aviso de privacidad cumple la ley y, sobre todo, le dice a la persona qué pasa con sus datos."
+        body={[
+          'La ley exige informar quién trata los datos, para qué y cómo se protegen. Pero más allá del requisito, un aviso claro reduce la fricción: la persona entiende qué entrega y por qué, y decide con confianza. Por eso aquí el lenguaje es directo y sin letra chica innecesaria.',
+          'Las secciones de abajo son el esqueleto estándar de un aviso conforme a la legislación mexicana de protección de datos (LFPDPPP): identidad del responsable, finalidades, datos recabados, derechos ARCO y medios para ejercerlos. Reemplaza cada bloque con tu realidad operativa.',
+        ]}
+      />
+
+      <div class="prose">
+        <p class="legal-meta">Última actualización: <strong>{actualizado}</strong></p>
+
+        <h2>1. Responsable del tratamiento</h2>
+        <p>
+          <strong>{SITE.organization.legalName}</strong> ({SITE.name}), con domicilio en
+          {CONTACT.street}, {CONTACT.city}, {CONTACT.state}, C.P. {CONTACT.postalCode}, es responsable
+          del tratamiento de tus datos personales. Para cualquier asunto relacionado con este aviso,
+          puedes contactarnos en <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>.
+        </p>
+
+        <h2>2. Datos que recabamos</h2>
+        <p>
+          Recabamos los datos que nos proporcionas de forma directa al llenar un formulario, escribirnos
+          por WhatsApp o correo: nombre, teléfono, correo electrónico y el contenido de tu mensaje.
+          No solicitamos datos personales sensibles.
+        </p>
+
+        <h2>3. Finalidades</h2>
+        <p>
+          Usamos tus datos para responder tu solicitud, elaborar cotizaciones, dar seguimiento comercial
+          y prestarte el servicio contratado. De forma secundaria, y solo si lo autorizas, podríamos
+          enviarte información sobre novedades. Puedes negarte a estas finalidades secundarias sin que
+          afecte la atención principal.
+        </p>
+
+        <h2>4. Tus derechos ARCO</h2>
+        <p>
+          Tienes derecho a <strong>Acceder</strong>, <strong>Rectificar</strong> y <strong>Cancelar</strong>
+          tus datos, así como a <strong>Oponerte</strong> a su tratamiento (derechos ARCO). También puedes
+          revocar el consentimiento que nos otorgaste. Para ejercerlos, escríbenos a
+          <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a> indicando tu nombre y la solicitud concreta.
+        </p>
+
+        <h2>5. Cambios a este aviso</h2>
+        <p>
+          Podemos actualizar este aviso para reflejar cambios legales o de nuestra operación. Publicaremos
+          la versión vigente en esta misma página, con su fecha de actualización.
+        </p>
+
+        <p class="legal-note">
+          ⚠️ <strong>Contenido DEMO de la plantilla.</strong> Este texto es un punto de partida, no asesoría
+          legal. Adáptalo a tu operación y revísalo con un profesional antes de publicar tu sitio.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Más sobre privacidad y uso del sitio" />
+</PageLayout>
+
+<style>
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* Prose legal — lectura cómoda, ancho de medida controlado. */
+  .prose { max-width: 72ch; margin-top: var(--sp-6); }
+  .prose h2 { font-family: var(--font-heading); font-size: var(--text-xl); font-weight: var(--weight-bold); color: var(--c-ink); margin: var(--sp-6) 0 var(--sp-2); }
+  .prose p { font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); margin: 0 0 var(--sp-3); }
+  .prose a { color: var(--c-primary); text-decoration: underline; text-underline-offset: 2px; }
+  .prose a:hover { color: var(--c-primary-dark); }
+  .legal-meta { font-size: var(--text-sm); color: var(--c-muted); }
+  .legal-note {
+    margin-top: var(--sp-5); padding: var(--sp-4); border-radius: var(--radius-md);
+    background: var(--c-surface); border: 1px solid var(--c-border); font-size: var(--text-sm);
+  }
+</style>

@@ -1,0 +1,92 @@
+---
+// ============================================================================
+// /cobertura/ — Landing de Cobertura (zonas atendidas).
+// ----------------------------------------------------------------------------
+// Lista las zonas desde COVERAGE_STATES (TAXONOMY en site.ts, SSoT) — la misma
+// fuente del dropdown «Cobertura» del Header. Cada tarjeta enlaza a su detalle
+// /cobertura/<slug>, generado por [...slug].astro. SEO local. Datos DEMO.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import CategoryCard from '@components/CategoryCard.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import { COVERAGE_STATES, waUrl, WA_MESSAGES } from '@config/site'
+
+const cierreItems = [
+  { label: 'Servicios', href: '/servicios', sub: 'Lo que ofrecemos' },
+  { label: 'Productos', href: '/productos', sub: 'Catálogo del sitio' },
+  { label: 'Contacto', href: '/contacto', sub: '¿Estás en otra zona?' },
+  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
+]
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), sub: 'Respuesta inmediata', external: true }
+
+const tipoLabel = (t: string) => (t === 'operativo' ? 'Operativo' : 'Comercial')
+---
+
+<PageLayout
+  title="Cobertura"
+  description="Zonas que atiende Ejemplos.mx: cobertura por ciudad y estado, cada una con su página de detalle. SEO local data-driven. Datos DEMO de la plantilla."
+  pageType="category"
+  breadcrumbs={[{ label: 'Cobertura' }]}
+  guia={false}
+>
+  <Hero
+    badge="Categoría · Cobertura"
+    title="Dónde"
+    accent="atendemos"
+    subtitle="Las zonas donde operamos, cada una con su página propia: el patrón con el que un negocio cubre varias ubicaciones sin canibalizar su SEO."
+    descRight={[
+      'La cobertura es clave para el SEO local: cada zona merece su propia página, con su nombre, sus colonias y sus datos, para responder a búsquedas como "servicio en <ciudad>". Una sola página genérica que mencione todas las zonas compite mal; varias páginas específicas posicionan cada una por su cuenta.',
+      'La lista sale de COVERAGE_STATES en site.ts, la misma fuente del menú. Cada tarjeta lleva a una página de zona generada automáticamente. Distinguimos zona "operativa" (donde damos servicio directo) de "comercial" (donde atendemos a distancia). Datos DEMO de la plantilla.',
+    ]}
+  />
+
+  <section class="section">
+    <div class="container">
+      <GuiaNota titulo="Qué es esta página (categoría · cobertura)" archivo="src/pages/cobertura/index.astro">
+        <p>
+          Landing que lista las zonas desde <code>COVERAGE_STATES</code> en <code>site.ts</code> (SSoT).
+          Cada tarjeta enlaza a su detalle <code>/cobertura/&lt;slug&gt;</code>, generado por
+          <code>[...slug].astro</code>. Es el patrón de <strong>SEO local multi-zona</strong>: una página
+          por ubicación, todas desde una sola fuente de datos.
+        </p>
+      </GuiaNota>
+
+      <SectionHeading
+        layout="duo"
+        eyebrow="Las zonas"
+        title="Una página por ubicación"
+        desc="Cada zona con su propia URL, su nombre y sus datos: así se posiciona el SEO local de verdad."
+        body={[
+          'Cuando un negocio atiende varias ubicaciones, la tentación es listarlas todas en una sola página. Pero el buscador premia la página específica: "servicio en CDMX" rankea mejor con una página dedicada a CDMX que con un párrafo perdido entre veinte ciudades. Una zona, una página, una intención.',
+          'Por eso cada tarjeta de abajo abre una página de zona con su contenido propio. Mantenerlas todas coherentes es fácil porque comparten plantilla y se generan desde la misma fuente de datos; solo cambia el contenido específico de cada ubicación.',
+        ]}
+      />
+
+      <div class="grid">
+        {COVERAGE_STATES.map((z, i) => (
+          <CategoryCard
+            label={z.label}
+            href={`/cobertura/${z.slug}`}
+            blurb={`Cobertura ${tipoLabel(z.type).toLowerCase()} en ${z.label}. Página de zona DEMO con el patrón de SEO local: nombre, alcance y servicios disponibles.`}
+            badge={tipoLabel(z.type)}
+            ctaLabel="Ver zona"
+            index={i}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando el sitio" />
+</PageLayout>
+
+<style>
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+  .grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 640px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
+</style>

@@ -1,0 +1,118 @@
+---
+// ============================================================================
+// /cookies/ — Política de cookies (página legal).
+// Serie LEGAL (privacidad · términos · cookies). Extiende PageLayout. Texto DEMO:
+// estructura lista; ajusta la tabla de cookies a las que tu sitio realmente use.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import { SITE, CONTACT, waUrl, WA_MESSAGES } from '@config/site'
+
+const actualizado = '20 de junio de 2026'
+
+const cierreItems = [
+  { label: 'Aviso de privacidad', href: '/privacidad', sub: 'Cómo tratamos tus datos' },
+  { label: 'Términos y condiciones', href: '/terminos', sub: 'El acuerdo de uso' },
+  { label: 'Contacto', href: '/contacto', sub: '¿Dudas sobre cookies?' },
+  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
+]
+const cierreCta = { label: 'Escríbenos por WhatsApp', href: waUrl(WA_MESSAGES.contacto), sub: 'Atención directa', external: true }
+---
+
+<PageLayout
+  title="Política de cookies"
+  description="Política de cookies de Ejemplos.mx: qué son, cuáles usamos, con qué finalidad y cómo gestionarlas desde tu navegador. Documento DEMO de la plantilla."
+  pageType="page"
+  breadcrumbs={[{ label: 'Política de cookies' }]}
+  guia={false}
+>
+  <Hero
+    badge="Legal · Cookies"
+    title="Política de"
+    accent="cookies"
+    subtitle="Qué guardamos en tu navegador, para qué sirve y cómo lo controlas tú: sin tecnicismos y sin sorpresas."
+    descRight={[
+      'Las cookies son pequeños archivos que un sitio guarda en tu navegador para recordar preferencias o medir cómo se usa la página. No son malas por sí mismas; el problema es cuando no se explican. Esta política dice cuáles usamos y para qué, en lenguaje de persona.',
+      'Tú mandas: desde la configuración de tu navegador puedes ver, bloquear o borrar las cookies cuando quieras. ⚠️ Texto DEMO de la plantilla: ajusta la tabla a las cookies que tu sitio realmente instale (analítica, mapas, chat) y revísalo antes de publicar.',
+    ]}
+  />
+
+  <section class="section">
+    <div class="container">
+      <GuiaNota titulo="Qué es esta página (legal · placeholder)" archivo="src/pages/cookies/index.astro">
+        <p>
+          Tercera de las tres páginas <strong>legales</strong>. Explica el uso de cookies y cómo
+          gestionarlas. El texto es <strong>DEMO</strong>: declara solo las cookies que tu sitio use de
+          verdad (esta plantilla base no instala cookies de seguimiento). El contacto sale de
+          <code>CONTACT</code> en <code>site.ts</code> (SSoT).
+        </p>
+      </GuiaNota>
+
+      <SectionHeading
+        layout="duo"
+        eyebrow="El documento"
+        title="Transparencia sobre lo que guardamos"
+        desc="Una política de cookies honesta lista qué se instala, de qué tipo es y cuánto dura."
+        body={[
+          'Informar sobre cookies es un requisito legal en muchos casos, pero también una señal de respeto: la persona sabe qué se almacena en su equipo y decide. Por eso la buena práctica es declarar cada cookie con su finalidad y duración, sin esconderlas en un bloque genérico.',
+          'Abajo verás qué son, los tipos que existen y cómo gestionarlas desde el navegador. La tabla es de ejemplo: esta plantilla base no usa cookies de seguimiento, así que al añadir analítica, mapas o un chat deberás declararlas aquí.',
+        ]}
+      />
+
+      <div class="prose">
+        <p class="legal-meta">Última actualización: <strong>{actualizado}</strong></p>
+
+        <h2>1. ¿Qué son las cookies?</h2>
+        <p>
+          Una cookie es un pequeño archivo de texto que un sitio guarda en tu navegador. Sirve para
+          recordar información entre visitas (por ejemplo, tus preferencias) o para entender cómo se usa
+          el sitio y mejorarlo.
+        </p>
+
+        <h2>2. Cookies que utilizamos</h2>
+        <p>
+          Esta plantilla base es un sitio estático que <strong>no instala cookies de seguimiento</strong>.
+          Si en tu implementación agregas herramientas como analítica web, mapas embebidos o un chat,
+          deberás declarar aquí cada cookie: su nombre, finalidad (técnica, de preferencias, analítica o
+          de marketing) y su duración.
+        </p>
+
+        <h2>3. Cómo gestionarlas</h2>
+        <p>
+          Puedes permitir, bloquear o eliminar las cookies desde la configuración de tu navegador
+          (Chrome, Safari, Firefox o Edge). Ten en cuenta que desactivar ciertas cookies puede afectar
+          el funcionamiento de algunas partes del sitio.
+        </p>
+
+        <h2>4. Cambios y contacto</h2>
+        <p>
+          Actualizaremos esta política cuando cambien las cookies que utilizamos. Si tienes dudas,
+          escríbenos a <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>.
+        </p>
+
+        <p class="legal-note">
+          ⚠️ <strong>Contenido DEMO de la plantilla.</strong> Declara únicamente las cookies que tu sitio
+          use de verdad y revisa esta política con un profesional antes de publicar.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Más sobre privacidad y uso del sitio" />
+</PageLayout>
+
+<style>
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+  .prose { max-width: 72ch; margin-top: var(--sp-6); }
+  .prose h2 { font-family: var(--font-heading); font-size: var(--text-xl); font-weight: var(--weight-bold); color: var(--c-ink); margin: var(--sp-6) 0 var(--sp-2); }
+  .prose p { font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); margin: 0 0 var(--sp-3); }
+  .prose a { color: var(--c-primary); text-decoration: underline; text-underline-offset: 2px; }
+  .prose a:hover { color: var(--c-primary-dark); }
+  .legal-meta { font-size: var(--text-sm); color: var(--c-muted); }
+  .legal-note { margin-top: var(--sp-5); padding: var(--sp-4); border-radius: var(--radius-md); background: var(--c-surface); border: 1px solid var(--c-border); font-size: var(--text-sm); }
+</style>

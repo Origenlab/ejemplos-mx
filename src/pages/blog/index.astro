@@ -1,0 +1,98 @@
+---
+// ============================================================================
+// /blog/ — Landing del Blog (lista de artículos).
+// ----------------------------------------------------------------------------
+// El grid NO se escribe a mano: sale de la colección `articulos` (.mdx), ordenada
+// por fecha de publicación. Cada tarjeta enlaza a su artículo /blog/<slug>,
+// generado por [...slug].astro con ArticleLayout. Contenido DEMO de la plantilla.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import CategoryCard from '@components/CategoryCard.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import { getCollection } from 'astro:content'
+import { waUrl, WA_MESSAGES } from '@config/site'
+
+const articulos = (await getCollection('articulos', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+)
+
+const cierreItems = [
+  { label: 'Servicios', href: '/servicios', sub: 'Lo que ofrecemos' },
+  { label: 'Productos', href: '/productos', sub: 'Catálogo del sitio' },
+  { label: 'Nosotros', href: '/nosotros', sub: 'Cómo trabajamos' },
+  { label: 'Contacto', href: '/contacto', sub: 'Hablemos de tu proyecto' },
+]
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.blog), sub: 'Respuesta inmediata', external: true }
+---
+
+<PageLayout
+  title="Blog — guías y novedades"
+  description="Blog de Ejemplos.mx: guías y novedades sobre construir sitios Astro con contenido en Markdown. Artículos DEMO de la plantilla, listados desde la colección."
+  pageType="page"
+  breadcrumbs={[{ label: 'Blog' }]}
+  guia={false}
+>
+  <Hero
+    badge="Guías y novedades"
+    title="El"
+    accent="blog"
+    subtitle="Artículos sobre cómo se construye y se mantiene un sitio profesional: guías prácticas y novedades del sistema."
+    descRight={[
+      'El blog es el motor de contenido del sitio: cada artículo es una página nueva que puede responder a una búsqueda y atraer visitas que aún no te conocen. Bien hecho, es la forma más sostenible de crecer en orgánico —no depende de pagar por cada clic, sino de resolver dudas reales.',
+      'Aquí el grid no se escribe a mano: sale de la colección de artículos (.mdx) ordenada por fecha. Publicar es agregar un archivo Markdown; la lista y la página del artículo se generan solas. Los artículos son DEMO de la plantilla: reemplázalos por los tuyos.',
+    ]}
+  />
+
+  <section class="section">
+    <div class="container">
+      <GuiaNota titulo="Qué es esta página (blog · listado)" archivo="src/pages/blog/index.astro">
+        <p>
+          Landing del blog: lista los artículos de <code>getCollection('articulos')</code>, ordenados por
+          <code>pubDate</code>. Cada tarjeta enlaza a su artículo <code>/blog/&lt;slug&gt;</code>,
+          renderizado por <code>[...slug].astro</code> con <code>ArticleLayout</code>. Para publicar,
+          agrega un <code>.mdx</code> en <code>src/content/articulos/</code> — esta página se actualiza sola.
+        </p>
+      </GuiaNota>
+
+      <SectionHeading
+        layout="duo"
+        eyebrow="Últimos artículos"
+        title="Contenido que trabaja por ti"
+        desc="Cada entrada es una puerta de entrada distinta al sitio desde el buscador."
+        body={[
+          'Un blog no es un diario: es una red de páginas que responden preguntas concretas de tu audiencia. Cada artículo bien enfocado capta una búsqueda específica y, desde ahí, conecta con tus productos y servicios mediante enlaces internos. Es contenido que sigue trabajando mucho después de publicarse.',
+          'Por eso el sistema separa el contenido (Markdown) del diseño (la plantilla): escribir o corregir un artículo no exige tocar código. El autor se concentra en el texto; la estructura, el SEO y los datos estructurados ya están resueltos.',
+        ]}
+      />
+
+      <div class="grid">
+        {articulos.map((a, i) => (
+          <CategoryCard
+            label={a.data.title}
+            href={`/blog/${a.id}`}
+            image={a.data.heroImage}
+            imageAlt={a.data.title}
+            badge={a.data.category}
+            blurb={a.data.description}
+            ctaLabel="Leer artículo"
+            index={i}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando el sitio" />
+</PageLayout>
+
+<style>
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+  .grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 640px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+</style>
