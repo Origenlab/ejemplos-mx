@@ -227,6 +227,19 @@ export type Service = (typeof TAXONOMY.services)[number];
 export type Sector = (typeof TAXONOMY.sectors)[number];
 export type CoverageState = (typeof TAXONOMY.coverageStates)[number];
 
+// ── MODULOS — páginas de detalle de cada módulo del chrome (SSoT) ─────────────
+// Cada módulo del sitio (topbar, header, hero, menú…) tiene su PÁGINA propia en
+// /modulos/<slug> que lo explica a fondo. Esta lista alimenta el dropdown
+// «Módulos» del Header; al publicar la página de un módulo, pon estado:'listo'.
+export type Modulo = { slug: string; label: string; href: string; desc: string; estado: 'listo' | 'proximo' };
+export const MODULOS: readonly Modulo[] = [
+  { slug: 'topbar',         label: 'Topbar',            href: '/modulos/topbar',         desc: 'La barra utilitaria superior: contacto y confianza siempre a la vista.', estado: 'listo' },
+  { slug: 'header',         label: 'Header',            href: '/modulos/header',         desc: 'Logotipo + navegación principal: el mapa del sitio, en cada página.', estado: 'proximo' },
+  { slug: 'hero',           label: 'Hero',              href: '/modulos/hero',           desc: 'La primera impresión: un H1 único con tu propuesta de valor.', estado: 'proximo' },
+  { slug: 'menu-secciones', label: 'Menú de secciones', href: '/modulos/menu-secciones', desc: 'La franja de navegación que va justo debajo del hero.', estado: 'proximo' },
+  { slug: 'footer',         label: 'Footer',            href: '/modulos/footer',         desc: 'El pie del sitio: cierre, enlaces, legales y contacto.', estado: 'proximo' },
+];
+
 // ── NAV — menú principal del Header (FUENTE ÚNICA: escritorio + móvil) ────────
 // Header.astro itera ESTE array para generar los DOS menús (desktop y móvil) y
 // sus paneles desplegables. Para agregar, quitar o reordenar una entrada del
@@ -265,6 +278,15 @@ export const NAV: readonly NavItem[] = [
     panel: 'dropdown',
     allLabel: 'Ver todos los servicios',
     items: SERVICES.map((s) => ({ label: s.label, href: `/servicios/${s.id}/`, desc: s.desc })),
+  },
+  {
+    // Páginas de módulos del sitio (SSoT: MODULOS). El dropdown lista los 'listo';
+    // el enlace principal va a la página índice /modulos/ (roadmap completo).
+    label: 'Módulos',
+    href: '/modulos/',
+    panel: 'dropdown',
+    allLabel: 'Ver todos los módulos',
+    items: MODULOS.filter((m) => m.estado === 'listo').map((m) => ({ label: m.label, href: m.href, desc: m.desc })),
   },
   {
     label: 'Cobertura',

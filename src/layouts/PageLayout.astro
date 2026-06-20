@@ -43,9 +43,17 @@ export interface Props {
    * Si se omite o queda vacío, no se renderiza la barra ni el BreadcrumbList.
    */
   breadcrumbs?: { label: string; href?: string }[];
+  /**
+   * Modo guía del chrome (TopBar/Header anotados + leyenda explicativa).
+   * Default `true` → el sitio-plantilla muestra las guías en todas partes.
+   * Las páginas de detalle de un módulo (p. ej. /modulos/topbar) pasan
+   * `guia={false}`: ahí el módulo ya se documenta a fondo, así que el chrome
+   * se muestra real (sin leyenda). El showcase de guías vive en el índice.
+   */
+  guia?: boolean;
 }
 
-const { breadcrumbs = [], ...baseProps } = Astro.props;
+const { breadcrumbs = [], guia = true, ...baseProps } = Astro.props;
 
 // Las migas alimentan el BreadcrumbList del schema (lo emite buildSchema UNA
 // sola vez, B3 — el componente Breadcrumbs NO debe emitir su propio JSON-LD).
@@ -65,12 +73,15 @@ const schemaData: SchemaData = {
 
 <BaseLayout {...baseProps} schemaData={schemaData}>
   {/* TopBar: barra utilitaria. `guia` = modo plantilla-guía (anota cada punto). */}
-  {/* En un sitio de cliente, cambia <TopBar guia /> por <TopBar />. */}
-  <TopBar guia />
-  <Header />
+  {/* En un sitio de cliente (o página de detalle), se pasa guia={false}. */}
+  <TopBar guia={guia} />
+  {/* Header: `guia` = leyenda explicativa bajo el header (igual que el topbar). */}
+  <Header guia={guia} />
 
-  {/* Barra de migas (entre header y contenido). Visual; el JSON-LD lo emite buildSchema. */}
-  {breadcrumbs.length > 0 && <Breadcrumbs items={breadcrumbs} />}
+  {/* Barra de migas (entre header y contenido). Visual; el JSON-LD lo emite buildSchema.
+      En modo guía se muestra SIEMPRE (ruta de ejemplo anotada + leyenda), aunque la
+      página no pase `breadcrumbs`; en producción solo si hay ruta real. */}
+  {(guia || breadcrumbs.length > 0) && <Breadcrumbs items={breadcrumbs} guia={guia} />}
 
   <main id="main-content">
     <slot />

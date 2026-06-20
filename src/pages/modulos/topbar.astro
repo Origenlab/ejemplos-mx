@@ -1,0 +1,328 @@
+---
+// ============================================================================
+// /modulos/topbar — PÁGINA DEL MÓDULO «Topbar».
+// ----------------------------------------------------------------------------
+// Documenta a fondo UNA pieza del chrome: qué es, para qué sirve, su importancia,
+// qué lleva y dónde va (capa conceptual / diseño-UX), y al final cómo está
+// construido en esta plantilla (capa técnica: componente, SSoT, helpers, responsive).
+// Primera de la serie /modulos/*; las siguientes (header, hero, menú) seguirán el
+// mismo molde. Todo dato real sale de site.ts (SSoT); los enlaces, de telUrl()/waUrl().
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import CTABanner from '@components/CTABanner.astro'
+import { SITE, CONTACT, WA_MESSAGES, waUrl } from '@config/site'
+
+const schedule = CONTACT.schedule?.display as string | undefined
+
+// Las 4 piezas del topbar (misma fuente que la leyenda del componente).
+const partes = [
+  {
+    n: 1,
+    nombre: 'Propuesta principal',
+    que: 'Una frase corta que posiciona la marca: lo primero que se lee. No es un eslogan vacío, sino la línea que dice a qué te dedicas. Ojo: el logotipo NO va aquí, va en el Header.',
+    dato: 'SITE.tagline',
+  },
+  {
+    n: 2,
+    nombre: 'Horario',
+    que: 'Señal de disponibilidad y confianza —«hay alguien y atiende a estas horas»—. Es información de apoyo, así que en móvil se oculta para cederle el espacio a las acciones.',
+    dato: 'CONTACT.schedule.display',
+  },
+  {
+    n: 3,
+    nombre: 'Teléfono',
+    que: 'Contacto directo con clic-para-llamar en el celular. El enlace tel: no se escribe a mano: lo arma telUrl() con el número en formato E.164.',
+    dato: 'CONTACT.phone · telUrl()',
+  },
+  {
+    n: 4,
+    nombre: 'WhatsApp',
+    que: 'La acción principal de la barra, resaltada como pastilla. El enlace SIEMPRE se arma con waUrl() y el mensaje precargado sale de WA_MESSAGES, para que el lead entre en materia desde el primer toque.',
+    dato: 'waUrl(WA_MESSAGES.cotizar)',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Alcance inmediato',
+    desc: 'El teléfono y el WhatsApp están a un toque desde cualquier página, sin buscar. Menos fricción para contactar = más conversaciones.',
+  },
+  {
+    titulo: 'Confianza a primera vista',
+    desc: 'Horario y propuesta visibles dicen, sin palabras, «este es un negocio real y disponible». Esa señal pesa antes de leer una sola línea del contenido.',
+  },
+  {
+    titulo: 'Constancia en todo el sitio',
+    desc: 'Va en todas las páginas, idéntica. El visitante siempre sabe dónde encontrar el contacto, esté donde esté dentro del sitio.',
+  },
+]
+
+const sis = [
+  'Mantenla ligera: propuesta + 2 o 3 datos de contacto, nada más.',
+  'En móvil, conserva las acciones (llamar / WhatsApp) y suelta lo accesorio (propuesta, horario).',
+  'Usa datos reales y una sola fuente (site.ts); cámbialos una vez y se actualizan en todo el sitio.',
+  'Arma los enlaces con telUrl() / waUrl(): centralizan el número y el encoding.',
+]
+const nos = [
+  'No metas el logotipo aquí: la marca vive en el Header, justo debajo.',
+  'No escribas el tel: o el wa.me a mano dentro de un componente (regla dura D4).',
+  'No la satures de enlaces ni la conviertas en un segundo menú.',
+  'No dejes datos DEMO en producción: teléfono, horario y mensaje deben ser los reales.',
+]
+---
+
+<PageLayout
+  title="El Topbar — la barra utilitaria superior"
+  description="Qué es un topbar, para qué sirve, su importancia, qué lleva y dónde va — más cómo está construido en esta plantilla (SSoT en site.ts, enlaces con telUrl/waUrl, responsive)."
+  pageType="page"
+  guia={false}
+  breadcrumbs={[{ label: 'Módulos', href: '/modulos/topbar' }, { label: 'Topbar' }]}
+>
+  <Hero
+    badge="Módulo del sitio · Topbar"
+    title="El Topbar:"
+    accent="la barra utilitaria"
+    subtitle="La franja delgada que corona el sitio, por encima del logotipo y el menú. Pequeña en tamaño, grande en función: es la capa de «siempre disponible» —contacto y confianza a un golpe de vista—."
+    descRight={[
+      'No es una ficha técnica más: es el módulo entero, abierto y explicado. Qué problema resuelve y por qué se gana su lugar, de qué piezas se compone, dónde encaja en el layout y cómo está construido —el recorrido completo, del criterio de diseño a la implementación.',
+      'Y todo se apoya en un mismo principio: una única fuente de verdad. El contenido y el diseño van por separado —los datos en site.ts, la apariencia en el componente—; por eso ajustas un valor una sola vez y el cambio se propaga, idéntico y sin sorpresas, a cada página.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Definición"
+        title="¿Qué es un topbar?"
+        desc="La barra utilitaria superior: una franja fina, de un solo color de marca, que va por encima del menú y se repite en todas las páginas."
+        body={[
+          'El topbar (o barra utilitaria) es esa tira delgada que corona el sitio, antes del logotipo y la navegación. No es decoración ni un segundo menú: es el lugar donde pones lo que el visitante puede necesitar en cualquier momento —cómo te llama, en qué horario, por dónde escribirte— sin que estorbe al mensaje principal de la página.',
+          'Por eso es discreta: poca altura, un color sobrio de marca y texto pequeño. Su trabajo no es llamar la atención, sino estar ahí cuando se la busca. Piensa en ella como el mostrador de información de una tienda: nadie entra por él, pero todos agradecen que exista y esté siempre en el mismo sitio.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? — función e importancia ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Función e importancia"
+        title="¿Para qué sirve?"
+        desc="Cumple dos funciones a la vez: acercar el contacto y transmitir confianza, en todas las páginas y sin pedir nada a cambio."
+        body={[
+          'Su función es ser la capa de «siempre disponible». Mientras el hero presenta y el catálogo vende, el topbar resuelve una pregunta muy concreta que el visitante trae en la cabeza: «si me interesa, ¿cómo los contacto?». Tener esa respuesta a la vista, en cada página, baja la fricción justo en el momento en que alguien decide dar el paso.',
+          'Y ahí está su importancia: una parte enorme de las consultas se pierden por un detalle tonto —el visitante no encontró el teléfono o el WhatsApp rápido y se fue—. El topbar elimina ese punto de fuga. Es de los elementos más pequeños del sitio y, sin embargo, de los que más trabajan por la conversión.',
+        ]}
+      />
+      <div class="bene">
+        {beneficios.map((b) => (
+          <article class="bene__card">
+            <h3 class="bene__title">{b.titulo}</h3>
+            <p class="bene__desc">{b.desc}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3) ¿QUÉ LLEVA? — anatomía con ejemplo en vivo ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Anatomía"
+        title="¿Qué va en el topbar?"
+        desc="Cuatro piezas, ni una más: una propuesta corta y tres formas de contacto."
+        body={[
+          'Cada pieza se gana su lugar por una razón. La propuesta posiciona la marca en una línea; el teléfono y el WhatsApp dejan el contacto a un toque; el horario aporta la señal de disponibilidad. Si un elemento no trabaja para el visitante, no entra en la barra.',
+          'Abajo la ves montada con los datos reales de la plantilla. Cada punto numerado se desglosa en su tarjeta —qué resuelve y de qué campo de site.ts toma su valor—, para que distingas de un vistazo qué es diseño y qué es dato.',
+        ]}
+      />
+
+      {/* Ejemplo estático del topbar (réplica con los datos reales de site.ts). */}
+      <div class="tbx" role="img" aria-label="Ejemplo de barra utilitaria superior">
+        <span class="tbx__promo"><span class="tbx__n">1</span>{SITE.tagline}</span>
+        {schedule && (
+          <span class="tbx__item"><span class="tbx__n">2</span>{schedule}</span>
+        )}
+        <span class="tbx__item"><span class="tbx__n">3</span>{CONTACT.phone}</span>
+        <span class="tbx__item tbx__wa"><span class="tbx__n">4</span>WhatsApp</span>
+      </div>
+
+      <div class="partes">
+        {partes.map((p) => (
+          <article class="parte">
+            <span class="parte__num">{p.n}</span>
+            <div class="parte__body">
+              <h3 class="parte__nombre">{p.nombre}</h3>
+              <p class="parte__que">{p.que}</p>
+              <p class="parte__dato"><span>Dato</span> <code>{p.dato}</code></p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 4) ¿DÓNDE VA? — posición ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Posición"
+        title="¿Dónde se coloca?"
+        desc="Hasta arriba del todo, antes del header, de borde a borde. Es lo primero del sitio en el orden de lectura."
+        body={[
+          'Va en la cima: por encima del logotipo y del menú, ocupando todo el ancho. Ese lugar no es casual —al estar primero, es lo que enmarca la entrada al sitio y deja el contacto a la vista antes de cualquier otra cosa—. Debajo, pegado, va el Header con la marca y la navegación.',
+          'En esta plantilla la barra es fija (sticky): se queda arriba al hacer scroll, así el WhatsApp nunca se va de pantalla. Y es responsive con criterio: en escritorio caben las cuatro piezas; conforme la pantalla se angosta, primero cae la propuesta y el horario, y en móvil sobrevive lo único imprescindible —la acción de contacto—.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 5) CÓMO SE ARMA — técnico ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Implementación"
+        title="Cómo está construido"
+        desc="Un componente, una sola fuente de datos y enlaces que se arman solos. Editas el dato una vez y cambia en todo el sitio."
+        body={[
+          'El topbar vive en el componente TopBar.astro, pero no guarda ningún dato propio: todo —propuesta, horario, teléfono y WhatsApp— sale de site.ts, la única fuente de verdad (SSoT). Por eso cambiar el número de teléfono o el horario es un solo ajuste, en un solo lugar, que se refleja en cada página.',
+          'Los enlaces de contacto nunca se escriben a mano. El tel: lo construye telUrl() y el de WhatsApp lo arma waUrl() con el mensaje precargado de WA_MESSAGES. Es la regla dura D4: centralizar número y encoding evita errores y mantiene todo consistente. La barra es accesible (cada enlace con su aria-label, iconos ocultos a lectores) y responsive por breakpoints.',
+        ]}
+      />
+
+      <div class="prose">
+        <p>
+          En concreto, así se reparten las responsabilidades: el <strong>componente</strong>
+          (<code>src/components/TopBar.astro</code>) pone el diseño y el comportamiento; el
+          <strong>contenido</strong> (<code>src/config/site.ts</code>) pone los datos. El componente
+          lee <code>SITE.tagline</code>, <code>CONTACT.schedule.display</code>, <code>CONTACT.phone</code>
+          y los mensajes de <code>WA_MESSAGES</code>, y construye los enlaces con
+          <code>telUrl()</code> y <code>waUrl()</code>.
+        </p>
+        <p>
+          El <strong>responsive</strong> es por prioridad de acciones: en
+          <code>&lt; 900px</code> se ocultan la propuesta y el horario; en
+          <code>&lt; 480px</code> cae también el teléfono y queda solo el WhatsApp —la acción que más
+          convierte—. Así, en una pantalla pequeña, la barra no se amontona: conserva lo esencial.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 6) BUENAS PRÁCTICAS Y ERRORES ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Buenas prácticas"
+        title="Qué hacer y qué evitar"
+        desc="La diferencia entre un topbar que ayuda y uno que estorba está en unos pocos hábitos."
+        body={[
+          'Ninguno de estos hábitos es capricho: salen de observar qué acerca al visitante y qué lo aleja. Un topbar que ayuda mantiene el foco en el contacto; uno que estorba se llena de enlaces, imita al menú o arrastra datos de ejemplo hasta producción.',
+          'La ventaja es que son pocos y se sostienen solos en cuanto respetas la fuente única: datos reales en site.ts, enlaces con telUrl() y waUrl(), y la barra ligera. Abajo, lo que conviene y lo que conviene evitar, enfrentados.',
+        ]}
+      />
+      <div class="dodont">
+        <article class="dd dd--si">
+          <h3 class="dd__title"><span class="dd__icon" aria-hidden="true">✓</span> Sí conviene</h3>
+          <ul class="dd__list">
+            {sis.map((s) => <li>{s}</li>)}
+          </ul>
+        </article>
+        <article class="dd dd--no">
+          <h3 class="dd__title"><span class="dd__icon" aria-hidden="true">✕</span> Mejor evita</h3>
+          <ul class="dd__list">
+            {nos.map((s) => <li>{s}</li>)}
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <CTABanner
+    heading="El topbar es solo el primer módulo"
+    desc="Esta página es la plantilla para documentar cada parte del sitio. Las siguientes —Header, Hero, menú de secciones— seguirán el mismo molde."
+    btns={[
+      { label: 'Escríbenos por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), icon: 'wa', primary: true, external: true },
+      { label: 'Volver al inicio', href: '/', icon: 'arrow' },
+    ]}
+    badge="Serie · Módulos del sitio"
+    variant="dark"
+    centered={true}
+  />
+</PageLayout>
+
+<style>
+  /* Utilidades estructurales (tokens.css = fuente única; scoped por página). */
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* ── Beneficios (¿para qué sirve?) ── */
+  .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .bene { grid-template-columns: repeat(3, 1fr); } }
+  .bene__card { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); }
+  .bene__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .bene__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Ejemplo estático del topbar ── */
+  .tbx {
+    display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-3) var(--sp-5);
+    margin-top: var(--sp-6); padding: var(--sp-3) var(--sp-4);
+    background: var(--c-primary); color: #fff; border-radius: var(--radius-md);
+    font-size: var(--text-sm); font-weight: var(--weight-medium);
+  }
+  .tbx__promo { display: inline-flex; align-items: center; gap: var(--sp-2); margin-right: auto; }
+  .tbx__item { display: inline-flex; align-items: center; gap: var(--sp-2); }
+  .tbx__wa { background: rgba(255,255,255,.16); padding: .2rem .7rem; border-radius: var(--radius-full); font-weight: var(--weight-semibold); }
+  .tbx__n {
+    flex-shrink: 0; display: inline-grid; place-items: center; width: 18px; height: 18px;
+    border-radius: var(--radius-full); background: #fff; color: var(--c-primary);
+    font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: .6875rem;
+  }
+
+  /* ── Cards de las 4 partes ── */
+  .partes { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-5); }
+  @media (min-width: 600px) { .partes { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1000px) { .partes { grid-template-columns: repeat(4, 1fr); } }
+  .parte { display: flex; gap: var(--sp-3); align-items: start; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-4); }
+  .parte__num { flex-shrink: 0; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: var(--radius-full); background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: var(--text-sm); }
+  .parte__body { display: grid; gap: 4px; min-width: 0; }
+  .parte__nombre { margin: 0; font-family: var(--font-heading); font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .parte__que { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
+  .parte__dato { margin: 4px 0 0; display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--text-xs); color: var(--c-muted); }
+  .parte__dato span { text-transform: uppercase; letter-spacing: .06em; font-weight: var(--weight-semibold); }
+  .parte__dato code, .prose code {
+    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace; font-size: .85em;
+    background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+    padding: .05em .4em; color: var(--c-primary-dark);
+  }
+
+  /* ── Prose técnica ── */
+  .prose { max-width: 75ch; margin-top: var(--sp-6); }
+  .prose p { margin: 0 0 var(--sp-4); font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .prose strong { color: var(--c-ink); font-weight: var(--weight-semibold); }
+
+  /* ── Sí / No ── */
+  .dodont { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .dodont { grid-template-columns: 1fr 1fr; } }
+  .dd { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); }
+  .dd__title { margin: 0 0 var(--sp-3); display: flex; align-items: center; gap: var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .dd__icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-full); font-size: var(--text-sm); }
+  .dd--si .dd__icon { background: rgba(34,197,94,.14); color: #16a34a; }
+  .dd--no .dd__icon { background: rgba(239,68,68,.12); color: #dc2626; }
+  .dd__list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-2); }
+  .dd__list li { position: relative; padding-left: var(--sp-5); font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
+  .dd__list li::before { content: ''; position: absolute; left: 0; top: .55em; width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--c-muted); }
+</style>

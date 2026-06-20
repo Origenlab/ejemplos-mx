@@ -1,43 +1,196 @@
 ---
-// Breadcrumbs.astro — Migas de pan visuales con microdata schema.org BreadcrumbList. ORIGEN: PROYECTORED/src/components/ui/Breadcrumb.astro (componente único del ecosistema, microdata inline).
-// IMPORTANTE: este componente NO emite el bloque JSON-LD <script type="application/ld+json">. El BreadcrumbList JSON-LD lo genera seo.ts/el Layout en UN SOLO lugar (anti-patrón B3: breadcrumb duplicado en BaseLayout y en Breadcrumbs). Aquí sólo microdata visible para no duplicar.
+// Breadcrumbs.astro — Migas de pan: la ruta que dice DÓNDE está el visitante en la
+// jerarquía del sitio, justo debajo del Header. ORIGEN: PROYECTORED/src/components/ui/Breadcrumb.astro.
+//
+// Cumple dos trabajos a la vez: (1) navegación visible —orienta y deja volver a
+// cualquier nivel— y (2) microdata schema.org BreadcrumbList para que el buscador
+// muestre la ruta en sus resultados.
+//
+// IMPORTANTE: este componente NO emite el bloque JSON-LD <script type="application/ld+json">.
+// El BreadcrumbList JSON-LD lo genera seo.ts/el Layout en UN SOLO lugar (anti-patrón B3:
+// breadcrumb duplicado). Aquí sólo microdata visible para no duplicar.
+//
+// MODO GUÍA (prop `guia`): numera cada parte de una ruta de EJEMPLO y añade debajo una
+// leyenda que explica qué es cada eslabón y de dónde sale el dato — mismo molde que TopBar/Header.
+// En un sitio de cliente (o página de detalle) se usa <Breadcrumbs items={...} /> sin `guia`:
+// se pinta la ruta REAL, sin marcadores ni leyenda.
 interface BreadcrumbItem {
   label: string
   href?: string   // sin href → es el item actual (página)
+  mark?: number   // solo modo guía: número del marcador
 }
 interface Props {
-  items: BreadcrumbItem[]
+  items?: BreadcrumbItem[]
+  /** Modo guía: ruta de ejemplo con marcadores numerados + leyenda explicativa. Default false (producción). */
+  guia?: boolean
 }
-const { items } = Astro.props
+const { items = [], guia = false } = Astro.props
+
+// Ruta de EJEMPLO para el modo guía (la ruta real cambia en cada página; aquí se
+// muestra la anatomía canónica: raíz → eslabón intermedio → página actual).
+const DEMO: BreadcrumbItem[] = [
+  { label: 'Inicio', href: '/', mark: 1 },
+  { label: 'Servicios', href: '/servicios/', mark: 2 },
+  { label: 'Diseño de logotipo', mark: 4 },
+]
+
+// Partes de las migas — fuente única de la leyenda (vive junto al markup que documenta).
+const PUNTOS = [
+  {
+    n: 1,
+    nombre: 'Raíz (Inicio)',
+    que: 'El primer eslabón: siempre enlaza a la home. Es el punto de partida de la ruta y el «volver al inicio» que todos esperan de la jerarquía.',
+    dato: "items[0] · href '/'",
+  },
+  {
+    n: 2,
+    nombre: 'Eslabón intermedio',
+    que: 'Cada nivel ancestro entre la home y la página actual (categoría, subcategoría). Son enlaces: dejan saltar a cualquier nivel superior.',
+    dato: 'items[].href',
+  },
+  {
+    n: 3,
+    nombre: 'Separador',
+    que: 'El icono (›) entre eslabones. Es decorativo —va con aria-hidden— y solo marca la dirección de la jerarquía; nunca es un enlace.',
+    dato: 'SVG · aria-hidden',
+  },
+  {
+    n: 4,
+    nombre: 'Página actual',
+    que: 'El último eslabón: la página donde estás. No enlaza (ya estás ahí) y se marca con aria-current="page" para los lectores de pantalla.',
+    dato: 'item sin href · aria-current',
+  },
+]
 ---
 
 <div class="breadcrumb-bar">
-  <nav aria-label="Migas de pan" class="breadcrumb">
-    <ol class="breadcrumb__list" itemscope itemtype="https://schema.org/BreadcrumbList">
-      {items.map((item, index) => (
-        <li class="breadcrumb__item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
-          {item.href ? (
-            <a href={item.href} class="breadcrumb__link" itemprop="item"><span itemprop="name">{item.label}</span></a>
-          ) : (
-            <span class="breadcrumb__current" aria-current="page" itemprop="name">{item.label}</span>
-          )}
-          <meta itemprop="position" content={String(index + 1)} />
-          {index < items.length - 1 && (
-            <svg class="breadcrumb__sep" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
-          )}
-        </li>
-      ))}
-    </ol>
+  <nav aria-label={guia ? 'Migas de pan (ejemplo de la guía)' : 'Migas de pan'} class="breadcrumb">
+    {guia ? (
+      /* Modo guía: ruta de EJEMPLO con marcadores (sin microdata: el JSON-LD real lo emite el Layout). */
+      <ol class="breadcrumb__list">
+        {DEMO.map((item, index) => (
+          <li class="breadcrumb__item">
+            {item.href ? (
+              <a href={item.href} class="breadcrumb__link"><span class="bc-mark" aria-hidden="true">{item.mark}</span>{item.label}</a>
+            ) : (
+              <span class="breadcrumb__current" aria-current="page"><span class="bc-mark" aria-hidden="true">{item.mark}</span>{item.label}</span>
+            )}
+            {index < DEMO.length - 1 && (
+              <span class="breadcrumb__sepwrap">
+                {index === DEMO.length - 2 && <span class="bc-mark" aria-hidden="true">3</span>}
+                <svg class="breadcrumb__sep" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+    ) : (
+      /* Producción: ruta REAL con microdata BreadcrumbList. */
+      <ol class="breadcrumb__list" itemscope itemtype="https://schema.org/BreadcrumbList">
+        {items.map((item, index) => (
+          <li class="breadcrumb__item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+            {item.href ? (
+              <a href={item.href} class="breadcrumb__link" itemprop="item"><span itemprop="name">{item.label}</span></a>
+            ) : (
+              <span class="breadcrumb__current" aria-current="page" itemprop="name">{item.label}</span>
+            )}
+            <meta itemprop="position" content={String(index + 1)} />
+            {index < items.length - 1 && (
+              <svg class="breadcrumb__sep" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+            )}
+          </li>
+        ))}
+      </ol>
+    )}
   </nav>
 </div>
 
+{guia && (
+  <div class="bcg" role="note" aria-label="Guía de las migas de pan">
+    <div class="bcg-inner">
+      <p class="bcg__tag"><span aria-hidden="true">🧭</span> Guía · Migas de pan</p>
+      <p class="bcg__intro">
+        La ruta que muestra dónde está el visitante dentro de la jerarquía del sitio, justo debajo del header.
+        Sirve para dos cosas a la vez: orientar y dejar volver a cualquier nivel superior, y alimentar el
+        <code>BreadcrumbList</code> de schema.org que el buscador usa para mostrar la ruta en sus resultados.
+        Cada página define su ruta una sola vez con la prop <code>breadcrumbs</code>; el JSON-LD lo emite
+        <code>buildSchema</code> (no este componente, para no duplicarlo). Esto es cada eslabón:
+      </p>
+      <ol class="bcg__list">
+        {PUNTOS.map((p) => (
+          <li class="bcg__pt">
+            <span class="bcg__num">{p.n}</span>
+            <div class="bcg__pt-body">
+              <p class="bcg__nombre">{p.nombre}</p>
+              <p class="bcg__que">{p.que}</p>
+              <p class="bcg__dato"><span>Dato</span> <code>{p.dato}</code></p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <p class="bcg__edit">
+        <span>Edita en</span> <code>src/components/Breadcrumbs.astro</code> · prop <code>breadcrumbs</code> de cada página
+      </p>
+    </div>
+  </div>
+)}
+
 <style>
+  /* ── Barra real ─────────────────────────────────────────────────────────── */
   .breadcrumb-bar { background: var(--c-surface, var(--color-gray-50, #fafafa)); border-bottom: 1px solid var(--c-border, var(--border, #e8e8e8)); }
   .breadcrumb { max-width: var(--container-max, 1400px); margin-inline: auto; padding: var(--sp-3, .75rem) var(--container-px, 1.5rem); }
   .breadcrumb__list { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1, .25rem); list-style: none; margin: 0; padding: 0; }
   .breadcrumb__item { display: inline-flex; align-items: center; gap: var(--sp-1, .25rem); }
-  .breadcrumb__link { font-size: var(--text-xs, .8125rem); color: var(--text-muted, var(--c-muted, #6b7280)); text-decoration: none; }
+  .breadcrumb__link { display: inline-flex; align-items: center; font-size: var(--text-xs, .8125rem); color: var(--text-muted, var(--c-muted, #6b7280)); text-decoration: none; }
   .breadcrumb__link:hover { color: var(--color-red, var(--c-primary, #C41E24)); text-decoration: underline; }
-  .breadcrumb__current { font-size: var(--text-xs, .8125rem); color: var(--c-ink, var(--color-gray-900, #111827)); font-weight: var(--weight-medium, 500); }
+  .breadcrumb__current { display: inline-flex; align-items: center; font-size: var(--text-xs, .8125rem); color: var(--c-ink, var(--color-gray-900, #111827)); font-weight: var(--weight-medium, 500); }
+  .breadcrumb__sepwrap { display: inline-flex; align-items: center; gap: var(--sp-1, .25rem); }
   .breadcrumb__sep { color: var(--text-muted, var(--c-muted, #9ca3af)); flex-shrink: 0; }
+
+  /* ── Marcadores (modo guía) — círculos numerados sobre la ruta de ejemplo ── */
+  .bc-mark {
+    flex-shrink: 0; display: inline-grid; place-items: center;
+    width: 18px; height: 18px; margin-right: 6px;
+    border-radius: var(--radius-full); background: var(--c-primary); color: #fff;
+    font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: .6875rem;
+  }
+  /* Sobre el separador el marcador va sin sangría a la derecha. */
+  .breadcrumb__sepwrap .bc-mark { margin-right: 0; }
+
+  /* ── Leyenda guía (igual que la del TopBar / Header) — franja bajo las migas ── */
+  .bcg { background: var(--c-surface); border-bottom: 1px solid var(--c-border); }
+  .bcg-inner { max-width: var(--container-max); margin-inline: auto; padding: var(--sp-4) var(--container-px) var(--sp-5); }
+  .bcg__tag {
+    display: inline-flex; align-items: center; gap: var(--sp-1); margin: 0 0 var(--sp-2);
+    font-family: var(--font-heading); font-size: var(--text-xs); font-weight: var(--weight-bold);
+    letter-spacing: .08em; text-transform: uppercase; color: var(--c-primary);
+  }
+  .bcg__intro { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); max-width: 70ch; }
+  .bcg__intro code, .bcg__dato code, .bcg__edit code {
+    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace; font-size: .85em;
+    background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+    padding: .05em .4em; color: var(--c-primary-dark);
+  }
+  .bcg__list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-3); grid-template-columns: 1fr; }
+  .bcg__pt {
+    display: flex; gap: var(--sp-3); align-items: start;
+    background: var(--c-white); border: 1px solid var(--c-border);
+    border-radius: var(--radius-md); padding: var(--sp-3) var(--sp-4);
+  }
+  .bcg__num {
+    flex-shrink: 0; display: inline-grid; place-items: center;
+    width: 24px; height: 24px; border-radius: var(--radius-full);
+    background: var(--c-primary); color: #fff;
+    font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: var(--text-sm);
+  }
+  .bcg__pt-body { display: grid; gap: 2px; min-width: 0; }
+  .bcg__nombre { margin: 0; font-family: var(--font-heading); font-weight: var(--weight-semibold); color: var(--c-ink); font-size: var(--text-base); }
+  .bcg__que { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
+  .bcg__dato { margin: 4px 0 0; font-size: var(--text-xs); color: var(--c-muted); display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+  .bcg__dato span, .bcg__edit span { text-transform: uppercase; letter-spacing: .06em; font-weight: var(--weight-semibold); color: var(--c-muted); }
+  .bcg__edit { margin: var(--sp-4) 0 0; display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--text-xs); color: var(--c-muted); }
+
+  /* Leyenda guía: 1 col (móvil) → 2 col (tablet) → fila de 4 cards (desktop). */
+  @media (min-width: 600px)  { .bcg__list { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1000px) { .bcg__list { grid-template-columns: repeat(4, 1fr); } }
 </style>

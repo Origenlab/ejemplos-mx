@@ -19,69 +19,11 @@ import CompanyAbout from "@components/CompanyAbout.astro";
 import FAQAccordion from "@components/FAQAccordion.astro";
 import ContactForm from "@components/ContactForm.astro";
 import GuiaNota from "@components/GuiaNota.astro";
-import GuiaAnatomia from "@components/GuiaAnatomia.astro";
-import TopBar from "@components/TopBar.astro";
 import { SITE, KEYWORDS, NAV, SERVICES, WA_MESSAGES, SHOWCASE, waUrl } from "@config/site";
 import { buildKeywordTitle, buildKeywordDescription, metaAudit } from "@lib/seo";
 
 // ── WhatsApp: SIEMPRE vía waUrl() (regla D4, nunca número hardcodeado) ──
 const waLink = waUrl();
-
-// ── 01 · Anatomía del TOPBAR — datos de la primera guía de chrome ───────────
-// La barra real (con pines) vive arriba en PageLayout (<TopBar guia />). Aquí
-// se DOCUMENTA con <GuiaAnatomia>. Todo es texto/datos; el diseño vive en el
-// componente. En un sitio real, esta sección se elimina (material de la guía).
-const topbarDesc =
-  "La franja por encima del menú: contacto y confianza siempre a la vista. Cuatro piezas, una sola fuente de datos y dos enlaces que se arman solos —nunca a mano.";
-const topbarIntro = [
-  "La barra utilitaria es la franja delgada que corona el sitio, por encima del logotipo y el menú. No vende: está para lo que el visitante puede necesitar en cualquier momento —cómo te llama, en qué horario, por dónde escribirte— sin estorbarle al mensaje principal. Por eso es discreta, pequeña y de un solo color de marca.",
-  "Va hasta arriba porque es la capa de «siempre disponible»: contacto y confianza a un golpe de vista. Cada dato sale de una sola fuente (site.ts) y los enlaces se construyen solos con telUrl() y waUrl(); cambias el número una vez y se actualiza en toda la barra, en todo el sitio.",
-];
-const topbarPuntos = [
-  {
-    n: 1,
-    nombre: "Propuesta principal",
-    que: "Lo primero que se lee: una frase corta que posiciona la marca. No es el logotipo (ese va en el Header, justo debajo) ni un eslogan vacío, sino una línea que dice a qué te dedicas.",
-    dato: "SITE.tagline",
-  },
-  {
-    n: 2,
-    nombre: "Horario",
-    que: "Señal de disponibilidad y confianza. En móvil se oculta para cederle el espacio a las dos acciones que de verdad importan: llamar y escribir.",
-    dato: "CONTACT.schedule.display",
-  },
-  {
-    n: 3,
-    nombre: "Teléfono",
-    que: "Contacto directo con clic-para-llamar en el celular. El enlace tel: no se escribe a mano: lo arma telUrl() a partir del número en formato E.164.",
-    dato: "CONTACT.phone · telUrl()",
-  },
-  {
-    n: 4,
-    nombre: "WhatsApp",
-    que: "La acción principal de la barra, resaltada como pastilla. El enlace SIEMPRE se arma con waUrl() y el mensaje precargado sale de WA_MESSAGES, para que el lead entre en materia desde el primer toque.",
-    dato: "waUrl(WA_MESSAGES.cotizar)",
-  },
-];
-const topbarFlujo = [
-  { fuente: "CONTACT.phoneE164", helper: "telUrl()", salida: "tel:+525500000000", nota: "Clic para llamar" },
-  { fuente: "WA_MESSAGES.cotizar", helper: "waUrl()", salida: "wa.me/525500000000?text=…", nota: "Mensaje precargado" },
-  { fuente: "SITE.tagline", salida: "Plantilla base para sitios Astro…", nota: "Lectura directa" },
-  { fuente: "CONTACT.schedule.display", salida: "Lun–Vie 9:00–18:00", nota: "Lectura directa" },
-];
-const topbarFlujoNota =
-  "Las dos primeras pasan por un helper: centraliza el número y el encoding, así un solo cambio en site.ts corrige todos los enlaces del sitio. Las otras dos son texto que se lee tal cual. Regla dura D4: jamás un tel: o un wa.me escrito a mano dentro de un componente.";
-const topbarResponsive = [
-  { ancho: "≥ 900px", muestra: "Propuesta · Horario · Teléfono · WhatsApp", nota: "Escritorio: la barra completa, con espacio de sobra." },
-  { ancho: "< 900px", muestra: "Teléfono · WhatsApp", oculta: "Propuesta · Horario", nota: "Tablet: cae el «ambiente», quedan las acciones." },
-  { ancho: "< 480px", muestra: "WhatsApp", oculta: "Teléfono", nota: "Móvil: solo la acción principal sobrevive." },
-];
-const topbarReglas = [
-  "<strong>D4 — nunca hardcodear el contacto.</strong> Todo enlace de teléfono o WhatsApp se arma con <code>telUrl()</code> / <code>waUrl()</code>; jamás un <code>tel:</code> o <code>wa.me</code> a mano.",
-  "<strong>Una sola fuente (SSoT).</strong> Los cuatro textos salen de <code>site.ts</code> (<code>SITE</code> · <code>CONTACT</code> · <code>WA_MESSAGES</code>). Cambias el dato una vez y se refleja en toda la barra.",
-  "<strong>El logotipo NO va aquí.</strong> La barra es texto utilitario; la marca vive en el Header, justo debajo.",
-  "<strong>Accesible.</strong> Cada enlace lleva su <code>aria-label</code>, los iconos son <code>aria-hidden</code> y el contraste es blanco sobre el índigo de marca.",
-];
 
 // ── Demo de la regla de metas (keyword-first) — se alimenta de KEYWORDS ──
 // Reproduce la generación real del <title> y la description de la home para
@@ -295,15 +237,12 @@ const menuCta = {
   external: true,
 };
 
-// ── Menú de CIERRE (interlinking) — el MISMO componente, OTROS enlaces ─────────
-// Alimenta el SectionMenu del final (reemplaza al CTABanner). A diferencia del
-// menú del hero (menuSecciones, derivado de NAV → grandes secciones), este manda
-// a los destinos que aquel NO cubre: la ficha de CADA servicio (las páginas más
-// profundas) + Contacto. Entre los dos menús se recorre todo el sitio sin repetir
-// un solo botón → refuerza el enlazado interno (interlinking). Data-driven desde
-// SERVICES (taxonomía, SSoT): si cambias un servicio, este menú se actualiza solo.
-// El CTA usa OTRA intención (WA_MESSAGES.contacto, no .cotizar) para no duplicar.
-const cierreSub: Record<string, string> = {
+// ── Menú de CIERRE (interlinking) — el MISMO SectionMenu, OTROS datos ──
+// Va antes del footer. En vez de NAV (secciones grandes), enlaza a las FICHAS de
+// servicio (SERVICES) + Contacto: las páginas internas que el menú del hero no
+// toca → enlazado interno sin repetir un solo botón. El CTA usa otra intención de
+// WhatsApp (WA_MESSAGES.contacto, no .cotizar). Edita aquí y el cierre se actualiza.
+const menuCierreSub: Record<string, string> = {
   consultoria: "Define el alcance",
   implementacion: "Construcción del sitio",
   soporte: "Mejora continua",
@@ -312,7 +251,7 @@ const menuCierre = [
   ...SERVICES.map((s) => ({
     label: s.label,
     href: `/servicios/${s.id}/`,
-    sub: cierreSub[s.id] ?? "Ver servicio",
+    sub: menuCierreSub[s.id] ?? "Ver servicio",
   })),
   { label: "Contacto", href: "/contacto/", sub: "Hablemos de tu proyecto" },
 ];
@@ -920,21 +859,16 @@ const faqs: { question: string; answer: string }[] = [
     </div>
   </section>
 
-  {/* ═══ 8) CIERRE — MENÚ DE INTERLINKING (guía) ═══
-       Reemplaza al antiguo CTABanner. En vez de un solo botón, la página remata
-       con un SEGUNDO SectionMenu —el MISMO componente que va bajo el hero— pero con
-       ENLACES DISTINTOS: las fichas de servicio (páginas más profundas) y Contacto,
-       los destinos que el menú del hero no cubre. Así se refuerza el enlazado
-       interno (interlinking) y nadie llega al footer sin un siguiente paso a la mano.
-       Estructura espejo del hero: heading (container) → SectionMenu (full-width) →
-       GuiaNota (band). Data-driven desde SERVICES (site.ts). */}
+  {/* ═══ 8) CIERRE (guía) — menú de interlinking hacia páginas internas ═══
+       El MISMO SectionMenu del hero, reutilizado como cierre de la página: arriba
+       presenta las secciones; aquí reparte hacia las fichas de servicio + Contacto
+       (datos `menuCierre`, distintos a los del hero). Sustituye al antiguo CTABanner. */}
   <section class="section">
     <div class="container">
       <SectionHeading
         layout="duo"
         eyebrow="Cierre"
-        title="El cierre: no dejes al visitante"
-        titleAccent="en un callejón sin salida"
+        title="El cierre: no dejes al visitante en un callejón sin salida"
         desc="Antes del pie de página, repite la navegación pero hacia OTROS destinos: las páginas internas que el menú del hero no toca. Quien llega hasta aquí siempre debe tener un siguiente paso a la mano."
         body={[
           "Es el mismo menú de secciones que va bajo el hero, reutilizado como remate de la página; lo único que cambia son los enlaces. Arriba mandas a las grandes secciones del sitio; aquí, a las páginas más profundas —la ficha de cada servicio— y a Contacto. Son justo los destinos que el primer menú deja fuera, así que entre los dos cubres el sitio entero sin repetir un solo botón.",
@@ -943,14 +877,8 @@ const faqs: { question: string; answer: string }[] = [
       />
     </div>
   </section>
-
-  <SectionMenu
-    items={menuCierre}
-    cta={menuCierreCta}
-    ariaLabel="Enlaces de cierre del sitio"
-  />
-
-  <section class="band band--cierre">
+  <SectionMenu items={menuCierre} cta={menuCierreCta} />
+  <section class="band">
     <div class="container">
       <GuiaNota titulo="Componente SectionMenu — versión de cierre (interlinking)" archivo="src/pages/index.astro · src/components/SectionMenu.astro">
         <p>
@@ -1001,8 +929,6 @@ const faqs: { question: string; answer: string }[] = [
   .section { padding: var(--sp-8) 0; }
   .section--surface { background: var(--c-surface); }
   .band { padding: var(--sp-5) 0 0; }
-  /* Cierre: el band del menú final lleva aire abajo, antes del footer. */
-  .band--cierre { padding-bottom: var(--sp-8); }
 
   /* ── Vitrina de categorías — 4 por fila en escritorio (2 en tablet, 1 en móvil) ── */
   .showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
