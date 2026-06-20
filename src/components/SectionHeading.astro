@@ -54,9 +54,13 @@ const Tag = as
   .sech--center .sech__desc { margin-inline: auto; }
   .sech--left { text-align: left; }
 
-  /* duo: 2 columnas */
-  .sech--duo { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2rem, 5vw, 4rem); align-items: start; }
+  /* duo: 2 columnas alineadas verticalmente (centradas entre sí). Cada columna
+     agrupa sus elementos JUNTOS, separados por un salto de línea uniforme (gap). */
+  .sech--duo { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2rem, 5vw, 4rem); align-items: center; }
   .sech--duo .sech__desc { max-width: none; }
+  .sech--duo .sech__head { display: flex; flex-direction: column; gap: var(--sp-4, 1rem); }
+  .sech--duo .sech__head .sech__eyebrow { margin-bottom: 0; }
+  .sech--duo .sech__head .sech__desc { margin-top: 0; }
   .sech__body { display: flex; flex-direction: column; gap: var(--sp-4, 1rem); }
   .sech__body-p { font-size: var(--text-base, 1.0625rem); color: var(--text-muted, var(--c-muted, #6b7280)); line-height: var(--leading-relaxed, 1.7); margin: 0; }
 

@@ -13,6 +13,7 @@ import Hero from "@components/Hero.astro";
 import SectionMenu from "@components/SectionMenu.astro";
 import SectionHeading from "@components/SectionHeading.astro";
 import CategoryCard from "@components/CategoryCard.astro";
+import CategoryDetail from "@components/CategoryDetail.astro";
 import ProductCard from "@components/ProductCard.astro";
 import ServiceCard from "@components/ServiceCard.astro";
 import FAQAccordion from "@components/FAQAccordion.astro";
@@ -45,6 +46,32 @@ const productos = (await getCollection("productos", ({ data }) => !data.draft))
 const servicios = (await getCollection("servicios", ({ data }) => !data.draft))
   .sort((a, b) => a.data.order - b.data.order)
   .slice(0, 3);
+
+// ── Detalle de la PRIMERA categoría (módulo "categoría a fondo" + galería) ──
+// Amplía la 1.ª tarjeta del catálogo (SHOWCASE[0]). El título y la imagen
+// principal salen de SHOWCASE para no duplicar; los párrafos, los puntos clave y
+// la galería se definen aquí, junto al resto del contenido demo de la home.
+const cat0 = SHOWCASE[0];
+const cat0Detalle = {
+  eyebrow: "La categoría a fondo",
+  body: [
+    "Esta es la primera tarjeta del catálogo vista por dentro. Una buena imagen de categoría no es decoración: es lo primero que mira el visitante y, en menos de un segundo, le confirma si está en el lugar correcto. Por eso conviene una foto real —no un genérico de banco— que muestre el producto o servicio tal como es y que pese poco para no hacer esperar.",
+    "El texto alternativo (el atributo alt) es su pareja invisible: describe en una frase qué se ve, con la palabra clave de la categoría incluida con naturalidad. Ayuda a quien navega con lector de pantalla y da contexto a quien, por una conexión lenta, no alcanza a ver la foto. Si además fijas su ancho y alto, el hueco queda reservado y la página no «salta» mientras carga.",
+  ],
+  points: [
+    "Foto real y propia, nunca un genérico de banco de imágenes",
+    "Peso optimizado (AVIF/WebP) para que cargue al instante",
+    "Texto alternativo descriptivo, con la palabra clave incluida",
+    "Ancho y alto fijos para que la maqueta no salte al cargar",
+  ],
+  gallery: {
+    main: { src: cat0.image, alt: "Imagen principal de la categoría, optimizada y con su texto alternativo" },
+    thumbs: [
+      { src: "/images/showcase/jerarquia-titulos-seo-pagina-web.avif", alt: "Segunda toma de la categoría dentro de la jerarquía de la página" },
+      { src: "/images/showcase/texto-venta-contenido-markdown.avif", alt: "Detalle del texto de venta que acompaña a la categoría" },
+    ],
+  },
+};
 
 // ── Menú de secciones (barra "section nav" bajo el hero) ─────────────────────
 // DATA-DRIVEN desde NAV (site.ts) — la MISMA fuente que alimenta el Header. Cada
@@ -303,13 +330,50 @@ const faqs: { question: string; answer: string }[] = [
     </div>
   </section>
 
+  {/* ═══ 2b) CATEGORÍA A FONDO — detalle de la 1.ª categoría + galería ═══
+       Amplía la primera tarjeta del catálogo: 2 columnas (info detallada a la
+       izquierda + galería de 1 imagen grande y 2 debajo a la derecha). Componente
+       CategoryDetail; los datos se definen arriba (cat0Detalle, desde SHOWCASE[0]). */}
+  <section class="section">
+    <div class="container">
+      <CategoryDetail
+        eyebrow={cat0Detalle.eyebrow}
+        title={cat0.label}
+        body={cat0Detalle.body}
+        points={cat0Detalle.points}
+        cta={{ label: "Ver la categoría", href: cat0.href }}
+        gallery={cat0Detalle.gallery}
+      />
+      <GuiaNota titulo="Componente CategoryDetail (categoría a fondo)" archivo="src/components/CategoryDetail.astro">
+        <p>
+          Bloque de <strong>2 columnas</strong> para ampliar UNA categoría: a la
+          izquierda la <strong>información detallada</strong> (título, párrafos,
+          puntos clave y CTA) y a la derecha una <strong>galería</strong> con una
+          imagen grande y dos debajo. Refuerza la categoría o servicio antes de que
+          el visitante entre a su página.
+        </p>
+        <p>
+          El título y la imagen principal salen de <code>SHOWCASE[0]</code> (la 1.ª
+          tarjeta) para no duplicar datos; los párrafos, los puntos y la galería se
+          definen junto al contenido de la home. Es reutilizable: pasa
+          <code>reverse</code> para alternar el lado de la galería. En móvil se apila.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
   {/* ═══ 3) CÓMO USAR — las 7 estaciones de la fábrica ═══ */}
   <section class="section">
     <div class="container">
       <SectionHeading
+        layout="duo"
         eyebrow="Flujo de producción"
         title="Cómo se construye un sitio"
         desc="Siete pasos, de definir el alcance hasta publicar. Síguelos en orden: cada paso deja listo el siguiente, así no rehaces trabajo ni se te olvida nada."
+        body={[
+          "Piénsalo como una línea de montaje, no como una lista que atacas al azar. Cada estación le entrega a la siguiente lo que necesita: defines el alcance antes que el contenido, el contenido antes que los metadatos, el diseño antes que las imágenes. Si te saltas un paso, lo pagas al final —contenido sin estructura, diseño sin nada que vestir—.",
+          "El orden también cuida tu tiempo, que casi siempre es el recurso corto. Avanzar en secuencia significa tocar cada archivo una vez y seguir, en vez de regresar a arreglar lo que un paso anterior dejó a medias. Para cuando llegas a QA y deploy ya no hay sorpresas: es una revisión, no un rescate.",
+        ]}
       />
       <ol class="estaciones">
         {estaciones.map((e) => (
@@ -337,9 +401,14 @@ const faqs: { question: string; answer: string }[] = [
   <section class="section">
     <div class="container">
       <SectionHeading
+        layout="duo"
         eyebrow="Content Collections"
         title="Catálogo de ejemplo"
         desc="Productos y servicios DEMO cargados desde src/content/. Cada tarjeta nace de un archivo Markdown validado por Zod."
+        body={[
+          "Cada tarjeta que ves aquí no se escribió a mano en la página: nace de un archivo Markdown en src/content/. Redactas el producto o servicio como una nota simple —título, descripción, imagen, precio si aplica— y el sitio arma la tarjeta por ti. Agregas un archivo y aparece; lo quitas y desaparece, sin tocar la página.",
+          "La ventaja es consistencia y tranquilidad: un esquema (Zod) revisa cada archivo antes de publicar, así un campo faltante o una ruta de imagen mal puesta detiene el build y te dice qué corregir —ninguna tarjeta rota llega al sitio—. Tú administras el catálogo como texto y el sistema se encarga del diseño: contenido y diseño separados, cada uno en su lugar.",
+        ]}
       />
 
       <h3 class="sub">Productos</h3>
@@ -387,9 +456,14 @@ const faqs: { question: string; answer: string }[] = [
   <section class="section section--surface">
     <div class="container">
       <SectionHeading
+        layout="duo"
         eyebrow="Identidad"
         title="Sistema de diseño en vivo"
         desc="Estos colores y tipografías leen los MISMOS tokens que todo el sitio. Cambia la marca en un solo archivo y se reviste completo."
+        body={[
+          "Lo que ves no es una muestra estática de marca: es la paleta y la tipografía reales que lee todo el sitio, en vivo. Colores, fuentes, espaciados y radios viven como «tokens» en un solo archivo (tokens.css), y cada componente bebe de ahí —nada tiene su color escrito a mano—.",
+          "Por eso un cambio de marca aquí toma minutos, no días: ajustas --c-primary y la fuente principal y los botones, las tarjetas, el header y esta misma sección se revisten de golpe. Una sola fuente de verdad significa cero búsqueda de colores sueltos regados por mil archivos. Defines la marca una vez y el sitio se mantiene coherente solo.",
+        ]}
       />
 
       <div class="ds">
@@ -438,9 +512,14 @@ const faqs: { question: string; answer: string }[] = [
   <section class="section">
     <div class="container">
       <SectionHeading
+        layout="duo"
         eyebrow="Astro · metadatos"
         title="Metadatos de cada página"
         desc="Antes que nada se eligen 3 palabras clave y se construyen las metas sobre ellas: el title en 3 módulos (kw1 primero, sin marca) y la description que abre con la kw1 y teje las 3 sin sobreoptimizar."
+        body={[
+          "Los metadatos son lo que tu página dice de sí misma antes de que alguien la abra: el título y la descripción que aparecen en una lista de resultados o cuando compartes el enlace. Aquí eliges tres palabras clave por orden de importancia y construyes ambos sobre ellas —el título arranca con la principal, sin la marca pegada, y la descripción abre con ella y teje las otras dos con naturalidad—.",
+          "El oficio está en la mesura: decirlo una vez, claro, para una persona que ojea una lista de opciones —no apilado ni repetido para «verse optimizado»—. La demo lo muestra de las dos formas, bien y mal, y la misma regla (metaAudit) marca sola la versión recargada. Unas buenas metas dan un empujón; el peso de verdad sigue en el contenido de la página.",
+        ]}
       />
 
       {/* Las 3 keywords del sitio (jerarquía kw1 → kw3) */}
@@ -537,9 +616,14 @@ const faqs: { question: string; answer: string }[] = [
   <section class="section">
     <div class="container">
       <SectionHeading
+        layout="duo"
         eyebrow="Hoja de ruta"
         title="Tipos de página y sus layouts"
         desc="Cada tipo de página (home, categoría, ficha, artículo…) tiene su layout listo en src/layouts/. Reúsalos: tú defines el contenido y el layout pone la estructura, así no rehaces el armazón en cada página."
+        body={[
+          "Un sitio no es una página repetida: son unos pocos tipos de página, cada uno con su trabajo —la home presenta, la categoría lista, la ficha de producto o servicio vende el detalle, el artículo explica—. Nombrarlos desde el principio (home, categoría, ficha, artículo, directorio) te da el mapa de qué construir y en qué orden.",
+          "Cada tipo ya tiene su layout esperando en src/layouts/, hecho una vez y reutilizable: tú traes el contenido y el layout trae la estructura —header, espaciados y bloques en su sitio—. Así nunca rehaces el armazón página por página; solo lo llenas. La lista de abajo marca lo que ya está cableado y lo que viene después.",
+        ]}
       />
       <div class="tipos">
         {tiposPagina.map((t) => (
@@ -684,11 +768,9 @@ const faqs: { question: string; answer: string }[] = [
   .kw-chip {
     display: flex; flex-direction: column; gap: 2px;
     background: var(--c-white); border: 1px solid var(--c-border);
-    border-left: 4px solid var(--c-primary); border-radius: var(--radius-md);
+    border-radius: var(--radius-md);
     padding: var(--sp-3) var(--sp-4);
   }
-  .kw-chip--2 { border-left-color: var(--c-primary-dark); }
-  .kw-chip--3 { border-left-color: var(--c-muted); }
   .kw-chip__rank { font-size: var(--text-xs); font-weight: var(--weight-bold); letter-spacing: .04em; text-transform: uppercase; color: var(--c-muted); }
   .kw-chip__txt { font-family: var(--font-heading); font-weight: var(--weight-semibold); color: var(--c-ink); font-size: var(--text-base); }
 
