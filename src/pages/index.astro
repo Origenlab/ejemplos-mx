@@ -15,7 +15,6 @@ import SectionHeading from "@components/SectionHeading.astro";
 import CategoryCard from "@components/CategoryCard.astro";
 import CategoryDetail from "@components/CategoryDetail.astro";
 import CompanyAbout from "@components/CompanyAbout.astro";
-import Benefits from "@components/Benefits.astro";
 import FAQAccordion from "@components/FAQAccordion.astro";
 import CTABanner from "@components/CTABanner.astro";
 import GuiaNota from "@components/GuiaNota.astro";
@@ -167,25 +166,25 @@ const empresa = {
   ],
 };
 
-// ── Por qué elegirnos (beneficios: ícono + dato + título + texto) ──
-// Contenido DEMO de la plantilla-guía. En un sitio real: tus diferenciadores
-// REALES (hechos, no adjetivos). `icon` = nombre de un SVG del set de Benefits;
-// `metric`/`metricLabel` = el dato corto que respalda cada beneficio (cifra real).
+// ── Por qué elegirnos (beneficios como cards CategoryCard: foto + badge + texto) ──
+// Reusa el MISMO card aprobado del catálogo (CategoryCard), sin componente propio.
+// Contenido DEMO: las fotos son AVIF ya optimizadas que reusamos del catálogo.
+// En un sitio real: diferenciadores REALES (hechos, no adjetivos) con foto propia.
 const beneficios = {
   eyebrow: "Por qué elegirnos",
   title: "Los beneficios: di por qué elegirte",
-  desc: "De tres a seis razones concretas —beneficios para el cliente, no adjetivos— que responden, de un vistazo, «¿por qué tú y no otro?». Cada una con su ícono, su dato y una frase que lo respalda.",
+  desc: "De tres a seis razones concretas —beneficios para el cliente, no adjetivos— que responden, de un vistazo, «¿por qué tú y no otro?». Cada una en el mismo card del catálogo: foto, dato (badge) y una frase que lo respalda.",
   body: [
     "Este bloque responde la pregunta que el visitante trae sin decirla: «¿por qué contigo y no con el de al lado?». No es presumir: es darle motivos concretos para quedarse. Funciona porque convierte tu propuesta en beneficios que se entienden en segundos —qué gana la persona al elegirte, no una lista de lo que haces—.",
-    "La regla es la misma de toda la guía: hechos, no adjetivos. Un dato corto («respuesta en menos de 4 h», «garantía de 12 meses») convence; «los mejores» no dice nada. Quédate en tres a seis razones —las que de verdad te distinguen—, cada una con su ícono y su cifra. En un sitio real, cámbialas por tus diferenciadores reales.",
+    "La regla es la misma de toda la guía: hechos, no adjetivos. Un dato corto en el badge («respuesta en menos de 4 h», «garantía de 12 meses») convence; «los mejores» no dice nada. Reusa el card del catálogo para no inventar diseño; en un sitio real, cámbialas por tus diferenciadores y fotos reales.",
   ],
   items: [
-    { icon: "clock", metric: "< 4 h", metricLabel: "primera respuesta", title: "Respuesta el mismo día", desc: "Escríbenos y te contestamos en horas, no en días. Recibes un primer diagnóstico claro y los siguientes pasos desde el primer mensaje, sin filtros ni esperas." },
-    { icon: "shield", metric: "12 meses", metricLabel: "de garantía", title: "Garantía por escrito", desc: "Cada trabajo queda respaldado por una garantía clara y por escrito. Si algo falla dentro del periodo, volvemos y lo resolvemos sin costo ni discusiones." },
-    { icon: "tag", metric: "0", metricLabel: "cargos ocultos", title: "Precio transparente", desc: "Recibes una cotización detallada antes de empezar: materiales, mano de obra y tiempos. Lo que acordamos es exactamente lo que pagas, sin extras de última hora." },
-    { icon: "users", metric: "1 a 1", metricLabel: "sin intermediarios", title: "Trato directo", desc: "Hablas siempre con quien hace el trabajo, no con un conmutador. Una sola persona te acompaña de la cotización a la entrega, con comunicación clara en cada paso." },
-    { icon: "star", metric: "100%", metricLabel: "bajo norma", title: "Calidad comprobada", desc: "Usamos materiales y procesos que cumplen la norma aplicable. Te mostramos evidencia del avance y del resultado para que lo verifiques, no para que confíes a ciegas." },
-    { icon: "pin", metric: "Tu zona", metricLabel: "servicio cercano", title: "Cobertura local", desc: "Trabajamos en tu área y conocemos sus accesos y tiempos. Llegamos puntuales y damos seguimiento de cerca, con presencia real donde estás." },
+    { image: "/images/servicios/soporte-mantenimiento-web-astro.avif", imageAlt: "Atención al cliente con respuesta el mismo día (imagen de ejemplo)", badge: "Respuesta el mismo día", title: "Respuesta el mismo día", desc: "Escríbenos y te contestamos en horas, no en días. Recibes un primer diagnóstico claro y los siguientes pasos desde el primer mensaje, sin filtros ni esperas." },
+    { image: "/images/casos/caso-exito-proyecto-web-astro.avif", imageAlt: "Trabajo terminado y respaldado por garantía por escrito (imagen de ejemplo)", badge: "Garantía 12 meses", title: "Garantía por escrito", desc: "Cada trabajo queda respaldado por una garantía clara y por escrito. Si algo falla dentro del periodo, volvemos y lo resolvemos sin costo ni discusiones." },
+    { image: "/images/productos/desarrollo-web-astro-profesional.avif", imageAlt: "Cotización detallada y transparente, sin sorpresas (imagen de ejemplo)", badge: "Sin cargos ocultos", title: "Precio transparente", desc: "Recibes una cotización detallada antes de empezar: materiales, mano de obra y tiempos. Lo que acordamos es exactamente lo que pagas, sin extras de última hora." },
+    { image: "/images/servicios/consultoria-desarrollo-web-astro.avif", imageAlt: "Asesoría directa, persona a persona, sin intermediarios (imagen de ejemplo)", badge: "Trato 1 a 1", title: "Trato directo", desc: "Hablas siempre con quien hace el trabajo, no con un conmutador. Una sola persona te acompaña de la cotización a la entrega, con comunicación clara en cada paso." },
+    { image: "/images/productos/sitio-web-rapido-astro.avif", imageAlt: "Resultado de calidad, verificable y bajo norma (imagen de ejemplo)", badge: "100% bajo norma", title: "Calidad comprobada", desc: "Usamos materiales y procesos que cumplen la norma aplicable. Te mostramos evidencia del avance y del resultado para que lo verifiques, no para que confíes a ciegas." },
+    { image: "/images/zonas/cobertura-desarrollo-web-ciudad-de-mexico.avif", imageAlt: "Cobertura local del servicio en tu zona (imagen de ejemplo)", badge: "Cobertura local", title: "Cobertura local", desc: "Trabajamos en tu área y conocemos sus accesos y tiempos. Llegamos puntuales y damos seguimiento de cerca, con presencia real donde estás." },
   ],
 };
 
@@ -537,10 +536,10 @@ const faqs: { question: string; answer: string }[] = [
     </div>
   </section>
 
-  {/* ═══ 2e) POR QUÉ ELEGIRNOS — beneficios (ícono + título + texto) ═══
-       Módulo Benefits: rejilla data-driven (1→2→3 col). El título va vía
-       SectionHeading (regla duo). Datos demo en `beneficios` (arriba). En un
-       sitio real: tus diferenciadores REALES (hechos, no adjetivos). */}
+  {/* ═══ 2e) POR QUÉ ELEGIRNOS — beneficios con el card aprobado (CategoryCard) ═══
+       SIN componente propio: reusa CategoryCard (mismo diseño del catálogo). Título
+       vía SectionHeading (regla duo). Datos demo en `beneficios` (arriba). En un
+       sitio real: diferenciadores y fotos REALES (hechos, no adjetivos). */}
   <section class="section">
     <div class="container">
       <SectionHeading
@@ -550,33 +549,38 @@ const faqs: { question: string; answer: string }[] = [
         desc={beneficios.desc}
         body={beneficios.body}
       />
-      <Benefits
-        items={beneficios.items}
-        cta={{ label: "Cotizar por WhatsApp", href: waUrl(WA_MESSAGES.cotizar), external: true }}
-      />
-      <GuiaNota titulo="Componente Benefits (por qué elegirnos)" archivo="src/components/Benefits.astro · src/pages/index.astro">
+      <div class="bene-grid">
+        {beneficios.items.map((b) => (
+          <CategoryCard
+            label={b.title}
+            href={waLink}
+            image={b.image}
+            imageAlt={b.imageAlt}
+            badge={b.badge}
+            blurb={b.desc}
+            ctaLabel="Cotizar"
+          />
+        ))}
+      </div>
+      <GuiaNota titulo="Mismo card del catálogo (CategoryCard)" archivo="src/components/CategoryCard.astro · src/pages/index.astro">
         <p>
-          Es el bloque «por qué elegirnos» (o «ventajas», «diferenciadores»): de 3 a
-          6 beneficios con <strong>ícono + título + una frase</strong>. Responde la
-          duda que el visitante no dice —«¿por qué tú y no otro?»— y por eso pesa en
-          la conversión: los sitios mejor estructurados (estilo Apple/Stripe) lo
-          ponen cerca del inicio.
+          Este bloque «por qué elegirnos» NO usa un componente propio: reusa el
+          <strong>mismo <code>CategoryCard</code></strong> del catálogo. Misma foto +
+          badge + título + texto + CTA, así todo el sitio se ve igual y no duplicamos
+          diseño ni CSS —menos código, menos peso, y ningún <code>&lt;style&gt;</code>
+          nuevo que falle en dev—.
         </p>
         <p>
           Es <strong>data-driven</strong>: edita el objeto <code>beneficios</code> de
-          esta página (<code>eyebrow</code>, <code>title</code>, <code>body</code> y la
-          lista <code>items</code>); el diseño vive en el componente. Cada
-          <code>icon</code> es el nombre de un SVG del set interno de Benefits
-          (<code>clock, shield, tag, users, star, pin, award, zap</code>); si no
-          existe, cae a un <code>check</code>.
+          esta página (cada beneficio = <code>image</code>, <code>imageAlt</code>,
+          <code>badge</code>, <code>title</code>, <code>desc</code>). Las fotos son
+          AVIF ya optimizadas que reusamos del catálogo como demo; en tu sitio, pon
+          fotos reales y ligeras con su <code>alt</code> descriptivo.
         </p>
         <p>
           Regla de oro (la misma del sistema): <strong>hechos, no adjetivos</strong>.
-          «Respuesta el mismo día» convence; «los mejores» no. Las 6 de aquí son
-          EJEMPLO: cámbialas por tus diferenciadores <strong>reales</strong>. Apoya tu
-          <strong>marketing</strong> (propuesta de valor) y tu
-          <strong>posicionamiento</strong> (contenido de confianza que los buscadores
-          valoran).
+          El <code>badge</code> lleva el dato corto («menos de 4 h», «12 meses»). Las 6
+          de aquí son EJEMPLO: cámbialas por tus diferenciadores <strong>reales</strong>.
         </p>
       </GuiaNota>
     </div>
@@ -781,6 +785,11 @@ const faqs: { question: string; answer: string }[] = [
   .showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
   @media (min-width: 640px) { .showcase { grid-template-columns: repeat(2, 1fr); } }
   @media (min-width: 1024px) { .showcase { grid-template-columns: repeat(4, 1fr); } }
+
+  /* Rejilla de beneficios (reusa CategoryCard) — 1 → 2 → 3 columnas */
+  .bene-grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
+  @media (min-width: 640px) { .bene-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .bene-grid { grid-template-columns: repeat(3, 1fr); } }
 
   /* ── Pila de módulos "categoría a fondo" — separación uniforme, SIN zig-zag ── */
   .afondo { display: grid; gap: clamp(2.5rem, 6vw, 5rem); }
