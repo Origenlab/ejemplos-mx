@@ -401,6 +401,32 @@ export const BRANCHES: { label: string; address: string; mapsUrl?: string }[] = 
   // { label: 'Matriz CDMX', address: 'Av. Cuauhtémoc 145, Col. Doctores', mapsUrl: 'https://maps.google.com/?q=...' },
 ];
 
+// ── SOCIAL — perfiles en redes (fila de iconos del Footer) ───────────────────
+// Data-driven: el Footer mapea este array y dibuja el icono según `network`.
+// Redes con icono incluido: instagram | facebook | linkedin | youtube | x | tiktok.
+// Patrón pro: si dejas el array vacío [], el Footer OMITE la fila de redes.
+// ⚠️ URLs DEMO — reemplázalas por los perfiles REALES del cliente. Para que estos
+// perfiles también salgan en el JSON-LD, copia sus URLs a SITE.organization.sameAs
+// (se dejó vacío a propósito: no se declara un perfil falso en datos estructurados).
+export type SocialNetwork = 'instagram' | 'facebook' | 'linkedin' | 'youtube' | 'x' | 'tiktok';
+export const SOCIAL: { network: SocialNetwork; label: string; url: string }[] = [
+  { network: 'instagram', label: 'Instagram', url: 'https://instagram.com/ejemplos.mx' },
+  { network: 'facebook',  label: 'Facebook',  url: 'https://facebook.com/ejemplos.mx' },
+  { network: 'linkedin',  label: 'LinkedIn',  url: 'https://linkedin.com/company/ejemplos-mx' },
+  { network: 'youtube',   label: 'YouTube',   url: 'https://youtube.com/@ejemplos-mx' },
+  { network: 'x',         label: 'X (Twitter)', url: 'https://x.com/ejemplos_mx' },
+];
+
+// ── LEGAL — enlaces legales de la barra inferior del Footer ──────────────────
+// Páginas que todo sitio profesional debe tener. Rutas placeholder (créalas con
+// el SOP de página/landing). "Mapa del sitio" apunta al sitemap que genera Astro.
+export const LEGAL: { label: string; href: string }[] = [
+  { label: 'Aviso de privacidad', href: '/privacidad/' },
+  { label: 'Términos y condiciones', href: '/terminos/' },
+  { label: 'Política de cookies', href: '/cookies/' },
+  { label: 'Mapa del sitio', href: '/sitemap-index.xml' },
+];
+
 // ── WA_MESSAGES — mensajes de WhatsApp pre-armados por intención ─────────────
 // Origen: PROYECTORED (30 mensajes segmentados). Cada mensaje pre-carga contexto
 // para que el asesor entre en materia y suba la calidad del lead. `default` y

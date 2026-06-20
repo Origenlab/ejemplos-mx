@@ -1,0 +1,381 @@
+---
+// GuiaAnatomia.astro — Marco REUTILIZABLE para las guías de anatomía de sección.
+// ============================================================================
+// "Modo guía" de Ejemplos.mx, nivel sección. Documenta UNA pieza del chrome
+// (Topbar, Header, Hero, SectionMenu…) con un patrón fijo y profesional, en el
+// MISMO lenguaje visual que el resto del index (SectionHeading duo + cards).
+//
+// Es genérico por diseño: lo que es común va por PROPS (título, intro, puntos,
+// flujo de datos, responsive, reglas, archivos) y lo que es visual y propio de
+// cada componente entra por SLOTS:
+//   • slot "specimen" → réplica anotada del componente (con pines numerados).
+//   • slot "demo"     → visual del comportamiento responsive (opcional).
+//
+// La primera instancia es la del Topbar (ver index.astro). Header/Hero/etc.
+// reusan ESTE componente cambiando solo los datos y el espécimen.
+//
+// EXCLUSIVO de la plantilla-guía: en un sitio de cliente se elimina por completo.
+// Accesible: role="note" + aria-label. Mobile-first. Estilos scoped con tokens.
+// ============================================================================
+import SectionHeading from '@components/SectionHeading.astro'
+
+export interface PuntoAnatomia {
+  /** Número del pin (debe coincidir con el del espécimen). */
+  n: number
+  nombre: string
+  /** Qué hace / por qué está. */
+  que: string
+  /** Dato del que se alimenta (se muestra en monoespaciado). */
+  dato: string
+}
+export interface FlujoPaso {
+  /** Origen del dato (SSoT). */
+  fuente: string
+  /** Helper que lo transforma (opcional; si falta, es lectura directa). */
+  helper?: string
+  /** Resultado renderizado. */
+  salida: string
+  /** Glosa corta (opcional). */
+  nota?: string
+}
+export interface ResponsiveRegla {
+  /** Umbral, p. ej. "≥ 900px". */
+  ancho: string
+  /** Qué se ve a ese ancho. */
+  muestra: string
+  /** Qué se oculta a ese ancho (opcional). */
+  oculta?: string
+  /** Por qué (la regla). */
+  nota: string
+}
+
+interface Props {
+  /** Número de orden de la guía, p. ej. "01". */
+  numero?: string
+  /** Eyebrow de la sección, p. ej. "Anatomía". */
+  eyebrow: string
+  titulo: string
+  tituloAccent?: string
+  desc?: string
+  /** Párrafos de la columna derecha del título (qué es / por qué). */
+  intro?: string[]
+  /** Las partes del componente, una card por punto. */
+  puntos: PuntoAnatomia[]
+  /** Pie del espécimen (opcional). */
+  specimenNota?: string
+  /** Flujo de datos SSoT → helper → enlace (opcional). */
+  flujo?: FlujoPaso[]
+  flujoNota?: string
+  /** Reglas de comportamiento responsive (opcional). */
+  responsive?: ResponsiveRegla[]
+  /** Reglas duras del componente (opcional). */
+  reglas?: string[]
+  /** Archivos a editar (monoespaciado). */
+  archivos: string
+  /** Fondo de superficie gris (alterna el ritmo con las secciones hermanas). */
+  surface?: boolean
+  id?: string
+}
+
+const {
+  numero,
+  eyebrow,
+  titulo,
+  tituloAccent,
+  desc,
+  intro = [],
+  puntos,
+  specimenNota,
+  flujo = [],
+  flujoNota,
+  responsive = [],
+  reglas = [],
+  archivos,
+  surface = false,
+  id,
+} = Astro.props
+
+const eyebrowTxt = numero ? `${numero} · ${eyebrow}` : eyebrow
+const hasDemo = Astro.slots.has('demo')
+const hasSpecimen = Astro.slots.has('specimen')
+---
+
+<section class:list={['gax', { 'gax--surface': surface }]} id={id} aria-label={`Guía de anatomía: ${titulo}`}>
+  <div class="gax__wrap">
+    <SectionHeading
+      layout="duo"
+      eyebrow={eyebrowTxt}
+      title={titulo}
+      titleAccent={tituloAccent}
+      desc={desc}
+      body={intro}
+    />
+
+    {/* ── Espécimen anotado: réplica del componente con pines numerados ── */}
+    {hasSpecimen && (
+      <figure class="gax-stage">
+        <div class="gax-stage__chrome" aria-hidden="true">
+          <span class="gax-dot"></span><span class="gax-dot"></span><span class="gax-dot"></span>
+          <span class="gax-stage__label">Espécimen · réplica del componente real</span>
+        </div>
+        <div class="gax-stage__view">
+          <slot name="specimen" />
+        </div>
+        <figcaption class="gax-stage__cap">
+          {specimenNota ?? 'Los pines numerados mapean a la anatomía de abajo (mismo número).'}
+        </figcaption>
+      </figure>
+    )}
+
+    {/* ── Anatomía: una card por parte ── */}
+    <div class="gax-grid">
+      {puntos.map((p) => (
+        <article class="gax-pt">
+          <span class="gax-pt__num" aria-hidden="true">{p.n}</span>
+          <div class="gax-pt__body">
+            <h3 class="gax-pt__nombre">{p.nombre}</h3>
+            <p class="gax-pt__que">{p.que}</p>
+            <p class="gax-pt__dato"><span>Dato</span> <code>{p.dato}</code></p>
+          </div>
+        </article>
+      ))}
+    </div>
+
+    {/* ── Flujo de datos: SSoT → helper → enlace ── */}
+    {flujo.length > 0 && (
+      <div class="gax-block">
+        <p class="gax-sub"><span class="gax-sub__bar" aria-hidden="true"></span>Flujo de datos · una sola fuente</p>
+        <div class="gax-flow">
+          {flujo.map((f) => (
+            <div class="gax-flow__row">
+              <code class="gax-chip gax-chip--src">{f.fuente}</code>
+              {f.helper && (
+                <>
+                  <span class="gax-arrow" aria-hidden="true">→</span>
+                  <code class="gax-chip gax-chip--fn">{f.helper}</code>
+                </>
+              )}
+              <span class="gax-arrow" aria-hidden="true">→</span>
+              <code class="gax-chip gax-chip--out">{f.salida}</code>
+              {f.nota && <span class="gax-flow__note">{f.nota}</span>}
+            </div>
+          ))}
+        </div>
+        {flujoNota && <p class="gax-foot-note">{flujoNota}</p>}
+      </div>
+    )}
+
+    {/* ── Comportamiento responsive: prioridad de acciones ── */}
+    {(responsive.length > 0 || hasDemo) && (
+      <div class="gax-block">
+        <p class="gax-sub"><span class="gax-sub__bar" aria-hidden="true"></span>Comportamiento responsive · prioridad de acciones</p>
+        <div class:list={['gax-resp', { 'gax-resp--with-demo': hasDemo }]}>
+          {hasDemo && (
+            <div class="gax-resp__demo">
+              <slot name="demo" />
+            </div>
+          )}
+          {responsive.length > 0 && (
+            <ul class="gax-resp__rows">
+              {responsive.map((r) => (
+                <li class="gax-resp__row">
+                  <span class="gax-resp__bp">{r.ancho}</span>
+                  <span class="gax-resp__detail">
+                    <span class="gax-resp__show">{r.muestra}</span>
+                    {r.oculta && <span class="gax-resp__hide">oculta: {r.oculta}</span>}
+                  </span>
+                  <span class="gax-resp__note">{r.nota}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* ── Reglas + Edita en ── */}
+    <div class="gax-foot">
+      {reglas.length > 0 && (
+        <div class="gax-rules">
+          <p class="gax-sub"><span class="gax-sub__bar" aria-hidden="true"></span>Reglas</p>
+          <ul class="gax-rules__list">
+            {reglas.map((r) => (
+              <li class="gax-rules__item" set:html={r}></li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <p class="gax-edit">
+        <span class="gax-edit__label">Edita en</span> <code>{archivos}</code>
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* ── Marco de sección (autocontenido: replica .section + .container) ── */
+  .gax { padding: var(--sp-8) 0; }
+  .gax--surface { background: var(--c-surface); }
+  .gax__wrap {
+    max-width: var(--container-max);
+    margin-inline: auto;
+    padding-inline: var(--container-px);
+  }
+
+  /* Sub-encabezados internos (flujo, responsive, reglas) */
+  .gax-sub {
+    display: flex; align-items: center; gap: var(--sp-2);
+    margin: var(--sp-8) 0 var(--sp-4);
+    font-family: var(--font-heading);
+    font-size: var(--text-xs); font-weight: var(--weight-bold);
+    letter-spacing: .08em; text-transform: uppercase; color: var(--c-primary);
+  }
+  .gax-sub__bar { width: 20px; height: 2px; background: currentColor; border-radius: 2px; flex-shrink: 0; }
+
+  /* ── Espécimen ── */
+  .gax-stage {
+    margin: var(--sp-2) 0 0;
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--c-white);
+    box-shadow: var(--shadow-sm);
+  }
+  .gax-stage__chrome {
+    display: flex; align-items: center; gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-4);
+    background: var(--c-surface);
+    border-bottom: 1px solid var(--c-border);
+  }
+  .gax-dot { width: 9px; height: 9px; border-radius: var(--radius-full); background: var(--c-border); }
+  .gax-stage__label {
+    margin-left: var(--sp-2);
+    font-size: var(--text-xs); color: var(--c-muted);
+    letter-spacing: .02em;
+  }
+  /* El espécimen se renderiza sobre un fondo neutro para que resalte la barra real.
+     overflow-x: auto → en móvil el espécimen se puede desplazar sin romper la maqueta. */
+  .gax-stage__view { background: #eef0f4; padding: var(--sp-6) var(--sp-5); overflow-x: auto; }
+  .gax-stage__cap {
+    padding: var(--sp-3) var(--sp-4);
+    border-top: 1px solid var(--c-border);
+    font-size: var(--text-xs); color: var(--c-muted);
+    line-height: var(--leading-normal);
+  }
+
+  /* ── Anatomía (cards numeradas) ── */
+  .gax-grid {
+    margin-top: var(--sp-6);
+    list-style: none; padding: 0;
+    display: grid; gap: var(--sp-4); grid-template-columns: 1fr;
+  }
+  .gax-pt {
+    display: flex; gap: var(--sp-3); align-items: start;
+    background: var(--c-white);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    padding: var(--sp-4);
+  }
+  .gax-pt__num {
+    flex-shrink: 0; display: inline-grid; place-items: center;
+    width: 26px; height: 26px; border-radius: var(--radius-full);
+    background: var(--c-primary); color: #fff;
+    font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: var(--text-sm);
+  }
+  .gax-pt__body { display: grid; gap: 4px; min-width: 0; }
+  .gax-pt__nombre {
+    margin: 0;
+    font-family: var(--font-heading); font-size: var(--text-base);
+    font-weight: var(--weight-semibold); color: var(--c-ink);
+  }
+  .gax-pt__que { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
+  .gax-pt__dato { margin: 4px 0 0; display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--text-xs); color: var(--c-muted); }
+  .gax-pt__dato span { text-transform: uppercase; letter-spacing: .06em; font-weight: var(--weight-semibold); }
+
+  /* ── Bloques internos ── */
+  .gax-block { display: block; }
+
+  /* Flujo de datos */
+  .gax-flow { display: grid; gap: var(--sp-3); }
+  .gax-flow__row {
+    display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap;
+    background: var(--c-white); border: 1px solid var(--c-border);
+    border-radius: var(--radius-md); padding: var(--sp-3) var(--sp-4);
+  }
+  .gax-arrow { color: var(--c-primary); font-weight: var(--weight-bold); }
+  .gax-flow__note { font-size: var(--text-xs); color: var(--c-muted); margin-left: auto; }
+  .gax-foot-note { margin: var(--sp-3) 0 0; font-size: var(--text-sm); color: var(--c-ink-2); line-height: var(--leading-normal); max-width: 75ch; }
+
+  /* Chips de código del flujo */
+  .gax-chip {
+    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace; font-size: .8125rem;
+    border-radius: var(--radius-sm); padding: .2em .55em; border: 1px solid var(--c-border);
+    white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+  }
+  .gax-chip--src { background: var(--c-surface); color: var(--c-ink-2); }
+  .gax-chip--fn  { background: rgba(var(--c-primary-rgb), .10); border-color: rgba(var(--c-primary-rgb), .28); color: var(--c-primary-dark); font-weight: var(--weight-semibold); }
+  .gax-chip--out { background: var(--c-white); color: var(--c-ink); }
+
+  /* Responsive */
+  .gax-resp { display: grid; gap: var(--sp-5); }
+  .gax-resp__demo { display: grid; gap: var(--sp-4); }
+  .gax-resp__rows { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-2); }
+  .gax-resp__row {
+    display: grid; gap: 2px var(--sp-3);
+    grid-template-columns: auto 1fr;
+    align-items: baseline;
+    background: var(--c-white); border: 1px solid var(--c-border);
+    border-radius: var(--radius-md); padding: var(--sp-3) var(--sp-4);
+  }
+  .gax-resp__bp {
+    grid-row: span 2;
+    font-family: var(--font-heading); font-weight: var(--weight-bold);
+    font-size: var(--text-sm); color: var(--c-primary);
+    background: rgba(var(--c-primary-rgb), .08);
+    border-radius: var(--radius-sm); padding: .15em .55em; align-self: start;
+    white-space: nowrap;
+  }
+  .gax-resp__detail { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2); }
+  .gax-resp__show { font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--c-ink); }
+  .gax-resp__hide { font-size: var(--text-xs); color: var(--c-muted); }
+  .gax-resp__note { font-size: var(--text-sm); color: var(--c-ink-2); line-height: var(--leading-normal); }
+
+  /* ── Pie: reglas + edita en ── */
+  .gax-foot { margin-top: var(--sp-6); }
+  .gax-rules__list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-2); }
+  .gax-rules__item {
+    position: relative; padding-left: var(--sp-5);
+    font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2);
+  }
+  .gax-rules__item::before {
+    content: ''; position: absolute; left: 0; top: .55em;
+    width: 7px; height: 7px; border-radius: var(--radius-full);
+    background: var(--c-primary);
+  }
+  .gax-rules__item :global(code), .gax-edit code {
+    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace; font-size: .85em;
+    background: var(--c-white); border: 1px solid var(--c-border);
+    border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark);
+  }
+  .gax-rules__item :global(strong) { color: var(--c-ink); font-weight: var(--weight-semibold); }
+  .gax-edit {
+    margin: var(--sp-5) 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2);
+    font-size: var(--text-xs);
+  }
+  .gax-edit__label { text-transform: uppercase; letter-spacing: .06em; font-weight: var(--weight-semibold); color: var(--c-muted); }
+  .gax-edit code { word-break: break-all; padding: .15em .5em; }
+
+  /* ── Responsive del propio layout de la guía ── */
+  @media (min-width: 600px) {
+    .gax-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (min-width: 768px) {
+    .gax-stage__view { padding: var(--sp-8) var(--sp-6); }
+    .gax-resp__row { grid-template-columns: auto minmax(0, 1.4fr) minmax(0, 1fr); }
+    .gax-resp__bp { grid-row: auto; }
+  }
+  @media (min-width: 1000px) {
+    .gax-grid { grid-template-columns: repeat(4, 1fr); }
+    .gax-resp--with-demo { grid-template-columns: minmax(0, 360px) 1fr; align-items: start; }
+  }
+</style>

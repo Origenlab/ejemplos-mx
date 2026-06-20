@@ -1,47 +1,89 @@
 ---
-// Footer.astro — Footer profesional de 4 columnas con contacto enriquecido, sucursales, banda de certificaciones y bottom bar. ORIGEN: PROYECTORED/src/components/global/Footer.astro (el más completo: BRANCHES, schedule, badges de cobertura, todo desde config).
-// 100% data-driven desde config/site (SITE, CONTACT, BRANCHES?, PRODUCT_CATEGORIES, SERVICES, SECTORS, COVERAGE_STATES, waUrl, WA_MESSAGES). Pasa `certifications` por props (varían por negocio).
-import { SITE, CONTACT, BRANCHES, PRODUCT_CATEGORIES, SERVICES, SECTORS, COVERAGE_STATES, waUrl, WA_MESSAGES } from '@config/site'
+// Footer.astro — Footer profesional AMPLIO de 5 zonas, 100% data-driven desde
+// config/site (SSoT). Estructura:
+//   1) Banda CTA pre-footer (titular + WhatsApp + Contacto).
+//   2) Cuerpo: marca (logo wordmark + descripción + contacto NAP + redes) + 4
+//      columnas de navegación (Productos · Servicios/Sectores · Cobertura · Empresa).
+//   3) Banda de cumplimiento normativo (opcional, vía prop `certifications`).
+//   4) Barra inferior: copyright + enlaces legales + botón "volver arriba".
+// Barra full-width de fondo; contenido al 90% (--container-max). WhatsApp SIEMPRE
+// vía waUrl(); teléfono vía telUrl(). Reglas de motion: solo botones/CTA con
+// transición (las listas de enlaces cambian de color al instante).
+import {
+  SITE, CONTACT, BRANCHES, PRODUCT_CATEGORIES, SERVICES, SECTORS,
+  COVERAGE_STATES, SOCIAL, LEGAL, waUrl, telUrl, WA_MESSAGES,
+} from '@config/site'
 
 interface Cert { label: string; title?: string }
 interface Branch { label: string; address: string; mapsUrl?: string }
 interface Props {
-  /** Normas/certificaciones para la banda inferior (varían por negocio). */
+  /** Normas/certificaciones para la banda de cumplimiento (varían por negocio). */
   certifications?: Cert[]
   /** Sucursales. Si no se pasa, usa BRANCHES de config; si está vacío, omite el bloque. */
   branches?: Branch[]
-  /** Ruta del logo. */
-  logo?: string
-  /** Tagline SEO del bottom bar. */
+  /** Tagline para la barra inferior. */
   seoTagline?: string
 }
 
-// BRANCHES es opcional en config (export del scaffold, default []).
 const cfgBranches: Branch[] = BRANCHES ?? []
-
 const {
   certifications = [],
   branches = cfgBranches,
-  logo = (SITE as any).logo ?? '/images/brand/logo.svg',
   seoTagline = SITE.tagline,
 } = Astro.props
 
 const currentYear = new Date().getFullYear()
 const waDefault = waUrl(WA_MESSAGES.cotizacion ?? WA_MESSAGES.default)
+const telLink = telUrl()
 const schedule = CONTACT.schedule as { weekdays?: string; saturday?: string; sunday?: string } | undefined
+const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${(CONTACT as any).geo?.lat},${(CONTACT as any).geo?.lng}`
+const fullAddress = `${CONTACT.street}, ${CONTACT.city}, ${CONTACT.state} ${CONTACT.postalCode}`
 
-const WA_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`
+// Iconos sociales (24×24, fill=currentColor). Clave = `network` de SOCIAL.
+const SOCIAL_ICONS: Record<string, string> = {
+  instagram: '<path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.7 3.7 0 0 1-1.38-.9 3.7 3.7 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23C2.17 15.58 2.16 15.2 2.16 12s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16M12 0C8.74 0 8.33.01 7.05.07 5.78.13 4.9.33 4.14.63c-.79.3-1.46.72-2.12 1.38C1.35 2.67.93 3.34.63 4.14.33 4.9.13 5.78.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.27.26 2.15.56 2.91.3.8.72 1.47 1.38 2.13.66.66 1.33 1.08 2.12 1.38.76.3 1.64.5 2.91.56C8.33 23.99 8.74 24 12 24s3.67-.01 4.95-.07c1.27-.06 2.15-.26 2.91-.56a5.9 5.9 0 0 0 2.13-1.38 5.9 5.9 0 0 0 1.38-2.13c.3-.76.5-1.64.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.27-.26-2.15-.56-2.91a5.9 5.9 0 0 0-1.38-2.12A5.9 5.9 0 0 0 19.86.63c-.76-.3-1.64-.5-2.91-.56C15.67.01 15.26 0 12 0Zm0 5.84A6.16 6.16 0 1 0 18.16 12 6.16 6.16 0 0 0 12 5.84ZM12 16a4 4 0 1 1 4-4 4 4 0 0 1-4 4Zm6.41-10.85a1.44 1.44 0 1 0 1.44 1.44 1.44 1.44 0 0 0-1.44-1.44Z"/>',
+  facebook: '<path d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.69.24 2.69.24v2.97h-1.52c-1.49 0-1.96.93-1.96 1.89v2.25h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07Z"/>',
+  linkedin: '<path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29ZM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13ZM7.12 20.45H3.55V9h3.57v11.45ZM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.22.79 24 1.77 24h20.45c.98 0 1.78-.78 1.78-1.73V1.73C24 .77 23.2 0 22.22 0Z"/>',
+  youtube: '<path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.5A3.02 3.02 0 0 0 .5 6.19C0 8.07 0 12 0 12s0 3.93.5 5.81a3.02 3.02 0 0 0 2.12 2.14c1.88.5 9.38.5 9.38.5s7.5 0 9.38-.5a3.02 3.02 0 0 0 2.12-2.14C24 15.93 24 12 24 12s0-3.93-.5-5.81ZM9.6 15.6V8.4l6.27 3.6L9.6 15.6Z"/>',
+  x: '<path d="M18.9 1.15h3.68l-8.04 9.19L24 22.85h-7.41l-5.8-7.58-6.64 7.58H.46l8.6-9.83L0 1.15h7.6l5.24 6.93 6.06-6.93Zm-1.29 19.5h2.04L6.48 3.24H4.3L17.61 20.65Z"/>',
+  tiktok: '<path d="M16.6 0h-3.3v13.34a2.4 2.4 0 1 1-2.4-2.4c.13 0 .26.02.39.04V7.6a6.1 6.1 0 0 0-.39-.01 5.74 5.74 0 1 0 5.74 5.74V6.7a7.3 7.3 0 0 0 4.27 1.37V4.77a4.27 4.27 0 0 1-4.27-4.27c0-.17 0-.34.02-.5H16.6Z"/>',
+}
+
+const WA_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`
+const ARROW = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`
 ---
 
-<footer class="footer" role="contentinfo">
+<footer class="footer" role="contentinfo" aria-label="Pie de página">
   <div class="footer__accent-bar" aria-hidden="true"></div>
 
+  <!-- 1) BANDA CTA PRE-FOOTER -->
+  <section class="footer__cta" aria-label="Solicitar cotización">
+    <div class="footer__cta-inner">
+      <div class="footer__cta-text">
+        <p class="footer__cta-eyebrow">¿Listo para empezar?</p>
+        <h2 class="footer__cta-title">Cuéntanos tu proyecto y te respondemos hoy mismo.</h2>
+        <p class="footer__cta-sub">Cotización sin compromiso por WhatsApp o desde el formulario de contacto.</p>
+      </div>
+      <div class="footer__cta-actions">
+        <a href={waDefault} class="footer__btn footer__btn--wa" target="_blank" rel="noopener noreferrer">
+          <Fragment set:html={WA_SVG} />Cotizar por WhatsApp
+        </a>
+        <a href="/contacto/" class="footer__btn footer__btn--ghost">
+          Ir a contacto<Fragment set:html={ARROW} />
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2) CUERPO: MARCA + 4 COLUMNAS -->
   <div class="footer__body">
     <div class="footer__grid">
 
+      <!-- Marca + contacto + redes -->
       <div class="footer__brand">
-        <a href="/" class="footer__logo-link" aria-label={`${SITE.name} — Ir al inicio`}>
-          <img src={logo} alt={SITE.name} width="203" height="48" loading="lazy" decoding="async" class="footer__logo-img" />
+        <a href="/" class="footer__logo" aria-label={`${SITE.name} — Ir al inicio`}>
+          <span class="footer__logo-mark" aria-hidden="true">{SITE.brand.charAt(0)}</span>
+          <span class="footer__logo-word">{SITE.brand}<span class="footer__logo-tld">.mx</span></span>
         </a>
         <p class="footer__brand-desc">{SITE.description}</p>
 
@@ -51,9 +93,19 @@ const WA_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentCol
             <span class="footer__contact-text"><strong>{CONTACT.phone}</strong><em>WhatsApp — cotización inmediata</em></span>
           </a>
 
-          <a href={(CONTACT as any).emailHref ?? `mailto:${CONTACT.email}`} class="footer__contact-row">
+          <a href={telLink} class="footer__contact-row" aria-label={`Llamar al ${CONTACT.phone}`}>
+            <span class="footer__contact-icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z"/></svg></span>
+            <span class="footer__contact-text"><strong>{CONTACT.phone}</strong><em>Llamada directa</em></span>
+          </a>
+
+          <a href={(CONTACT as any).emailHref ?? `mailto:${CONTACT.email}`} class="footer__contact-row" aria-label={`Enviar correo a ${CONTACT.email}`}>
             <span class="footer__contact-icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
             <span class="footer__contact-text"><strong>{CONTACT.email}</strong></span>
+          </a>
+
+          <a href={mapsUrl} class="footer__contact-row" target="_blank" rel="noopener noreferrer" aria-label="Ver dirección en Google Maps">
+            <span class="footer__contact-icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+            <span class="footer__contact-text"><span class="footer__contact-plain">{fullAddress}</span></span>
           </a>
 
           {branches.length > 0 && (
@@ -79,30 +131,47 @@ const WA_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentCol
             </div>
           )}
         </address>
+
+        {SOCIAL.length > 0 && (
+          <div class="footer__social" role="group" aria-label="Síguenos en redes sociales">
+            {SOCIAL.map((s) => (
+              <a href={s.url} class="footer__social-link" target="_blank" rel="noopener noreferrer me" aria-label={s.label} title={s.label}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" set:html={SOCIAL_ICONS[s.network] ?? ''} />
+              </a>
+            ))}
+          </div>
+        )}
       </div>
 
+      <!-- Productos -->
       <nav class="footer__col" aria-label="Productos">
         <h3 class="footer__col-heading"><span class="footer__col-heading-accent" aria-hidden="true"></span>Productos</h3>
         <ul class="footer__nav-list" role="list">
-          <li><a href="/productos/" class="footer__nav-link footer__nav-link--all">Ver catálogo completo<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a></li>
+          <li><a href="/productos/" class="footer__nav-link footer__nav-link--all">Ver catálogo completo<Fragment set:html={ARROW} /></a></li>
           {PRODUCT_CATEGORIES.map((cat) => (
             <li><a href={cat.href} class="footer__nav-link">{cat.label}{(cat as any).badge && <span class="footer__nav-badge">{(cat as any).badge}</span>}</a></li>
           ))}
         </ul>
       </nav>
 
+      <!-- Servicios + Sectores -->
       <nav class="footer__col" aria-label="Servicios">
         <h3 class="footer__col-heading"><span class="footer__col-heading-accent" aria-hidden="true"></span>Servicios</h3>
         <ul class="footer__nav-list" role="list">
           {SERVICES.map((svc) => (<li><a href={`/servicios/${svc.id}/`} class="footer__nav-link">{svc.label}</a></li>))}
         </ul>
-        <h3 class="footer__col-heading footer__col-heading--mt"><span class="footer__col-heading-accent" aria-hidden="true"></span>Sectores</h3>
-        <ul class="footer__nav-list" role="list">
-          {SECTORS.map((sec) => (<li><a href={`/sectores/${sec.slug}/`} class="footer__nav-link">{sec.label}</a></li>))}
-        </ul>
+        {SECTORS.length > 0 && (
+          <>
+            <h3 class="footer__col-heading footer__col-heading--mt"><span class="footer__col-heading-accent" aria-hidden="true"></span>Sectores</h3>
+            <ul class="footer__nav-list" role="list">
+              {SECTORS.map((sec) => (<li><a href={`/sectores/${sec.slug}/`} class="footer__nav-link">{sec.label}</a></li>))}
+            </ul>
+          </>
+        )}
       </nav>
 
-      <nav class="footer__col" aria-label="Cobertura y Empresa">
+      <!-- Cobertura -->
+      <nav class="footer__col" aria-label="Cobertura">
         <h3 class="footer__col-heading"><span class="footer__col-heading-accent" aria-hidden="true"></span>Cobertura</h3>
         <ul class="footer__nav-list footer__coverage-list" role="list">
           {COVERAGE_STATES.map((state) => (
@@ -111,19 +180,24 @@ const WA_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentCol
             </a></li>
           ))}
         </ul>
-        <h3 class="footer__col-heading footer__col-heading--mt"><span class="footer__col-heading-accent" aria-hidden="true"></span>Empresa</h3>
+      </nav>
+
+      <!-- Empresa -->
+      <nav class="footer__col" aria-label="Empresa">
+        <h3 class="footer__col-heading"><span class="footer__col-heading-accent" aria-hidden="true"></span>Empresa</h3>
         <ul class="footer__nav-list" role="list">
           <li><a href="/nosotros/" class="footer__nav-link">Nosotros</a></li>
           <li><a href="/servicios/" class="footer__nav-link">Todos los servicios</a></li>
-          <li><a href="/productos/" class="footer__nav-link">Catálogo de productos</a></li>
           <li><a href="/blog/" class="footer__nav-link">Blog</a></li>
-          <li><a href="/contacto/" class="footer__nav-link">Contacto y cotización</a></li>
+          <li><a href="/contacto/" class="footer__nav-link">Contacto</a></li>
+          <li><a href={waDefault} class="footer__nav-link" target="_blank" rel="noopener noreferrer">Solicitar cotización</a></li>
         </ul>
       </nav>
 
     </div>
   </div>
 
+  <!-- 3) BANDA DE CUMPLIMIENTO (opcional) -->
   {certifications.length > 0 && (
     <div class="footer__cert-band" aria-label="Normativas y certificaciones">
       <div class="footer__cert-inner">
@@ -135,78 +209,169 @@ const WA_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentCol
     </div>
   )}
 
+  <!-- 4) BARRA INFERIOR: copyright + legales + volver arriba -->
   <div class="footer__bottom">
     <div class="footer__bottom-inner">
-      <p class="footer__copy">© {currentYear} {SITE.name}. Todos los derechos reservados.</p>
-      <p class="footer__seo-tagline">{seoTagline}</p>
-      <a href={waDefault} class="footer__bottom-wa" target="_blank" rel="noopener noreferrer" aria-label="Contactar por WhatsApp">
-        <Fragment set:html={WA_SVG} />{CONTACT.phone}
-      </a>
+      <div class="footer__bottom-left">
+        <p class="footer__copy">© {currentYear} {SITE.name}. Todos los derechos reservados.</p>
+        <p class="footer__seo-tagline">{seoTagline}</p>
+      </div>
+
+      {LEGAL.length > 0 && (
+        <nav class="footer__legal" aria-label="Enlaces legales">
+          {LEGAL.map((item, i) => (
+            <>
+              {i > 0 && <span class="footer__legal-sep" aria-hidden="true">·</span>}
+              <a href={item.href} class="footer__legal-link">{item.label}</a>
+            </>
+          ))}
+        </nav>
+      )}
+
+      <button type="button" class="footer__top" aria-label="Volver arriba">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        Arriba
+      </button>
     </div>
   </div>
 </footer>
 
+<script>
+  // Volver arriba — respeta prefers-reduced-motion (sin scroll animado si está activo).
+  document.querySelector<HTMLButtonElement>('.footer__top')?.addEventListener('click', () => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })
+  })
+</script>
+
 <style>
-  .footer { --ft-white: #fff; --ft-text: rgba(255,255,255,.6); --ft-text-hover: rgba(255,255,255,.95); --ft-bg: #0d0d0d; --ft-bg-cert: #111; --ft-bg-bottom: #000; --ft-border: rgba(255,255,255,.07); --ft-accent: var(--color-red, #C41E24); --ft-accent-dim: rgba(196,30,36,.18);
-    background: var(--ft-bg); color: var(--ft-text); }
-  .footer__accent-bar { height: 3px; background: linear-gradient(90deg, var(--ft-accent) 0%, transparent 80%); }
+  .footer {
+    --ft-white: #fff;
+    --ft-text: rgba(255,255,255,.6);
+    --ft-text-hover: rgba(255,255,255,.95);
+    --ft-bg: #0d0d0d;
+    --ft-bg-cta: #121218;
+    --ft-bg-cert: #111;
+    --ft-bg-bottom: #000;
+    --ft-border: rgba(255,255,255,.08);
+    --ft-accent: var(--c-primary, #5b3df5);
+    --ft-accent-2: var(--c-primary-light, #7c66f7);
+    --ft-accent-dim: rgba(var(--c-primary-rgb, 91,61,245), .16);
+    --ft-wa: #25d366;
+    background: var(--ft-bg);
+    color: var(--ft-text);
+    font-family: var(--font-body);
+  }
+  .footer__accent-bar { height: 3px; background: linear-gradient(90deg, var(--ft-accent) 0%, var(--ft-accent-2) 45%, transparent 90%); }
+
+  /* ---------- 1) BANDA CTA ---------- */
+  .footer__cta { background: var(--ft-bg-cta); border-bottom: 1px solid var(--ft-border); }
+  .footer__cta-inner { display: flex; align-items: center; justify-content: space-between; gap: 2rem; flex-wrap: wrap; max-width: var(--container-max, 1400px); margin-inline: auto; padding: 2.5rem var(--container-px, 1.5rem); }
+  .footer__cta-text { max-width: 58ch; }
+  .footer__cta-eyebrow { margin: 0 0 .35rem; font-size: .72rem; font-weight: var(--weight-bold, 700); letter-spacing: .14em; text-transform: uppercase; color: var(--ft-accent-2); }
+  .footer__cta-title { margin: 0 0 .4rem; font-family: var(--font-heading); font-size: clamp(1.25rem, 1rem + 1.4vw, 1.7rem); font-weight: var(--weight-bold, 700); line-height: 1.2; color: var(--ft-white); letter-spacing: -.01em; }
+  .footer__cta-sub { margin: 0; font-size: var(--text-sm, .875rem); line-height: 1.6; color: rgba(255,255,255,.55); }
+  .footer__cta-actions { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+
+  .footer__btn { display: inline-flex; align-items: center; gap: .5rem; font-size: var(--text-sm, .875rem); font-weight: var(--weight-semibold, 600); text-decoration: none; padding: .75rem 1.25rem; border-radius: var(--radius-md, 10px); border: 1px solid transparent; white-space: nowrap; transition: background var(--transition, .2s ease), border-color var(--transition, .2s ease), color var(--transition, .2s ease), transform var(--transition, .2s ease); }
+  .footer__btn--wa { background: var(--ft-wa); color: #04210f; }
+  .footer__btn--wa:hover { background: #1ebe5a; transform: translateY(-1px); }
+  .footer__btn--ghost { background: transparent; color: var(--ft-white); border-color: rgba(255,255,255,.22); }
+  .footer__btn--ghost:hover { border-color: var(--ft-accent-2); background: var(--ft-accent-dim); color: var(--ft-white); }
+
+  /* ---------- 2) CUERPO ---------- */
   .footer__body { padding: 3.5rem 0 3rem; }
-  .footer__grid { display: grid; grid-template-columns: minmax(260px, 1.5fr) 1fr 1fr 1fr; gap: 3rem 2.5rem; align-items: start; max-width: var(--container-max, 1400px); margin-inline: auto; padding-inline: var(--container-px, 1.5rem); }
-  .footer__logo-link { display: inline-block; margin-bottom: 1.25rem; }
-  .footer__logo-img { height: 48px; width: auto; display: block; }
-  .footer__brand-desc { font-size: var(--text-sm, .875rem); line-height: 1.7; color: rgba(255,255,255,.5); margin-bottom: 1.5rem; max-width: 34ch; }
-  .footer__contact { display: flex; flex-direction: column; gap: .875rem; font-style: normal; }
+  .footer__grid { display: grid; grid-template-columns: minmax(280px, 1.6fr) repeat(4, 1fr); gap: 3rem 2.25rem; align-items: start; max-width: var(--container-max, 1400px); margin-inline: auto; padding-inline: var(--container-px, 1.5rem); }
+
+  /* Marca */
+  .footer__logo { display: inline-flex; align-items: center; gap: .55rem; text-decoration: none; margin-bottom: 1.1rem; }
+  .footer__logo-mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; background: var(--ft-accent); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-black, 800); font-size: 1.25rem; line-height: 1; box-shadow: 0 2px 10px rgba(var(--c-primary-rgb, 91,61,245), .4); }
+  .footer__logo-word { font-family: var(--font-heading); font-weight: var(--weight-black, 800); font-size: 1.35rem; letter-spacing: -.01em; color: var(--ft-white); line-height: 1; }
+  .footer__logo-tld { color: var(--ft-accent-2); }
+  .footer__brand-desc { font-size: var(--text-sm, .875rem); line-height: 1.7; color: rgba(255,255,255,.5); margin: 0 0 1.5rem; max-width: 40ch; }
+
+  .footer__contact { display: flex; flex-direction: column; gap: .75rem; font-style: normal; }
   .footer__contact-row { display: flex; align-items: flex-start; gap: .625rem; text-decoration: none; color: var(--ft-text); font-size: .8125rem; line-height: 1.45; }
+  a.footer__contact-row { transition: color var(--transition, .2s ease); }
   a.footer__contact-row:hover { color: var(--ft-text-hover); }
-  .footer__contact-row--cta { background: rgba(37,211,102,.08); border: 1px solid rgba(37,211,102,.18); border-radius: var(--radius-md, 6px); padding: .625rem .75rem; }
+  .footer__contact-row--cta { background: rgba(37,211,102,.08); border: 1px solid rgba(37,211,102,.18); border-radius: var(--radius-md, 10px); padding: .625rem .75rem; transition: background var(--transition, .2s ease), border-color var(--transition, .2s ease); }
   .footer__contact-row--cta:hover { background: rgba(37,211,102,.14); border-color: rgba(37,211,102,.35); color: rgba(255,255,255,.95); }
   .footer__contact-icon { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; color: rgba(255,255,255,.4); margin-top: 1px; }
-  .footer__contact-icon--wa { color: #25d366; width: 28px; height: 28px; }
+  .footer__contact-icon--wa { color: var(--ft-wa); width: 28px; height: 28px; }
   .footer__contact-text { display: flex; flex-direction: column; gap: .125rem; }
   .footer__contact-text strong { color: var(--ft-white); font-weight: var(--weight-semibold, 600); font-size: .9rem; }
   .footer__contact-text em { font-style: normal; font-size: var(--text-xs, .75rem); color: rgba(37,211,102,.8); }
-  .footer__branches { display: flex; flex-direction: column; gap: .5rem; padding-top: .25rem; border-top: 1px solid var(--ft-border); }
+  .footer__contact-plain { color: rgba(255,255,255,.6); font-size: .8125rem; line-height: 1.5; }
+
+  .footer__branches { display: flex; flex-direction: column; gap: .5rem; padding-top: .25rem; margin-top: .25rem; border-top: 1px solid var(--ft-border); }
   .footer__branches-label { display: block; font-size: .65rem; font-weight: var(--weight-bold, 700); letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.4); padding: .5rem 0 .125rem; }
-  .footer__branch { align-items: flex-start; padding: .375rem .5rem .375rem 0; border-radius: var(--radius-sm, 4px); }
+  .footer__branch { align-items: flex-start; padding: .375rem .5rem .375rem 0; border-radius: var(--radius-sm, 6px); }
   .footer__branch-name { font-size: .78rem; font-weight: var(--weight-semibold, 600); color: rgba(255,255,255,.92); line-height: 1.3; }
   .footer__branch-address { font-size: .78rem; line-height: 1.45; color: rgba(255,255,255,.55); }
+
   .footer__contact-row--schedule { align-items: flex-start; }
   .footer__schedule-grid { display: flex; flex-direction: column; gap: .25rem; }
   .footer__schedule-row { display: flex; gap: .75rem; align-items: center; }
-  .footer__schedule-day { font-size: .8rem; color: rgba(255,255,255,.55); min-width: 60px; }
+  .footer__schedule-day { font-size: .8rem; color: rgba(255,255,255,.55); min-width: 64px; }
   .footer__schedule-hours { font-size: .8rem; color: rgba(255,255,255,.8); font-weight: var(--weight-medium, 500); }
   .footer__schedule-hours--dim { color: rgba(255,255,255,.4); font-weight: 400; font-style: italic; }
-  .footer__col-heading { display: flex; align-items: center; gap: .5rem; font-size: var(--text-xs, .75rem); font-weight: var(--weight-bold, 700); color: var(--ft-white); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 1.25rem; }
+
+  /* Redes sociales (chips tipo botón → llevan transición) */
+  .footer__social { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: 1.5rem; }
+  .footer__social-link { display: grid; place-items: center; width: 38px; height: 38px; border-radius: var(--radius-md, 10px); color: rgba(255,255,255,.7); background: rgba(255,255,255,.05); border: 1px solid var(--ft-border); transition: background var(--transition, .2s ease), border-color var(--transition, .2s ease), color var(--transition, .2s ease), transform var(--transition, .2s ease); }
+  .footer__social-link:hover { color: var(--ft-white); background: var(--ft-accent-dim); border-color: var(--ft-accent-2); transform: translateY(-2px); }
+  .footer__social-link:focus-visible { outline: 2px solid var(--ft-accent-2); outline-offset: 2px; }
+
+  /* Columnas de navegación */
+  .footer__col-heading { display: flex; align-items: center; gap: .5rem; font-size: var(--text-xs, .75rem); font-weight: var(--weight-bold, 700); color: var(--ft-white); text-transform: uppercase; letter-spacing: .1em; margin: 0 0 1.25rem; }
   .footer__col-heading--mt { margin-top: 2rem; }
   .footer__col-heading-accent { display: block; width: 16px; height: 2px; background: var(--ft-accent); border-radius: 2px; flex-shrink: 0; }
   .footer__nav-list { display: flex; flex-direction: column; gap: .5rem; list-style: none; padding: 0; margin: 0; }
-  .footer__nav-link { display: flex; align-items: center; gap: .4rem; font-size: var(--text-sm, .875rem); color: var(--ft-text); text-decoration: none; line-height: 1.4; padding: .125rem 0; position: relative; }
-  .footer__nav-link:hover { color: var(--ft-text-hover); padding-left: 6px; }
-  .footer__nav-link--all { font-weight: var(--weight-semibold, 600); color: rgba(255,255,255,.75); font-size: .8125rem; }
-  .footer__nav-badge { font-size: .625rem; font-weight: var(--weight-bold, 700); letter-spacing: .05em; color: var(--ft-accent); background: var(--ft-accent-dim); border: 1px solid rgba(196,30,36,.25); border-radius: 3px; padding: 1px 5px; white-space: nowrap; margin-left: auto; flex-shrink: 0; }
+  .footer__nav-link { display: flex; align-items: center; gap: .4rem; font-size: var(--text-sm, .875rem); color: var(--ft-text); text-decoration: none; line-height: 1.4; padding: .125rem 0; }
+  .footer__nav-link:hover { color: var(--ft-text-hover); }
+  .footer__nav-link--all { font-weight: var(--weight-semibold, 600); color: var(--ft-accent-2); font-size: .8125rem; }
+  .footer__nav-link--all:hover { color: var(--ft-white); }
+  .footer__nav-badge { font-size: .625rem; font-weight: var(--weight-bold, 700); letter-spacing: .05em; color: var(--ft-accent-2); background: var(--ft-accent-dim); border: 1px solid rgba(var(--c-primary-rgb, 91,61,245), .25); border-radius: 3px; padding: 1px 5px; white-space: nowrap; margin-left: auto; flex-shrink: 0; }
   .footer__coverage-badge { font-size: .6rem; font-weight: var(--weight-semibold, 600); letter-spacing: .04em; border-radius: 3px; padding: 1px 5px; white-space: nowrap; margin-left: auto; flex-shrink: 0; text-transform: uppercase; }
   .footer__coverage-badge--operativo { color: #22c55e; background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.2); }
   .footer__coverage-badge--comercial { color: rgba(255,255,255,.5); background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); }
+
+  /* ---------- 3) BANDA CERT ---------- */
   .footer__cert-band { background: var(--ft-bg-cert); border-top: 1px solid var(--ft-border); border-bottom: 1px solid var(--ft-border); padding: 1rem 0; }
   .footer__cert-inner { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; max-width: var(--container-max, 1400px); margin-inline: auto; padding-inline: var(--container-px, 1.5rem); }
   .footer__cert-label { font-size: .7rem; font-weight: var(--weight-bold, 700); letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.35); white-space: nowrap; flex-shrink: 0; }
   .footer__cert-list { display: flex; flex-wrap: wrap; gap: .5rem; list-style: none; padding: 0; margin: 0; }
-  .footer__cert-item { display: inline-block; font-size: .6875rem; font-weight: var(--weight-semibold, 600); letter-spacing: .04em; color: rgba(255,255,255,.45); border: 1px solid rgba(255,255,255,.1); border-radius: var(--radius-sm, 4px); padding: 3px 8px; cursor: default; }
-  .footer__cert-item:hover { color: rgba(255,255,255,.8); border-color: var(--ft-accent); background: var(--ft-accent-dim); }
-  .footer__bottom { background: var(--ft-bg-bottom); padding: 1.125rem 0; }
-  .footer__bottom-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; max-width: var(--container-max, 1400px); margin-inline: auto; padding-inline: var(--container-px, 1.5rem); }
-  .footer__copy, .footer__seo-tagline { font-size: var(--text-xs, .75rem); color: rgba(255,255,255,.3); line-height: 1.5; }
-  .footer__seo-tagline { text-align: center; flex: 1; }
-  .footer__bottom-wa { display: inline-flex; align-items: center; gap: .4rem; font-size: var(--text-xs, .75rem); font-weight: var(--weight-semibold, 600); color: rgba(37,211,102,.7); text-decoration: none; white-space: nowrap; flex-shrink: 0; }
-  .footer__bottom-wa:hover { color: #25d366; }
+  .footer__cert-item { display: inline-block; font-size: .6875rem; font-weight: var(--weight-semibold, 600); letter-spacing: .04em; color: rgba(255,255,255,.45); border: 1px solid rgba(255,255,255,.1); border-radius: var(--radius-sm, 6px); padding: 3px 8px; cursor: default; }
+
+  /* ---------- 4) BARRA INFERIOR ---------- */
+  .footer__bottom { background: var(--ft-bg-bottom); padding: 1.25rem 0; }
+  .footer__bottom-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem 1.5rem; flex-wrap: wrap; max-width: var(--container-max, 1400px); margin-inline: auto; padding-inline: var(--container-px, 1.5rem); }
+  .footer__bottom-left { display: flex; flex-direction: column; gap: .15rem; }
+  .footer__copy { margin: 0; font-size: var(--text-xs, .75rem); color: rgba(255,255,255,.45); line-height: 1.5; }
+  .footer__seo-tagline { margin: 0; font-size: var(--text-xs, .75rem); color: rgba(255,255,255,.3); line-height: 1.5; }
+  .footer__legal { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; justify-content: center; }
+  .footer__legal-link { font-size: var(--text-xs, .75rem); color: rgba(255,255,255,.5); text-decoration: none; transition: color var(--transition, .2s ease); }
+  .footer__legal-link:hover { color: var(--ft-white); }
+  .footer__legal-sep { color: rgba(255,255,255,.2); font-size: .75rem; }
+  .footer__top { display: inline-flex; align-items: center; gap: .4rem; font-family: var(--font-body); font-size: var(--text-xs, .75rem); font-weight: var(--weight-semibold, 600); color: rgba(255,255,255,.7); background: rgba(255,255,255,.05); border: 1px solid var(--ft-border); border-radius: var(--radius-full, 999px); padding: .45rem .85rem; cursor: pointer; transition: background var(--transition, .2s ease), border-color var(--transition, .2s ease), color var(--transition, .2s ease); }
+  .footer__top:hover { color: var(--ft-white); background: var(--ft-accent-dim); border-color: var(--ft-accent-2); }
+  .footer__top:focus-visible { outline: 2px solid var(--ft-accent-2); outline-offset: 2px; }
+
+  /* ---------- RESPONSIVE ---------- */
   @media (max-width: 1100px) {
-    .footer__grid { grid-template-columns: 1fr 1fr; gap: 2.5rem 2rem; }
-    .footer__brand { grid-column: 1 / -1; max-width: 560px; }
+    .footer__grid { grid-template-columns: 1fr 1fr 1fr; gap: 2.5rem 2rem; }
+    .footer__brand { grid-column: 1 / -1; max-width: 620px; }
   }
-  @media (max-width: 860px) { .footer__seo-tagline { display: none; } }
-  @media (max-width: 640px) {
+  @media (max-width: 760px) {
+    .footer__cta-inner { flex-direction: column; align-items: flex-start; gap: 1.25rem; padding: 2rem var(--container-px, 1.5rem); }
+    .footer__cta-actions { width: 100%; }
+    .footer__btn { flex: 1; justify-content: center; }
+    .footer__grid { grid-template-columns: 1fr 1fr; }
+    .footer__bottom-inner { flex-direction: column; align-items: center; text-align: center; gap: .875rem; }
+    .footer__bottom-left { align-items: center; }
+  }
+  @media (max-width: 480px) {
     .footer__body { padding: 2.5rem 0 2rem; }
     .footer__grid { grid-template-columns: 1fr; gap: 2rem; }
-    .footer__bottom-inner { flex-direction: column; align-items: center; text-align: center; gap: .625rem; }
   }
 </style>
