@@ -17,6 +17,7 @@ import ReviewCard from "@components/ReviewCard.astro";
 import CategoryDetail from "@components/CategoryDetail.astro";
 import CompanyAbout from "@components/CompanyAbout.astro";
 import FAQAccordion from "@components/FAQAccordion.astro";
+import ContactForm from "@components/ContactForm.astro";
 import CTABanner from "@components/CTABanner.astro";
 import GuiaNota from "@components/GuiaNota.astro";
 import { SITE, KEYWORDS, NAV, WA_MESSAGES, SHOWCASE, waUrl } from "@config/site";
@@ -247,32 +248,39 @@ const tiposPagina: { nombre: string; estado: "ok" | "next"; nivel: string }[] = 
   { nombre: "Directorio / Zona", estado: "next", nivel: "L3" },
 ];
 
-// ── FAQ sobre la plantilla (no sobre un negocio) ──
+// ── FAQ de cliente — dudas sobre el servicio (no sobre la plantilla) ──
+// Contenido DEMO: cámbialas por las dudas reales de tu negocio. El <answer>
+// admite HTML. Se muestran a la izquierda del módulo FAQ + Formulario.
 const faqs: { question: string; answer: string }[] = [
   {
-    question: "¿Esto es un sitio de cliente?",
+    question: "¿Cuánto tarda y cómo es el proceso?",
     answer:
-      "No. Es una <strong>plantilla-guía</strong>: un sitio dummy de referencia para construir futuros sitios Astro. Los datos (teléfono, dirección, catálogo) son DEMO y se reemplazan en <code>site.ts</code>.",
+      "Depende del alcance, pero la mayoría de los sitios quedan en línea en <strong>1 a 2 semanas</strong>. El proceso es simple: definimos lo que necesitas, armamos el contenido, lo revisas y publicamos. En cada paso te decimos qué sigue, sin tecnicismos.",
   },
   {
-    question: "¿Dónde edito los textos y los datos?",
+    question: "¿Cuánto cuesta y cómo cobran?",
     answer:
-      "Casi todo vive en <code>src/config/site.ts</code> (identidad, contacto, taxonomía, mensajes de WhatsApp). El catálogo vive en <code>src/content/</code> y la marca (colores, tipografía) en <code>src/styles/tokens.css</code>.",
+      "Primero entendemos qué necesitas y te damos una <strong>cotización detallada por escrito</strong>, sin cargos ocultos ni anticipos sorpresa. Lo que acordamos es lo que pagas. Escríbenos por WhatsApp y te pasamos un estimado el mismo día.",
   },
   {
-    question: "¿Cómo agrego una página o un producto?",
+    question: "¿Qué pasa si no tengo logo, textos o fotos?",
     answer:
-      "Para catálogo, agrega un Markdown en <code>src/content/productos</code> o <code>src/content/servicios</code> y aparece solo. Para páginas nuevas, crea un <code>.astro</code> en <code>src/pages/</code> usando un layout de <code>src/layouts/</code>.",
+      "No hay problema: te guiamos. Partimos de lo que tengas y te ayudamos a ordenar textos e imágenes; si falta algo, te decimos exactamente qué y cómo conseguirlo. No necesitas saber de diseño ni de tecnología.",
   },
   {
-    question: "¿Por qué WhatsApp y no un formulario?",
+    question: "¿El sitio es mío? ¿Puedo editarlo yo después?",
     answer:
-      "El sistema prioriza la conversión por WhatsApp: respuesta inmediata, sin fricción y con mensaje pre-armado por intención (<code>WA_MESSAGES</code>). Todos los enlaces se generan con <code>waUrl()</code>.",
+      "Sí, el sitio es <strong>tuyo</strong>. Lo dejamos listo para que cambies fotos, precios y textos por tu cuenta, y te enseñamos cómo con una guía corta. No quedas atado a nadie para una actualización sencilla.",
   },
   {
-    question: "¿Cómo cambio la identidad visual?",
+    question: "¿Dan garantía y soporte?",
     answer:
-      "Edita las variables de <code>src/styles/tokens.css</code> (sobre todo <code>--c-primary</code> y las fuentes). Todo el sitio se reviste solo: es la fuente única de diseño.",
+      "Sí. Cada trabajo va con <strong>garantía por escrito</strong>: si algo falla dentro del periodo, lo resolvemos sin costo. Y para dudas del día a día, nos escribes por WhatsApp y te respondemos rápido.",
+  },
+  {
+    question: "¿En qué zonas trabajan?",
+    answer:
+      "Atendemos tu zona y damos seguimiento cercano. Como buena parte del trabajo es digital, también colaboramos a distancia sin problema. Cuéntanos dónde estás y te confirmamos.",
   },
 ];
 ---
@@ -789,16 +797,39 @@ const faqs: { question: string; answer: string }[] = [
     </div>
   </section>
 
-  {/* ═══ 7) FAQ — preguntas SOBRE la plantilla ═══ */}
-  <FAQAccordion title="Preguntas sobre esta plantilla" items={faqs} />
-  <section class="band">
+  {/* ═══ 7) FAQ + CONTACTO — dos columnas: dudas frecuentes | formulario a WhatsApp ═══
+       IZQ: FAQAccordion en modo `bare` (incrustado en columna). DER: ContactForm,
+       que compone el mensaje y abre wa.me con CONTACT.whatsapp (regla D4). */}
+  <section class="section section--surface">
     <div class="container">
-      <GuiaNota titulo="Componente FAQAccordion" archivo="src/components/FAQAccordion.astro">
+      <SectionHeading
+        layout="duo"
+        eyebrow="¿Tienes dudas?"
+        title="Preguntas frecuentes y contacto directo"
+        desc="Las respuestas a lo que más nos preguntan y un formulario que abre WhatsApp con tu mensaje ya listo. Si tu duda no está aquí, escríbenos: respondemos en minutos."
+        body={[
+          "Una buena sección de dudas hace dos cosas a la vez: le quita miedos a quien está por decidir y te ahorra repetir lo mismo mil veces. Responde con honestidad las preguntas reales —precio, tiempos, garantía, qué necesitas de su parte— y notarás que llegan menos mensajes de «¿y cuánto cuesta?» y más de «quiero empezar».",
+          "Y deja siempre una salida fácil: junto a las respuestas, un formulario directo a WhatsApp. Quien ya se convenció no tiene que buscar cómo contactarte; escribe, le pre-armamos el mensaje y la conversación arranca sola. Menos fricción, más clientes.",
+        ]}
+      />
+      <div class="faqx">
+        <FAQAccordion bare items={faqs} title="" />
+        <ContactForm />
+      </div>
+      <GuiaNota titulo="Módulo FAQ + Formulario a WhatsApp" archivo="src/components/FAQAccordion.astro · src/components/ContactForm.astro · src/pages/index.astro">
         <p>
-          Recibe <code>items</code> (<code>{`{ question, answer }`}</code>; el
-          <code>answer</code> admite HTML) y un <code>title</code>. El JSON-LD
-          <code>FAQPage</code> lo centraliza <code>src/lib/seo.ts</code> para no
-          duplicar schema (anti-patrón B3).
+          Dos columnas: a la izquierda, las <strong>dudas frecuentes</strong> (reusa
+          <code>FAQAccordion</code> en modo <code>bare</code> para incrustarlo en la
+          columna); a la derecha, un <strong>formulario a WhatsApp</strong>
+          (<code>ContactForm</code>). Patrón clásico: resolver objeciones y, justo al
+          lado, una salida fácil para contactar.
+        </p>
+        <p>
+          El formulario <strong>no usa backend</strong>: compone el mensaje con los
+          campos y abre <code>wa.me</code> con el número de <code>CONTACT.whatsapp</code>
+          (regla D4, nunca hardcodeado). Edita las preguntas en el arreglo
+          <code>faqs</code> y los textos del form en sus props. Las dudas son DEMO:
+          cámbialas por las de tu negocio.
         </p>
       </GuiaNota>
     </div>
@@ -849,6 +880,10 @@ const faqs: { question: string; answer: string }[] = [
   .showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
   @media (min-width: 640px) { .showcase { grid-template-columns: repeat(2, 1fr); } }
   @media (min-width: 1024px) { .showcase { grid-template-columns: repeat(4, 1fr); } }
+
+  /* FAQ + formulario — una columna en móvil, dos en escritorio */
+  .faqx { display: grid; grid-template-columns: 1fr; gap: var(--sp-6); align-items: start; margin-top: var(--sp-6); }
+  @media (min-width: 900px) { .faqx { grid-template-columns: 1fr 1fr; gap: clamp(2rem, 4vw, 3.5rem); } }
 
   /* ── Pila de módulos "categoría a fondo" — separación uniforme, SIN zig-zag ── */
   .afondo { display: grid; gap: clamp(2.5rem, 6vw, 5rem); }

@@ -13,8 +13,10 @@ interface Props {
   emitSchema?: boolean
   /** Abrir el primer item por defecto. */
   openFirst?: boolean
+  /** true → sin <section> con padding/centrado; para incrustar en una columna. */
+  bare?: boolean
 }
-const { items = [], title = 'Preguntas frecuentes', headingId = 'faq-heading', emitSchema = false, openFirst = true } = Astro.props
+const { items = [], title = 'Preguntas frecuentes', headingId = 'faq-heading', emitSchema = false, openFirst = true, bare = false } = Astro.props
 
 const faqSchema = emitSchema ? {
   '@context': 'https://schema.org',
@@ -27,7 +29,7 @@ const faqSchema = emitSchema ? {
 } : null
 ---
 
-<section class="faq" aria-labelledby={headingId}>
+<section class:list={['faq', bare && 'faq--bare']} aria-labelledby={title ? headingId : undefined}>
   <div class="faq__inner">
     {title && <h2 id={headingId} class="faq__title">{title}</h2>}
     <div class="faq__list">
@@ -54,7 +56,10 @@ const faqSchema = emitSchema ? {
   .faq__q { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3, .75rem); padding: var(--sp-4, 1rem) var(--sp-5, 1.25rem); cursor: pointer; background: var(--color-gray-50, #fafafa); font-weight: var(--weight-semibold, 600); color: var(--c-ink, var(--color-gray-900, #111827)); list-style: none; }
   .faq__q::-webkit-details-marker { display: none; }
   .faq__q:hover { background: var(--color-gray-100, #f4f4f5); }
-  .faq__item[open] .faq__q { background: var(--color-red-light, #FEE2E2); }
+  .faq__item[open] .faq__q { background: color-mix(in srgb, var(--c-primary, #6d28d9) 8%, #fff); }
+  /* Modo "bare": sin section-padding ni centrado — para incrustar en una columna */
+  .faq--bare { padding: 0; }
+  .faq--bare .faq__inner { max-width: none; padding-inline: 0; }
   .faq__chevron { flex-shrink: 0; transition: transform .2s ease; color: var(--color-red, var(--c-primary, #C41E24)); }
   .faq__item[open] .faq__chevron { transform: rotate(180deg); }
   .faq__a { padding: var(--sp-4, 1rem) var(--sp-5, 1.25rem); color: var(--c-ink-2, var(--color-gray-700, #374151)); line-height: var(--leading-relaxed, 1.7); border-top: 1px solid var(--c-border, var(--border, #e8e8e8)); }
