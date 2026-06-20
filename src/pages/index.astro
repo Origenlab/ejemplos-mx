@@ -167,24 +167,25 @@ const empresa = {
   ],
 };
 
-// ── Por qué elegirnos (beneficios: ícono + título + texto) ──
+// ── Por qué elegirnos (beneficios: ícono + dato + título + texto) ──
 // Contenido DEMO de la plantilla-guía. En un sitio real: tus diferenciadores
-// REALES (hechos, no adjetivos). Cada `icon` = nombre de un SVG del set de Benefits.
+// REALES (hechos, no adjetivos). `icon` = nombre de un SVG del set de Benefits;
+// `metric`/`metricLabel` = el dato corto que respalda cada beneficio (cifra real).
 const beneficios = {
   eyebrow: "Por qué elegirnos",
-  title: "Los beneficios: di por qué elegirte a ti",
-  desc: "Tres a seis razones concretas —beneficios para el cliente, no adjetivos— que responden «¿por qué tú y no otro?». Cada una con su ícono para escanear de un vistazo.",
+  title: "Los beneficios: di por qué elegirte",
+  desc: "De tres a seis razones concretas —beneficios para el cliente, no adjetivos— que responden, de un vistazo, «¿por qué tú y no otro?». Cada una con su ícono, su dato y una frase que lo respalda.",
   body: [
-    "Este bloque responde la pregunta que el visitante trae sin decirla: «¿por qué contigo y no con el de al lado?». No es presumir: es darle razones concretas para quedarse. Funciona porque convierte tu propuesta en beneficios que se entienden de un vistazo —qué gana la persona al elegirte, no una lista de lo que haces—.",
-    "La regla es la misma de toda la guía: hechos, no adjetivos. «Respuesta el mismo día» o «garantía por escrito» convencen; «los mejores» no dice nada. Quédate en tres a seis razones —las que de verdad te distinguen—, cada una con un ícono y una frase corta. En un sitio real, cámbialas por tus diferenciadores reales.",
+    "Este bloque responde la pregunta que el visitante trae sin decirla: «¿por qué contigo y no con el de al lado?». No es presumir: es darle motivos concretos para quedarse. Funciona porque convierte tu propuesta en beneficios que se entienden en segundos —qué gana la persona al elegirte, no una lista de lo que haces—.",
+    "La regla es la misma de toda la guía: hechos, no adjetivos. Un dato corto («respuesta en menos de 4 h», «garantía de 12 meses») convence; «los mejores» no dice nada. Quédate en tres a seis razones —las que de verdad te distinguen—, cada una con su ícono y su cifra. En un sitio real, cámbialas por tus diferenciadores reales.",
   ],
   items: [
-    { icon: "clock", title: "Respuesta el mismo día", desc: "Contestamos tu solicitud en horas, no en días: sabes a qué atenerte desde el primer mensaje." },
-    { icon: "shield", title: "Garantía por escrito", desc: "Cada trabajo va respaldado por una garantía clara: si algo falla, lo resolvemos sin discutir." },
-    { icon: "tag", title: "Precio transparente", desc: "Cotización detallada y sin sorpresas: lo que acordamos es lo que pagas, sin cargos ocultos." },
-    { icon: "users", title: "Trato directo", desc: "Hablas con quien hace el trabajo, no con un intermediario: comunicación clara de principio a fin." },
-    { icon: "star", title: "Calidad comprobada", desc: "Materiales y procesos que cumplen norma, con resultados que puedes ver y verificar." },
-    { icon: "pin", title: "Cobertura local", desc: "Conocemos tu zona y llegamos a tiempo: servicio cercano, con presencia donde estás." },
+    { icon: "clock", metric: "< 4 h", metricLabel: "primera respuesta", title: "Respuesta el mismo día", desc: "Escríbenos y te contestamos en horas, no en días. Recibes un primer diagnóstico claro y los siguientes pasos desde el primer mensaje, sin filtros ni esperas." },
+    { icon: "shield", metric: "12 meses", metricLabel: "de garantía", title: "Garantía por escrito", desc: "Cada trabajo queda respaldado por una garantía clara y por escrito. Si algo falla dentro del periodo, volvemos y lo resolvemos sin costo ni discusiones." },
+    { icon: "tag", metric: "0", metricLabel: "cargos ocultos", title: "Precio transparente", desc: "Recibes una cotización detallada antes de empezar: materiales, mano de obra y tiempos. Lo que acordamos es exactamente lo que pagas, sin extras de última hora." },
+    { icon: "users", metric: "1 a 1", metricLabel: "sin intermediarios", title: "Trato directo", desc: "Hablas siempre con quien hace el trabajo, no con un conmutador. Una sola persona te acompaña de la cotización a la entrega, con comunicación clara en cada paso." },
+    { icon: "star", metric: "100%", metricLabel: "bajo norma", title: "Calidad comprobada", desc: "Usamos materiales y procesos que cumplen la norma aplicable. Te mostramos evidencia del avance y del resultado para que lo verifiques, no para que confíes a ciegas." },
+    { icon: "pin", metric: "Tu zona", metricLabel: "servicio cercano", title: "Cobertura local", desc: "Trabajamos en tu área y conocemos sus accesos y tiempos. Llegamos puntuales y damos seguimiento de cerca, con presencia real donde estás." },
   ],
 };
 

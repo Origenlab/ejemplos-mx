@@ -4,25 +4,31 @@
 // ----------------------------------------------------------------------------
 // QUÉ ES
 // Bloque de marketing/posicionamiento: responde «¿por qué tú y no otro?» con
-// 3–6 razones CONCRETAS (beneficios para el cliente, no adjetivos). Cada una con
-// su ícono para escanear de un vistazo. Es de los bloques que más empujan la
-// conversión en sitios bien estructurados (Apple/Stripe: "feature rows").
+// 3–6 razones CONCRETAS. Cada tarjeta = ícono + dato (metric) + título + texto.
+// El dato («hechos, no adjetivos») es lo que más convence. Patrón de sitios
+// bien estructurados (Apple/Stripe: "feature rows" con prueba).
 //
 // DISTRIBUCIÓN. El TÍTULO va APARTE con SectionHeading layout="duo" (regla del
 // sistema: todos los títulos en duo). Este componente es el CUERPO: la rejilla.
 //
-// Reutilizable y data-driven: la página pasa los beneficios (sin datos
-// hardcodeados). Mobile-first; la rejilla pasa de 1 → 2 → 3 columnas.
+// Reutilizable y data-driven (sin datos hardcodeados). Mobile-first; la rejilla
+// pasa de 1 → 2 → 3 columnas.
 //
 // PROPS
-//   items → { icon, title, desc }[]   beneficio = ícono + título + texto corto.
-//   cta?  → { label, href, external? } acción opcional al cierre.
+//   items → { icon, title, desc, metric?, metricLabel? }[]
+//   cta?  → { label, href, external? }   acción opcional al cierre.
 //
 // ÍCONOS: set SVG inline (stroke, currentColor) keyed por nombre — mismo patrón
 // que CTABanner. Si el `icon` no existe, cae a "check".
 // ESTILO: tokens de src/styles/tokens.css. A11y: lista real, íconos aria-hidden.
 // ============================================================================
-export type Benefit = { icon: string; title: string; desc: string };
+export type Benefit = {
+  icon: string;
+  title: string;
+  desc: string;
+  metric?: string;
+  metricLabel?: string;
+};
 interface Props {
   items: Benefit[];
   cta?: { label: string; href: string; external?: boolean };
@@ -30,15 +36,15 @@ interface Props {
 const { items, cta } = Astro.props;
 
 const ICONS: Record<string, string> = {
-  clock: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
-  shield: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>`,
-  tag: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`,
-  users: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
-  star: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
-  pin: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
-  award: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>`,
-  zap: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
-  check: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>`,
+  clock: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+  shield: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>`,
+  tag: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`,
+  users: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  star: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+  pin: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  award: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>`,
+  zap: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+  check: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>`,
 };
 ---
 
@@ -46,7 +52,15 @@ const ICONS: Record<string, string> = {
   <ul class="benefits__grid">
     {items.map((b: Benefit) => (
       <li class="benefit">
-        <span class="benefit__icon" aria-hidden="true"><Fragment set:html={ICONS[b.icon] ?? ICONS.check} /></span>
+        <div class="benefit__head">
+          <span class="benefit__icon" aria-hidden="true"><Fragment set:html={ICONS[b.icon] ?? ICONS.check} /></span>
+          {b.metric && (
+            <span class="benefit__metric">
+              <strong>{b.metric}</strong>
+              {b.metricLabel && <span>{b.metricLabel}</span>}
+            </span>
+          )}
+        </div>
         <h3 class="benefit__title">{b.title}</h3>
         <p class="benefit__desc">{b.desc}</p>
       </li>
@@ -61,56 +75,78 @@ const ICONS: Record<string, string> = {
       rel={cta.external ? 'noopener noreferrer' : undefined}
     >
       {cta.label}
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </a>
   )}
 </div>
 
 <style>
-  .benefits { display: flex; flex-direction: column; gap: var(--sp-6); margin-top: var(--sp-6); }
+  .benefits { display: flex; flex-direction: column; gap: var(--sp-7, 2.5rem); margin-top: var(--sp-6); }
 
-  /* ── Rejilla de beneficios: 1 → 2 → 3 columnas ── */
-  .benefits__grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: var(--sp-4); }
+  /* ── Rejilla: 1 → 2 → 3 columnas ── */
+  .benefits__grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
 
+  /* ── Tarjeta de beneficio ── */
   .benefit {
-    display: flex; flex-direction: column; gap: var(--sp-2);
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column; gap: var(--sp-3);
     background: var(--c-white); border: 1px solid var(--c-border);
-    border-radius: var(--radius-lg); padding: var(--sp-5);
+    border-radius: var(--radius-lg); padding: var(--sp-6);
     transition: border-color var(--transition), transform var(--transition), box-shadow var(--transition);
   }
+  /* Barra de acento superior que aparece al hover */
+  .benefit::before {
+    content: ''; position: absolute; inset: 0 0 auto 0; height: 3px;
+    background: linear-gradient(90deg, var(--c-primary), var(--c-primary-dark));
+    transform: scaleX(0); transform-origin: left;
+    transition: transform var(--transition);
+  }
   .benefit:hover {
-    border-color: var(--c-primary); transform: translateY(-2px);
-    box-shadow: var(--shadow-md, 0 8px 24px rgba(0,0,0,.06));
+    border-color: color-mix(in srgb, var(--c-primary) 40%, var(--c-border));
+    transform: translateY(-3px);
+    box-shadow: 0 14px 32px color-mix(in srgb, var(--c-ink) 12%, transparent);
+  }
+  .benefit:hover::before { transform: scaleX(1); }
+
+  .benefit__head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+
+  /* Tile de ícono con degradado de marca */
+  .benefit__icon {
+    display: grid; place-items: center; width: 54px; height: 54px; flex-shrink: 0;
+    border-radius: var(--radius-md); color: #fff;
+    background: linear-gradient(135deg, var(--c-primary), var(--c-primary-dark));
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--c-primary) 32%, transparent);
   }
 
-  .benefit__icon {
-    display: grid; place-items: center; width: 48px; height: 48px;
-    border-radius: var(--radius-md); margin-bottom: var(--sp-1);
-    color: var(--c-primary); background: var(--c-surface);
-  }
-  .benefit__title { margin: 0; font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-bold); color: var(--c-ink); }
-  .benefit__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-muted); }
+  /* Dato/cifra que respalda el beneficio */
+  .benefit__metric { display: inline-flex; flex-direction: column; align-items: flex-end; text-align: right; line-height: 1.1; }
+  .benefit__metric strong { font-family: var(--font-heading); font-weight: var(--weight-black); font-size: var(--text-2xl); color: var(--c-primary); letter-spacing: -.01em; }
+  .benefit__metric span { margin-top: 2px; font-size: var(--text-xs); font-weight: var(--weight-medium); text-transform: uppercase; letter-spacing: .04em; color: var(--c-muted); }
+
+  .benefit__title { margin: var(--sp-1) 0 0; font-family: var(--font-heading); font-size: var(--text-xl); font-weight: var(--weight-bold); color: var(--c-ink); }
+  .benefit__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2, var(--c-muted)); }
 
   /* ── CTA ── */
   .benefits__cta {
     align-self: flex-start;
     display: inline-flex; align-items: center; gap: var(--sp-2);
-    padding: .7em 1.2em;
-    font-family: var(--font-heading); font-weight: var(--weight-semibold); font-size: var(--text-sm);
+    padding: .8em 1.4em;
+    font-family: var(--font-heading); font-weight: var(--weight-semibold); font-size: var(--text-base);
     color: #fff; text-decoration: none;
     background: var(--c-primary); border-radius: var(--radius-md);
-    transition: background var(--transition), gap var(--transition);
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--c-primary) 28%, transparent);
+    transition: background var(--transition), gap var(--transition), box-shadow var(--transition), transform var(--transition);
   }
-  .benefits__cta:hover { background: var(--c-primary-dark); gap: var(--sp-3); }
-  .benefits__cta:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; }
+  .benefits__cta:hover { background: var(--c-primary-dark); gap: var(--sp-3); transform: translateY(-1px); }
+  .benefits__cta:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 3px; }
 
-  /* ── Escritorio ── */
+  /* ── Tablet / Escritorio ── */
   @media (min-width: 640px) { .benefits__grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (min-width: 1024px) { .benefits__grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 1024px) { .benefits__grid { grid-template-columns: repeat(3, 1fr); gap: var(--sp-6); } }
 
   @media (prefers-reduced-motion: reduce) {
-    .benefit { transition: none; }
+    .benefit, .benefit::before, .benefits__cta { transition: none; }
     .benefit:hover { transform: none; }
-    .benefits__cta { transition: none; }
+    .benefits__cta:hover { transform: none; }
   }
 </style>
