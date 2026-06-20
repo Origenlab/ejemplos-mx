@@ -57,7 +57,7 @@ const MOD_META: Record<string, { image: string; chips: string[] }> = {
   'breadcrumbs':         { image: `${IMG}/showcase/enlaces-internos-navegacion-web.avif`,          chips: ['Ruta', 'Jerarquía', 'Volver'] },
   'hero':                { image: `${IMG}/showcase/jerarquia-titulos-seo-pagina-web.avif`,         chips: ['H1 único', 'Subtítulo', 'Llamada'] },
   'section-menu':        { image: `${IMG}/servicios/implementacion-deploy-sitio-astro.avif`,       chips: ['Botones', 'Saltos', 'CTA'] },
-  'titulo-seccion':      { image: `${IMG}/showcase/texto-venta-contenido-markdown.avif`,           chips: ['Eyebrow', 'Título', 'Descripción'] },
+  'section-heading':     { image: `${IMG}/showcase/texto-venta-contenido-markdown.avif`,           chips: ['Eyebrow', 'Título', 'Descripción'] },
   'cards-categoria':     { image: `${IMG}/productos/componentes-plantilla-astro-markdown.avif`,    chips: ['Foto', 'Título', 'Chips'] },
   'categoria-a-fondo':   { image: `${IMG}/productos/sitio-web-rapido-astro.avif`,                  chips: ['Dos columnas', 'Galería', 'CTA'] },
   'cards-catalogo':      { image: `${IMG}/servicios/consultoria-desarrollo-web-astro.avif`,        chips: ['Producto', 'Servicio', 'Markdown'] },
@@ -165,7 +165,7 @@ const AFONDO: Record<string, { body: string[]; points: string[] }> = {
       'Copa el ancho disponible y se apila en móvil',
     ],
   },
-  'titulo-seccion': {
+  'section-heading': {
     body: [
       'Es el encabezado que abre cada bloque del sitio: un eyebrow con barra de acento, el título (H2) y una descripción. Da contexto antes del contenido y mantiene la jerarquía —un solo H1 en el hero, H2 en cada sección— para que personas y buscadores se ubiquen.',
       'Un único componente para TODOS los títulos: en su variante «duo» reparte el bloque en dos columnas —título a la izquierda, dos párrafos que explican la sección a la derecha—. Reusarlo evita inventar un diseño por título y mantiene el sitio coherente, con menos CSS que mantener.',
