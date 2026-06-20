@@ -1,0 +1,672 @@
+---
+// ============================================================================
+// /modulos/hero — PÁGINA DEL MÓDULO «Hero».
+// ----------------------------------------------------------------------------
+// Tercera de la serie /modulos/* (topbar · header · hero), MISMO molde
+// (docs/MODULOS.md). NOTA propia del hero: a diferencia del topbar y el header
+// (datos globales en site.ts), el CONTENIDO del hero es per-página —se pasa por
+// props (badge/title/accent/subtitle/descRight/ctas)—; lo único SSoT es el CTA,
+// que se arma con waUrl(WA_MESSAGES). Esa distinción se documenta abajo.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+
+const cierreItems = [
+  { label: 'Todos los módulos', href: '/modulos', sub: 'Índice de la serie' },
+  { label: 'Módulo Header', href: '/modulos/header', sub: 'Logo y navegación' },
+  { label: 'Módulo Topbar', href: '/modulos/topbar', sub: 'La barra de arriba' },
+  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
+]
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), sub: 'Respuesta inmediata', external: true }
+
+// Las 4 piezas del hero (props del componente Hero.astro).
+const partes = [
+  {
+    n: 1,
+    nombre: 'Badge (eyebrow)',
+    que: 'El rótulo corto sobre el título: ubica a la persona («Categoría», «Servicio», «Plantilla Astro») antes de leer la promesa. Es opcional, pero orienta de un vistazo.',
+    dato: 'prop badge',
+  },
+  {
+    n: 2,
+    nombre: 'Título (H1) + acento',
+    que: 'La promesa principal de la página, y el ÚNICO H1. El acento resalta la palabra clave dentro del título. Es la señal semántica más fuerte para la persona y para el buscador.',
+    dato: 'props title · accent',
+  },
+  {
+    n: 3,
+    nombre: 'Subtítulo',
+    que: 'Una o dos frases que amplían el H1 —beneficio o contexto—, sin repetirlo. Convierte la promesa en algo concreto y creíble.',
+    dato: 'prop subtitle',
+  },
+  {
+    n: 4,
+    nombre: 'Apoyo o acción',
+    que: 'La columna derecha: dos párrafos de contexto (descRight) o las llamadas a la acción (ctas). En las páginas de esta serie va sin CTAs; en una landing, aquí va el botón principal.',
+    dato: 'descRight[] · ctas[] · waUrl()',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Primera impresión que retiene',
+    desc: 'En pocos segundos la persona decide si se queda. Un hero claro responde «sí, es aquí» de inmediato y baja el rebote justo en el momento más frágil de la visita.',
+  },
+  {
+    titulo: 'Jerarquía y SEO',
+    desc: 'El H1 único del hero le dice al buscador —y a la persona— de qué trata la página. Es la señal semántica más fuerte del documento; por eso va una sola vez y carga la palabra clave.',
+  },
+  {
+    titulo: 'Foco en una acción',
+    desc: 'Un mensaje y una acción principal evitan la parálisis por exceso de opciones. El hero encauza la atención hacia el siguiente paso, en vez de dispersarla.',
+  },
+]
+
+const sis = [
+  'Un solo H1 por página, con la promesa principal: claridad antes que ingenio.',
+  'Subtítulo que amplíe el H1 en 1-2 frases (beneficio/contexto), sin repetirlo.',
+  'Una o dos acciones como máximo; destaca la principal y deja la otra secundaria.',
+  'En las páginas de la serie /modulos, el hero va SIN CTAs (regla del proyecto).',
+  'Cuida el contraste del texto sobre el fondo (AA): legible antes que bonito.',
+]
+const nos = [
+  'No pongas dos H1 ni varios mensajes compitiendo por la atención.',
+  'No lo llenes de botones: más opciones = más parálisis, menos clics.',
+  'No uses imágenes que tapen el texto o bajen el contraste.',
+  'No escribas el wa.me a mano en las CTAs: usa waUrl() (regla D4).',
+  'No conviertas el H1 en imagen: pierdes SEO y accesibilidad.',
+]
+
+// Variantes de hero (galería). Réplica en vivo abajo, mismo orden. Patrones
+// reales de la industria (landing pages, e-commerce, SaaS).
+const disenos = [
+  {
+    nombre: 'Dos columnas (texto + apoyo)',
+    tag: 'Negocio · Servicios',
+    desc: 'El de esta plantilla: a la izquierda la promesa (badge, H1, subtítulo) y a la derecha dos párrafos de apoyo. Equilibrado y legible; ideal cuando el mensaje necesita algo de contexto sin depender de una imagen.',
+  },
+  {
+    nombre: 'Centrado sobre imagen',
+    tag: 'Landing · Marca visual',
+    desc: 'Un H1 grande, centrado, sobre una foto o gradiente a pantalla completa, con una sola acción. Inmersivo y directo; exige una imagen potente y un overlay que mantenga el texto legible.',
+  },
+  {
+    nombre: 'Dividido: texto | imagen',
+    tag: 'E-commerce · Producto',
+    desc: 'La pantalla se parte en dos: el mensaje a un lado, el producto o la imagen al otro. Muestra y cuenta a la vez; es el clásico de tiendas y lanzamientos de producto.',
+  },
+  {
+    nombre: 'Con captura (hero + formulario)',
+    tag: 'SaaS · Generación de leads',
+    desc: 'Junto a la promesa, un formulario corto —correo y botón—. Convierte en el primer pantallazo; es el patrón de las herramientas que buscan registro o prueba gratis sin hacer bajar a la persona.',
+  },
+  {
+    nombre: 'Minimalista',
+    tag: 'Marca · Portafolio',
+    desc: 'Solo el H1 y una acción, mucho aire y nada de adornos. La declaración de marca segura de sí misma; funciona cuando el nombre y una frase bastan para decir quién eres.',
+  },
+  {
+    nombre: 'Con video o animación',
+    tag: 'Marca premium',
+    desc: 'El fondo es un video en bucle o una animación sutil, con el texto encima. Da sensación de producto vivo; cuídalo: peso del archivo, accesibilidad (prefers-reduced-motion) y contraste.',
+  },
+]
+
+// ── Recetas de implementación (móvil) — strings que pinta <Receta> ───────────
+const recetaStack = `/* HERO MÓVIL · de dos columnas a una
+   En escritorio el hero es «texto | apoyo»; en el teléfono
+   se apila: primero el mensaje, luego el apoyo o la imagen. */
+
+.hero__grid {
+  display: grid;
+  grid-template-columns: 1.1fr .9fr;   /* texto | apoyo */
+  gap: 2rem; align-items: center;
+}
+
+@media (max-width: 900px) {
+  .hero__grid  { grid-template-columns: 1fr; }  /* se apila */
+  .hero__media { order: 2; }                    /* el apoyo, debajo */
+}`
+
+const recetaFluida = `/* TÍTULO FLUIDO · el H1 escala con la pantalla
+   clamp(mínimo, preferido, máximo): nunca demasiado grande
+   en el teléfono ni diminuto en el escritorio. */
+
+.hero__title {
+  font-size: clamp(1.9rem, 6vw, 3.5rem);
+  line-height: 1.08;
+  text-wrap: balance;   /* reparte las líneas, evita una palabra suelta */
+}`
+
+const recetaCta = `/* CTA EN MÓVIL · ancho completo y cómodo
+   En el teléfono, la acción principal ocupa todo el ancho
+   y respeta el objetivo táctil mínimo (≈ 48px). */
+
+@media (max-width: 600px) {
+  .hero__cta { display: flex; flex-direction: column; gap: .6rem; }
+  .hero__cta a {
+    width: 100%; min-height: 48px;
+    display: grid; place-items: center;
+  }
+}`
+
+const recetaImagen = `<!-- IMAGEN DEL HERO · altura controlada + art direction
+     La foto no debe empujar el texto ni deformarse. Con
+     <picture> sirves un recorte distinto en el teléfono. -->
+<picture>
+  <source media="(max-width: 600px)" srcset="/hero-movil.avif" />
+  <img class="hero__img" src="/hero.avif" alt="…"
+       width="1200" height="800" fetchpriority="high" />
+</picture>
+
+<style>
+  .hero__img {
+    width: 100%;
+    height: clamp(200px, 42vh, 420px);
+    object-fit: cover;            /* llena el área sin deformar */
+    border-radius: 12px;
+  }
+</style>`
+---
+
+<PageLayout
+  title="El Hero — la primera impresión de cada página"
+  description="Qué es un hero, para qué sirve, qué lleva (badge, H1 con acento, subtítulo, apoyo o CTA) y dónde va — más cómo está construido: un componente con contenido por props y el CTA con waUrl."
+  pageType="page"
+  guia={false}
+  breadcrumbs={[{ label: 'Módulos', href: '/modulos' }, { label: 'Hero' }]}
+>
+  <Hero
+    badge="Módulo del sitio · Hero"
+    title="El Hero:"
+    accent="la primera impresión"
+    subtitle="El primer bloque grande de cada página, donde vive el H1 con la promesa principal. Pequeña ventana, gran responsabilidad: en segundos decide si la persona se queda o se va."
+    descRight={[
+      'No es una ficha técnica más: es el módulo entero, abierto y explicado. Qué problema resuelve y por qué se gana su lugar, de qué piezas se compone, dónde encaja en el layout y cómo está construido —el recorrido completo, del criterio de diseño a la implementación.',
+      'Con una diferencia importante respecto al topbar y al header: el contenido del hero no es global, es de cada página. La promesa cambia de una página a otra, así que se pasa por props —no sale de site.ts—. Lo único que sí viene de la fuente única es el enlace de la acción, armado con waUrl().',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Definición"
+        title="¿Qué es un hero?"
+        desc="El bloque de apertura: el primer golpe de vista de una página, con el título principal (H1), un subtítulo y, a veces, una imagen o una acción."
+        body={[
+          'El hero (o portada de sección) es el primer bloque grande que se ve al entrar a una página, antes de cualquier contenido. Reúne lo esencial: el título principal —el único H1—, una frase que lo amplía y, según el caso, una imagen, un apoyo o un botón. Es la respuesta inmediata a la pregunta que todo visitante trae: «¿es esto lo que buscaba?».',
+          'No es decoración ni una portada bonita por serlo: es un puesto de trabajo con una sola misión —enganchar en segundos y orientar hacia el siguiente paso—. Por eso prioriza la claridad sobre el adorno: un mensaje, una jerarquía limpia y, como mucho, una acción. Piensa en la portada de un periódico: el titular se entiende de lejos y te dice si quieres seguir leyendo.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Función e importancia"
+        title="¿Para qué sirve?"
+        desc="Hace tres trabajos a la vez: causar la primera impresión, fijar la jerarquía (el H1) y empujar a una acción."
+        body={[
+          'Su función es ganar los primeros segundos. Mientras el resto de la página desarrolla y convence, el hero tiene que lograr una sola cosa antes que nada: que la persona reconozca que está en el lugar correcto. Si ese «sí» no ocurre rápido, no hay segunda oportunidad —se va antes de ver el resto—.',
+          'Y ahí está su importancia: es el bloque más visto de toda la página y el que más pesa en la decisión de quedarse. Además, su H1 es la señal semántica más fuerte para el buscador. Un hero confuso cuesta visitas de inmediato; uno claro las retiene y las encauza. Es, a la vez, la cara de la página y su titular.',
+        ]}
+      />
+      <div class="bene">
+        {beneficios.map((b) => (
+          <article class="bene__card">
+            <h3 class="bene__title">{b.titulo}</h3>
+            <p class="bene__desc">{b.desc}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3) ¿QUÉ LLEVA? — anatomía con ejemplo en vivo ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Anatomía"
+        title="¿Qué va en el hero?"
+        desc="Cuatro piezas: un rótulo de contexto, el título-promesa (H1), un subtítulo que amplía y una columna de apoyo o acción."
+        body={[
+          'Cada pieza cumple un papel claro. El badge ubica; el H1 promete y manda la jerarquía; el subtítulo concreta esa promesa; y la columna derecha sostiene —con contexto o con un botón—. Ni una sobra; juntas, dicen en un vistazo qué es la página y qué hacer.',
+          'Abajo lo ves montado a escala. Cada punto numerado se desglosa en su tarjeta —qué resuelve y de qué prop del componente sale—. A diferencia del topbar o el header, aquí los valores no salen de site.ts: son propios de cada página y se pasan por props.',
+        ]}
+      />
+
+      {/* Ejemplo en vivo del hero (réplica a escala del componente Hero). */}
+      <div class="hrx" role="img" aria-label="Ejemplo de hero: badge, título con acento, subtítulo y columna de apoyo">
+        <div class="hrx__main">
+          <span class="hrx__badge"><span class="hrx__n">1</span>Plantilla Astro</span>
+          <p class="hrx__title"><span class="hrx__n">2</span>Lanza tu sitio <span class="hrx__acc">profesional</span></p>
+          <p class="hrx__sub"><span class="hrx__n">3</span>Contenido en Markdown, diseño listo y velocidad de fábrica.</p>
+        </div>
+        <div class="hrx__side">
+          <span class="hrx__n hrx__n--side">4</span>
+          <span class="hrx__line"></span>
+          <span class="hrx__line"></span>
+          <span class="hrx__line hrx__line--short"></span>
+        </div>
+      </div>
+
+      <div class="partes">
+        {partes.map((p) => (
+          <article class="parte">
+            <span class="parte__num">{p.n}</span>
+            <div class="parte__body">
+              <h3 class="parte__nombre">{p.nombre}</h3>
+              <p class="parte__que">{p.que}</p>
+              <p class="parte__dato"><span>Dato</span> <code>{p.dato}</code></p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3b) VARIANTES ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Variantes"
+        title="Otros diseños y aplicaciones"
+        desc="El de esta plantilla es un hero a dos columnas, pero la portada adopta muchas formas según el objetivo de la página."
+        body={[
+          'No hay un único hero: hay un primer bloque que cada tipo de página adapta a su meta. Una landing centra el mensaje sobre una foto; una tienda parte la pantalla para mostrar el producto; una herramienta mete un formulario para convertir ya. Mismo lugar, intención distinta.',
+          'Abajo, seis variantes reales —cada una con su réplica en vivo y el tipo de proyecto donde brilla—. Sirven para elegir la que encaja con tu objetivo y para ver cómo el mismo molde cambia de cara sin perder su función.',
+        ]}
+      />
+
+      <GaleriaDisenos ariaLabel="Variantes de hero">
+        {/* 0 · Dos columnas (la de esta plantilla) */}
+        <DisenoCard {...disenos[0]}>
+          <div class="hrv hrv--duo" role="img" aria-label="Hero a dos columnas: texto y apoyo">
+            <div class="hrv__txt">
+              <span class="hrv__badge">Plantilla</span>
+              <span class="hrv__h">Tu sitio <b>profesional</b></span>
+              <span class="hrv__sub">Markdown + diseño listo</span>
+            </div>
+            <div class="hrv__aside"><i></i><i></i><i class="sh"></i></div>
+          </div>
+        </DisenoCard>
+
+        {/* 1 · Centrado sobre imagen */}
+        <DisenoCard {...disenos[1]}>
+          <div class="hrv hrv--foto" role="img" aria-label="Hero centrado sobre imagen de fondo">
+            <span class="hrv__h hrv__h--c">Vive la experiencia</span>
+            <span class="hrv__pill">Reservar</span>
+          </div>
+        </DisenoCard>
+
+        {/* 2 · Dividido: texto | imagen */}
+        <DisenoCard {...disenos[2]}>
+          <div class="hrv hrv--split" role="img" aria-label="Hero dividido: texto a un lado, imagen al otro">
+            <div class="hrv__txt">
+              <span class="hrv__h">El nuevo modelo</span>
+              <span class="hrv__pill">Comprar</span>
+            </div>
+            <div class="hrv__img" aria-hidden="true">🖼</div>
+          </div>
+        </DisenoCard>
+
+        {/* 3 · Con captura (formulario) */}
+        <DisenoCard {...disenos[3]}>
+          <div class="hrv hrv--form" role="img" aria-label="Hero con formulario de captura">
+            <div class="hrv__txt">
+              <span class="hrv__h">Empieza gratis</span>
+              <span class="hrv__sub">Sin tarjeta</span>
+            </div>
+            <div class="hrv__field" aria-hidden="true"><span>tu@correo</span><b>Probar</b></div>
+          </div>
+        </DisenoCard>
+
+        {/* 4 · Minimalista */}
+        <DisenoCard {...disenos[4]}>
+          <div class="hrv hrv--min" role="img" aria-label="Hero minimalista: solo título y una acción">
+            <span class="hrv__h hrv__h--big">Diseño con criterio</span>
+            <span class="hrv__pill hrv__pill--ghost">Ver trabajo</span>
+          </div>
+        </DisenoCard>
+
+        {/* 5 · Con video / animación */}
+        <DisenoCard {...disenos[5]}>
+          <div class="hrv hrv--video" role="img" aria-label="Hero con video de fondo">
+            <span class="hrv__play" aria-hidden="true">►</span>
+            <span class="hrv__h hrv__h--c">Marca en movimiento</span>
+            <span class="hrv__sub hrv__sub--w">video en bucle</span>
+          </div>
+        </DisenoCard>
+      </GaleriaDisenos>
+    </div>
+  </section>
+
+  {/* ── 3c) RESPONSIVE Y MÓVIL ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="Cómo se comporta en el teléfono"
+        desc="En móvil el hero no es «el de escritorio encogido»: se apila, el título escala y la acción se hace cómoda de tocar."
+        body={[
+          'La pantalla del teléfono cambia las reglas. Las dos columnas se apilan —primero el mensaje, después el apoyo o la imagen— y el título, que en escritorio luce grande, tiene que escalar para no romperse ni comerse la pantalla. La herramienta clave es la tipografía fluida: que el H1 crezca y encoja solo.',
+          'Y manda la ergonomía: la acción principal se vuelve cómoda de tocar —ancho completo, objetivo amplio— y la imagen se controla para que no empuje el texto ni se deforme. Abajo, cuatro patrones, cada uno con su vista en el teléfono y una receta comentada lista para copiar.',
+        ]}
+      />
+
+      <div class="pats">
+        {/* 1 · Reapilado (stack) */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Hero apilado en móvil: primero el texto, luego el apoyo">
+              <div class="hrm hrm--stack">
+                <span class="hrm__badge">Plantilla</span>
+                <span class="hrm__h">Tu sitio <b>profesional</b></span>
+                <span class="hrm__sub">Markdown + diseño listo</span>
+                <span class="hrm__media" aria-hidden="true">🖼</span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · De dos columnas a una</h3>
+            <p class="pat__desc">Las columnas de escritorio se apilan en el teléfono: primero el mensaje (badge, H1, subtítulo) y debajo el apoyo o la imagen. Un orden pensado: lo que engancha va primero.</p>
+            <Receta titulo="CSS · apilar el grid" lang="css" code={recetaStack} />
+          </div>
+        </article>
+
+        {/* 2 · Tipografía fluida */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Título que escala con la pantalla (tipografía fluida)">
+              <div class="hrm hrm--fluida">
+                <span class="hrm__h hrm__h--xl">Lanza tu sitio profesional</span>
+                <span class="hrm__sub">clamp() ajusta el tamaño</span>
+              </div>
+              <div class="skel"><span></span><span></span><span></span></div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · Título fluido con clamp()</h3>
+            <p class="pat__desc">El H1 escala solo entre un mínimo y un máximo con <code>clamp()</code>: ni gigante en el teléfono ni diminuto en el escritorio, sin escribir un tamaño por cada breakpoint.</p>
+            <Receta titulo="CSS · font-size fluido" lang="css" code={recetaFluida} />
+          </div>
+        </article>
+
+        {/* 3 · CTA full-width */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Acción principal a ancho completo en móvil">
+              <div class="hrm hrm--cta">
+                <span class="hrm__h">Empieza hoy</span>
+                <span class="hrm__sub">Respuesta inmediata</span>
+                <span class="hrm__btn">Cotizar por WhatsApp</span>
+                <span class="hrm__btn hrm__btn--ghost">Ver catálogo</span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · La acción, a ancho completo</h3>
+            <p class="pat__desc">En el teléfono la acción principal ocupa todo el ancho y tiene un objetivo táctil amplio (≈ 48 px); la secundaria queda debajo, clara pero sin competir.</p>
+            <Receta titulo="CSS · CTA full-width" lang="css" code={recetaCta} />
+          </div>
+        </article>
+
+        {/* 4 · Imagen controlada */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Imagen del hero con altura controlada">
+              <div class="hrm hrm--img">
+                <span class="hrm__photo" aria-hidden="true">🏞</span>
+                <span class="hrm__h">Cobertura en tu zona</span>
+                <span class="hrm__sub">imagen que no empuja el texto</span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">4 · Imagen con altura controlada</h3>
+            <p class="pat__desc">La foto se sirve con <code>object-fit: cover</code> y una altura acotada para que no deforme ni desplace el contenido; con <code>&lt;picture&gt;</code> se da un recorte propio al móvil.</p>
+            <Receta titulo="HTML + CSS · imagen y art direction" lang="html" code={recetaImagen} />
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 4) ¿DÓNDE VA? ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Posición"
+        title="¿Dónde se coloca?"
+        desc="El primer bloque tras el topbar y el header: la parte alta de la página, «above the fold». Una sola vez por página."
+        body={[
+          'Va arriba del todo del contenido, justo después del chrome (topbar + header). Es lo primero que se ve sin hacer scroll —lo que en la jerga se llama «above the fold»—, y por eso carga la promesa: si el visitante no baja, el hero es lo único que leyó. Debe bastarse solo.',
+          'Y va una sola vez por página, porque solo hay un H1. Las páginas internas (productos, servicios, blog) tienen su propio hero, más sobrio; la home, el más vistoso. En esta plantilla, el componente Hero se reutiliza en todas: cambia el contenido por props, no el molde.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 5) CÓMO SE ARMA ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Implementación"
+        title="Cómo está construido"
+        desc="Un componente reutilizable cuyo contenido entra por props; lo único que sale de la fuente única es el enlace de la acción."
+        body={[
+          'El hero vive en Hero.astro y se reutiliza en cada página. A diferencia del topbar o el header, no lee site.ts: su contenido —badge, título, acento, subtítulo, apoyo— se pasa por props, porque la promesa es distinta en cada página. El componente pone el diseño (el fondo oscuro con gradiente y un brillo radial, la rejilla de dos columnas, la tipografía); la página pone el mensaje.',
+          'La excepción es la acción: cuando el hero lleva CTAs, el enlace de WhatsApp se arma con waUrl() y el mensaje sale de WA_MESSAGES —nunca un wa.me a mano (regla D4)—. Accesibilidad de fábrica: un solo H1, aria-label en el bloque, contraste cuidado sobre el fondo oscuro. Y la regla del proyecto: en las páginas de la serie /modulos, el hero se usa SIN CTAs.',
+        ]}
+      />
+
+      <div class="prose">
+        <p>
+          En concreto: el <strong>componente</strong> (<code>src/components/Hero.astro</code>) define la
+          estructura y el estilo; la <strong>página</strong> le pasa el contenido por props —
+          <code>badge</code>, <code>title</code>, <code>accent</code>, <code>subtitle</code>,
+          <code>descRight</code> y, si aplica, <code>ctas</code>—. El <code>title</code> + <code>accent</code>
+          forman el único <code>H1</code> de la página.
+        </p>
+        <p>
+          El <strong>responsive</strong> apila las dos columnas en <code>&lt; 900px</code>, el título usa
+          tamaño fluido con <code>clamp()</code> y las acciones pasan a ancho completo en el teléfono. Así
+          el mismo hero se ve grande en escritorio y cómodo en móvil, sin un molde distinto para cada uno.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 6) BUENAS PRÁCTICAS ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Buenas prácticas"
+        title="Qué hacer y qué evitar"
+        desc="La diferencia entre un hero que engancha y uno que confunde está en unos pocos hábitos."
+        body={[
+          'Ninguno de estos hábitos es capricho: salen de observar qué retiene a la persona en los primeros segundos. Un hero que funciona dice una cosa con claridad y ofrece un paso; uno que falla amontona mensajes, multiplica botones o esconde el texto tras una imagen.',
+          'La ventaja es que son pocos y fáciles de sostener: un H1, un subtítulo que amplíe, una acción y buen contraste. Abajo, lo que conviene y lo que conviene evitar, enfrentados.',
+        ]}
+      />
+      <div class="dodont">
+        <article class="dd dd--si">
+          <h3 class="dd__title"><span class="dd__icon" aria-hidden="true">✓</span> Sí conviene</h3>
+          <ul class="dd__list">
+            {sis.map((s) => <li>{s}</li>)}
+          </ul>
+        </article>
+        <article class="dd dd--no">
+          <h3 class="dd__title"><span class="dd__icon" aria-hidden="true">✕</span> Mejor evita</h3>
+          <ul class="dd__list">
+            {nos.map((s) => <li>{s}</li>)}
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* Cierre */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+</PageLayout>
+
+<style>
+  /* Utilidades estructurales (tokens.css = fuente única; scoped por página). */
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* ── Beneficios ── */
+  .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .bene { grid-template-columns: repeat(3, 1fr); } }
+  .bene__card { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); }
+  .bene__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .bene__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Ejemplo en vivo del hero (réplica oscura a escala) ── */
+  .hrx {
+    display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--sp-5); align-items: center;
+    margin-top: var(--sp-6); padding: var(--sp-6); border-radius: var(--radius-lg);
+    background: var(--c-ink); color: #fff; overflow: hidden;
+  }
+  .hrx__main { display: grid; gap: var(--sp-2); }
+  .hrx__badge { display: inline-flex; align-items: center; gap: var(--sp-2); justify-self: start; padding: .2rem .7rem; border-radius: var(--radius-full); background: rgba(255,255,255,.12); font-size: var(--text-xs); font-weight: var(--weight-semibold); }
+  .hrx__title { margin: 0; display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-family: var(--font-heading); font-weight: var(--weight-black); font-size: var(--text-2xl); line-height: 1.1; }
+  .hrx__acc { color: #fff; border-bottom: 3px solid var(--c-primary); }
+  .hrx__sub { margin: 0; display: flex; align-items: center; gap: var(--sp-2); font-size: var(--text-sm); color: rgba(255,255,255,.82); }
+  .hrx__side { display: grid; gap: var(--sp-2); padding: var(--sp-3); border-left: 1px solid rgba(255,255,255,.16); }
+  .hrx__line { height: 9px; border-radius: 5px; background: rgba(255,255,255,.16); }
+  .hrx__line--short { width: 60%; }
+  .hrx__n {
+    flex-shrink: 0; display: inline-grid; place-items: center; width: 18px; height: 18px;
+    border-radius: var(--radius-full); background: #fff; color: var(--c-ink);
+    font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: .6875rem;
+  }
+  .hrx__n--side { background: var(--c-primary); color: #fff; }
+  @media (max-width: 640px) { .hrx { grid-template-columns: 1fr; } .hrx__side { display: none; } }
+
+  /* ── Cards de las 4 partes ── */
+  .partes { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-5); }
+  @media (min-width: 600px) { .partes { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1000px) { .partes { grid-template-columns: repeat(4, 1fr); } }
+  .parte { display: flex; gap: var(--sp-3); align-items: start; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-4); }
+  .parte__num { flex-shrink: 0; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: var(--radius-full); background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: var(--text-sm); }
+  .parte__body { display: grid; gap: 4px; min-width: 0; }
+  .parte__nombre { margin: 0; font-family: var(--font-heading); font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .parte__que { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
+  .parte__dato { margin: 4px 0 0; display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--text-xs); color: var(--c-muted); }
+  .parte__dato span { text-transform: uppercase; letter-spacing: .06em; font-weight: var(--weight-semibold); }
+  .parte__dato code, .prose code {
+    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace; font-size: .85em;
+    background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+    padding: .05em .4em; color: var(--c-primary-dark);
+  }
+
+  /* ── Prose técnica ── */
+  .prose { max-width: 75ch; margin-top: var(--sp-6); }
+  .prose p { margin: 0 0 var(--sp-4); font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .prose strong { color: var(--c-ink); font-weight: var(--weight-semibold); }
+
+  /* ── Sí / No ── */
+  .dodont { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .dodont { grid-template-columns: 1fr 1fr; } }
+  .dd { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); }
+  .dd__title { margin: 0 0 var(--sp-3); display: flex; align-items: center; gap: var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .dd__icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-full); font-size: var(--text-sm); }
+  .dd--si .dd__icon { background: rgba(34,197,94,.14); color: #16a34a; }
+  .dd--no .dd__icon { background: rgba(239,68,68,.12); color: #dc2626; }
+  .dd__list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-2); }
+  .dd__list li { position: relative; padding-left: var(--sp-5); font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
+  .dd__list li::before { content: ''; position: absolute; left: 0; top: .55em; width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--c-muted); }
+
+  /* ── Mockups de variantes de hero (dentro de <GaleriaDisenos>) ────────────── */
+  .hrv {
+    position: relative; display: flex; flex-direction: column; justify-content: center; gap: 6px;
+    width: 100%; min-height: 104px; padding: var(--sp-4); border-radius: var(--radius-md);
+    overflow: hidden; font-size: var(--text-xs);
+  }
+  .hrv__txt { display: grid; gap: 5px; align-content: center; }
+  .hrv__badge { justify-self: start; padding: .12rem .5rem; border-radius: var(--radius-full); background: rgba(255,255,255,.16); font-size: 9px; font-weight: var(--weight-semibold); }
+  .hrv__h { font-family: var(--font-heading); font-weight: var(--weight-black); font-size: var(--text-base); line-height: 1.1; }
+  .hrv__h b { border-bottom: 2px solid var(--c-primary); }
+  .hrv__h--c { text-align: center; }
+  .hrv__h--big { font-size: var(--text-xl); }
+  .hrv__sub { font-size: 10px; opacity: .8; }
+  .hrv__sub--w { color: rgba(255,255,255,.85); }
+  .hrv__pill { justify-self: start; align-self: start; margin-top: 2px; padding: .2rem .6rem; border-radius: var(--radius-full); background: var(--c-primary); color: #fff; font-weight: var(--weight-semibold); }
+  .hrv__pill--ghost { background: transparent; border: 1px solid var(--c-border); color: var(--c-ink); }
+
+  /* 0 · Dos columnas — oscuro */
+  .hrv--duo { display: grid; grid-template-columns: 1.4fr 1fr; align-items: center; background: var(--c-ink); color: #fff; }
+  .hrv--duo .hrv__aside { display: grid; gap: 5px; padding-left: var(--sp-3); border-left: 1px solid rgba(255,255,255,.16); }
+  .hrv--duo .hrv__aside i { height: 7px; border-radius: 4px; background: rgba(255,255,255,.18); }
+  .hrv--duo .hrv__aside i.sh { width: 60%; }
+
+  /* 1 · Centrado sobre imagen */
+  .hrv--foto { align-items: center; text-align: center; background: linear-gradient(135deg, #1f2937, #4338ca); color: #fff; }
+  .hrv--foto .hrv__pill { justify-self: center; align-self: center; }
+
+  /* 2 · Dividido texto | imagen */
+  .hrv--split { display: grid; grid-template-columns: 1.2fr 1fr; align-items: center; gap: var(--sp-3); background: var(--c-white); border: 1px solid var(--c-border); color: var(--c-ink); }
+  .hrv__img { display: grid; place-items: center; align-self: stretch; min-height: 64px; border-radius: var(--radius-sm); background: var(--c-surface); font-size: 24px; }
+
+  /* 3 · Con formulario */
+  .hrv--form { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: var(--sp-3); background: var(--c-white); border: 1px solid var(--c-border); color: var(--c-ink); }
+  .hrv__field { display: flex; align-items: center; gap: 4px; padding: 4px 4px 4px 8px; border: 1px solid var(--c-border); border-radius: var(--radius-full); background: var(--c-surface); }
+  .hrv__field span { flex: 1; color: var(--c-muted); font-size: 9px; }
+  .hrv__field b { padding: .2rem .5rem; border-radius: var(--radius-full); background: var(--c-primary); color: #fff; font-size: 9px; }
+
+  /* 4 · Minimalista — claro y aireado */
+  .hrv--min { align-items: center; text-align: center; gap: 10px; background: var(--c-white); border: 1px solid var(--c-border); color: var(--c-ink); }
+
+  /* 5 · Video — oscuro con play */
+  .hrv--video { align-items: center; text-align: center; background: radial-gradient(circle at 50% 40%, #2b2b40, var(--c-ink)); color: #fff; }
+  .hrv__play { display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--radius-full); background: rgba(255,255,255,.2); font-size: 11px; }
+
+  /* ── Sección Responsive ── */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pat__desc code { font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace; font-size: .85em; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
+
+  /* ── Mockups MÓVIL (dentro de <MarcoMovil>) ──────────────────────────────── */
+  .hrm { display: grid; gap: 7px; padding: 14px 13px; }
+  .hrm--stack { background: var(--c-ink); color: #fff; }
+  .hrm__badge { justify-self: start; padding: .12rem .5rem; border-radius: var(--radius-full); background: rgba(255,255,255,.16); font-size: 9px; font-weight: var(--weight-semibold); }
+  .hrm__h { font-family: var(--font-heading); font-weight: var(--weight-black); font-size: 16px; line-height: 1.12; color: inherit; }
+  .hrm__h b { border-bottom: 2px solid var(--c-primary); }
+  .hrm__h--xl { font-size: 23px; }
+  .hrm__sub { font-size: 11px; opacity: .85; }
+  .hrm__media, .hrm__photo { display: grid; place-items: center; height: 54px; border-radius: var(--radius-sm); background: rgba(255,255,255,.12); font-size: 22px; }
+  .hrm--fluida { background: var(--c-white); color: var(--c-ink); border-bottom: 1px solid var(--c-border); }
+  .hrm--cta { background: var(--c-white); color: var(--c-ink); }
+  .hrm__btn { text-align: center; padding: 11px; border-radius: var(--radius-sm); background: var(--c-primary); color: #fff; font-weight: var(--weight-semibold); font-size: 12px; }
+  .hrm__btn--ghost { background: var(--c-surface); color: var(--c-ink); border: 1px solid var(--c-border); }
+  .hrm--img { background: var(--c-white); color: var(--c-ink); }
+  .hrm--img .hrm__photo { height: 72px; background: var(--c-surface); color: var(--c-muted); }
+
+  .skel { display: grid; gap: 9px; padding: 14px 13px 0; }
+  .skel span { height: 10px; border-radius: 5px; background: var(--c-surface); }
+  .skel span:nth-child(1) { width: 80%; } .skel span:nth-child(2) { width: 100%; } .skel span:nth-child(3) { width: 64%; }
+</style>
