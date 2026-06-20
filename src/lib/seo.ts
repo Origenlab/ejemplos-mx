@@ -199,14 +199,13 @@ export function buildKeywordTitle(keywords: readonly string[]): string {
   return formatTitle(cased); // aplica política de marca (appendBrand) + cap final
 }
 
-/** Garantiza que la description abra con la kw1 y la recorta a ≤160. */
+/** Recorta la description a ≤160 sin sobreoptimizar. NO fuerza la kw1 al frente
+ *  (inyectar «Kw1: …» producía un patrón robótico de keyword-stuffing, justo lo
+ *  que el sistema predica evitar). metaAudit.opensWithK1 avisa si conviene
+ *  reescribir la frase para que abra de forma natural con la kw1. */
 export function buildKeywordDescription(keywords: readonly string[], copy: string): string {
-  const k1 = keywords?.[0]?.trim();
-  let text = (copy ?? '').trim();
-  if (k1 && !text.toLowerCase().startsWith(k1.toLowerCase())) {
-    const lead = k1.charAt(0).toUpperCase() + k1.slice(1);
-    text = `${lead}: ${text}`;
-  }
+  void keywords;
+  const text = (copy ?? '').trim();
   return truncateMetaDescription(text);
 }
 
