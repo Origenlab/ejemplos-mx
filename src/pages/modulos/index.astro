@@ -10,11 +10,78 @@
 import PageLayout from '@layouts/PageLayout.astro'
 import Hero from '@components/Hero.astro'
 import SectionHeading from '@components/SectionHeading.astro'
-import CTABanner from '@components/CTABanner.astro'
+import CategoryCard from '@components/CategoryCard.astro'
+import CategoryDetail from '@components/CategoryDetail.astro'
+import SectionMenu from '@components/SectionMenu.astro'
 import { MODULOS, waUrl, WA_MESSAGES } from '@config/site'
 
-const n2 = (i: number) => String(i + 1).padStart(2, '0')
 const listos = MODULOS.filter((m) => m.estado === 'listo').length
+
+// Presentación de cada card (foto demo + chips) — homologa el card del catálogo.
+// Las fotos son AVIF ya optimizadas que REUSAMOS (contenido DEMO, igual que los
+// «beneficios» del home). En un sitio real cada módulo llevaría su propia imagen.
+// chips = las piezas que componen cada módulo (valor didáctico, anticipan el detalle).
+const IMG = '/images'
+const MOD_META: Record<string, { image: string; chips: string[] }> = {
+  'topbar':              { image: `${IMG}/showcase/imagen-optimizada-avif-sitio-web.avif`,        chips: ['Contacto', 'Horario', 'WhatsApp'] },
+  'header':              { image: `${IMG}/productos/desarrollo-web-astro-profesional.avif`,        chips: ['Logotipo', 'Navegación', 'Menú móvil'] },
+  'breadcrumbs':         { image: `${IMG}/showcase/enlaces-internos-navegacion-web.avif`,          chips: ['Ruta', 'Jerarquía', 'Volver'] },
+  'hero':                { image: `${IMG}/showcase/jerarquia-titulos-seo-pagina-web.avif`,         chips: ['H1 único', 'Subtítulo', 'Llamada'] },
+  'menu-secciones':      { image: `${IMG}/servicios/implementacion-deploy-sitio-astro.avif`,       chips: ['Botones', 'Saltos', 'CTA'] },
+  'titulo-seccion':      { image: `${IMG}/showcase/texto-venta-contenido-markdown.avif`,           chips: ['Eyebrow', 'Título', 'Descripción'] },
+  'cards-categoria':     { image: `${IMG}/productos/componentes-plantilla-astro-markdown.avif`,    chips: ['Foto', 'Título', 'Chips'] },
+  'categoria-a-fondo':   { image: `${IMG}/productos/sitio-web-rapido-astro.avif`,                  chips: ['Dos columnas', 'Galería', 'CTA'] },
+  'cards-catalogo':      { image: `${IMG}/servicios/consultoria-desarrollo-web-astro.avif`,        chips: ['Producto', 'Servicio', 'Markdown'] },
+  'resenas':             { image: `${IMG}/casos/caso-exito-proyecto-web-astro.avif`,               chips: ['Estrellas', 'Cita', 'Cliente'] },
+  'faq':                 { image: `${IMG}/articulos/guia-plantilla-astro-contenido-markdown.avif`, chips: ['Pregunta', 'Respuesta', 'Schema'] },
+  'cta-banner':          { image: `${IMG}/servicios/soporte-mantenimiento-web-astro.avif`,         chips: ['Gancho', 'Botón', 'Cierre'] },
+  'formulario-contacto': { image: `${IMG}/articulos/novedades-sistema-produccion-web-astro.avif`,  chips: ['Campos', 'Validación', 'WhatsApp'] },
+  'footer':              { image: `${IMG}/zonas/cobertura-desarrollo-web-ciudad-de-mexico.avif`,   chips: ['Marca', 'Enlaces', 'Legales'] },
+  'whatsapp-flotante':   { image: `${IMG}/showcase/imagen-optimizada-avif-sitio-web.avif`,         chips: ['Botón', 'Fijo', 'Mensaje'] },
+}
+
+// Menú de cierre (reemplaza al antiguo CTABanner): siguiente paso útil + el sitio.
+// Patrón canónico del home: «el menú reparte, el último botón (WhatsApp) convierte».
+const cierreItems = [
+  { label: 'Módulo Topbar', href: '/modulos/topbar', sub: 'El primero, a fondo' },
+  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
+  { label: 'Productos', href: '/productos', sub: 'Catálogo del sitio' },
+  { label: 'Servicios', href: '/servicios', sub: 'Lo que ofreces' },
+]
+const cierreCta = {
+  label: 'Cotizar por WhatsApp',
+  href: waUrl(WA_MESSAGES.cotizar),
+  sub: 'Respuesta inmediata',
+  external: true,
+}
+
+// «El módulo a fondo» — bloques CategoryDetail (info izq · galería der, SIN zig-zag),
+// MISMO patrón que «categoría a fondo» del home. Empezamos por Topbar; los demás se
+// sumarán aquí con el mismo molde. Fotos = AVIF demo reusadas (contenido DEMO).
+const afondo = [
+  {
+    eyebrow: 'El módulo a fondo',
+    title: 'Topbar',
+    body: [
+      'El topbar es la franja delgada que corona el sitio, por encima del menú. No vende: acerca. En ese espacio mínimo caben las señales que un visitante busca antes de decidir —un teléfono, un horario, un WhatsApp—, para que contactarte nunca esté a más de un vistazo de distancia, en cualquier página.',
+      'Por eso su contenido es deliberado y corto: a la izquierda, una frase de posicionamiento o un dato de confianza; a la derecha, los accesos de contacto. El logotipo NO va aquí —vive en el header, justo debajo—. Y como todo en la plantilla, sus datos salen de site.ts (CONTACT, waUrl): se escriben una vez y se actualizan solos en todo el sitio.',
+    ],
+    points: [
+      'Contacto directo: teléfono con clic-para-llamar y WhatsApp con mensaje pre-armado',
+      'Señal de confianza: el horario de atención, que se oculta en móvil para priorizar la acción',
+      'Datos desde site.ts (CONTACT · waUrl): se escriben una vez y se propagan a todo el sitio',
+      'El logotipo NO va aquí: su lugar es el header, en la fila de abajo',
+    ],
+    cta: { label: 'Ver el módulo Topbar', href: '/modulos/topbar' },
+    gallery: {
+      main: { src: `${IMG}/showcase/imagen-optimizada-avif-sitio-web.avif`, alt: 'El topbar del sitio con teléfono, horario y WhatsApp a la vista' },
+      thumbs: [
+        { src: `${IMG}/showcase/enlaces-internos-navegacion-web.avif`, alt: 'El acceso de contacto del topbar, siempre visible' },
+        { src: `${IMG}/showcase/texto-venta-contenido-markdown.avif`, alt: 'La propuesta breve del topbar, a la izquierda' },
+      ],
+    },
+  },
+]
 ---
 
 <PageLayout
@@ -55,53 +122,69 @@ const listos = MODULOS.filter((m) => m.estado === 'listo').length
   <section class="section section--surface">
     <div class="container">
       <SectionHeading
+        layout="duo"
         eyebrow="El índice"
-        title="Todos los módulos del"
-        titleAccent="sitio"
-        desc={`Estos son los módulos de la serie. ${listos === 1 ? 'El primero ya está documentado' : `${listos} ya documentados`}; el resto se irá publicando con el mismo molde. Entra a cualquiera para verlo a fondo.`}
+        title="Todos los módulos del sitio"
+        desc={`Estos son los módulos de la serie. ${listos === 1 ? 'El primero ya está documentado' : `${listos} ya documentados`}; el resto se irá publicando con el mismo molde.`}
+        body={[
+          'Cada tarjeta es una pieza real del sitio: foto, etiqueta de estado, nombre, qué hace y los elementos que lo componen. Es el MISMO card del catálogo —no inventamos un diseño aparte—, porque la coherencia es justo lo que esta serie enseña.',
+          'Entra a cualquiera para verlo a fondo: qué problema resuelve, de qué piezas se compone, dónde encaja en el layout y cómo se construye. El primero (Topbar) ya marca el molde; el resto llega con la misma plantilla.',
+        ]}
       />
-      <div class="mods">
-        {MODULOS.map((m, i) => (
-          m.estado === 'listo' ? (
-            <a class="mod mod--listo" href={m.href}>
-              <span class="mod__n">{n2(i)}</span>
-              <span class="mod__body">
-                <span class="mod__head">
-                  <span class="mod__title">{m.label}</span>
-                  <span class="mod__badge">Listo</span>
-                </span>
-                <span class="mod__desc">{m.desc}</span>
-                <span class="mod__cta">Ver módulo →</span>
-              </span>
-            </a>
-          ) : (
-            <div class="mod mod--proximo" aria-disabled="true">
-              <span class="mod__n">{n2(i)}</span>
-              <span class="mod__body">
-                <span class="mod__head">
-                  <span class="mod__title">{m.label}</span>
-                  <span class="mod__badge mod__badge--soon">Próximamente</span>
-                </span>
-                <span class="mod__desc">{m.desc}</span>
-              </span>
-            </div>
+      <div class="showcase">
+        {MODULOS.map((m, i) => {
+          const meta = MOD_META[m.slug]
+          return (
+            <CategoryCard
+              label={m.label}
+              href={m.href}
+              image={meta?.image}
+              imageAlt={`Imagen de ejemplo del módulo ${m.label}`}
+              badge={m.estado === 'listo' ? 'Listo' : 'Próximamente'}
+              blurb={m.desc}
+              subcategories={(meta?.chips ?? []).map((c) => ({ label: c, href: m.href }))}
+              ctaLabel="Ver módulo"
+              disabled={m.estado !== 'listo'}
+              index={i}
+            />
           )
+        })}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3) CADA MÓDULO, POR DENTRO — bloques «a fondo» (CategoryDetail). ──
+       Mismo patrón que «categoría a fondo» del home: info izq · galería der, SIN
+       zig-zag, gap uniforme. Empezamos por Topbar; los demás se suman al array. */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Por dentro"
+        title="Cada módulo, por dentro"
+        desc="El índice te dice qué es cada pieza; aquí la abrimos. Mismo formato para todas: qué resuelve, de qué partes se compone y en qué se fija al construirla."
+        body={[
+          'Es el mismo bloque «a fondo» del catálogo del home —información a la izquierda, galería a la derecha, idéntico para cada módulo—. Reusar el patrón es, otra vez, la lección: el sitio se arma con piezas que ya existen.',
+          'Empezamos por el Topbar, que marca el molde. Los demás módulos se irán sumando aquí con la misma estructura, a medida que se documentan.',
+        ]}
+      />
+      <div class="afondo">
+        {afondo.map((m) => (
+          <CategoryDetail
+            eyebrow={m.eyebrow}
+            title={m.title}
+            body={m.body}
+            points={m.points}
+            cta={m.cta}
+            gallery={m.gallery}
+          />
         ))}
       </div>
     </div>
   </section>
 
-  <CTABanner
-    heading="¿Listo para documentar el siguiente módulo?"
-    desc="El Topbar marca el molde: qué es, para qué sirve, qué lleva, dónde va y cómo se arma. Header, Hero, menú y footer siguen el mismo patrón."
-    btns={[
-      { label: 'Ver el módulo Topbar', href: '/modulos/topbar', icon: 'arrow', primary: true },
-      { label: 'Escríbenos por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), icon: 'wa', external: true },
-    ]}
-    badge="Serie · Módulos del sitio"
-    variant="dark"
-    centered={true}
-  />
+  {/* Cierre: menú de navegación full-width (sustituye al antiguo CTABanner). */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
 </PageLayout>
 
 <style>
@@ -111,36 +194,11 @@ const listos = MODULOS.filter((m) => m.estado === 'listo').length
   .section--surface { background: var(--c-surface); }
   @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
 
-  /* ── Grid de módulos ── */
-  .mods { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
-  @media (min-width: 600px)  { .mods { grid-template-columns: repeat(2, 1fr); } }
-  @media (min-width: 1000px) { .mods { grid-template-columns: repeat(3, 1fr); } }
+  /* ── Grid de módulos: MISMA vitrina que el index (1 → 2 → 4 por fila) ── */
+  .showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .showcase { grid-template-columns: repeat(4, 1fr); } }
 
-  .mod {
-    display: flex; gap: var(--sp-3); align-items: start;
-    background: var(--c-white); border: 1px solid var(--c-border);
-    border-radius: var(--radius-md); padding: var(--sp-4) var(--sp-5);
-    text-decoration: none;
-  }
-  .mod--listo { transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition); }
-  .mod--listo:hover { border-color: var(--c-primary); box-shadow: var(--shadow-md); transform: translateY(-2px); }
-  .mod--listo:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; }
-  .mod--proximo { opacity: .72; }
-
-  .mod__n {
-    flex-shrink: 0; font-family: var(--font-heading); font-weight: var(--weight-black);
-    font-size: var(--text-xl); line-height: 1; color: var(--c-primary);
-  }
-  .mod--proximo .mod__n { color: var(--c-muted); }
-  .mod__body { display: grid; gap: 4px; min-width: 0; }
-  .mod__head { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
-  .mod__title { font-family: var(--font-heading); font-weight: var(--weight-semibold); font-size: var(--text-lg); color: var(--c-ink); }
-  .mod__badge {
-    font-size: .625rem; font-weight: var(--weight-bold); letter-spacing: .04em; text-transform: uppercase;
-    color: var(--c-primary); background: rgba(var(--c-primary-rgb), .1);
-    border: 1px solid rgba(var(--c-primary-rgb), .22); padding: .1rem .45rem; border-radius: var(--radius-full);
-  }
-  .mod__badge--soon { color: var(--c-muted); background: var(--c-surface); border-color: var(--c-border); }
-  .mod__desc { font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
-  .mod__cta { margin-top: 2px; font-size: var(--text-xs); font-weight: var(--weight-bold); letter-spacing: .04em; text-transform: uppercase; color: var(--c-primary); }
+  /* ── Pila «a fondo» (CategoryDetail) — separación uniforme, SIN zig-zag (= home) ── */
+  .afondo { display: grid; gap: clamp(2.5rem, 6vw, 5rem); margin-top: var(--sp-6); }
 </style>

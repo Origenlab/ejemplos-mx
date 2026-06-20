@@ -11,10 +11,29 @@
 import PageLayout from '@layouts/PageLayout.astro'
 import Hero from '@components/Hero.astro'
 import SectionHeading from '@components/SectionHeading.astro'
-import CTABanner from '@components/CTABanner.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
 import { SITE, CONTACT, WA_MESSAGES, waUrl } from '@config/site'
 
 const schedule = CONTACT.schedule?.display as string | undefined
+
+// Menú de cierre (reemplaza al antiguo CTABanner): navegación de la serie + el sitio.
+// Patrón canónico del home: «el menú reparte, el último botón (WhatsApp) convierte».
+const cierreItems = [
+  { label: 'Todos los módulos', href: '/modulos', sub: 'Índice de la serie' },
+  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
+  { label: 'Productos', href: '/productos', sub: 'Catálogo del sitio' },
+  { label: 'Servicios', href: '/servicios', sub: 'Lo que ofreces' },
+]
+const cierreCta = {
+  label: 'Cotizar por WhatsApp',
+  href: waUrl(WA_MESSAGES.cotizar),
+  sub: 'Respuesta inmediata',
+  external: true,
+}
 
 // Las 4 piezas del topbar (misma fuente que la leyenda del componente).
 const partes = [
@@ -71,6 +90,126 @@ const nos = [
   'No la satures de enlaces ni la conviertas en un segundo menú.',
   'No dejes datos DEMO en producción: teléfono, horario y mensaje deben ser los reales.',
 ]
+
+// Variantes de topbar (galería de diseños). Cada objeto describe una variante;
+// su réplica en vivo se monta abajo como slot `vista-<i>` (mismo orden). Patrones
+// reales documentados (NN/g, Material Design, guías de e-commerce) — ver memory.
+const disenos = [
+  {
+    nombre: 'Barra de contacto',
+    tag: 'Negocio local · Servicios',
+    desc: 'La de esta plantilla: propuesta breve más teléfono, WhatsApp y horario. Deja el contacto a un toque y transmite disponibilidad. Ideal para despachos, clínicas, talleres y todo negocio que vive de que le llamen o le escriban.',
+  },
+  {
+    nombre: 'Barra de anuncio',
+    tag: 'E-commerce · Promoción',
+    desc: 'Un solo mensaje corto —«Envío gratis desde $999»— con su enlace de acción y un cierre. La regla es menos de diez palabras: el envío gratis ataca de frente la causa número uno de carritos abandonados.',
+  },
+  {
+    nombre: 'Envío gratis con progreso',
+    tag: 'E-commerce · Ticket promedio',
+    desc: 'Le dice al cliente cuánto le falta para el envío gratis y lo pinta con una barra de avance. Es un empujón sutil al valor del pedido: bien usado, puede subir el ticket promedio entre un 10 % y un 20 %.',
+  },
+  {
+    nombre: 'Barra rotativa',
+    tag: 'Varias campañas',
+    desc: 'Tres o cuatro mensajes que rotan —automático o con flechas— cuando hay más de una promo viva a la vez: envío, devoluciones, nueva colección. Con dos o más mensajes, rotar rinde más que amontonarlos en una línea.',
+  },
+  {
+    nombre: 'Barra global',
+    tag: 'Marcas internacionales',
+    desc: 'Idioma, moneda y accesos de servicio —cuenta, ayuda, seguimiento de pedido— alineados a la derecha. Es la barra de las tiendas que venden a varios países: ordena lo «de sistema» arriba y deja el menú principal limpio.',
+  },
+  {
+    nombre: 'Top app bar',
+    tag: 'SaaS · Aplicaciones',
+    desc: 'La barra de una aplicación, no de un sitio de marketing: menú, título de la pantalla actual y acciones —buscar, notificaciones, perfil—. Sigue el patrón de Material Design; se usa en paneles, dashboards y herramientas web.',
+  },
+]
+
+// ── Recetas de implementación (móvil) — strings que pinta <Receta> ───────────
+// 1 · Prioridad / progressive disclosure: la barra suelta lo accesorio por pasos.
+const recetaPrioridad = `/* TOPBAR · patrón «prioridad» (progressive disclosure)
+   Regla de oro: lo informativo cae primero; las ACCIONES nunca.
+   En cada breakpoint la barra suelta lo menos crítico. */
+
+.topbar__tagline,
+.topbar__schedule { display: inline-flex; }   /* visibles en escritorio */
+
+@media (max-width: 900px) {
+  .topbar__tagline { display: none; }          /* 1º cae la propuesta */
+}
+
+@media (max-width: 600px) {
+  .topbar__schedule { display: none; }         /* 2º cae el horario */
+}
+
+@media (max-width: 420px) {
+  /* En lo más estrecho, el teléfono se reduce a su ícono (☎),
+     pero el enlace tel: y el WhatsApp SIEMPRE permanecen. */
+  .topbar__phone-label { display: none; }
+}`
+
+// 2 · Zona del pulgar: la acción principal baja al borde inferior en móvil.
+const recetaPulgar = `/* ACCIÓN EN LA «ZONA DEL PULGAR»
+   En el teléfono, la acción que más convierte baja al borde
+   inferior: es el área más cómoda de alcanzar con una mano. */
+
+@media (max-width: 600px) {
+  .acciones-movil {
+    position: fixed;
+    inset: auto 0 0 0;            /* fija abajo, de borde a borde */
+    z-index: 50;
+    display: flex;
+    gap: .5rem;
+    padding: .5rem;
+    /* No quedar tapada por la barra de gestos del iPhone: */
+    padding-bottom: calc(.5rem + env(safe-area-inset-bottom));
+    background: #fff;
+    border-top: 1px solid #e8e8e8;
+  }
+
+  .acciones-movil a {
+    flex: 1 1 0;
+    min-height: 44px;             /* objetivo táctil mínimo (iOS HIG) */
+    display: grid;
+    place-items: center;
+  }
+}`
+
+// 3 · Barra de anuncio compacta y descartable (recuerda el cierre en la sesión).
+const recetaAviso = `<!-- BARRA DE ANUNCIO · compacta y DESCARTABLE
+     En móvil el espacio es oro: una sola acción, < 45 caracteres,
+     alto 36–42px y un botón para cerrarla. Recordamos el cierre
+     para no repetirla en cada página de la sesión. -->
+<aside id="aviso" class="aviso">
+  <p class="aviso__txt">Envío gratis desde $999</p>
+  <button class="aviso__x" type="button" aria-label="Cerrar aviso">✕</button>
+</aside>
+
+<script>
+  const aviso = document.getElementById('aviso');
+  // Si ya se cerró antes en esta sesión, no se vuelve a mostrar.
+  if (sessionStorage.getItem('aviso:cerrado')) aviso.hidden = true;
+  aviso.querySelector('.aviso__x').addEventListener('click', () => {
+    aviso.hidden = true;
+    sessionStorage.setItem('aviso:cerrado', '1');
+  });
+</script>`
+
+// 4 · Overflow nativo (sin JS) para las acciones secundarias.
+const recetaOverflow = `<!-- MENÚ DE OVERFLOW · acciones secundarias, SIN JavaScript
+     Lo primario (llamar / WhatsApp) queda siempre visible; lo
+     secundario se pliega en <details>: accesible por teclado y
+     lectores de pantalla de fábrica, sin una línea de script. -->
+<details class="overflow">
+  <summary class="overflow__btn" aria-label="Más opciones">⋯</summary>
+  <nav class="overflow__panel">
+    <a href="#horario">Horario</a>
+    <a href="#ubicacion">Ubicación</a>
+    <a href="#redes">Redes sociales</a>
+  </nav>
+</details>`
 ---
 
 <PageLayout
@@ -170,6 +309,194 @@ const nos = [
     </div>
   </section>
 
+  {/* ── 3b) VARIANTES — otros diseños y aplicaciones (galería en vivo) ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Variantes"
+        title="Otros diseños y aplicaciones"
+        desc="El de esta plantilla es una barra de contacto, pero el topbar adopta muchas formas según el negocio."
+        body={[
+          'No hay un único topbar: hay una franja superior que cada tipo de sitio adapta a su objetivo. Una tienda la usa para promociones; una aplicación, para navegación y acciones; una marca global, para idioma y moneda. Mismo lugar, intención distinta.',
+          'Abajo, seis variantes reales —cada una con una réplica en vivo y el tipo de proyecto donde brilla—. Sirven para reconocer cuál te conviene y para ver cómo el mismo molde se reescribe sin perder su sitio.',
+        ]}
+      />
+
+      <GaleriaDisenos ariaLabel="Variantes de topbar">
+        {/* 0 · Barra de contacto (la de esta plantilla) */}
+        <DisenoCard {...disenos[0]}>
+          <div class="tbv tbv--contacto" role="img" aria-label="Barra de contacto: propuesta, horario, teléfono y WhatsApp">
+            <span class="tbv__t tbv__lead">Tu taller de confianza</span>
+            <span class="tbv__t tbv__min">Lun–Sáb 9–18 h</span>
+            <span class="tbv__t">55 1234 5678</span>
+            <span class="tbv__pill">WhatsApp</span>
+          </div>
+        </DisenoCard>
+
+        {/* 1 · Barra de anuncio / promoción */}
+        <DisenoCard {...disenos[1]}>
+          <div class="tbv tbv--anuncio" role="img" aria-label="Barra de anuncio: envío gratis con enlace y cierre">
+            <span class="tbv__c">Envío gratis desde $999 <span class="tbv__a">Comprar →</span></span>
+            <span class="tbv__x" aria-hidden="true">✕</span>
+          </div>
+        </DisenoCard>
+
+        {/* 2 · Envío gratis con barra de progreso */}
+        <DisenoCard {...disenos[2]}>
+          <div class="tbv tbv--progreso" role="img" aria-label="Barra de progreso hacia el envío gratis">
+            <span class="tbv__t">Te faltan <strong>$200</strong> para envío gratis</span>
+            <span class="tbv__track" aria-hidden="true"><span class="tbv__fill"></span></span>
+          </div>
+        </DisenoCard>
+
+        {/* 3 · Barra rotativa (multi-mensaje) */}
+        <DisenoCard {...disenos[3]}>
+          <div class="tbv tbv--rotativa" role="img" aria-label="Barra rotativa con varios mensajes">
+            <span class="tbv__nav" aria-hidden="true">‹</span>
+            <span class="tbv__c">Devoluciones gratis · 30 días</span>
+            <span class="tbv__nav" aria-hidden="true">›</span>
+            <span class="tbv__dots" aria-hidden="true"><i></i><i class="on"></i><i></i></span>
+          </div>
+        </DisenoCard>
+
+        {/* 4 · Barra global: idioma / moneda / cuenta */}
+        <DisenoCard {...disenos[4]}>
+          <div class="tbv tbv--global" role="img" aria-label="Barra global: idioma, moneda y cuenta">
+            <span class="tbv__t tbv__min">Ayuda</span>
+            <span class="tbv__t tbv__min">Seguir pedido</span>
+            <span class="tbv__sp"></span>
+            <span class="tbv__chip">ES ▾</span>
+            <span class="tbv__chip">MXN ▾</span>
+            <span class="tbv__t">Mi cuenta</span>
+          </div>
+        </DisenoCard>
+
+        {/* 5 · Top app bar (aplicación) */}
+        <DisenoCard {...disenos[5]}>
+          <div class="tbv tbv--app" role="img" aria-label="Top app bar: menú, título de pantalla y acciones">
+            <span class="tbv__ic" aria-hidden="true">≡</span>
+            <span class="tbv__title">Panel</span>
+            <span class="tbv__sp"></span>
+            <span class="tbv__ic" aria-hidden="true">⌕</span>
+            <span class="tbv__ic" aria-hidden="true">○</span>
+            <span class="tbv__av" aria-hidden="true">A</span>
+          </div>
+        </DisenoCard>
+      </GaleriaDisenos>
+    </div>
+  </section>
+
+  {/* ── 3c) RESPONSIVE Y MÓVIL — patrones + recetas comentadas ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="Cómo se comporta en el teléfono"
+        desc="En móvil un topbar no es «el de escritorio encogido»: es decidir qué sobrevive y dónde se toca."
+        body={[
+          'La pantalla del teléfono no da para todo, así que la barra se piensa al revés: primero, qué es imprescindible. Lo informativo —propuesta, horario— cae primero; la razón de ser de la barra, la acción de contacto, nunca se va. Es el patrón de «prioridad» o divulgación progresiva: mostrar lo esencial y revelar el resto solo si se pide.',
+          'Y manda la ergonomía: en una mano, lo cómodo es la franja inferior —la «zona del pulgar»—, los objetivos se tocan a partir de 44 px y un aviso que ocupa pantalla debe poder cerrarse. Abajo, cuatro patrones, cada uno con su vista en el teléfono y una receta comentada lista para copiar.',
+        ]}
+      />
+
+      <div class="pats">
+        {/* 1 · Prioridad / progressive disclosure */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Topbar en móvil: solo sobreviven las acciones de contacto">
+              <div class="tbm tbm--header">
+                <span class="tbm__brand">Taller</span>
+                <span class="tbm__sp"></span>
+                <span class="tbm__ic" aria-hidden="true">☎</span>
+                <span class="tbm__wa">WhatsApp</span>
+              </div>
+              <div class="skel"><span></span><span></span><span></span><span></span></div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · Prioridad: que sobrevivan las acciones</h3>
+            <p class="pat__desc">Conforme se angosta la pantalla, la barra suelta primero la propuesta, luego el horario; el teléfono y el WhatsApp se quedan siempre —y en lo más estrecho el tel se vuelve solo ícono—.</p>
+            <Receta titulo="CSS · ocultar por prioridad" lang="css" code={recetaPrioridad} />
+          </div>
+        </article>
+
+        {/* 2 · Zona del pulgar (acción abajo) */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Acción principal anclada abajo, en la zona del pulgar">
+              <div class="tbm tbm--header">
+                <span class="tbm__brand">Taller</span>
+                <span class="tbm__sp"></span>
+                <span class="tbm__ic" aria-hidden="true">≡</span>
+              </div>
+              <div class="skel"><span></span><span></span><span></span><span></span></div>
+              <div class="tbm-bottom" aria-hidden="true">
+                <span class="tbm-bottom__btn">Llamar</span>
+                <span class="tbm-bottom__btn tbm-bottom__btn--wa">WhatsApp</span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · La acción, en la zona del pulgar</h3>
+            <p class="pat__desc">En el teléfono, el contacto baja al borde inferior —lo más cómodo de alcanzar con una mano—, con objetivos de 44 px y respetando el área segura del iPhone.</p>
+            <Receta titulo="CSS · barra inferior + safe-area" lang="css" code={recetaPulgar} />
+          </div>
+        </article>
+
+        {/* 3 · Barra de anuncio descartable */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Barra de anuncio compacta y descartable en móvil">
+              <div class="tbm tbm--aviso">
+                <span>Envío gratis desde $999</span>
+                <span class="tbm__x" aria-hidden="true">✕</span>
+              </div>
+              <div class="tbm tbm--header">
+                <span class="tbm__brand">Tienda</span>
+                <span class="tbm__sp"></span>
+                <span class="tbm__ic" aria-hidden="true">⌕</span>
+                <span class="tbm__ic" aria-hidden="true">≡</span>
+              </div>
+              <div class="skel"><span></span><span></span><span></span></div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · Aviso compacto y descartable</h3>
+            <p class="pat__desc">La barra de promoción se mantiene corta (menos de 45 caracteres, 36–42 px) y, sobre todo, se puede cerrar: en móvil ocupa espacio valioso, y recordar el cierre evita molestar página tras página.</p>
+            <Receta titulo="HTML + JS · aviso descartable" lang="html" code={recetaAviso} />
+          </div>
+        </article>
+
+        {/* 4 · Menú de overflow (acciones secundarias) */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Menú de overflow con las acciones secundarias">
+              <div class="tbm tbm--header">
+                <span class="tbm__brand">Despacho</span>
+                <span class="tbm__sp"></span>
+                <span class="tbm__wa">WhatsApp</span>
+                <span class="tbm__ic tbm__ic--on" aria-hidden="true">⋯</span>
+              </div>
+              <div class="tbm-sheet" aria-hidden="true">
+                <span>Horario</span>
+                <span>Ubicación</span>
+                <span>Redes</span>
+              </div>
+              <div class="skel"><span></span><span></span><span></span></div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">4 · Overflow para lo secundario</h3>
+            <p class="pat__desc">Lo primario (llamar, WhatsApp) queda siempre a la vista; el resto —horario, ubicación, redes— se pliega en un menú de overflow nativo, accesible y sin una sola línea de JavaScript.</p>
+            <Receta titulo="HTML · overflow con <details>" lang="html" code={recetaOverflow} />
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
   {/* ── 4) ¿DÓNDE VA? — posición ── */}
   <section class="section section--surface">
     <div class="container">
@@ -249,17 +576,8 @@ const nos = [
     </div>
   </section>
 
-  <CTABanner
-    heading="El topbar es solo el primer módulo"
-    desc="Esta página es la plantilla para documentar cada parte del sitio. Las siguientes —Header, Hero, menú de secciones— seguirán el mismo molde."
-    btns={[
-      { label: 'Escríbenos por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), icon: 'wa', primary: true, external: true },
-      { label: 'Volver al inicio', href: '/', icon: 'arrow' },
-    ]}
-    badge="Serie · Módulos del sitio"
-    variant="dark"
-    centered={true}
-  />
+  {/* Cierre: menú de navegación full-width (sustituye al antiguo CTABanner). */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
 </PageLayout>
 
 <style>
@@ -325,4 +643,91 @@ const nos = [
   .dd__list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-2); }
   .dd__list li { position: relative; padding-left: var(--sp-5); font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
   .dd__list li::before { content: ''; position: absolute; left: 0; top: .55em; width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--c-muted); }
+
+  /* ── Mockups de variantes (se montan dentro de <GaleriaDisenos>) ──────────── */
+  /* Base: barra fina, una sola línea, recorta si no cabe (es una demo). */
+  .tbv {
+    display: flex; align-items: center; gap: var(--sp-3);
+    width: 100%; min-height: 40px; padding: 0 var(--sp-3);
+    border-radius: var(--radius-sm); font-size: var(--text-xs); font-weight: var(--weight-medium);
+    white-space: nowrap; overflow: hidden;
+  }
+  .tbv__t { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+  .tbv__lead { margin-right: auto; }            /* propuesta a la izq · contacto a la der */
+  .tbv__sp { margin-left: auto; }               /* divide grupo izquierdo y derecho */
+  .tbv strong { font-weight: var(--weight-bold); }
+
+  /* 0 · Contacto — color de marca */
+  .tbv--contacto { background: var(--c-primary); color: #fff; }
+  .tbv__pill { background: rgba(255,255,255,.18); padding: .18rem .6rem; border-radius: var(--radius-full); font-weight: var(--weight-semibold); }
+
+  /* 1 · Anuncio — barra oscura centrada con cierre */
+  .tbv--anuncio { position: relative; justify-content: center; background: var(--c-ink); color: #fff; }
+  .tbv__c { display: inline-flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+  .tbv__a { color: #fff; text-decoration: underline; text-underline-offset: 2px; font-weight: var(--weight-semibold); }
+  .tbv__x { position: absolute; right: var(--sp-3); opacity: .7; }
+
+  /* 2 · Progreso — oscuro con barra de avance */
+  .tbv--progreso { background: #0f3d2e; color: #eafaf1; }
+  .tbv--progreso strong { color: #fff; }
+  .tbv__track { margin-left: auto; flex-shrink: 0; width: 84px; height: 6px; border-radius: var(--radius-full); background: rgba(255,255,255,.22); overflow: hidden; }
+  .tbv__fill { display: block; height: 100%; width: 72%; border-radius: inherit; background: #34d399; }
+
+  /* 3 · Rotativa — marca oscura, flechas + indicador de puntos */
+  .tbv--rotativa { position: relative; justify-content: center; background: var(--c-primary-dark); color: #fff; }
+  .tbv__nav { opacity: .85; font-size: var(--text-base); line-height: 1; }
+  .tbv__dots { position: absolute; right: var(--sp-3); display: inline-flex; gap: 4px; }
+  .tbv__dots i { width: 5px; height: 5px; border-radius: var(--radius-full); background: rgba(255,255,255,.4); }
+  .tbv__dots i.on { background: #fff; }
+
+  /* 4 · Global — clara, clúster de sistema a la derecha */
+  .tbv--global { background: var(--c-surface); color: var(--c-ink-2); border: 1px solid var(--c-border); }
+  .tbv__chip { display: inline-flex; align-items: center; gap: 3px; padding: .12rem .5rem; border: 1px solid var(--c-border); border-radius: var(--radius-sm); background: var(--c-white); color: var(--c-ink); font-weight: var(--weight-semibold); }
+
+  /* 5 · Top app bar — blanca con borde, iconos y avatar */
+  .tbv--app { background: var(--c-white); color: var(--c-ink); border: 1px solid var(--c-border); }
+  .tbv__title { font-family: var(--font-heading); font-weight: var(--weight-semibold); font-size: var(--text-sm); }
+  .tbv__ic { display: inline-grid; place-items: center; width: 22px; height: 22px; color: var(--c-ink-2); font-size: var(--text-base); }
+  .tbv__av { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-full); background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: .7rem; }
+
+  /* En tarjeta estrecha, suelta lo secundario para que la barra no se amontone. */
+  @media (max-width: 520px) { .tbv__min { display: none; } }
+
+  /* ── Sección Responsive: cada patrón = teléfono | explicación + receta ────── */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Mockups MÓVIL (van dentro de <MarcoMovil>) ──────────────────────────── */
+  .tbm { display: flex; align-items: center; gap: 8px; padding: 9px 12px; font-size: 12px; font-weight: var(--weight-medium); }
+  .tbm__sp { margin-left: auto; }
+  .tbm__brand { font-family: var(--font-heading); font-weight: var(--weight-bold); color: var(--c-ink); }
+  .tbm__ic { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: var(--radius-sm); color: var(--c-ink-2); font-size: 14px; }
+  .tbm__ic--on { background: var(--c-surface); color: var(--c-ink); }
+  .tbm__wa { background: var(--c-primary); color: #fff; padding: 5px 10px; border-radius: var(--radius-full); font-weight: var(--weight-semibold); font-size: 11px; }
+
+  /* Fila de cabecera (marca + acciones), sobre superficie clara. */
+  .tbm--header { background: var(--c-white); border-bottom: 1px solid var(--c-border); }
+  .tbm--header .tbm__ic { background: var(--c-surface); }
+
+  /* Barra de anuncio: compacta y oscura, con cierre a la derecha. */
+  .tbm--aviso { position: relative; justify-content: center; min-height: 38px; background: var(--c-ink); color: #fff; font-size: 11px; }
+  .tbm--aviso .tbm__x { position: absolute; right: 10px; opacity: .7; }
+
+  /* Acciones en la zona del pulgar: ancladas al borde inferior del teléfono. */
+  .tbm-bottom { position: absolute; inset: auto 0 0 0; display: flex; gap: 6px; padding: 8px 8px 14px; background: var(--c-white); border-top: 1px solid var(--c-border); }
+  .tbm-bottom__btn { flex: 1; min-height: 38px; display: grid; place-items: center; border-radius: var(--radius-sm); border: 1px solid var(--c-border); background: var(--c-surface); color: var(--c-ink); font-weight: var(--weight-semibold); font-size: 12px; }
+  .tbm-bottom__btn--wa { background: var(--c-primary); color: #fff; border-color: transparent; }
+
+  /* Panel de overflow (estado abierto), flotando bajo el botón «⋯». */
+  .tbm-sheet { position: absolute; top: 62px; right: 10px; display: grid; gap: 2px; padding: 6px; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); box-shadow: var(--shadow-md, 0 6px 20px rgba(0,0,0,.12)); font-size: 11px; z-index: 2; }
+  .tbm-sheet span { padding: 5px 12px; color: var(--c-ink-2); border-radius: var(--radius-sm); }
+
+  /* Esqueleto de página (relleno bajo la barra, para dar contexto). */
+  .skel { display: grid; gap: 9px; padding: 16px 14px; }
+  .skel span { height: 10px; border-radius: 5px; background: var(--c-surface); }
+  .skel span:nth-child(1) { width: 72%; } .skel span:nth-child(2) { width: 100%; }
+  .skel span:nth-child(3) { width: 88%; } .skel span:nth-child(4) { width: 56%; }
 </style>
