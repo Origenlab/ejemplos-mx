@@ -189,9 +189,9 @@ export const CONTACT = {
 export const TAXONOMY = {
   // categories: catálogo de dominio (L2). href apunta a la landing de categoría.
   categories: [
-    { slug: 'productos', label: 'Productos', badge: undefined, href: '/productos/' },
-    { slug: 'servicios', label: 'Servicios', badge: undefined, href: '/servicios/' },
-    { slug: 'blog', label: 'Blog', badge: undefined, href: '/blog/' },
+    { slug: 'productos', label: 'Productos', badge: undefined, href: '/productos' },
+    { slug: 'servicios', label: 'Servicios', badge: undefined, href: '/servicios' },
+    { slug: 'blog', label: 'Blog', badge: undefined, href: '/blog' },
   ],
   // services: servicios ofrecidos (catálogo o página /servicios).
   services: [
@@ -233,11 +233,22 @@ export type CoverageState = (typeof TAXONOMY.coverageStates)[number];
 // «Módulos» del Header; al publicar la página de un módulo, pon estado:'listo'.
 export type Modulo = { slug: string; label: string; href: string; desc: string; estado: 'listo' | 'proximo' };
 export const MODULOS: readonly Modulo[] = [
-  { slug: 'topbar',         label: 'Topbar',            href: '/modulos/topbar',         desc: 'La barra utilitaria superior: contacto y confianza siempre a la vista.', estado: 'listo' },
-  { slug: 'header',         label: 'Header',            href: '/modulos/header',         desc: 'Logotipo + navegación principal: el mapa del sitio, en cada página.', estado: 'proximo' },
-  { slug: 'hero',           label: 'Hero',              href: '/modulos/hero',           desc: 'La primera impresión: un H1 único con tu propuesta de valor.', estado: 'proximo' },
-  { slug: 'menu-secciones', label: 'Menú de secciones', href: '/modulos/menu-secciones', desc: 'La franja de navegación que va justo debajo del hero.', estado: 'proximo' },
-  { slug: 'footer',         label: 'Footer',            href: '/modulos/footer',         desc: 'El pie del sitio: cierre, enlaces, legales y contacto.', estado: 'proximo' },
+  // Chrome + bloques de contenido, en ORDEN DE APARICIÓN (arriba → abajo).
+  { slug: 'topbar',              label: 'Topbar',                  href: '/modulos/topbar',              desc: 'La barra utilitaria superior: contacto y confianza siempre a la vista.', estado: 'listo' },
+  { slug: 'header',              label: 'Header',                  href: '/modulos/header',              desc: 'Logotipo + navegación principal: el mapa del sitio, en cada página.', estado: 'proximo' },
+  { slug: 'breadcrumbs',         label: 'Migas de pan',            href: '/modulos/breadcrumbs',         desc: 'Dónde estás y el camino de vuelta: el rastro de navegación en páginas internas.', estado: 'proximo' },
+  { slug: 'hero',                label: 'Hero',                    href: '/modulos/hero',                desc: 'La primera impresión: un H1 único con tu propuesta de valor.', estado: 'proximo' },
+  { slug: 'menu-secciones',      label: 'Menú de secciones',       href: '/modulos/menu-secciones',      desc: 'La franja de botones bajo el hero para saltar a cada sección.', estado: 'proximo' },
+  { slug: 'titulo-seccion',      label: 'Título de sección',       href: '/modulos/titulo-seccion',      desc: 'El encabezado que abre cada bloque: eyebrow, título y descripción.', estado: 'proximo' },
+  { slug: 'cards-categoria',     label: 'Cards de categoría',      href: '/modulos/cards-categoria',     desc: 'La vitrina del catálogo: cada categoría como una tarjeta con foto.', estado: 'proximo' },
+  { slug: 'categoria-a-fondo',   label: 'Categoría a fondo',       href: '/modulos/categoria-a-fondo',   desc: 'Dos columnas que amplían una categoría con texto y galería.', estado: 'proximo' },
+  { slug: 'cards-catalogo',      label: 'Cards de catálogo',       href: '/modulos/cards-catalogo',      desc: 'Las fichas de producto y servicio, generadas desde Markdown.', estado: 'proximo' },
+  { slug: 'resenas',             label: 'Reseñas',                 href: '/modulos/resenas',             desc: 'Prueba social: tarjetas con opiniones reales de clientes.', estado: 'proximo' },
+  { slug: 'faq',                 label: 'Preguntas frecuentes',    href: '/modulos/faq',                 desc: 'El acordeón de dudas comunes, con esquema FAQ para SEO.', estado: 'proximo' },
+  { slug: 'cta-banner',          label: 'CTA banner',              href: '/modulos/cta-banner',          desc: 'La franja de llamada a la acción que cierra cada página.', estado: 'proximo' },
+  { slug: 'formulario-contacto', label: 'Formulario de contacto',  href: '/modulos/formulario-contacto', desc: 'El formulario que convierte a WhatsApp sin fricción.', estado: 'proximo' },
+  { slug: 'footer',              label: 'Footer',                  href: '/modulos/footer',              desc: 'El pie del sitio: cierre, enlaces, legales y contacto.', estado: 'proximo' },
+  { slug: 'whatsapp-flotante',   label: 'WhatsApp flotante',       href: '/modulos/whatsapp-flotante',   desc: 'El botón de WhatsApp siempre visible, fijo en una esquina.', estado: 'proximo' },
 ];
 
 // ── NAV — menú principal del Header (FUENTE ÚNICA: escritorio + móvil) ────────
@@ -267,47 +278,47 @@ export type NavItem = {
 export const NAV: readonly NavItem[] = [
   {
     label: 'Productos',
-    href: '/productos/',
+    href: '/productos',
     panel: 'mega',
     allLabel: 'Ver catálogo completo',
     items: PRODUCT_CATEGORIES.map((c) => ({ label: c.label, href: c.href })),
   },
   {
     label: 'Servicios',
-    href: '/servicios/',
+    href: '/servicios',
     panel: 'dropdown',
     allLabel: 'Ver todos los servicios',
-    items: SERVICES.map((s) => ({ label: s.label, href: `/servicios/${s.id}/`, desc: s.desc })),
+    items: SERVICES.map((s) => ({ label: s.label, href: `/servicios/${s.id}`, desc: s.desc })),
   },
   {
     // Páginas de módulos del sitio (SSoT: MODULOS). El dropdown lista los 'listo';
     // el enlace principal va a la página índice /modulos/ (roadmap completo).
     label: 'Módulos',
-    href: '/modulos/',
+    href: '/modulos',
     panel: 'dropdown',
     allLabel: 'Ver todos los módulos',
     items: MODULOS.filter((m) => m.estado === 'listo').map((m) => ({ label: m.label, href: m.href, desc: m.desc })),
   },
   {
     label: 'Cobertura',
-    href: '/cobertura/',
+    href: '/cobertura',
     panel: 'dropdown',
     allLabel: 'Ver toda la cobertura',
-    items: COVERAGE_STATES.map((s) => ({ label: s.label, href: `/cobertura/${s.slug}/` })),
+    items: COVERAGE_STATES.map((s) => ({ label: s.label, href: `/cobertura/${s.slug}` })),
   },
   // Sectores: aparece SOLO si hay datos en TAXONOMY.sectors (hoy vacío → oculto).
   // Patrón pro: el menú no muestra desplegables vacíos.
   ...(SECTORS.length > 0
     ? [{
         label: 'Sectores',
-        href: '/sectores/',
+        href: '/sectores',
         panel: 'dropdown' as const,
         allLabel: 'Ver todos los sectores',
-        items: SECTORS.map((s) => ({ label: s.label, href: `/sectores/${s.slug}/` })),
+        items: SECTORS.map((s) => ({ label: s.label, href: `/sectores/${s.slug}` })),
       }]
     : []),
-  { label: 'Blog', href: '/blog/' },
-  { label: 'Contacto', href: '/contacto/' },
+  { label: 'Blog', href: '/blog' },
+  { label: 'Contacto', href: '/contacto' },
 ];
 
 // ── SHOWCASE — vitrina de categorías de la home (cards con subcategorías) ─────
@@ -330,7 +341,7 @@ export const NAV: readonly NavItem[] = [
 //                     Mejoran el rastreo y reparten autoridad a las páginas hijas;
 //                     al usuario le dan el atajo exacto a lo que busca.
 //   • href / CTA    → a la landing de la categoría. En esta demo apuntan al
-//                     catálogo (`/productos/`) para no romper enlaces; en un sitio
+//                     catálogo (`/productos`) para no romper enlaces; en un sitio
 //                     real cada categoría y subcategoría llevan a SU propia URL.
 //
 // DEMO (modo guía): en vez de productos falsos, las 4 tarjetas ENSEÑAN las partes
@@ -353,64 +364,64 @@ export const SHOWCASE: readonly ShowcaseCategory[] = [
   {
     slug: 'imagen',
     label: 'La imagen y su texto alt',
-    href: '/productos/',
+    href: '/productos',
     image: '/images/showcase/imagen-optimizada-avif-sitio-web.avif',
     imageAlt: 'Imagen de ejemplo de una categoría con su texto alternativo',
     badge: 'Entra por los ojos',
     blurb:
       'Pon una foto real y ligera de la categoría. El texto alternativo (alt) describe qué se ve e incluye tu palabra clave: orienta a quien no puede ver la imagen y da contexto. Con un tamaño fijo evitas saltos al cargar.',
     subcategories: [
-      { label: 'Foto real', href: '/productos/' },
-      { label: 'Peso ligero', href: '/productos/' },
-      { label: 'alt descriptivo', href: '/productos/' },
+      { label: 'Foto real', href: '/productos' },
+      { label: 'Peso ligero', href: '/productos' },
+      { label: 'alt descriptivo', href: '/productos' },
     ],
     ctaLabel: 'Ver más',
   },
   {
     slug: 'titulo',
     label: 'El título y su jerarquía',
-    href: '/productos/',
+    href: '/productos',
     image: '/images/showcase/jerarquia-titulos-seo-pagina-web.avif',
     imageAlt: 'Ejemplo del título de una categoría dentro de la jerarquía de la página',
     badge: 'Orden claro',
     blurb:
       'El título de la tarjeta va como H3 y respeta el orden de la página: H1 en el hero, H2 en la sección, H3 en cada tarjeta. Nómbralo con la palabra clave de la categoría: claro, corto y fácil de escanear.',
     subcategories: [
-      { label: 'H1 · hero', href: '/productos/' },
-      { label: 'H2 · sección', href: '/productos/' },
-      { label: 'H3 · tarjeta', href: '/productos/' },
+      { label: 'H1 · hero', href: '/productos' },
+      { label: 'H2 · sección', href: '/productos' },
+      { label: 'H3 · tarjeta', href: '/productos' },
     ],
     ctaLabel: 'Ver más',
   },
   {
     slug: 'texto',
     label: 'El texto de venta',
-    href: '/productos/',
+    href: '/productos',
     image: '/images/showcase/texto-venta-contenido-markdown.avif',
     imageAlt: 'Ejemplo del texto de venta de una categoría',
     badge: 'Para la persona',
     blurb:
       'Una o dos frases que unen el beneficio con tu palabra clave y una señal de confianza. Escribe para la persona, no para el buscador: la palabra clave entra natural, nunca apilada. Apunta a 120–160 caracteres.',
     subcategories: [
-      { label: 'Beneficio', href: '/productos/' },
-      { label: 'Palabra clave', href: '/productos/' },
-      { label: 'Confianza', href: '/productos/' },
+      { label: 'Beneficio', href: '/productos' },
+      { label: 'Palabra clave', href: '/productos' },
+      { label: 'Confianza', href: '/productos' },
     ],
     ctaLabel: 'Ver más',
   },
   {
     slug: 'enlaces',
     label: 'Subcategorías y botón',
-    href: '/productos/',
+    href: '/productos',
     image: '/images/showcase/enlaces-internos-navegacion-web.avif',
     imageAlt: 'Ejemplo de enlaces a subcategorías y botón de una categoría',
     badge: 'Atajos útiles',
     blurb:
       'Enlaces a las subcategorías con texto real ("Línea profesional", "Accesorios"): le dan al visitante el atajo exacto y conectan con las páginas hijas. Cierra con un solo botón claro, sin competir con otros.',
     subcategories: [
-      { label: 'Texto real', href: '/productos/' },
-      { label: 'Página hija', href: '/productos/' },
-      { label: 'Un solo botón', href: '/productos/' },
+      { label: 'Texto real', href: '/productos' },
+      { label: 'Página hija', href: '/productos' },
+      { label: 'Un solo botón', href: '/productos' },
     ],
     ctaLabel: 'Ver más',
   },
@@ -443,9 +454,9 @@ export const SOCIAL: { network: SocialNetwork; label: string; url: string }[] = 
 // Páginas que todo sitio profesional debe tener. Rutas placeholder (créalas con
 // el SOP de página/landing). "Mapa del sitio" apunta al sitemap que genera Astro.
 export const LEGAL: { label: string; href: string }[] = [
-  { label: 'Aviso de privacidad', href: '/privacidad/' },
-  { label: 'Términos y condiciones', href: '/terminos/' },
-  { label: 'Política de cookies', href: '/cookies/' },
+  { label: 'Aviso de privacidad', href: '/privacidad' },
+  { label: 'Términos y condiciones', href: '/terminos' },
+  { label: 'Política de cookies', href: '/cookies' },
   { label: 'Mapa del sitio', href: '/sitemap-index.xml' },
 ];
 

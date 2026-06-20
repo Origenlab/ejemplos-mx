@@ -250,10 +250,10 @@ const menuCierreSub: Record<string, string> = {
 const menuCierre = [
   ...SERVICES.map((s) => ({
     label: s.label,
-    href: `/servicios/${s.id}/`,
+    href: `/servicios/${s.id}`,
     sub: menuCierreSub[s.id] ?? "Ver servicio",
   })),
-  { label: "Contacto", href: "/contacto/", sub: "Hablemos de tu proyecto" },
+  { label: "Contacto", href: "/contacto", sub: "Hablemos de tu proyecto" },
 ];
 const menuCierreCta = {
   label: "Atención personalizada",

@@ -26,11 +26,19 @@ interface Props {
 }
 const { items = [], guia = false } = Astro.props
 
+// Producción: la ruta SIEMPRE arranca en la raíz «Inicio». Cada página define solo
+// su rastro (p. ej. [{ label: 'Módulos' }]); aquí se antepone la raíz para que las
+// migas muestren la ruta COMPLETA (Inicio › … › página actual), idéntica al
+// BreadcrumbList del schema que emite PageLayout. Si la página ya incluyó la raíz,
+// no se duplica.
+const trail: BreadcrumbItem[] =
+  items[0]?.href === '/' ? items : [{ label: 'Inicio', href: '/' }, ...items]
+
 // Ruta de EJEMPLO para el modo guía (la ruta real cambia en cada página; aquí se
 // muestra la anatomía canónica: raíz → eslabón intermedio → página actual).
 const DEMO: BreadcrumbItem[] = [
   { label: 'Inicio', href: '/', mark: 1 },
-  { label: 'Servicios', href: '/servicios/', mark: 2 },
+  { label: 'Servicios', href: '/servicios', mark: 2 },
   { label: 'Diseño de logotipo', mark: 4 },
 ]
 
@@ -87,7 +95,7 @@ const PUNTOS = [
     ) : (
       /* Producción: ruta REAL con microdata BreadcrumbList. */
       <ol class="breadcrumb__list" itemscope itemtype="https://schema.org/BreadcrumbList">
-        {items.map((item, index) => (
+        {trail.map((item, index) => (
           <li class="breadcrumb__item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
             {item.href ? (
               <a href={item.href} class="breadcrumb__link" itemprop="item"><span itemprop="name">{item.label}</span></a>
@@ -95,7 +103,7 @@ const PUNTOS = [
               <span class="breadcrumb__current" aria-current="page" itemprop="name">{item.label}</span>
             )}
             <meta itemprop="position" content={String(index + 1)} />
-            {index < items.length - 1 && (
+            {index < trail.length - 1 && (
               <svg class="breadcrumb__sep" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
             )}
           </li>

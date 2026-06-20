@@ -22,6 +22,7 @@ const listos = MODULOS.filter((m) => m.estado === 'listo').length
   description="Qué es un módulo y el índice de todos los módulos del sitio (topbar, header, hero, menú, footer). Cada uno con su página de detalle: qué es, para qué sirve y cómo se arma."
   pageType="page"
   breadcrumbs={[{ label: 'Módulos' }]}
+  guia={false}
 >
   <Hero
     badge="Guía del sitio · Módulos"
@@ -29,12 +30,8 @@ const listos = MODULOS.filter((m) => m.estado === 'listo').length
     accent="las piezas del sitio"
     subtitle="Un sitio profesional no es una página suelta: es un puñado de piezas reutilizables —topbar, header, hero, menú, footer— que se repiten y se combinan. Aquí están todas, cada una con su página de detalle."
     descRight={[
-      'Cada módulo se documenta por separado: qué es, para qué sirve, qué lleva, dónde va y cómo se arma en esta plantilla.',
-      'Empezamos por el Topbar; el resto se publica con el mismo molde. Esta página es el mapa de la serie.',
-    ]}
-    ctas={[
-      { text: 'Ver el módulo Topbar', href: '/modulos/topbar', variant: 'primary' },
-      { text: 'Volver al inicio', href: '/', variant: 'outline' },
+      'Esta página no es una lista de enlaces: es el mapa de todo el sistema. Cada módulo se abre y se explica a la misma profundidad —qué problema resuelve, de qué piezas se compone, dónde encaja en el layout y cómo está construido—, del criterio de diseño a la implementación. Antes de entrar a cualquiera, aquí ves cómo encajan todas las piezas.',
+      'Y todas descansan en un mismo principio: una única fuente de verdad. El contenido y el diseño van por separado —los datos en site.ts, la apariencia en el componente—; cada pieza se diseña una sola vez y se reutiliza idéntica en cada página, así que un ajuste se propaga sin sorpresas y nada se construye dos veces.',
     ]}
   />
 

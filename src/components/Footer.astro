@@ -68,7 +68,7 @@ const ARROW = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" strok
         <a href={waDefault} class="footer__btn footer__btn--wa" target="_blank" rel="noopener noreferrer">
           <Fragment set:html={WA_SVG} />Cotizar por WhatsApp
         </a>
-        <a href="/contacto/" class="footer__btn footer__btn--ghost">
+        <a href="/contacto" class="footer__btn footer__btn--ghost">
           Ir a contacto<Fragment set:html={ARROW} />
         </a>
       </div>
@@ -147,7 +147,7 @@ const ARROW = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" strok
       <nav class="footer__col" aria-label="Productos">
         <h3 class="footer__col-heading"><span class="footer__col-heading-accent" aria-hidden="true"></span>Productos</h3>
         <ul class="footer__nav-list" role="list">
-          <li><a href="/productos/" class="footer__nav-link footer__nav-link--all">Ver catálogo completo<Fragment set:html={ARROW} /></a></li>
+          <li><a href="/productos" class="footer__nav-link footer__nav-link--all">Ver catálogo completo<Fragment set:html={ARROW} /></a></li>
           {PRODUCT_CATEGORIES.map((cat) => (
             <li><a href={cat.href} class="footer__nav-link">{cat.label}{(cat as any).badge && <span class="footer__nav-badge">{(cat as any).badge}</span>}</a></li>
           ))}
@@ -158,13 +158,13 @@ const ARROW = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" strok
       <nav class="footer__col" aria-label="Servicios">
         <h3 class="footer__col-heading"><span class="footer__col-heading-accent" aria-hidden="true"></span>Servicios</h3>
         <ul class="footer__nav-list" role="list">
-          {SERVICES.map((svc) => (<li><a href={`/servicios/${svc.id}/`} class="footer__nav-link">{svc.label}</a></li>))}
+          {SERVICES.map((svc) => (<li><a href={`/servicios/${svc.id}`} class="footer__nav-link">{svc.label}</a></li>))}
         </ul>
         {SECTORS.length > 0 && (
           <>
             <h3 class="footer__col-heading footer__col-heading--mt"><span class="footer__col-heading-accent" aria-hidden="true"></span>Sectores</h3>
             <ul class="footer__nav-list" role="list">
-              {SECTORS.map((sec) => (<li><a href={`/sectores/${sec.slug}/`} class="footer__nav-link">{sec.label}</a></li>))}
+              {SECTORS.map((sec) => (<li><a href={`/sectores/${sec.slug}`} class="footer__nav-link">{sec.label}</a></li>))}
             </ul>
           </>
         )}
@@ -175,7 +175,7 @@ const ARROW = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" strok
         <h3 class="footer__col-heading"><span class="footer__col-heading-accent" aria-hidden="true"></span>Cobertura</h3>
         <ul class="footer__nav-list footer__coverage-list" role="list">
           {COVERAGE_STATES.map((state) => (
-            <li><a href={`/cobertura/${state.slug}/`} class="footer__nav-link">{state.label}
+            <li><a href={`/cobertura/${state.slug}`} class="footer__nav-link">{state.label}
               {(state as any).type && <span class={`footer__coverage-badge footer__coverage-badge--${(state as any).type}`}>{(state as any).type === 'operativo' ? 'Operativo' : 'Comercial'}</span>}
             </a></li>
           ))}
@@ -186,10 +186,10 @@ const ARROW = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" strok
       <nav class="footer__col" aria-label="Empresa">
         <h3 class="footer__col-heading"><span class="footer__col-heading-accent" aria-hidden="true"></span>Empresa</h3>
         <ul class="footer__nav-list" role="list">
-          <li><a href="/nosotros/" class="footer__nav-link">Nosotros</a></li>
-          <li><a href="/servicios/" class="footer__nav-link">Todos los servicios</a></li>
-          <li><a href="/blog/" class="footer__nav-link">Blog</a></li>
-          <li><a href="/contacto/" class="footer__nav-link">Contacto</a></li>
+          <li><a href="/nosotros" class="footer__nav-link">Nosotros</a></li>
+          <li><a href="/servicios" class="footer__nav-link">Todos los servicios</a></li>
+          <li><a href="/blog" class="footer__nav-link">Blog</a></li>
+          <li><a href="/contacto" class="footer__nav-link">Contacto</a></li>
           <li><a href={waDefault} class="footer__nav-link" target="_blank" rel="noopener noreferrer">Solicitar cotización</a></li>
         </ul>
       </nav>
