@@ -55,13 +55,28 @@ const cierreCta = {
   external: true,
 }
 
-// «El módulo a fondo» — bloques CategoryDetail (info izq · galería der, SIN zig-zag),
-// MISMO patrón que «categoría a fondo» del home. Empezamos por Topbar; los demás se
-// sumarán aquí con el mismo molde. Fotos = AVIF demo reusadas (contenido DEMO).
-const afondo = [
-  {
-    eyebrow: 'El módulo a fondo',
-    title: 'Topbar',
+// «El módulo a fondo» — UN bloque CategoryDetail por módulo (info izq · galería der,
+// SIN zig-zag), MISMO patrón que «categoría a fondo» del home. Data-driven: el copy
+// vive en AFONDO (por slug); la galería reusa las fotos demo del POOL. El CTA solo
+// aparece en los módulos 'listo' (los 'proximo' aún no tienen página → sin enlace).
+const POOL = [
+  `${IMG}/showcase/imagen-optimizada-avif-sitio-web.avif`,
+  `${IMG}/showcase/jerarquia-titulos-seo-pagina-web.avif`,
+  `${IMG}/showcase/texto-venta-contenido-markdown.avif`,
+  `${IMG}/showcase/enlaces-internos-navegacion-web.avif`,
+  `${IMG}/productos/desarrollo-web-astro-profesional.avif`,
+  `${IMG}/productos/componentes-plantilla-astro-markdown.avif`,
+  `${IMG}/productos/sitio-web-rapido-astro.avif`,
+  `${IMG}/servicios/consultoria-desarrollo-web-astro.avif`,
+  `${IMG}/servicios/implementacion-deploy-sitio-astro.avif`,
+  `${IMG}/servicios/soporte-mantenimiento-web-astro.avif`,
+  `${IMG}/articulos/guia-plantilla-astro-contenido-markdown.avif`,
+  `${IMG}/articulos/novedades-sistema-produccion-web-astro.avif`,
+  `${IMG}/casos/caso-exito-proyecto-web-astro.avif`,
+  `${IMG}/zonas/cobertura-desarrollo-web-ciudad-de-mexico.avif`,
+]
+const AFONDO: Record<string, { body: string[]; points: string[] }> = {
+  'topbar': {
     body: [
       'El topbar es la franja delgada que corona el sitio, por encima del menú. No vende: acerca. En ese espacio mínimo caben las señales que un visitante busca antes de decidir —un teléfono, un horario, un WhatsApp—, para que contactarte nunca esté a más de un vistazo de distancia, en cualquier página.',
       'Por eso su contenido es deliberado y corto: a la izquierda, una frase de posicionamiento o un dato de confianza; a la derecha, los accesos de contacto. El logotipo NO va aquí —vive en el header, justo debajo—. Y como todo en la plantilla, sus datos salen de site.ts (CONTACT, waUrl): se escriben una vez y se actualizan solos en todo el sitio.',
@@ -72,16 +87,176 @@ const afondo = [
       'Datos desde site.ts (CONTACT · waUrl): se escriben una vez y se propagan a todo el sitio',
       'El logotipo NO va aquí: su lugar es el header, en la fila de abajo',
     ],
-    cta: { label: 'Ver el módulo Topbar', href: '/modulos/topbar' },
-    gallery: {
-      main: { src: `${IMG}/showcase/imagen-optimizada-avif-sitio-web.avif`, alt: 'El topbar del sitio con teléfono, horario y WhatsApp a la vista' },
-      thumbs: [
-        { src: `${IMG}/showcase/enlaces-internos-navegacion-web.avif`, alt: 'El acceso de contacto del topbar, siempre visible' },
-        { src: `${IMG}/showcase/texto-venta-contenido-markdown.avif`, alt: 'La propuesta breve del topbar, a la izquierda' },
-      ],
-    },
   },
-]
+  'header': {
+    body: [
+      'El header es la barra de navegación principal, justo bajo el topbar: el mapa del sitio que viaja en cada página. A la izquierda el logotipo —ancla de identidad y atajo a la home—; a la derecha, las secciones. Su trabajo es que cualquiera sepa, en todo momento, dónde está y a dónde puede ir.',
+      'No se escribe a mano: todo el menú —escritorio, paneles desplegables y versión móvil— se genera desde NAV en site.ts, una sola fuente. Agregar o quitar una sección actualiza los tres a la vez, y los hijos (productos, servicios…) salen de la taxonomía, así el menú nunca se desincroniza del contenido real.',
+    ],
+    points: [
+      'Logotipo a la izquierda: identidad y «volver al inicio» que todos esperan',
+      'Navegación data-driven desde NAV: escritorio y móvil de la misma fuente',
+      'Paneles mega/dropdown con el contenido de la taxonomía, no listas aparte',
+      'CTA de conversión (Cotizar) siempre visible a la derecha',
+    ],
+  },
+  'breadcrumbs': {
+    body: [
+      'Las migas de pan son el rastro fino que aparece en las páginas internas, bajo el header: Inicio › Sección › Página. En una línea le dicen al visitante dónde está parado y, sobre todo, le dan el camino de vuelta a cualquier nivel sin recurrir al botón del navegador.',
+      'Más allá de la comodidad, ordenan la jerarquía del sitio para las personas y para los buscadores, que muestran esa ruta en los resultados. Se arman solas a partir de la ubicación de la página, así que reflejan siempre la estructura real, sin mantenerse a mano.',
+    ],
+    points: [
+      'Ubicación clara: «dónde estoy» de un vistazo, en páginas internas',
+      'Camino de vuelta a cada nivel superior, sin usar el botón atrás',
+      'Jerarquía legible para personas y para buscadores (rich results)',
+      'Se generan desde la ruta de la página: nunca se escriben a mano',
+    ],
+  },
+  'hero': {
+    body: [
+      'El hero es lo primero que se ve: la franja de apertura con un H1 único que dice, en lenguaje claro, qué ofreces y para quién. Tienes pocos segundos y aquí se decide si el visitante se queda. Por eso manda el mensaje, no la decoración —el logotipo vive en el header, no aquí—.',
+      'Debajo del título, una sola frase de apoyo que suma el beneficio o despeja la duda más común. La acción (uno o dos botones) se movió a la franja de abajo: regla canónica «el hero presenta, la franja convierte». Todo sale de unas pocas props reutilizables en cualquier página.',
+    ],
+    points: [
+      'Un solo H1 con la propuesta de valor y la palabra clave principal',
+      'Subtítulo de apoyo: una frase, sin tecnicismos',
+      'El logotipo NO va aquí —su lugar es el header—',
+      '«El hero presenta, la franja convierte»: los CTAs viven debajo',
+    ],
+  },
+  'menu-secciones': {
+    body: [
+      'Es la franja de botones que va justo bajo el hero: atajos a las secciones de la página para que el visitante salte a lo que busca sin volver al header. Es el patrón de los catálogos —entras y, de inmediato, ves por dónde moverte—.',
+      'Es data-driven: los botones se generan desde NAV, la misma fuente del header, así que agregar o quitar una sección actualiza el menú y esta franja a la vez. El último botón es el CTA de conversión (WhatsApp), armado con waUrl(): de nuevo, el hero presenta y la franja convierte.',
+    ],
+    points: [
+      'Atajos a cada sección, justo debajo del hero',
+      'Mismos datos que el header (NAV): nunca se desincroniza',
+      'Último botón = CTA de conversión (WhatsApp con waUrl)',
+      'Copa el ancho disponible y se apila en móvil',
+    ],
+  },
+  'titulo-seccion': {
+    body: [
+      'Es el encabezado que abre cada bloque del sitio: un eyebrow con barra de acento, el título (H2) y una descripción. Da contexto antes del contenido y mantiene la jerarquía —un solo H1 en el hero, H2 en cada sección— para que personas y buscadores se ubiquen.',
+      'Un único componente para TODOS los títulos: en su variante «duo» reparte el bloque en dos columnas —título a la izquierda, dos párrafos que explican la sección a la derecha—. Reusarlo evita inventar un diseño por título y mantiene el sitio coherente, con menos CSS que mantener.',
+    ],
+    points: [
+      'Eyebrow + título (H2) + descripción: contexto antes del contenido',
+      'Mantiene la jerarquía H1 → H2 → H3 del sitio',
+      'Variante «duo»: título a la izquierda, 2 párrafos a la derecha',
+      'Un solo componente para todos los títulos: cero diseño duplicado',
+    ],
+  },
+  'cards-categoria': {
+    body: [
+      'Son las tarjetas de la vitrina del catálogo: cada categoría presentada como un producto —foto real, etiqueta de gancho, título, texto de venta breve y atajos a las subcategorías—. Convierten una lista larga en un mapa que se entiende de un vistazo.',
+      'Se generan desde una sola lista (SHOWCASE en site.ts): agregar o quitar una tarjeta actualiza la vitrina sin tocar la página. Cada parte cumple su función —el título es H3, la imagen lleva alt descriptivo, las subcategorías son enlaces internos reales—, así sirve a la persona y al SEO.',
+    ],
+    points: [
+      'Foto + etiqueta + título (H3) + texto + chips de subcategorías',
+      'Data-driven desde SHOWCASE: la vitrina se arma sola',
+      'Subcategorías = enlaces internos con anchor text real',
+      'Cuatro por fila en escritorio, con alturas iguales',
+    ],
+  },
+  'categoria-a-fondo': {
+    body: [
+      'Es el bloque de dos columnas que amplía UNA categoría: a la izquierda la información detallada (título, párrafos, puntos clave y CTA); a la derecha una galería con una imagen grande y dos debajo. Refuerza la categoría antes de que el visitante entre a su página.',
+      'Es justo el bloque que estás leyendo ahora. Reutilizable y data-driven: el título y la imagen principal pueden salir del catálogo para no duplicar datos. La regla del sitio: todos idénticos —info a la izquierda, galería a la derecha—, sin alternar lados ni fondos, para que la lectura sea predecible.',
+    ],
+    points: [
+      'Dos columnas: info detallada a la izquierda, galería a la derecha',
+      'Galería de apoyo: una imagen grande y dos pequeñas',
+      'Refuerza la categoría antes de entrar a su página',
+      'Todos idénticos, sin zig-zag (regla dura del sitio)',
+    ],
+  },
+  'cards-catalogo': {
+    body: [
+      'Son las fichas de producto y servicio del catálogo. A diferencia de las tarjetas de categoría, cada una nace de un archivo Markdown en src/content/: escribes el producto como una nota simple —título, descripción, imagen, precio— y el sitio arma la ficha por ti.',
+      'La ventaja es consistencia con tranquilidad: un esquema (Zod) valida cada archivo antes de publicar, así un campo faltante o una ruta mal puesta detiene el build y te dice qué corregir. Agregas un .md y la ficha aparece; lo quitas y desaparece, sin tocar código.',
+    ],
+    points: [
+      'Fichas de producto y servicio, una por archivo Markdown',
+      'Contenido en src/content/: editas notas, no plantillas',
+      'Validadas por Zod: ninguna ficha rota llega al sitio',
+      'Agregar o quitar un .md actualiza el catálogo solo',
+    ],
+  },
+  'resenas': {
+    body: [
+      'Son las tarjetas de prueba social: opiniones de clientes con su calificación, nombre y rol. Llegan en el momento en que el visitante duda y responden la pregunta que no hace en voz alta —«¿le funcionó a alguien como yo?»— con la voz de un tercero, que pesa más que la tuya.',
+      'Cada reseña es una tarjeta uniforme (ReviewCard) alimentada por datos, así que se ven y se comportan igual en todo el sitio. En un sitio real, reseñas verdaderas y atribuibles; aquí, ejemplos. La clave es la honestidad: prueba social que se pueda sostener, nunca inventada.',
+    ],
+    points: [
+      'Cita + calificación + nombre y rol del cliente',
+      'Prueba social en el momento exacto de la duda',
+      'Tarjetas uniformes (ReviewCard), data-driven',
+      'Reseñas reales y atribuibles (en la demo, ejemplos)',
+    ],
+  },
+  'faq': {
+    body: [
+      'Es el acordeón de dudas comunes: preguntas que se despliegan para mostrar su respuesta, al cierre de la página. Resuelve las objeciones típicas antes de que frenen la conversión y, de paso, baja la carga de soporte respondiendo lo que todos preguntan.',
+      'Además del valor para la persona, centraliza el esquema FAQPage (JSON-LD) para que los buscadores puedan mostrar las preguntas en los resultados. Recibe una lista de pregunta y respuesta, y arma todo: el acordeón accesible y el schema, sin duplicar nada.',
+    ],
+    points: [
+      'Acordeón de preguntas frecuentes, al cierre de la página',
+      'Resuelve objeciones y baja la carga de soporte',
+      'Esquema FAQPage (JSON-LD) centralizado para rich results',
+      'Data-driven: lista de pregunta/respuesta → acordeón + schema',
+    ],
+  },
+  'cta-banner': {
+    body: [
+      'Es la franja de llamada a la acción que cierra cada página: una línea breve y un botón que no deja dudas sobre el siguiente paso. Cada página debe terminar pidiendo algo —contactar, cotizar, ver el catálogo—; el CTA banner es ese cierre, repetido con intención.',
+      'El enlace no se escribe a mano: cuando lleva a WhatsApp se arma con waUrl() y un mensaje pre-armado por intención (WA_MESSAGES). Variantes de fondo y alineación lo adaptan a cualquier página, manteniendo el mismo lenguaje visual en todo el sitio.',
+    ],
+    points: [
+      'Cierre con una sola acción clara, al final de cada página',
+      'Frase breve y un botón sin ambigüedad',
+      'Enlaces a WhatsApp con waUrl() y mensaje por intención',
+      'Variantes de fondo y centrado, mismo lenguaje visual',
+    ],
+  },
+  'formulario-contacto': {
+    body: [
+      'Es el formulario que recoge al visitante listo para hablar. En esta plantilla no manda correos: arma un mensaje y abre WhatsApp con el texto pre-cargado —respuesta inmediata, sin fricción ni bandejas que revisar—, que es como la gente prefiere contactar hoy.',
+      'Pocos campos, los justos, con validación clara para no frustrar. Como el resto, el número y los mensajes salen de site.ts (CONTACT, WA_MESSAGES): se definen una vez y se reutilizan. Menos fricción para el visitante, menos mantenimiento para ti.',
+    ],
+    points: [
+      'Convierte a WhatsApp con el mensaje pre-armado, sin correo',
+      'Pocos campos y validación clara: cero fricción',
+      'Número y textos desde site.ts (CONTACT · WA_MESSAGES)',
+      'Respuesta inmediata, sin bandejas que vigilar',
+    ],
+  },
+  'footer': {
+    body: [
+      'El footer es el pie del sitio: el cierre que recoge lo que el visitante busca al final —contacto, enlaces a las secciones, horarios, legales—. Es la red de seguridad de la navegación: si alguien llegó hasta abajo sin encontrar algo, aquí lo encuentra.',
+      'Está organizado en zonas (un CTA pre-footer, la columna de marca, los enlaces por grupo, la certificación y la barra legal con «volver arriba»). Los datos —marca, contacto, redes, rutas legales— salen de site.ts, así que se actualizan una vez para todo el sitio.',
+    ],
+    points: [
+      'Cierre con contacto, enlaces, horarios y legales',
+      'Red de seguridad: lo que no se encontró arriba, está aquí',
+      'Organizado en zonas (CTA, marca, enlaces, legal)',
+      'Datos desde site.ts: una edición, todo el sitio',
+    ],
+  },
+  'whatsapp-flotante': {
+    body: [
+      'Es el botón de WhatsApp fijo en una esquina, siempre visible mientras el visitante recorre el sitio. Quita la fricción del «¿cómo los contacto?»: la respuesta está a un toque, en cualquier página y en cualquier punto del scroll, sin volver al header ni al footer.',
+      'Lleva un mensaje pre-armado para que la conversación empiece con contexto, armado con waUrl() desde el número en site.ts. Discreto pero presente: no estorba la lectura y, cuando aparece la intención de contactar, ya está ahí esperando.',
+    ],
+    points: [
+      'Botón de WhatsApp fijo, visible en todo el scroll',
+      'Contacto a un toque desde cualquier página',
+      'Mensaje pre-armado con waUrl() (número en site.ts)',
+      'Discreto: presente sin estorbar la lectura',
+    ],
+  },
+}
 ---
 
 <PageLayout
@@ -169,14 +344,20 @@ const afondo = [
         ]}
       />
       <div class="afondo">
-        {afondo.map((m) => (
+        {MODULOS.map((m, i) => (
           <CategoryDetail
-            eyebrow={m.eyebrow}
-            title={m.title}
-            body={m.body}
-            points={m.points}
-            cta={m.cta}
-            gallery={m.gallery}
+            eyebrow="El módulo a fondo"
+            title={m.label}
+            body={AFONDO[m.slug].body}
+            points={AFONDO[m.slug].points}
+            cta={m.estado === 'listo' ? { label: `Ver el módulo ${m.label}`, href: m.href } : undefined}
+            gallery={{
+              main: { src: MOD_META[m.slug].image, alt: `Vista de ejemplo del módulo ${m.label}` },
+              thumbs: [
+                { src: POOL[(i + 1) % POOL.length], alt: `Detalle del módulo ${m.label}` },
+                { src: POOL[(i + 2) % POOL.length], alt: `Otro detalle del módulo ${m.label}` },
+              ],
+            }}
           />
         ))}
       </div>
