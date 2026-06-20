@@ -1,369 +1,204 @@
-> Título SEO: Homologación y control de calidad multisitio | design tokens, CI gates y SSoT
+> Título SEO: Homologación y control de calidad para una flota de sitios web (framework práctico)
 
 # Framework de Homologación y Control de Calidad para Decenas de Sitios Web
 
 ## Introducción ejecutiva
 
-Operar uno o dos sitios web es un problema de diseño. Operar **decenas de sitios casi idénticos** —la misma plantilla Astro repetida para clientes distintos, cada uno con su marca, su NAP y su catálogo— es un problema de **ingeniería de plataforma**. Lo que en un sitio aislado resolverías a ojo, en una flota de treinta lo pagas treinta veces: treinta revisiones manuales, treinta oportunidades de dejar un teléfono `DEMO` en producción, treinta variantes del mismo *card* con CSS ligeramente distinto que nadie sabe ya cuál es el bueno. La calidad deja de ser un acto de voluntad del editor y pasa a ser una **propiedad del sistema**: o está homologada por construcción, o no escala.
+Construir un sitio bien es un problema de oficio. Construir cuarenta sitios que se vean, se comporten y se mantengan **igual de bien** es un problema distinto: es un problema de homologación. La diferencia se siente el día que cambias un detalle en un componente compartido y tienes que rezar para que no haya roto algo en los otros treinta y nueve sitios que no estás mirando. Esta guía trata de no rezar: de construir el andamiaje que hace que la calidad sea una propiedad del sistema y no una virtud de la persona que tuvo cuidado ese día.
 
-Este documento define el framework de homologación y control de calidad que usamos en el ecosistema Ejemplos.mx, anclado en el código real de este repositorio. La tesis es directa: **una sola fuente de verdad (SSoT) bien diseñada convierte “lanzar un sitio nuevo” en “editar tres zonas”**, y un conjunto de **compuertas automáticas compartidas** (CI gates) garantiza que ningún sitio salga a producción con datos de relleno, enlaces rotos, regresiones visuales o presupuestos de rendimiento incumplidos. El revisor humano deja de ser el muro de contención —que no escala— y se convierte en el guardián de las reglas que el sistema ya aplica solo.
+El punto de partida del repo es bueno y conviene reconocerlo. Tiene una **fuente única de verdad** que reduce la superficie de edición de cada sitio a tres zonas, **design tokens** que permiten re-vestir un sitio entero cambiando un archivo, y una **librería de componentes** con un componente por tipo de entidad. Eso ya es más homologación de la que tienen la mayoría de las operaciones que producen sitios en serie. Lo que falta —y es el otro 50% de esta guía— son las **compuertas automáticas**: el ojo humano no escala a revisar cuarenta sitios, así que la calidad tiene que vigilarla la máquina.
 
-A lo largo de la guía se justifica cada decisión, se muestran fragmentos reales (`tokens.css`, gate de pre-deploy con `grep`, `budget.json` de Lighthouse), se compara el flujo manual contra el automatizado, se diagrama la cascada de design tokens y el pipeline de compuertas, y se cierra con un procedimiento paso a paso para **homologar y dar de alta un sitio nuevo**, su checklist y sus KPIs.
-
----
+Aquí no hay teoría sin cicatriz. Cada convención que vas a leer existe porque romperla costó algo: un componente bespoke que desentonó, unos estilos que no aparecían, unas tarjetas que no cuadraban con el resto. La homologación no es burocracia; es el recuerdo institucional de los errores que ya no queremos repetir.
 
 ## Tabla de contenido
 
-1. [La fuente única de verdad como motor de homologación](#1-la-fuente-unica-de-verdad-como-motor-de-homologacion)
-2. [Design tokens: el estándar W3C DTCG y la cascada de capas](#2-design-tokens-el-estandar-w3c-dtcg-y-la-cascada-de-capas)
-3. [Biblioteca de componentes reutilizables](#3-biblioteca-de-componentes-reutilizables)
-4. [Convenciones y estándares duros](#4-convenciones-y-estandares-duros)
-5. [Deuda técnica a vigilar](#5-deuda-tecnica-a-vigilar)
-6. [Compuertas de CI: el control de calidad automatizado](#6-compuertas-de-ci-el-control-de-calidad-automatizado)
-7. [Storybook, regresión visual y a11y como checks requeridos](#7-storybook-regresion-visual-y-a11y-como-checks-requeridos)
-8. [Versionado de la base compartida: SemVer y Changesets](#8-versionado-de-la-base-compartida-semver-y-changesets)
-9. [El overlay “Modo guía” como dispositivo de homologación](#9-el-overlay-modo-guia-como-dispositivo-de-homologacion)
-10. [Tabla comparativa: QA manual vs. automatizado](#10-tabla-comparativa-qa-manual-vs-automatizado)
-11. [Diagramas: cascada de tokens y pipeline de gates](#11-diagramas-cascada-de-tokens-y-pipeline-de-gates)
-12. [Procedimiento: homologar y dar de alta un sitio nuevo](#12-procedimiento-homologar-y-dar-de-alta-un-sitio-nuevo)
-13. [Checklist de homologación antes de publicar](#13-checklist-de-homologacion-antes-de-publicar)
-14. [KPIs e indicadores de calidad de flota](#14-kpis-e-indicadores-de-calidad-de-flota)
-15. [Errores comunes (y el porqué)](#15-errores-comunes-y-el-porque)
-16. [Conclusiones](#16-conclusiones)
-17. [Recomendaciones finales](#17-recomendaciones-finales)
+1. [Qué es homologar y por qué importa a escala](#1-qué-es-homologar-y-por-qué-importa-a-escala)
+2. [La SSoT como motor de homologación](#2-la-ssot-como-motor-de-homologación)
+3. [Design tokens: una marca, un archivo](#3-design-tokens-una-marca-un-archivo)
+4. [La librería de componentes: uno por tipo](#4-la-librería-de-componentes-uno-por-tipo)
+5. [Reusar antes que inventar: el caso Benefits](#5-reusar-antes-que-inventar-el-caso-benefits)
+6. [Convenciones que no se negocian](#6-convenciones-que-no-se-negocian)
+7. [Las GuiaNota como onboarding vivo](#7-las-guianota-como-onboarding-vivo)
+8. [Compuertas de CI: lo que el ojo no escala a revisar](#8-compuertas-de-ci-lo-que-el-ojo-no-escala-a-revisar)
+9. [Regresión visual: probar la flota con un cambio](#9-regresión-visual-probar-la-flota-con-un-cambio)
+10. [La deuda del puente de tokens (honestidad)](#10-la-deuda-del-puente-de-tokens-honestidad)
+11. [Casos de uso](#11-casos-de-uso)
+12. [Buenas prácticas](#12-buenas-prácticas)
+13. [Errores comunes y su porqué](#13-errores-comunes-y-su-porqué)
+14. [Procedimiento: homologar un componente nuevo](#14-procedimiento-homologar-un-componente-nuevo)
+15. [Checklist de homologación](#15-checklist-de-homologación)
+16. [KPIs e indicadores de calidad](#16-kpis-e-indicadores-de-calidad)
+17. [Conclusiones](#17-conclusiones)
+18. [Recomendaciones finales](#18-recomendaciones-finales)
 
 ---
 
-## 1. La fuente única de verdad como motor de homologación
+## 1. Qué es homologar y por qué importa a escala
 
-La homologación empieza por decidir **dónde vive cada dato** y, sobre todo, por garantizar que vive en un único lugar. En este sistema la SSoT no es un concepto abstracto: son tres zonas concretas y nada que aparezca en más de una página puede vivir fuera de ellas.
+Homologar es garantizar que dos cosas que deberían ser iguales **lo sean**, y que lo sigan siendo cuando cambien. En una flota de sitios, eso opera en dos niveles. El primero es dentro de un sitio: que todas las tarjetas de catálogo se vean idénticas, que todos los títulos sigan el mismo patrón, que el botón de WhatsApp sea el mismo en todas partes. El segundo es entre sitios: que el sitio del cliente A y el del cliente B compartan la misma base de código, los mismos componentes y los mismos estándares, de modo que una mejora se haga una vez y beneficie a todos.
 
-La **primera zona es `src/config/site.ts`**: la identidad de la marca, el NAP (Name, Address, Phone), la taxonomía (categorías, servicios, cobertura) y los mensajes de WhatsApp. El propio archivo lo declara como contrato: *“Todo dato que aparezca en más de una página vive aquí… Nada de esto se hardcodea en componentes ni páginas — se importa desde este archivo.”* El menú principal (`NAV`) no contiene un solo `<li>` escrito a mano: se genera con `.map()` desde `PRODUCT_CATEGORIES`, `SERVICES` y `COVERAGE_STATES`, de modo que cambiar la taxonomía actualiza la navegación, el footer y las rutas a la vez. Esto es homologación por construcción: es **imposible** que el menú y la taxonomía se desincronicen porque son el mismo dato.
+El antónimo de homologar es la **deriva**: ese proceso lento por el cual, sin que nadie lo decida, las cosas que empezaron iguales se vuelven distintas. Una tarjeta que alguien ajustó "solo para esta página", un color hex que se coló a mano en lugar del token, un componente nuevo que reinventa lo que ya existía. La deriva no llega de golpe; llega de a poquito, y para cuando se nota, deshacerla cuesta diez veces más que haberla prevenido. Por eso la homologación es, sobre todo, una disciplina de **prevención**, y las herramientas que vamos a ver existen para que la deriva sea difícil, no para arreglarla después.
 
-La **segunda zona es `src/styles/tokens.css`**: la marca visual. Color primario, escala tipográfica, espaciado, radios, sombras. El archivo se importa **una sola vez** en `BaseLayout` y es la única hoja global del sistema —contiene incluso el único `reset` CSS—. Cambiar `--c-primary: #5b3df5` por el índigo del cliente repinta el sitio entero sin tocar un solo componente.
+## 2. La SSoT como motor de homologación
 
-La **tercera zona son las carpetas de contenido** (las Content Collections en Markdown). Cada `slug` de la taxonomía en `site.ts` debe coincidir con el `category` de las colecciones y con la estructura de `/pages`. Ese acoplamiento deliberado es lo que permite validarlo automáticamente.
+La fuente única de verdad no es solo una buena práctica de datos; es el primer motor de homologación del sistema. Si toda la identidad, el contacto, la taxonomía y la navegación de un sitio viven en `site.ts`, y toda la marca visual vive en `tokens.css`, entonces **la superficie de personalización de un sitio nuevo son tres zonas**: configuración, tokens y contenido. Todo lo demás —layouts, componentes, librería de SEO— es idéntico entre sitios, y por construcción está homologado.
 
-La consecuencia operativa es la promesa central del framework: **spinnear un sitio = editar tres zonas.** Datos en `site.ts`, marca en `tokens.css`, contenido en las carpetas. Todo lo demás —layout, componentes, SEO, JSON-LD— es invariante de la plantilla y no se toca. Cuanto más estrecha y explícita sea la superficie editable, menos drift entre sitios y más barata la auditoría.
+Esto convierte "levantar un sitio nuevo homologado" en un acto mecánico en lugar de un acto creativo propenso a deriva. No hay margen para que el sitio B tenga un header sutilmente distinto al del sitio A, porque ambos heredan el mismo componente de header que se alimenta del mismo `NAV` derivado de la taxonomía. La regla que esto impone, y que hay que defender con terquedad: **nada que deba ser igual entre sitios se edita fuera de las tres zonas.** El día que alguien "arregla rápido" un componente compartido para un solo sitio, rompió la homologación y abrió la puerta a la deriva.
 
----
+## 3. Design tokens: una marca, un archivo
 
-## 2. Design tokens: el estándar W3C DTCG y la cascada de capas
+Los **design tokens** son la homologación visual hecha sistema. En `tokens.css`, los colores, tipografías, espaciados y radios viven como variables CSS en un solo lugar, y **cada componente bebe de ahí** —nada tiene su color escrito a mano—. La consecuencia es que re-vestir un sitio entero para un cliente nuevo toma minutos: cambias `--c-primary` (hoy el índigo `#5b3df5`) y la fuente principal, y los botones, las tarjetas, el header y hasta la sección de "sistema de diseño" se revisten de golpe. Una sola fuente de verdad para la marca significa cero búsqueda de colores sueltos regados por mil archivos.
 
-Los design tokens son el lenguaje compartido entre diseño e ingeniería: valores con nombre (`color.brand.primary`, `space.4`) en lugar de literales sueltos (`#5b3df5`, `1rem`). Su relevancia para una flota es total: si la marca vive en tokens y los componentes solo consumen tokens, **cambiar de marca es cambiar de archivo de tokens**, no editar componentes uno por uno.
-
-El hito de 2025 es que el **W3C Design Tokens Community Group (DTCG) publicó en octubre de 2025 la primera versión estable de su especificación**. Antes de esa fecha, “formato de tokens” significaba el dialecto de la herramienta de turno; a partir de ella existe un formato JSON interoperable y estable (`$value`, `$type`, referencias con llaves) que Figma, Style Dictionary y el resto del tooling pueden hablar sin traducciones frágiles. Adoptar DTCG ahora es apostar por un estándar que sobrevivirá a los cambios de herramienta de la flota.
-
-El flujo recomendado es **DTCG (JSON) → Style Dictionary → CSS variables**, y la pieza no negociable es `outputReferences: true`. Sin ella, Style Dictionary “aplana” las referencias y emite el valor final resuelto, perdiendo la relación semántica. Con ella, el CSS de salida **conserva la cadena `var()`**, que es justo lo que hace mantenible la cascada multi-marca.
+A la escala de un sitio, `tokens.css` cumple de sobra. Cuando la flota crezca a muchas marcas, la práctica que conviene adoptar es el estándar **W3C DTCG** (que alcanzó su primera versión estable en octubre de 2025) transformado a variables CSS con **Style Dictionary**, organizando los tokens en dos capas: *primitivos* (la paleta cruda) y *semánticos* (los roles: "primario", "superficie", "texto"). Así, cada marca nueva sobreescribe solo la capa primitiva, y todo lo semántico —que es lo que usan los componentes— se re-mapea solo. Es la diferencia entre "cada sitio define sus colores" y "cada sitio elige su paleta y el sistema hace el resto".
 
 ```css
-/* Salida de Style Dictionary con outputReferences:true — la referencia se preserva */
+/* tokens.css — una marca, un archivo. Cambia esto y se reviste todo el sitio. */
 :root {
-  /* Capa PRIMITIVA: paletas crudas, sin significado de uso */
-  --color-indigo-600: #5b3df5;
-  --color-indigo-800: #3f28c2;
-
-  /* Capa SEMÁNTICA: intención de marca, referida al primitivo (no copiada) */
-  --color-brand-primary: var(--color-indigo-600);
-  --color-brand-primary-strong: var(--color-indigo-800);
+  --c-primary: #5b3df5;        /* índigo de marca; sustituir por el del cliente */
+  --c-primary-dark: #3f28c2;
+  --c-ink: #14132a;            /* texto principal */
+  --c-surface: #f5f5fb;        /* fondos suaves */
+  --c-border: #e6e6f0;
+  /* …espaciados, radios, tipografía: el resto del sistema los hereda */
 }
 ```
 
-Compara esto con el `tokens.css` real del repo, donde el primario y su variante oscura ya se modelan como tokens semánticos de marca (`--c-primary`, `--c-primary-dark`) y el comentario marca el punto exacto de personalización por cliente: *“Sustituir por el color del cliente.”* La lección de capas es clara: **un sitio nuevo cambia la capa primitiva o el binding semántico, nunca los componentes.** Multi-marca sin duplicar archivos.
+## 4. La librería de componentes: uno por tipo
 
----
+El sistema sigue un patrón claro y homologante: **un componente por tipo de entidad**. `CategoryCard` para categorías, `ProductCard` para productos, `ServiceCard` para servicios, `ReviewCard` para reseñas, `ContactForm` para el formulario. No hay diez variantes de "tarjeta"; hay una por propósito, y cada una vive en un archivo con su comentario de cabecera que explica qué es, por qué está armada así y qué props recibe. Esa cabecera no es adorno: es el contrato del componente, y es lo que permite que alguien nuevo lo use bien sin leer su CSS.
 
-## 3. Biblioteca de componentes reutilizables
+La virtud de este patrón a escala es doble. Primero, **consistencia**: todas las fichas de producto del sitio —y de todos los sitios— se ven y se comportan igual porque salen del mismo componente. Segundo, **mantenibilidad**: mejorar las fichas de producto es editar un archivo, y el cambio se propaga a todas las instancias en todos los sitios que comparten la librería. La regla de oro de una librería homologada: **antes de crear un componente, pregunta si ya existe uno que hace el 80% del trabajo.** Casi siempre la respuesta es sí, y reusarlo —aunque cueste un poco más de pensamiento— es lo que mantiene la flota coherente.
 
-La regla de la biblioteca es **un componente por tipo**: `CategoryCard`, `ProductCard`, `ServiceCard`, `ReviewCard`. No “el card de este cliente” ni “el card de aquella sección”, sino el card de categoría —uno— que toda la flota comparte. Cada componente recibe sus datos por props desde la SSoT (`SHOWCASE` en `site.ts`) y se limita a pintar lo que recibe; no inventa contenido.
+## 5. Reusar antes que inventar: el caso Benefits
 
-Aquí va la **lección real de este repositorio**, y conviene no perderla porque salió cara. Cuando hace falta una tarjeta nueva, la tentación es crear un componente *bespoke* desde cero. Hacerlo trae tres males a la vez:
+Esta lección la pagamos en vivo, y es el corazón de la guía. Construyendo la sección "Por qué elegirnos", hicimos lo intuitivo: un componente nuevo, `Benefits.astro`, con su diseño propio —tiles de ícono con degradado, una métrica destacada, su CSS a medida—. Se veía bien. Y estaba **mal**, por dos razones que no son obvias hasta que muerden.
 
-1. **CSS duplicado.** El nuevo card reimplementa estilos que `CategoryCard.astro` ya resuelve con tokens (alturas iguales con `flex` + CTA al fondo, hover con elevación, foco visible, badge). Dos hojas que hacen casi lo mismo divergen con el tiempo y nadie sabe cuál es la canónica.
-2. **Diseño deshomologado.** Dos cards parecidos pero no idénticos rompen la coherencia visual de la flota —exactamente lo que el framework existe para evitar.
-3. **El bug de los estilos scoped que no se inyectan en dev.** Un componente `.astro` nuevo aparece **sin estilos en `astro dev`** hasta reiniciar el servidor: el HMR no inyecta el `<style>` scoped recién creado (el build sí lo incluye). Quien crea componentes nuevos constantemente choca con este fantasma una y otra vez, pierde tiempo depurando un “bug” que no existe y, peor, puede llegar a “arreglarlo” moviendo CSS a global y ensuciando la cascada.
+La primera: desentonaba. El sitio ya tenía un lenguaje de tarjetas (el del catálogo, `CategoryCard`), y este componente inventaba otro. Dos lenguajes de tarjeta en la misma página es exactamente la deriva visual que la homologación existe para impedir. La segunda, más sutil y más cara: un componente nuevo trae estilos *scoped* nuevos, y en el entorno de desarrollo esos estilos **no se inyectan hasta reiniciar el servidor** —pasamos un buen rato persiguiendo un "se ve sin CSS" que no era un bug del código sino del ciclo de vida de un componente nuevo—.
 
-La conclusión es una regla dura: **reusar el card aprobado en vez de crear uno bespoke.** Si necesitas una variante, primero pregúntate si una prop nueva en el componente existente la cubre. Reusar homologa el diseño, elimina CSS duplicado por definición y esquiva por completo el fantasma del estilo scoped, porque el componente ya existía y ya tenía sus estilos inyectados. La biblioteca compartida no es solo eficiencia: es la garantía de que treinta sitios se ven como treinta instancias de un mismo sistema y no como treinta improvisaciones.
+La corrección fue homologar: borramos `Benefits.astro` y reusamos `CategoryCard` para los beneficios —misma foto, badge, título, texto y CTA que el catálogo—. El resultado lo dice todo: **−143 líneas netas de código**, diseño idéntico al resto del sitio, y un bug menos. La moraleja que dejó esto, y que conviene tatuar en la cultura del equipo: *reusar no es pereza; inventar sin necesidad es la deriva.* El componente más homologado es el que no escribiste porque ya existía.
 
----
+## 6. Convenciones que no se negocian
 
-## 4. Convenciones y estándares duros
+Una flota coherente necesita un puñado de reglas que **no se discuten en cada PR**, porque discutirlas cada vez es la puerta de entrada de la deriva. En este sistema hay varias, y vale nombrarlas como lo que son: leyes, no sugerencias.
 
-Las convenciones son el “derecho consuetudinario” de la flota: reglas que no se discuten en cada PR porque ya se decidieron una vez. En este sistema varias son **duras** (no son sugerencias estéticas, son invariantes que el CI o el revisor hacen cumplir):
+- **Todos los títulos van en `duo`.** Cada título de sección usa `SectionHeading layout="duo"`: eyebrow + título + descripción a la izquierda, dos párrafos a la derecha. Un solo patrón para todos los títulos del sitio. Inventar el formato de un título es romper la ley.
+- **Los módulos "categoría a fondo" son idénticos, sin zig-zag.** Todos van con la información a la izquierda y la galería a la derecha, sin alternar lados ni fondos. La tentación del zig-zag (alternar para "dar dinamismo") está prohibida: la consistencia gana al adorno.
+- **WhatsApp siempre vía `waUrl()`** (regla D4), nunca el número a mano.
+- **Nada de datos del negocio hardcodeados** fuera de `site.ts`.
 
-- **Nomenclatura SSoT-first.** Ningún dato compartido se hardcodea; todo se importa de `site.ts`. Las claves del objeto `SITE`/`CONTACT`/`TAXONOMY` son un **contrato**: renombrar una clave rompe el JSON-LD y el *chrome* aguas abajo, así que se respetan exactas.
-- **“Todos los títulos en duo.”** Hay un único componente de encabezado de sección con layout `duo` (izquierda: eyebrow + título + descripción; derecha: dos párrafos que explican el módulo). No se inventan encabezados *ad hoc*: un solo componente sirve a todos los títulos, lo que homologa jerarquía y ritmo visual en toda la flota.
-- **“Categorías idénticas, sin zig-zag.”** El bloque de detalle de categoría es siempre el mismo: información a la izquierda, galería a la derecha, todos idénticos. Prohibido alternar el orden (`reverse`) o los fondos entre categorías. La uniformidad es deliberada: el zig-zag “bonito” en un sitio se vuelve caos inconsistente repartido por treinta.
-- **Regla D4 de WhatsApp vía `waUrl()`.** *Nunca* se escribe `wa.me/<número>` a mano en una página o componente. Siempre `waUrl(WA_MESSAGES.<intencion>)`. El constructor canónico centraliza el número y el *encoding* del mensaje:
+Estas reglas tienen un costo —a veces quisieras alternar un lado o ajustar un título "solo aquí"— y ese costo es precisamente el punto. La homologación se sostiene cuando las excepciones cuestan más de lo que valen, no cuando dependen de la disciplina de cada quien bajo presión de entrega.
 
-```ts
-// src/config/site.ts — el número y el encoding viven en UN solo lugar
-export function waUrl(message: string = WA_MESSAGES.default): string {
-  return `https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent(message)}`;
-}
-```
+## 7. Las GuiaNota como onboarding vivo
 
-El porqué de D4 es puramente de flota: si el número se hardcodeara, cambiar de WhatsApp en un cliente obligaría a un *find-and-replace* propenso a dejar números viejos olvidados en un botón perdido. Con `waUrl()`, el número está en `CONTACT.whatsapp` y se propaga solo.
+Hay una pieza de homologación en este repo que es genuinamente original: las **`GuiaNota`**. Cada módulo de la home lleva una nota que explica, ahí mismo, qué hace el bloque, por qué está armado así y en qué archivo se edita. El sitio es, a la vez, una demo de negocio real y un manual de sí mismo. Para una operación que mete gente nueva con frecuencia —redactores, desarrolladores junior—, esto es oro: el onboarding no es un PDF que nadie lee, es el propio producto explicándose mientras se navega.
 
----
+¿Por qué esto homologa? Porque la deriva nace muchas veces de la ignorancia, no de la malicia: alguien edita un componente de la forma equivocada porque no sabía que existía la forma correcta. Una `GuiaNota` que dice "esto se edita en `site.ts`, no aquí" previene ese error en el momento exacto en que alguien estaría a punto de cometerlo. En un sitio real de cliente estas notas se quitan, pero en la plantilla-guía son la documentación que no se desactualiza, porque vive pegada al código que describe.
 
-## 5. Deuda técnica a vigilar
+## 8. Compuertas de CI: lo que el ojo no escala a revisar
 
-Homologar no es fingir que el sistema es perfecto, sino **nombrar la deuda y vigilarla** para que no se infecte el resto. En este repo hay dos focos concretos que todo auditor debe tener en el radar.
+Aquí está el frente donde el sistema todavía depende demasiado del cuidado humano, y donde más rinde invertir. Hoy el CI corre `astro check` antes de `astro build`, lo que significa que **un error de tipos bloquea el deploy** —y el historial muestra `astro check` en verde en cada commit, lo cual ya es una compuerta real—. Pero faltan tres compuertas que el ojo no escala a vigilar en cuarenta sitios:
 
-**Primero, el puente de tokens `--color-*` ↔ `--c-*` coexistiendo.** El `tokens.css` real mantiene un bloque explícito de “PUENTE DE ALIAS” que mapea nombres heredados (`--color-primary`, `--space-4`, `--color-red`) al canónico (`--c-primary`, `--sp-4`). Es una decisión correcta —permite que componentes extraídos de otros proyectos rendericen sin reescritura—, pero es deuda: dos familias de nombres para lo mismo. El riesgo es que un componente nuevo adopte la familia heredada en lugar de la canónica y perpetúe el puente. La vigilancia: el puente solo viaja en una dirección (heredado → canónico), está documentado como “deuda de roadmap”, y la regla es que **código nuevo usa siempre `--c-*`/`--sp-*`**.
+1. **Gate de datos demo.** Un paso de `predeploy` que haga `grep` de centinelas (`0000 0000`, `Av. Demo`, `(DEMO)`) y **falle el build** si los encuentra en producción. Es la red que atrapa el error más vergonzoso de una fábrica: publicar un sitio a medio llenar con datos de relleno.
+2. **Chequeo de enlaces internos.** Un paso post-build que recorra el sitio y falle si hay enlaces a páginas inexistentes. Atraparía, hoy mismo, los 404 de la nav que la auditoría encontró.
+3. **Presupuesto de rendimiento.** Lighthouse CI con un `budget.json` compartido y `runs: 3` (para evitar falsos negativos por ruido). Garantiza que ningún sitio de la flota regrese por debajo del estándar de velocidad.
 
-**Segundo, los fallbacks hex de marca equivocada.** Un peligro sutil: un componente escribe `var(--c-primary, #e11d48)` con un fallback hardcodeado que era el color de *otra* marca de la que se copió el componente. Mientras el token exista, nadie lo nota; el día que el token falte por un error de importación, el sitio del cliente A aparece pintado con el rojo del cliente B. La vigilancia: prohibir fallbacks de color hex en `var()` de tokens de marca, o forzar que el fallback sea el mismo valor canónico. Un `grep` de literales hex dentro de `var(--c-` es un buen centinela para el CI.
+A todo esto se suman las herramientas de estilo —`eslint-plugin-astro`, `prettier-plugin-astro`, Stylelint— configuradas **una vez como paquetes compartidos** y aplicadas en cada repo. La idea unificadora: cuando produces muchos sitios casi idénticos, **la revisión manual no escala**; las compuertas automáticas son el único mecanismo que mantiene uniforme a la flota sin que un humano tenga que mirar cada deploy.
 
-Nombrar la deuda es lo que la mantiene contenida; lo peligroso es la deuda anónima que se confunde con diseño intencional.
+## 9. Regresión visual: probar la flota con un cambio
 
----
+El miedo legítimo de una librería compartida es el de la sección 1: cambias un componente y no sabes a qué sitios afectó. La respuesta profesional es la **regresión visual**. Se desarrolla y documenta la librería en **Storybook** (con Autodocs, que mantiene la documentación pegada a la API real del componente, sin desactualizarse), y se conecta una herramienta de *visual testing* —**Chromatic** es el estándar— que toma una captura de cada componente en cada estado y, en cada PR, **compara pixel a pixel** contra la versión aprobada. Si un cambio movió algo que no debía, el PR lo muestra antes de mezclar, no después de desplegar.
 
-## 6. Compuertas de CI: el control de calidad automatizado
+La pieza que cierra el ciclo es hacer esos chequeos **obligatorios**: el visual, el de interacción y el de accesibilidad como *required checks* del PR. Con eso, "un cambio en el botón compartido" deja de ser un acto de fe y se vuelve un experimento controlado: o pasa las pruebas contra toda la flota, o no se mezcla. A esto se le suma versionar la librería con SemVer y Changesets, de modo que cada sitio decida cuándo adopta una versión nueva en lugar de heredar cambios sin avisar.
 
-Aquí está el corazón del framework. **El QA manual no escala a muchos sitios casi idénticos:** revisar treinta sitios a ojo antes de cada publicación es lento, caro y, sobre todo, no es repetible —cada revisor mira cosas distintas y se cansa—. La respuesta son **compuertas automáticas compartidas**: el mismo conjunto de checks corre en CI para todos los sitios, y un sitio no llega a producción si no las pasa todas.
+## 10. La deuda del puente de tokens (honestidad)
 
-El workflow real ya establece la base: Node 22, `npm ci`, `npm run build` y despliegue a Cloudflare Pages. Sobre ese esqueleto se montan las compuertas de calidad.
+Una auditoría que solo elogia no sirve, así que aquí va la deuda real del sistema de homologación. El repo arrastra un **puente de tokens** heredado de proyectos origen: variables como `--color-red`, `--color-gray-50` o `--color-red-light` que se mapean a los tokens actuales (`--c-primary`, etc.) con valores hex *de fallback* literales —un rojo `#C41E24`, por ejemplo, cuando la marca real es índigo—. Esos fallbacks solo se disparan si falta un token, así que en la práctica no rompen nada; pero son una **trampa latente**: el día que alguien copie un componente a un contexto donde el token no esté definido, aparecerá un rojo fantasma en un sitio índigo.
 
-**Compuerta 1 — `astro check` obligatorio.** El chequeo de tipos de Astro corre antes del build y es bloqueante. Como las claves de `site.ts` son un contrato tipado (`as const`, tipos derivados de la taxonomía), `astro check` atrapa en CI un `slug` mal escrito o una clave renombrada que rompería el JSON-LD —el tipo de error que un humano no ve hasta que el sitio ya está roto en producción.
+Encontramos un caso vivo de esto homologando el FAQ: el estado "abierto" del acordeón usaba `--color-red-light`, que sin definir caía a un rosa-rojo en un sitio morado. Lo corregimos a un tinte de la marca con `color-mix`. La lección de homologación es general: **los fallbacks hex literales son deuda disfrazada de robustez.** Como los tokens están garantizados por `BaseLayout`, lo correcto es pagar la deuda quitando esos fallbacks y dejando que el sistema dependa de su única fuente de verdad de color, sin redes de seguridad que mienten.
 
-**Compuerta 2 — gate de datos demo (centinelas).** La plantilla viene con datos DEMO deliberados (`55 0000 0000`, `Av. Demo 123`, marcadores `(DEMO)`). Publicar uno de esos valores es el peor fallo posible: un teléfono falso en producción. El gate hace `grep` de los centinelas en el `dist/` construido y **falla la build si encuentra alguno**:
+## 11. Casos de uso
 
-```bash
-#!/usr/bin/env bash
-# scripts/check-demo.sh — falla el deploy si quedan datos de relleno en el build
-set -euo pipefail
+- **Levantar el sitio 15 de la flota.** Se clona, se editan las tres zonas (config, tokens, contenido), y por construcción queda homologado con los otros 14. El código no se toca.
+- **Mejorar las fichas de producto en toda la flota.** Se edita `ProductCard` una vez; la regresión visual confirma que no rompió nada; se versiona y cada sitio adopta.
+- **Re-vestir un sitio para un rebrand.** Se cambian los tokens primitivos; todo lo semántico se re-mapea solo.
+- **Meter a un desarrollador nuevo.** Las `GuiaNota` y los comentarios de cabecera lo orientan sin un manual aparte.
 
-# Centinelas: teléfono DEMO, dirección DEMO y marcador textual (DEMO)
-PATTERN='0000 0000|Av\. Demo|\(DEMO\)'
+## 12. Buenas prácticas
 
-if grep -RInE "$PATTERN" dist/ ; then
-  echo "::error::Se encontraron datos DEMO en dist/. Reemplázalos en site.ts antes de publicar."
-  exit 1
-fi
-echo "OK — sin centinelas demo en el build."
-```
+- Edita solo las tres zonas (config, tokens, contenido) por sitio; nada compartido se toca "solo para uno".
+- Define la marca en tokens; cero colores hex a mano en componentes.
+- Un componente por tipo; antes de crear, busca el que ya hace el 80%.
+- **Reusa antes que inventes**; el mejor componente es el que no escribiste.
+- Trata las convenciones (duo, no zig-zag, D4) como leyes, no como sugerencias.
+- Documenta en el código (cabeceras, `GuiaNota`), no en un PDF aparte.
+- Automatiza las compuertas (demo, enlaces, Lighthouse, lint); el ojo no escala.
+- Prueba la flota con regresión visual antes de mezclar un cambio compartido.
 
-Este gate convierte una disciplina humana frágil (“acuérdate de cambiar el teléfono”) en una garantía mecánica. Es barato, es determinista y ataca el error más caro de la flota.
+## 13. Errores comunes y su porqué
 
-**Compuerta 3 — chequeo de enlaces internos post-build.** Tras `npm run build`, un *link checker* recorre el `dist/` y falla si hay enlaces internos rotos (404 internos, anclas inexistentes). En un sistema data-driven donde las rutas se generan desde la taxonomía, un `slug` desincronizado produce enlaces muertos; este gate los caza antes del deploy.
-
-**Compuerta 4 — presupuestos de Lighthouse CI con `runs: 3`.** El rendimiento se mide contra un presupuesto explícito, y se promedian **tres corridas** para amortiguar el ruido de una sola medición (una corrida aislada puede dar un número engañoso por *jitter* del runner). Ejemplo de presupuesto:
-
-```json
-// budget.json — presupuestos de rendimiento para Lighthouse CI
-[
-  {
-    "path": "/*",
-    "timings": [
-      { "metric": "largest-contentful-paint", "budget": 2500 },
-      { "metric": "total-blocking-time",       "budget": 200  },
-      { "metric": "cumulative-layout-shift",   "budget": 0.1  }
-    ],
-    "resourceSizes": [
-      { "resourceType": "script",   "budget": 150 },
-      { "resourceType": "image",    "budget": 300 },
-      { "resourceType": "total",    "budget": 600 }
-    ]
-  }
-]
-```
-
-**Compuerta 5 — configs compartidas de lint/format.** `eslint-plugin-astro`, `prettier-plugin-astro` y `stylelint` se distribuyen como **configuraciones compartidas** (un paquete de config que todos los sitios extienden). Así el estilo de código y de CSS es idéntico en toda la flota sin copiar archivos `.eslintrc` por repo: se actualiza la config central y todos heredan la nueva regla.
-
-La idea unificadora: **cada compuerta sustituye un “acuérdate de…” humano por un “falla si…” mecánico.** Lo que el CI no deja pasar, ningún sitio lo publica.
-
----
-
-## 7. Storybook, regresión visual y a11y como checks requeridos
-
-En una flota, **un cambio en un componente compartido puede romper N sitios a la vez.** Editar `CategoryCard.astro` para el cliente A repercute en los treinta sitios que lo usan. Por eso la biblioteca compartida exige una red de seguridad que el QA manual no puede dar.
-
-**Storybook + Autodocs** es el catálogo vivo: cada componente tiene sus *stories* (sus estados y variantes), y Autodocs genera la documentación de props automáticamente desde los tipos. Es a la vez documentación, banco de pruebas y onboarding para quien entra al equipo.
-
-**Pruebas de regresión visual (Chromatic).** Esta es la pieza crítica de flota: antes de mergear un cambio en un componente compartido, **se hace un pixel-diff de cada story.** Chromatic toma una captura de cada estado, la compara contra la línea base aprobada y **marca cualquier diferencia de píxeles**. Si tu cambio en el `card` mueve un padding sin querer, el diff lo muestra y el merge se bloquea hasta que un humano apruebe (o rechace) ese cambio visual. Sin esto, un ajuste “inocente” se propaga como regresión a N sitios y solo te enteras por las quejas de los clientes.
-
-**Checks de accesibilidad (a11y).** El addon de a11y de Storybook (y/o `axe` en CI) corre sobre cada story y falla ante violaciones de contraste, roles ARIA o foco. `CategoryCard.astro` ya trae los cimientos (foco visible con `:focus-visible`, `aria-label` en la lista de subcategorías, `aria-hidden` en lo decorativo); el check requerido garantiza que esa calidad no se erosione con cada edición.
-
-La regla: **regresión visual + a11y son checks REQUERIDOS, no opcionales.** Un PR que toca un componente compartido no se mergea sin pixel-diff verde y a11y limpio.
-
----
-
-## 8. Versionado de la base compartida: SemVer y Changesets
-
-Si la plantilla, los tokens y la biblioteca de componentes son una **base compartida** que viven todos los sitios, esa base es un *paquete* y como tal se versiona. **SemVer** (semántico: `MAJOR.MINOR.PATCH`) comunica la naturaleza del cambio: un `PATCH` arregla sin romper, un `MINOR` añade compatible, un `MAJOR` introduce un *breaking change* (por ejemplo, renombrar un token o cambiar la firma de un componente).
-
-**Changesets** automatiza ese flujo en el monorepo: cada PR que toca la base adjunta un *changeset* declarando el tipo de cambio y una nota de release; al integrar, Changesets calcula la nueva versión, actualiza el changelog y publica. El valor para la flota es enorme: cada sitio **fija una versión** de la base y decide cuándo subir. Un `MAJOR` no se cuela en producción de treinta sitios sin que nadie lo note —los sitios actualizan deliberadamente, leen el changelog y migran—. Versionar la base es lo que convierte “rompí un componente y se cayeron treinta sitios” en “publiqué la 3.0.0, los sitios migran cuando estén listos”.
-
----
-
-## 9. El overlay “Modo guía” como dispositivo de homologación
-
-La plantilla incluye un overlay didáctico —`GuiaNota` / **“Modo guía”**— que documenta sobre el propio sitio qué es cada bloque y cómo se edita. Más allá de lo pedagógico, es un **dispositivo de homologación y onboarding** con dos funciones:
-
-Primero, **onboarding**: quien recibe la plantilla por primera vez ve, en contexto, dónde toca cada cosa (las tres zonas editables, las reglas duras) sin leer un manual aparte. Reduce el tiempo de alta y, sobre todo, reduce los errores del recién llegado.
-
-Segundo, **homologación**: el modo guía es la representación viva de la convención. Si la regla es “todos los títulos en duo” o “categorías idénticas sin zig-zag”, el overlay lo señala sobre el componente real, de modo que el editor no improvisa. La nota de guía es, en la práctica, la documentación ejecutándose dentro del producto —la forma más difícil de ignorar de comunicar un estándar.
-
----
-
-## 10. Tabla comparativa: QA manual vs. automatizado
-
-| Dimensión | QA manual | QA automatizado (compuertas compartidas) |
+| Error | Por qué genera deriva | Antídoto |
 |---|---|---|
-| **Escalabilidad** | Lineal: 30 sitios = 30 revisiones a ojo | Constante: el mismo pipeline corre para N sitios |
-| **Repetibilidad** | Baja — cada revisor mira cosas distintas | Total — checks deterministas idénticos |
-| **Datos demo en prod** | Riesgo alto (“se me olvidó el teléfono”) | Imposible — gate de centinelas `grep` bloquea |
-| **Enlaces rotos** | Se descubren en producción | Caza post-build antes del deploy |
-| **Regresión visual** | Invisible hasta que el cliente se queja | Pixel-diff por story bloquea el merge |
-| **Rendimiento** | Subjetivo (“se siente rápido”) | Presupuesto `budget.json`, 3 runs promediados |
-| **Costo marginal por sitio** | Crece con cada sitio | Tiende a cero (infra compartida) |
-| **Velocidad de alta** | Horas/días de revisión | Minutos de CI |
-| **Fatiga / error humano** | Inevitable a escala | Eliminado de los checks mecánicos |
+| Componente bespoke que duplica uno existente | Dos lenguajes visuales en el mismo sistema | Reusar el componente aprobado |
+| "Arreglo rápido" en un componente compartido para un sitio | Rompe la homologación entre sitios | Editar solo las tres zonas; cambios compartidos versionados |
+| Color hex a mano en un componente | Escapa al sistema de tokens; deriva visual | Usar siempre la variable del token |
+| Fallback hex literal en el puente de tokens | Rojo fantasma en un sitio de otra marca | Quitar fallbacks; depender de la SSoT de color |
+| Excepción a una convención "solo aquí" | La primera grieta de la deriva | Convenciones como leyes; excepción que cueste |
+| Revisar la flota a ojo | No escala; se cuela lo que nadie miró | Compuertas automáticas en CI |
+| Cambiar un componente compartido sin regresión visual | Rompes sitios que no estás mirando | Storybook + Chromatic como required check |
+| Documentación en un doc aparte | Se desactualiza; nadie la lee | Documentar pegado al código |
 
-La conclusión de la tabla es la tesis del documento: el QA manual es un buen complemento para el juicio (¿el copy convence?, ¿la foto es la correcta?), pero **un terrible muro de contención**. Para “esto no puede salir roto”, automatiza.
+## 14. Procedimiento: homologar un componente nuevo
 
----
+1. **Verifica que de verdad sea nuevo**: ¿hay un componente existente que hace el 80%? Si sí, reúsalo o extiéndelo.
+2. **Escribe la cabecera de contrato**: qué es, por qué está armado así, qué props recibe.
+3. **Usa solo tokens** para color/espaciado/tipografía; cero hex a mano.
+4. **Respeta las convenciones** (jerarquía de encabezados, `duo` para títulos, D4 para WhatsApp).
+5. **Documenta el módulo** con una `GuiaNota` si vive en la plantilla-guía.
+6. **Crea su historia en Storybook** con todos los estados relevantes.
+7. **Conecta la regresión visual** (Chromatic) y haz el chequeo obligatorio.
+8. **Versiona** con SemVer + Changesets; deja que cada sitio adopte la versión.
+9. **Verifica** `astro check` + lint + build en limpio antes de publicar.
 
-## 11. Diagramas: cascada de tokens y pipeline de gates
+## 15. Checklist de homologación
 
-**Cascada de design tokens (primitivo → semántico → componente):**
+- [ ] El sitio nuevo se levantó editando solo config, tokens y contenido.
+- [ ] Cero colores hex a mano; todo viene de `tokens.css`.
+- [ ] Ningún componente compartido fue editado "solo para un sitio".
+- [ ] No hay componentes bespoke que dupliquen uno existente.
+- [ ] Las convenciones (duo, no zig-zag, D4, datos en `site.ts`) se cumplen sin excepción.
+- [ ] Cada componente tiene cabecera de contrato y, si aplica, `GuiaNota`.
+- [ ] Los fallbacks hex literales del puente de tokens están en el backlog de limpieza.
+- [ ] CI corre `astro check`, lint y build como puerta bloqueante.
+- [ ] Existe (o está planificado) el gate de datos demo y el chequeo de enlaces.
+- [ ] La librería compartida tiene regresión visual obligatoria antes de mezclar.
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│  CAPA PRIMITIVA  (paletas crudas, sin significado de uso)    │
-│  --color-indigo-600: #5b3df5   --color-indigo-800: #3f28c2  │
-└───────────────┬─────────────────────────────────────────────┘
-                │  referenciado por var() (outputReferences:true)
-                ▼
-┌─────────────────────────────────────────────────────────────┐
-│  CAPA SEMÁNTICA  (intención de marca — punto de personalización) │
-│  --c-primary: var(--color-indigo-600)                       │
-│  --c-primary-dark: var(--color-indigo-800)                  │
-│  ← cambiar de cliente = re-bindear AQUÍ, no en componentes  │
-└───────────────┬─────────────────────────────────────────────┘
-                │  consumido por
-                ▼
-┌─────────────────────────────────────────────────────────────┐
-│  CAPA COMPONENTE  (CategoryCard, ProductCard, …)            │
-│  background: var(--c-primary);  color: var(--c-ink);        │
-│  NUNCA literales hex — solo tokens                          │
-└─────────────────────────────────────────────────────────────┘
-```
+## 16. KPIs e indicadores de calidad
 
-**Pipeline de compuertas de CI (de push a producción):**
+| Indicador | Meta | Por qué |
+|---|---|---|
+| Zonas editadas por sitio nuevo | 3 (config, tokens, contenido) | Mide que la homologación se respeta |
+| Colores hex a mano en componentes | 0 | Todo color viene del token |
+| Componentes bespoke duplicando uno existente | 0 | Señal de deriva visual |
+| PRs a componentes compartidos sin regresión visual | 0 | Cambios compartidos verificados contra la flota |
+| Cobertura de historias en Storybook | Alta | Documentación viva + base de la regresión |
+| Compuertas automáticas activas en CI | demo + enlaces + Lighthouse + lint | El ojo no escala |
+| Centinelas de datos demo en producción | 0 | Atrapados por el gate |
+| Variación visual no intencional entre sitios | 0 | El propósito mismo de homologar |
+| Tiempo de adopción de una mejora en la flota | Bajo | Una edición, propagación versionada |
 
-```text
-push a main
-   │
-   ▼
-[ npm ci ]  ──►  [ astro check ]  ──►  [ lint/format compartidos ]
-                      (tipos)            (eslint+prettier+stylelint)
-   │
-   ▼
-[ npm run build ]
-   │
-   ├─►  [ gate centinelas DEMO ]   grep '0000 0000|Av. Demo|(DEMO)'  ── falla ─► STOP
-   │
-   ├─►  [ chequeo de enlaces internos ]   404 interno  ───────────── falla ─► STOP
-   │
-   ├─►  [ regresión visual (Chromatic) ]  pixel-diff por story ───── diff ──► revisión humana
-   │
-   ├─►  [ a11y (axe / addon Storybook) ]  violación ──────────────── falla ─► STOP
-   │
-   └─►  [ Lighthouse CI · budget.json · runs:3 ]  presupuesto ────── falla ─► STOP
-   │
-   ▼
-[ deploy a Cloudflare Pages ]   ← solo si TODAS las compuertas pasan
-```
+## 17. Conclusiones
 
-Cada flecha “falla → STOP” es una promesa: ese defecto no llega a producción en ningún sitio de la flota.
+La homologación es lo que convierte "sé hacer un sitio bueno" en "tengo un sistema que produce sitios buenos". El repo ya tiene los cimientos: la SSoT que reduce la edición a tres zonas, los tokens que re-visten un sitio con un archivo, y la librería de un componente por tipo. La lección más cara —el caso Benefits— dejó la regla cultural que sostiene todo: **reusar antes que inventar**, porque cada componente que reinventas sin necesidad es una grieta por donde entra la deriva.
 
----
+Lo que falta es el otro pilar: las **compuertas automáticas**. A escala de flota, el cuidado humano no alcanza; la calidad tiene que ser una propiedad que la máquina verifica en cada deploy —datos demo, enlaces, rendimiento, regresión visual—. Y hay que pagar la deuda honesta del puente de tokens, esos fallbacks rojos que son una red de seguridad que miente. Con esos dos movimientos, la homologación deja de depender de que alguien tenga cuidado y pasa a ser, como debe, una garantía del sistema.
 
-## 12. Procedimiento: homologar y dar de alta un sitio nuevo
+## 18. Recomendaciones finales
 
-El procedimiento canónico para incorporar un sitio nuevo a la flota, paso a paso:
+1. **Instala el gate de datos demo y el chequeo de enlaces** en CI; son baratos y atrapan los dos errores que más rompen la credibilidad de la flota.
+2. **Adopta la cultura "reusar antes que inventar"** como criterio explícito de revisión de PR, con el caso Benefits como ejemplo.
+3. **Paga la deuda del puente de tokens**: quita los fallbacks hex literales; que el sistema dependa de su única fuente de color.
+4. **Monta Storybook + regresión visual** cuando la librería se comparta entre sitios; haz el chequeo obligatorio.
+5. **Eleva los tokens a W3C DTCG + Style Dictionary** cuando la flota tenga varias marcas; capas primitiva/semántica para re-brandear sin duplicar.
+6. **Defiende las convenciones como leyes**: la homologación se sostiene cuando la excepción cuesta más de lo que vale.
 
-1. **Clonar la plantilla** (o crear el repo del cliente desde el template del monorepo). No se copia-pega de otro cliente: se parte siempre del template homologado.
-2. **Zona 1 — `site.ts`.** Reemplazar todos los datos DEMO por los reales: `SITE` (nombre, dominio, URL), `CONTACT` (NAP, teléfono E.164, WhatsApp), `KEYWORDS` (las 3 reales), `TAXONOMY` (categorías/servicios/cobertura del cliente), `WA_MESSAGES`. Respetar las claves exactas.
-3. **Zona 2 — `tokens.css`.** Sustituir el color de marca (`--c-primary` y derivados, más `--c-primary-rgb` sincronizado) y, si aplica, la pila tipográfica. No tocar componentes.
-4. **Zona 3 — contenido.** Cargar las Content Collections en Markdown; verificar que cada `slug` coincide con la taxonomía y la estructura de `/pages`.
-5. **Reutilizar, no inventar.** Para cada bloque, usar los componentes existentes de la biblioteca (`CategoryCard`, etc.). Si surge una variante, primero intentar una prop nueva en el componente compartido antes de crear nada *bespoke*.
-6. **`npm run dev` y revisión visual.** Si un componente recién tocado aparece sin estilos en dev, **reiniciar `astro dev`** (es el fantasma del `<style>` scoped, no un bug real).
-7. **Correr las compuertas en local.** `astro check`, build, gate de centinelas demo, link checker, Lighthouse. Arreglar todo en local antes de abrir PR.
-8. **Abrir PR.** El CI corre las mismas compuertas + regresión visual (Chromatic) + a11y. Revisar y aprobar cualquier pixel-diff intencional.
-9. **Fijar la versión de la base compartida** (SemVer/Changesets) que usa el sitio.
-10. **Merge a `main` → deploy automático** a Cloudflare Pages. El sitio solo sale si **todas** las compuertas están en verde.
-11. **Verificación post-deploy.** Confirmar 0 enlaces rotos y 0 centinelas demo en producción, y registrar los KPIs de alta.
-
----
-
-## 13. Checklist de homologación antes de publicar
-
-- [ ] `site.ts`: ningún dato DEMO restante (teléfono, email, dirección, keywords) — todo real.
-- [ ] `tokens.css`: `--c-primary` y `--c-primary-rgb` actualizados al color del cliente y **sincronizados** entre sí.
-- [ ] Cero literales hex de color en componentes; todo vía tokens `--c-*`/`--sp-*`.
-- [ ] Cero fallbacks hex de marca equivocada dentro de `var(--c-…)`.
-- [ ] Todos los enlaces de WhatsApp usan `waUrl(WA_MESSAGES.*)` — ningún `wa.me` hardcodeado (regla D4).
-- [ ] Taxonomía ↔ Content Collections ↔ `/pages`: cada `slug` coincide.
-- [ ] Componentes reutilizados de la biblioteca; ninguna tarjeta *bespoke* nueva sin justificación.
-- [ ] Todos los títulos de sección en layout `duo`.
-- [ ] Bloques de categoría idénticos: info izquierda · galería derecha · sin zig-zag.
-- [ ] `astro check` en verde (sin errores de tipos).
-- [ ] Lint/format compartidos en verde (eslint-plugin-astro, prettier, stylelint).
-- [ ] Gate de centinelas DEMO en verde (`grep` de `0000 0000` / `Av. Demo` / `(DEMO)` sin coincidencias en `dist/`).
-- [ ] Chequeo de enlaces internos post-build: 0 enlaces rotos.
-- [ ] Regresión visual (Chromatic): sin diffs no aprobados en componentes compartidos.
-- [ ] a11y: sin violaciones (contraste, ARIA, foco).
-- [ ] Lighthouse CI: presupuestos de `budget.json` cumplidos (LCP/TBT/CLS, pesos), `runs:3`.
-- [ ] Versión de la base compartida fijada (SemVer/Changesets) y changelog leído.
-- [ ] Verificación post-deploy en producción (no solo en local).
-
----
-
-## 14. KPIs e indicadores de calidad de flota
-
-La salud de la flota se mide, no se intuye. Indicadores recomendados:
-
-- **Enlaces rotos: 0** (objetivo absoluto, por sitio y agregado de flota). Cualquier valor > 0 es un fallo de release, no una métrica “a mejorar”.
-- **Centinelas demo en producción: 0** (binario). Un solo `Av. Demo` o `0000 0000` en `dist/` invalida la publicación.
-- **Cobertura de stories (% de componentes con stories):** proxy de cuánta superficie de la biblioteca está protegida por regresión visual. Meta alta y creciente; los componentes sin story son puntos ciegos.
-- **Tiempo de alta de un sitio** (desde clonar template hasta deploy verde): mide la eficacia real de “editar tres zonas”. Si sube, el template está acumulando fricción.
-- **Drift visual** (nº de pixel-diffs no intencionales detectados por Chromatic por periodo): mide cuánto está erosionando la homologación. Idealmente bajo y, cuando aparece, **atrapado en CI**, nunca en producción.
-- **Tasa de aprobación de compuertas a la primera** (% de builds que pasan todos los gates sin reintento): salud del proceso de alta y de la disciplina del equipo.
-- **Presupuesto Lighthouse: % de páginas dentro de budget.** Tendencia a la baja = regresión de rendimiento que el `budget.json` debe estar cazando.
-
----
-
-## 15. Errores comunes (y el porqué)
-
-- **Crear un card *bespoke* en lugar de reusar el aprobado.** *Porqué importa:* duplica CSS, deshomologa el diseño y te expone al bug del `<style>` scoped que no se inyecta en dev. La solución casi siempre es una prop nueva en el componente existente.
-- **Hardcodear datos que deberían vivir en `site.ts`.** *Porqué:* el dato se duplica, las copias divergen y un cambio (teléfono, taxonomía) deja versiones viejas olvidadas por el sitio. Rompe la SSoT y vuelve imposible la homologación.
-- **Hardcodear `wa.me/<número>`.** *Porqué:* viola D4; cambiar de WhatsApp obliga a un *find-and-replace* frágil que deja números muertos. Usa `waUrl()`.
-- **Dejar centinelas DEMO en producción.** *Porqué:* es el peor fallo posible —un teléfono falso de cara al cliente—. El gate de `grep` existe precisamente porque la memoria humana no es confiable a escala.
-- **Aplanar referencias de tokens (sin `outputReferences:true`).** *Porqué:* pierdes la cadena `var()` semántica; el CSS de salida queda con valores resueltos y la cascada multi-marca deja de ser mantenible.
-- **Fallback hex de marca equivocada en `var(--c-…, #xxxxxx)`.** *Porqué:* si el token falla, el sitio se pinta con el color de otro cliente. Bomba de tiempo silenciosa.
-- **Mergear un cambio en un componente compartido sin pixel-diff.** *Porqué:* en una flota, ese cambio rompe N sitios a la vez y te enteras por las quejas, no por el CI.
-- **Medir Lighthouse con una sola corrida.** *Porqué:* el ruido de una medición aislada produce falsos positivos/negativos; por eso `runs:3` y promedio.
-- **“Arreglar” el estilo scoped ausente moviendo CSS a global.** *Porqué:* no había bug —solo faltaba reiniciar `astro dev`—; ensucias la cascada global y creas deuda real para resolver un fantasma.
-
----
-
-## 16. Conclusiones
-
-Homologar una flota de sitios no consiste en “tener cuidado”, sino en **diseñar el sistema para que el cuidado sea innecesario**. La fuente única de verdad reduce el sitio nuevo a tres zonas editables; los design tokens en formato W3C DTCG —estable desde octubre de 2025— con Style Dictionary y `outputReferences:true` permiten cambiar de marca sin tocar componentes; la biblioteca de un-componente-por-tipo homologa el diseño y elimina por construcción el CSS duplicado y el fantasma del estilo scoped; y las compuertas de CI compartidas convierten cada “acuérdate de…” en un “falla si…” que ningún sitio puede saltarse.
-
-La conclusión operativa es contundente: **el QA manual no escala y la regresión de un componente compartido puede romper N sitios**, así que el control de calidad tiene que ser automático, compartido y bloqueante —pixel-diff por story antes de mergear, gate de centinelas demo, chequeo de enlaces y presupuestos de rendimiento—. La calidad pasa de ser un acto de voluntad a ser una propiedad garantizada del pipeline.
-
----
-
-## 17. Recomendaciones finales
-
-1. **Trata la base compartida como un producto versionado.** SemVer + Changesets: cada sitio fija su versión y migra deliberadamente. Nunca dejes que un *breaking change* se cuele en treinta producciones.
-2. **Haz bloqueantes las compuertas, no opcionales.** Un check que se puede ignorar no protege. `astro check`, gate demo, link checker, regresión visual, a11y y Lighthouse deben **fallar el deploy**.
-3. **Migra a tokens DTCG y aprovecha `outputReferences:true`.** Es el estándar estable; preservar las referencias semánticas es lo que mantiene la cascada multi-marca viva.
-4. **Salda el puente de tokens como deuda planificada.** Mientras coexista `--color-*` ↔ `--c-*`, prohíbe que el código nuevo use la familia heredada y persigue los fallbacks hex de marca con un centinela en CI.
-5. **Reusar antes que crear.** Convierte “¿puedo cubrir esto con una prop?” en el primer reflejo de cualquiera que toque la biblioteca.
-6. **Mide la flota, no solo el sitio.** 0 enlaces rotos, 0 centinelas demo, cobertura de stories, tiempo de alta y drift visual te dicen si la homologación se mantiene o se está erosionando.
-7. **Usa el “Modo guía” como onboarding vivo.** La documentación que se ejecuta dentro del producto es la más difícil de ignorar y la que más reduce el error del recién llegado.
+> Documento vivo. La homologación se mide por lo que evita, no por lo que produce. Relacionado: `01` (arquitectura) · `02` (SEO) · `03` (contenido) · `05` (fábrica).

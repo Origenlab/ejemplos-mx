@@ -1,379 +1,280 @@
-> Título SEO: Arquitectura Astro + Markdown para escalar a cientos de páginas y docenas de sitios
+> Título SEO: Arquitectura Astro + Markdown para escalar a cientos de páginas y decenas de sitios
 
 # Arquitectura Profesional de Sitios Web con Astro y Markdown para Escalamiento Masivo
 
 ## Introducción ejecutiva
 
-Esta guía documenta la arquitectura real del repositorio `EJEMPLOS` (la plantilla base de Ejemplos.mx) y explica, decisión por decisión, por qué está construida así. No es una introducción genérica a Astro: cada patrón que describimos abajo está respaldado por un archivo concreto del proyecto —`astro.config.mjs`, `src/content.config.ts`, `src/config/site.ts`, `src/layouts/BaseLayout.astro`, `src/layouts/PageLayout.astro` y `src/components/CategoryCard.astro`— y la justificación de cada elección apunta a un problema medible que esa elección evita. El objetivo del documento es doble: que un desarrollador nuevo entienda la lógica del sistema en una sola lectura, y que un PM pueda razonar sobre los costos y los cuellos de botella antes de comprometer un cronograma.
+Hay dos formas de construir cien sitios. Una es construir un sitio cien veces. La otra es construir un sistema una vez y alimentarlo cien veces con datos distintos. Esta guía trata de la segunda, y lo hace sin teoría de catálogo: cada decisión que vas a leer está tomada en un repositorio que existe —`ejemplos-mx`, la plantilla base de Ejemplos.mx—, que compila en poco más de un segundo y se publica solo en Cloudflare Pages en cada *push*. Cuando algo aquí suene a regla, es porque ya pagamos el costo de no seguirla.
 
-El contexto de 2026 importa para entender por qué apostamos por este stack. En enero de 2026 **Cloudflare adquirió Astro**, lo que alinea el framework con la plataforma de edge donde este repositorio ya publica (Cloudflare Pages). Esa noticia no es trivia: refuerza que la combinación Astro estático + CDN de Cloudflare es una apuesta de largo plazo y no una moda. A nivel técnico, la pieza que hace viable el "escalamiento masivo" del título es el **Content Layer API**: su loader de contenido está diseñado para soportar **decenas de miles de entradas** por colección sin degradar el build, lo que convierte a Markdown —no a una base de datos ni a un CMS headless— en la fuente de verdad por defecto del contenido editorial.
+La pregunta que organiza el documento no es "¿cómo se usa Astro?", sino una más incómoda: **¿qué pasa cuando este proyecto tenga trescientas páginas y dieciocho sitios hermanos, y quien lo mantenga no seas tú?** Esa pregunta separa las decisiones bonitas de las que aguantan. Un componente elegante que solo entiende su autor es deuda. Un esquema que valida en *build-time* y revienta el deploy con un mensaje claro es un colega que nunca se cansa.
 
-La tesis de la guía es simple de enunciar y exigente de cumplir: **se escala separando responsabilidades** (documento, chrome, tipo de página), **centralizando los datos en una única fuente de verdad** y **validando el contenido en build-time con esquemas cerrados**. Cuando esas tres disciplinas se mantienen, agregar la página número 300 cuesta lo mismo que agregar la número 3, y clonar el sistema para un sitio nuevo es copiar una plantilla y reemplazar datos, no reescribir código. Cuando se rompen —un dato duplicado aquí, un `category` de texto libre allá— el sistema se fragmenta y el costo de mantenimiento crece de forma no lineal. Todo lo que sigue es la mecánica de mantener esa disciplina.
+El contexto de 2026 le da peso a la apuesta. En enero, **Cloudflare compró Astro**: el framework y la plataforma de borde donde ya publicamos quedaron bajo el mismo techo. No es trivia de newsletter; es la señal de que "Astro estático sobre CDN" dejó de ser moda para volverse infraestructura. Y debajo, la pieza que hace literal la palabra "masivo" del título es el **Content Layer API**, cuyo *loader* está diseñado para decenas de miles de entradas por colección sin que el build se arrodille. Eso convierte a Markdown —no a una base de datos, no a un CMS de pago— en la fuente de verdad del contenido. La tesis cabe en una línea y cuesta una carrera cumplirla: *se escala separando responsabilidades, centralizando los datos y validando en build-time con esquemas cerrados.*
 
 ## Tabla de contenido
 
-1. [Jerarquía de layouts: por qué evitamos el "god layout"](#1-jerarquia-de-layouts-por-que-evitamos-el-god-layout)
-2. [Composición data-driven con fuente única de verdad](#2-composicion-data-driven-con-fuente-unica-de-verdad)
+1. [La jerarquía de layouts y por qué el "god layout" es deuda](#1-la-jerarquía-de-layouts-y-por-qué-el-god-layout-es-deuda)
+2. [Composición data-driven: una sola fuente de verdad](#2-composición-data-driven-una-sola-fuente-de-verdad)
 3. [Content Collections con el Content Layer API](#3-content-collections-con-el-content-layer-api)
-4. [Markdown vs MDX: cuándo y por qué](#4-markdown-vs-mdx-cuando-y-por-que)
-5. [Ruteo: getStaticPaths y `[...slug]`](#5-ruteo-getstaticpaths-y-slug)
-6. [SSG estático en CDN como modo por defecto](#6-ssg-estatico-en-cdn-como-modo-por-defecto)
-7. [Disciplina de islas: cero JS por defecto](#7-disciplina-de-islas-cero-js-por-defecto)
-8. [Pipeline de imágenes y el gotcha de Cloudflare/Sharp](#8-pipeline-de-imagenes-y-el-gotcha-de-cloudflaresharp)
-9. [Prefetch, view transitions y alias duplicados](#9-prefetch-view-transitions-y-alias-duplicados)
-10. [Análisis de escalabilidad](#10-analisis-de-escalabilidad)
+4. [Markdown por defecto, MDX por excepción](#4-markdown-por-defecto-mdx-por-excepción)
+5. [Ruteo: getStaticPaths y el patrón `[...slug]`](#5-ruteo-getstaticpaths-y-el-patrón-slug)
+6. [Estático sobre CDN: el default que casi nadie cambia bien](#6-estático-sobre-cdn-el-default-que-casi-nadie-cambia-bien)
+7. [Disciplina de islas: cero JavaScript hasta ganárselo](#7-disciplina-de-islas-cero-javascript-hasta-ganárselo)
+8. [Imágenes y el gotcha de Cloudflare/Sharp](#8-imágenes-y-el-gotcha-de-cloudflaresharp)
+9. [Prefetch, transiciones y los alias que viven por duplicado](#9-prefetch-transiciones-y-los-alias-que-viven-por-duplicado)
+10. [Análisis de escalabilidad: dónde se rompe esto](#10-análisis-de-escalabilidad-dónde-se-rompe-esto)
 11. [Casos de uso](#11-casos-de-uso)
-12. [Buenas prácticas](#12-buenas-practicas)
-13. [Errores comunes y su porqué](#13-errores-comunes-y-su-porque)
-14. [Procedimiento: añadir una colección nueva](#14-procedimiento-anadir-una-coleccion-nueva)
-15. [Checklist accionable](#15-checklist-accionable)
+12. [Buenas prácticas](#12-buenas-prácticas)
+13. [Errores comunes y su porqué](#13-errores-comunes-y-su-porqué)
+14. [Procedimiento: añadir una colección de cero](#14-procedimiento-añadir-una-colección-de-cero)
+15. [Checklist de arquitectura](#15-checklist-de-arquitectura)
 16. [KPIs e indicadores de calidad](#16-kpis-e-indicadores-de-calidad)
 17. [Conclusiones](#17-conclusiones)
 18. [Recomendaciones finales](#18-recomendaciones-finales)
 
 ---
 
-## 1. Jerarquía de layouts: por qué evitamos el "god layout"
+## 1. La jerarquía de layouts y por qué el "god layout" es deuda
 
-El antipatrón que esta arquitectura combate primero es el **"god layout"**: un único `Layout.astro` que arma el `<head>`, pinta el header y el footer, calcula el SEO, decide el JSON-LD y además contiene condicionales para distinguir si la página es un producto, un artículo o el contacto. Ese archivo crece sin techo, mezcla responsabilidades que cambian a ritmos distintos y vuelve riesgoso cualquier ajuste, porque tocar el `<head>` puede romper el footer. La alternativa que usamos es una **cadena de herencia con responsabilidad única en cada eslabón**: `BaseLayout` → `PageLayout` → `{Product,Service,Article}Layout`.
+Casi todos los proyectos Astro empiezan con un solo `Layout.astro`, y casi todos lo lamentan al sexto mes. Ese archivo arranca inocente —el `<head>`, un *slot*— y termina decidiendo si la página es un producto o un artículo con una escalera de condicionales, calculando el JSON-LD a mano y pintando el header. Crece sin techo porque cada necesidad nueva cae donde hay un `<slot/>`. El problema no es el tamaño: es que **mezcla responsabilidades que cambian a ritmos distintos**. El `<head>` cambia cuando cambia la estrategia SEO; el footer, cuando marketing pide un enlace; el bloque de producto, cuando evoluciona el catálogo. Si los tres viven juntos, tocar uno arriesga a los otros. Eso es deuda disfrazada de conveniencia.
 
-`BaseLayout.astro` es la raíz y su única responsabilidad es **el documento HTML y su cabeza**: arma el `<!doctype html>`, el `<head>` completo (title, description, canonical, robots, Open Graph, Twitter, iconos) y emite el grafo JSON-LD. No conoce el header ni el footer; de hecho su comentario de cabecera lo declara explícitamente: *"Este archivo NO incluye Header/Footer: solo arma el documento HTML, el `<head>` completo y el JSON-LD."* El SEO no se calcula a mano: delega en una librería central (`@lib/seo`) que resuelve título y descripción a partir de una tripleta de keywords cuando la página la declara:
+La alternativa es una **cadena de herencia con una responsabilidad por eslabón**:
+
+```text
+BaseLayout            → el documento y su <head> (SEO, JSON-LD, OG, fuentes)
+  └─ PageLayout       → el "chrome": Header, Footer, Breadcrumbs, WhatsAppFloat
+       ├─ ProductLayout   → ficha de producto + schema Product/Offer
+       ├─ ServiceLayout   → ficha de servicio + schema Service
+       └─ ArticleLayout   → artículo + schema Article
+```
+
+`BaseLayout` no sabe que existe un header; su propio comentario lo declara: *"NO incluye Header/Footer: solo arma el documento, el `<head>` y el JSON-LD."* Y no calcula SEO a mano —delega en `@lib/seo`, que resuelve título y descripción desde una tripleta de keywords cuando la página la declara—:
 
 ```astro
-// src/layouts/BaseLayout.astro — la cabeza delega el SEO a lib/seo, no lo improvisa
-const hasKw = Array.isArray(keywords) && keywords.length > 0;
+// src/layouts/BaseLayout.astro — la cabeza delega el SEO, no lo improvisa
 const resolvedTitle = hasKw ? buildKeywordTitle(keywords!) : title;
 const resolvedDescription = hasKw
   ? buildKeywordDescription(keywords!, description ?? SITE.seo?.description ?? "")
   : description;
-
-// SEO centralizado: metas resueltas (title ≤60, description ≤160, canonical abs).
-const meta = buildMeta({ title: resolvedTitle, description: resolvedDescription, canonical: path, image, type: ogType, noindex });
-
-// JSON-LD por tipo de página (firma posicional: pageType, schemaData).
-const jsonLd = buildSchema(pageType, schemaData);
 ```
 
-Esto está **bien** por una razón concreta: el `<title>` con cap de 60 caracteres y el canonical absoluto son reglas que deben cumplirse en cada una de las cientos de páginas. Codificarlas una vez en `buildMeta`/`buildSchema` y heredarlas elimina la posibilidad de que la página 200 olvide el canonical o exceda el límite del título. La cabeza también expone un `<slot name="head" />` para que las hijas inyecten un `<head>` puntual (por ejemplo, el preload de la imagen LCP) sin tener que tocar la raíz.
+Esto importa por una razón concreta: el `<title>` con tope de 60 caracteres y el canonical absoluto son reglas que deben cumplirse en **cada una** de las cientos de páginas. Codificarlas una vez y heredarlas elimina la posibilidad de que la página 200 olvide el canonical. Hay un detalle fino que vale subrayar: el `BreadcrumbList` del JSON-LD lo emite la librería de schema **una sola vez**, no el componente visual `Breadcrumbs`. Si ambos lo emitieran, habría dos `BreadcrumbList` en la página y Google reportaría datos estructurados duplicados. Es el tipo de decisión que no se ve y que evita un dolor de cabeza silencioso.
 
-`PageLayout.astro` añade el **chrome estándar** —lo que comparten casi todas las páginas— y nada más: `TopBar`, `Header`, `Breadcrumbs` opcionales, `<main>`, `Footer` y el botón flotante de WhatsApp. Extiende `BaseLayout` pasándole props; no reimplementa la cabeza. Un detalle de arquitectura que merece subrayarse: el `BreadcrumbList` del JSON-LD lo emite `buildSchema` **una sola vez**, no el componente visual `Breadcrumbs`. El comentario lo justifica como anti-patrón confirmado en otros proyectos: si el componente visual también emitiera su propio JSON-LD, habría dos `BreadcrumbList` en la misma página y Google reportaría datos estructurados duplicados.
+La regla para decidir dónde va algo es una pregunta: *¿con qué frecuencia, y por qué razón, cambia?* Si cambia por el documento (un `<meta>`), vive en `BaseLayout`. Si cambia por la navegación (un enlace de footer), en `PageLayout`. Si cambia por un tipo de contenido, en su layout-tipo. Mantener esa brújula es lo que evita que la cadena vuelva a colapsar en un god layout dentro de un año.
 
-```astro
-// src/layouts/PageLayout.astro — extiende BaseLayout y solo añade el marco
-<BaseLayout {...baseProps} schemaData={schemaData}>
-  <TopBar guia />
-  <Header />
-  {breadcrumbs.length > 0 && <Breadcrumbs items={breadcrumbs} />}
-  <main id="main-content"><slot /></main>
-  <Footer />
-  <WhatsAppFloat />
-</BaseLayout>
-```
+Una advertencia honesta que esta misma arquitectura nos enseñó: tener layouts-tipo no sirve de nada si ninguna ruta los usa. En el repo, `ServiceLayout` y `ArticleLayout` existen, están bien escritos… y no los importa nadie, porque `/servicios` y `/blog` aún no se construyeron. Es código dormido que *aparenta* una capacidad que el sitio no entrega. **Un layout sin ruta que lo active es una promesa, no una característica.**
 
-El tercer nivel —`ProductLayout`, `ServiceLayout`, `ArticleLayout`— extiende `PageLayout` y aporta lo específico de cada tipo de entidad (la ficha de producto con su schema `Product+Offer`, el artículo con su `Article`, etc.). El beneficio neto de los tres niveles es que **cada cambio toca el eslabón correcto**: ajustar Open Graph se hace en `BaseLayout`; cambiar el menú se hace en `PageLayout`; rediseñar la ficha de producto se hace en `ProductLayout`, sin riesgo de tocar lo demás.
+## 2. Composición data-driven: una sola fuente de verdad
 
-```
-BaseLayout.astro          → <html>, <head>, SEO (buildMeta), JSON-LD (buildSchema)
-   └── PageLayout.astro    → TopBar · Header · Breadcrumbs · <main> · Footer · WhatsAppFloat
-          ├── ProductLayout.astro   → ficha de producto + schema Product/Offer
-          ├── ServiceLayout.astro   → ficha de servicio + schema Service
-          └── ArticleLayout.astro   → artículo + schema Article
-```
+Si un solo principio justifica llamar a esto "sistema" y no "sitio", es la **fuente única de verdad (SSoT)**, y está escrita con todas sus letras en la cabecera de `site.ts`: *"Todo dato que aparezca en más de una página vive aquí… Nada se hardcodea en componentes ni páginas."* Cubre marca, contacto (NAP), taxonomías, mensajes de WhatsApp y la navegación.
 
-## 2. Composición data-driven con fuente única de verdad
-
-El segundo pilar es la **fuente única de verdad (SSoT)**. La regla es dura y está escrita en la cabecera de `src/config/site.ts`: *"Todo dato que aparezca en más de una página vive aquí... Nada de esto se hardcodea en componentes ni páginas — se importa desde este archivo."* Esto cubre identidad de marca, contacto (NAP), taxonomías, mensajes de WhatsApp y, crucialmente, la **navegación**.
-
-El caso más ilustrativo es el menú. En muchos proyectos el header y el footer mantienen listas de enlaces separadas que inevitablemente se desincronizan. Aquí existe un único arreglo `NAV` que alimenta los dos menús (escritorio y móvil) y sus paneles desplegables, y ese `NAV` no escribe los enlaces a mano: los **deriva de la taxonomía**, de modo que agregar una categoría en un solo lugar actualiza el menú entero sin tocar el componente:
+El caso que mejor lo ilustra es el menú. En muchos proyectos, header y footer mantienen listas de enlaces separadas que se desincronizan sin remedio. Aquí hay un único arreglo `NAV` que alimenta ambos menús y sus paneles, y que **deriva los enlaces de la taxonomía** en vez de teclearlos:
 
 ```ts
 // src/config/site.ts — una sola fuente alimenta header, footer y menú móvil
-export const NAV: readonly NavItem[] = [
-  {
-    label: 'Productos', href: '/productos/', panel: 'mega',
-    allLabel: 'Ver catálogo completo',
-    items: PRODUCT_CATEGORIES.map((c) => ({ label: c.label, href: c.href })),
-  },
-  {
-    label: 'Servicios', href: '/servicios/', panel: 'dropdown',
-    items: SERVICES.map((s) => ({ label: s.label, href: `/servicios/${s.id}/`, desc: s.desc })),
-  },
-  // Sectores: aparece SOLO si hay datos en TAXONOMY.sectors (hoy vacío → oculto).
-  ...(SECTORS.length > 0 ? [{ label: 'Sectores', href: '/sectores/', /* … */ }] : []),
+export const NAV = [
+  { label: 'Productos', href: '/productos/', panel: 'mega',
+    items: PRODUCT_CATEGORIES.map((c) => ({ label: c.label, href: c.href })) },
+  { label: 'Servicios', href: '/servicios/', panel: 'dropdown',
+    items: SERVICES.map((s) => ({ label: s.label, href: `/servicios/${s.id}/` })) },
+  // "Sectores" aparece SOLO si TAXONOMY.sectors tiene datos (hoy vacío → oculto):
+  ...(SECTORS.length > 0 ? [{ label: 'Sectores', href: '/sectores/' }] : []),
   { label: 'Blog', href: '/blog/' },
   { label: 'Contacto', href: '/contacto/' },
 ];
 ```
 
-Hay una sutileza de calidad en ese fragmento que conviene nombrar: el menú **no muestra desplegables vacíos**. La entrada "Sectores" solo se agrega al array si `TAXONOMY.sectors` tiene elementos. Esto está bien porque evita un menú con una categoría hueca cuando un sitio cliente no atiende sectores; el dato gobierna la UI, no al revés.
+Fíjate en una sutileza de calidad: el menú **no muestra desplegables vacíos**. "Sectores" solo entra al array si hay datos. El dato gobierna la UI, no al revés. Y hay una **regla dura** —la D4— que prohíbe escribir `wa.me/<número>` en cualquier página o componente: todo enlace de WhatsApp se arma con `waUrl()`, que toma el número de `CONTACT.whatsapp`. No es purismo; es que el día que el cliente cambie de número, queremos editar un campo, no cazar quince coincidencias.
 
-La SSoT también impone un **contrato de claves exactas**. El mismo archivo advierte que renombrar una clave (`SITE.seo`, `CONTACT.phoneRaw`, `TAXONOMY.categories`) rompe el JSON-LD o el chrome aguas abajo, porque la librería de schema y los componentes las consumen por nombre. Para no partir ese contrato, las taxonomías se re-exportan como alias planos (`PRODUCT_CATEGORIES = TAXONOMY.categories`) que los componentes importan directamente: es la **misma data**, expuesta con el nombre que cada consumidor espera, sin duplicarla.
-
-Del lado de componentes, la disciplina es la imagen espejo: un componente **pinta lo que recibe y no inventa datos**. `CategoryCard.astro` lo dice en su cabecera —*"El componente no inventa datos: solo pinta lo que recibe (con demo por defecto para poder renderizar suelto)"*— y la home le pasa cada objeto del arreglo `SHOWCASE`. Para añadir o quitar una tarjeta se edita ese arreglo en `site.ts`; la home se regenera sola.
+> **Anécdota de campo.** Construyendo "Por qué elegirnos" caímos en la tentación de hacer un componente nuevo, bonito, con su CSS a medida. Funcionaba. Y desentonaba, porque inventaba un diseño que el catálogo ya resolvía. Lo correcto era reusar el componente aprobado (`CategoryCard`) y borrar el bespoke. Resultado: **−143 líneas**, diseño homologado, y un bug menos (los estilos de un componente nuevo no se inyectan en `dev` hasta reiniciar el servidor). La SSoT no es solo para datos: *reusar antes que inventar* es su versión visual.
 
 ## 3. Content Collections con el Content Layer API
 
-Toda entidad repetible —producto, servicio, artículo, zona, caso de éxito— vive en una **Content Collection** con esquema Zod, nunca hardcodeada en un `.astro`. La regla canónica del proyecto (marcada como "D1/D3" en los comentarios) es explícita al respecto, y el motor es el **Content Layer API** de Astro, que carga el contenido mediante un *loader*. Aquí se usa el loader `glob()`, que toma todos los archivos que cumplen un patrón dentro de una carpeta:
+Aquí vive la mejor ingeniería del repositorio. Una **colección** es una carpeta de Markdown cuyo *frontmatter* se valida contra un esquema Zod antes de compilar. El registro único está en `src/content.config.ts`, y cada colección se carga con el *loader* `glob()`:
 
 ```ts
-// src/content.config.ts — loader glob() + esquema Zod .strict()
 const productos = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/productos' }),
   schema: z.object({
     title: z.string().min(10).max(110),
     description: z.string().min(70).max(280),
-    category: z.enum(PRODUCT_CATEGORIES),     // enum CERRADO
-    image: imagePath,                          // imagen OBLIGATORIA: regex ^/images/
-    relatedProducts: z.array(reference('productos')).optional(), // interlinking tipado
-    relatedServices: z.array(reference('servicios')).optional(),
-    featured: z.boolean().default(false),
+    category: z.enum(PRODUCT_CATEGORIES),                 // vocabulario CERRADO
+    image: imagePath,                                     // obligatoria: regex ^/images/
+    relatedProducts: z.array(reference('productos')).optional(),  // interlinking tipado
     order: z.number().default(0),
     draft: z.boolean().default(false),
-    ...seoFields,
-  }).strict(),   // rechaza campos desconocidos
+  }).strict(),                                            // rechaza campos desconocidos
 });
 ```
 
-Tres decisiones de este esquema son load-bearing y cada una corrige un problema documentado:
+Tres decisiones de ese esquema son las que separan "funciona" de "aguanta", y cada una corrige un problema real:
 
-**`.strict()` en cada colección.** Hace que Zod rechace cualquier campo desconocido en el frontmatter. El comentario lo justifica con un caso real: antes, un campo mal escrito como `hero_image:` se ignoraba en silencio en 16 archivos. Con `.strict()`, ese error se convierte en un fallo de build inmediato en vez de un dato perdido que nadie nota hasta producción. Esto es **correcto** porque convierte un error silencioso en uno ruidoso, que es el único tipo de error barato de arreglar.
+- **`.strict()`** hace que un frontmatter mal escrito —`titel:` por `title:`— **rompa el build** en vez de ignorarse. El comentario del repo cuenta el caso que lo motivó: un `hero_image:` mal tecleado se ignoró en silencio en dieciséis archivos. Con cinco fichas eso es comodidad; con trescientas es la diferencia entre un error atrapado en CI y un campo vacío que descubre un cliente.
+- **`z.enum()`** en `category` cierra el vocabulario. Sin él, alguien escribe `"Guías"` y alguien más `"Guias"`, y SEO ve dos categorías distintas que reparten su autoridad entre dos URLs. El enum convierte esa fuga en un error de compilación. Es, probablemente, la decisión con más impacto SEO de todo el archivo.
+- **`reference()`** liga colecciones por slug y **el build valida que el destino exista**. Si un artículo referencia un producto borrado, el deploy falla en vez de publicar un enlace roto.
 
-**`category` como `z.enum()` cerrado, nunca `z.string()` libre.** Esta es la decisión con más impacto SEO de todo el archivo. El comentario cita el daño del texto libre: *"string libre generó 13 variantes tipográficas; INFLAPY tuvo 'Guias' vs 'Guías' como categorías distintas → SEO fragmentado."* Un enum cerrado garantiza que todos los productos de una categoría compartan exactamente el mismo slug, de modo que la landing de categoría agrega toda su autoridad en una sola URL en lugar de repartirla entre variantes. La afirmación "esto está mal" para `z.string()` se justifica con esa fragmentación medible.
-
-**`reference()` entre colecciones.** El interlinking (`relatedProducts`, `relatedServices`) no es texto libre: es una referencia **tipada por slug** a otra colección. Astro valida en build que el destino exista. Si un artículo referencia un producto que se borró, el build falla en vez de generar un enlace roto en producción. Esto es lo que convierte el grafo de enlaces internos en algo verificable.
-
-El esquema también reutiliza piezas (`heroSchema`, `faqSchema`, `seoFields`) compartidas entre colecciones, lo que mantiene consistente, por ejemplo, el cap de 60/160 caracteres de los campos SEO en productos, servicios, artículos y zonas a la vez. Para renderizar el cuerpo Markdown de una entrada se usa `render()` (el método que devuelve el componente `Content`), y aquí aparece uno de los **hechos de 2025-2026 más importantes de operar a escala**: el orden de `getCollection()` es **no determinista**. Nunca debe asumirse que las entradas llegan ordenadas por fecha o por nombre; siempre hay que aplicar `.sort()` explícito antes de pintarlas. Olvidarlo produce listados cuyo orden cambia entre builds sin causa aparente.
+El contenido se consulta con `getCollection()` y se renderiza con `render(entry)`. Y aquí va el detalle que cuesta una tarde de depuración si no lo sabes: **el orden de una colección no es determinista**. Sin `.sort()` explícito, el orden cambia entre tu máquina y el runner de CI. No es manía; es reproducibilidad.
 
 ```ts
-// Patrón obligatorio al consumir una colección: SIEMPRE .sort()
-import { getCollection } from 'astro:content';
 const posts = (await getCollection('articulos', ({ data }) => !data.draft))
   .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 ```
 
-La regla general que cierra esta sección: **usar colecciones de build-time salvo que el dato sea de tiempo real.** Como el Content Layer API soporta decenas de miles de entradas, no hay razón de rendimiento para mover el catálogo a una base de datos consultada en cada request; solo datos genuinamente dinámicos (inventario en vivo, precios que cambian al minuto) justifican salir del build estático.
+Margen de mejora honesto: `reference()` está definido pero las páginas aún arman los "relacionados" por orden de hermanos en la carpeta en vez de seguir la referencia tipada. Funciona, pero consumir `reference()` daría enlaces internos más intencionales y a prueba de que alguien reordene archivos.
 
-## 4. Markdown vs MDX: cuándo y por qué
+## 4. Markdown por defecto, MDX por excepción
 
-La política del repositorio es **`.md` por defecto y `.mdx` solo cuando se necesitan componentes dentro del contenido.** Las colecciones `productos`, `servicios`, `zonas` y `casos` usan `**/*.md`; únicamente `articulos` (el blog) usa `**/*.mdx`, y por eso `@astrojs/mdx` está declarado como integración en `astro.config.mjs` —su comentario aclara que es obligatorio *porque el blog vive en colección `.mdx`* y que si el proyecto no tiene blog se puede quitar la integración y la dependencia.
+La pregunta "¿`.md` o `.mdx`?" tiene un default y una excepción, y confundirlos sale caro en builds. **Markdown plano es el default**: compila a una cadena de HTML, pesa poco y escala a cientos de archivos. **MDX se reserva para cuando una página de contenido necesita componentes o JSX**, porque cada `.mdx` compila a un módulo de JavaScript —pasa por Babel— y, en volumen, el build se resiente. En el repo, `productos`, `servicios`, `zonas` y `casos` son `.md`; solo `articulos` (el blog) es `.mdx`, que es justo donde tiene sentido insertar un callout o un componente dentro del artículo.
 
-El motivo de fondo es de costo. MDX compila cada archivo a un módulo de JavaScript con su árbol de componentes; a gran escala eso **pesa**: más trabajo de compilación por archivo y un bundle mayor. Para una ficha de producto que es prosa más metadatos, ese costo no compra nada, porque la ficha no necesita ejecutar componentes embebidos. Reservar MDX para el blog —donde sí tiene sentido insertar un callout, una tabla compleja o un componente interactivo dentro del artículo— mantiene el catálogo liviano y el build rápido. La afirmación "MDX por defecto está mal" se sostiene precisamente en ese peso incremental que no aporta valor en el 90% de las páginas.
-
-| Criterio | Markdown (`.md`) | MDX (`.mdx`) |
-| --- | --- | --- |
-| Sintaxis | Markdown puro + frontmatter | Markdown + JSX/componentes |
-| Costo de compilación | Bajo (parseo de texto) | Alto (compila a módulo JS) |
-| Peso en el bundle | Mínimo | Mayor; crece con el nº de archivos |
-| Componentes embebidos | No | Sí |
+| | Markdown (`.md`) | MDX (`.mdx`) |
+|---|---|---|
+| Compila a | Cadena HTML | Módulo JS (JSX, vía Babel) |
+| Costo de build a escala | Bajo y plano | Crece con el nº de archivos |
+| Componentes en el cuerpo | No | Sí |
 | Uso en este repo | productos, servicios, zonas, casos | solo `articulos` (blog) |
-| Cuándo elegirlo | Contenido editorial estándar | Cuando el contenido necesita UI propia |
-| A escala (cientos de páginas) | Escala sin fricción | Vigilar tiempo de build y peso |
+| Default recomendado | **Sí** | Solo por excepción justificada |
 
-La recomendación operativa: empieza toda colección nueva en `.md`. Solo migra una colección (o un subconjunto de archivos) a `.mdx` cuando aparezca una necesidad concreta de componentes en el cuerpo, y asume conscientemente el costo de build a cambio.
+Dos cosas que la gente olvida: GitHub-Flavored Markdown y SmartyPants ya vienen **encendidos** (no agregues `remark-gfm`), y el resaltado de código (Shiki) es de cero JavaScript de fábrica.
 
-## 5. Ruteo: getStaticPaths y `[...slug]`
+## 5. Ruteo: getStaticPaths y el patrón `[...slug]`
 
-Como el sitio es estático, todas las URLs de las entradas se generan en build con `getStaticPaths()`. El patrón estándar para una colección es una página dinámica que mapea cada entrada a una ruta y entrega su contenido renderizado. El parámetro rest `[...slug]` permite además rutas anidadas (subcarpetas dentro de `src/content/...`), útil cuando el contenido tiene jerarquía:
+El ruteo por archivos de Astro es engañosamente simple, y su trampa favorita es creer que porque existe un archivo de contenido ya hay una página. No la hay hasta que una ruta lo genera:
 
 ```astro
----
-// src/pages/productos/[...slug].astro — una ruta por entrada de la colección
-import { getCollection, render } from 'astro:content';
-import ProductLayout from '@layouts/ProductLayout.astro';
-
+// src/pages/productos/[...slug].astro — una ruta de 10 líneas genera N páginas
 export async function getStaticPaths() {
   const productos = await getCollection('productos', ({ data }) => !data.draft);
-  return productos.map((p) => ({ params: { slug: p.id }, props: { entry: p } }));
+  return productos.map((p) => ({ params: { slug: p.id }, props: { p } }));
 }
-
-const { entry } = Astro.props;
-const { Content } = await render(entry);   // render() devuelve el componente del cuerpo .md
----
-<ProductLayout title={entry.data.title} description={entry.data.description}
-               pageType="product" schemaData={{ product: entry.data }}>
-  <Content />
-</ProductLayout>
+const { Content } = await render(Astro.props.p);
 ```
 
-Lo importante para la escalabilidad es que **una sola página dinámica genera N rutas**: añadir un producto es añadir un `.md`, no crear un archivo de página. El cuello de botella aparece cuando una landing de categoría o un slug esperado no tiene su página dinámica correspondiente —volvemos sobre esto en el análisis de escalabilidad— porque ahí sí faltan rutas que ningún `.md` puede crear por sí solo.
+Esa es la palanca del escalamiento: la cantidad de páginas la decide el contenido, no el código. Conviene extraer el filtro `!data.draft` a un helper compartido (`publishedFilter`) para que "qué se publica" viva en un solo lugar.
 
-## 6. SSG estático en CDN como modo por defecto
+La cara dura de la moneda, y un defecto real que la auditoría destapó: el ruteo es correcto donde existe, pero **la nav, el footer y los CTA enlazan a `/servicios`, `/blog`, `/contacto` y `/cobertura`, que aún no tienen ruta**. El sitio compila cinco páginas y anuncia diez. El daño está acotado —el `sitemap` solo lista lo que existe, así que Google no recibe los enlaces muertos—, pero un visitante que hace clic cae en un 404, y eso erosiona algo que se vende como "listo para producción". La moraleja: **un enlace en la nav es un contrato; o existe la página, o no existe el enlace.**
 
-El modo de salida por defecto es **estático** (`output: 'static'`), sin adapter de servidor. La configuración lo declara y lo subraya en su comentario: *"NO agregar adapter: SSG."* El sitio se compila a HTML/CSS/JS plano y se publica en la CDN de Cloudflare. Tres propiedades de `astro.config.mjs` definen esta postura:
+## 6. Estático sobre CDN: el default que casi nadie cambia bien
 
-```js
-// astro.config.mjs — postura SSG canónica
-export default defineConfig({
-  site: 'https://ejemplos.mx',  // URL canónica con protocolo, SIN slash final
-  output: 'static',             // SSG: nada de adapter de servidor
-  trailingSlash: 'never',       // canonical normalizado sin slash final
-  integrations: [sitemap(sitemapOptions), mdx()],
-  // …
-});
-```
+Astro sale en modo `'static'` y, para una flota de sitios de negocio local, ahí debería quedarse: HTML servido desde el borde es lo más rápido (no hay cómputo por request), lo más barato (no hay servidor que escalar) y lo más resiliente (una página estática no se cae por un pico de tráfico). El config lo subraya: `output: 'static'`, `trailingSlash: 'never'` y la política de slash **espejada** en `site.ts` para que el servidor y la app no se contradigan.
 
-Por qué esto es lo correcto por defecto: el HTML pre-construido servido desde el edge tiene la menor latencia posible (no hay cómputo por request), el menor costo operativo (no hay servidor que escalar) y la mayor resiliencia (una página estática no se cae por un pico de tráfico). El `site` correcto más `trailingSlash: 'never'` garantizan un canonical normalizado y consistente en todo el sitio, evitando el duplicado clásico de `/pagina` vs `/pagina/`. La política de `trailingSlash` está deliberadamente **espejada** entre `astro.config.mjs` y `site.ts` (`SITE.trailingSlash`) para que el config del servidor y la lógica de la app no se contradigan.
+Un detalle de criterio que merece una mención porque va contra la intuición: el sitemap **omite `lastmod` a propósito**. Poner `new Date()` en cada build hace que Google deje de confiar en ese campo en todo el sitio. Un `lastmod` que miente es peor que ninguno; más metadatos no siempre es mejor. La sofisticación, cuando llega, es quirúrgica: si una ruta concreta necesita render bajo demanda, se opta *esa* página con `export const prerender = false`, no el sitio entero.
 
-El sitemap se genera como integración con prioridades por tipo de página (home 1.0, landings de categoría 0.9, fichas 0.8, blog 0.6) y un detalle de criterio que vale la pena citar: **se omite `lastmod` a propósito**, porque poner `new Date()` en cada build hace que Google deje de confiar en ese campo en todo el sitio. Es un ejemplo de que "más metadatos" no siempre es mejor: un `lastmod` que miente es peor que ninguno.
+## 7. Disciplina de islas: cero JavaScript hasta ganárselo
 
-## 7. Disciplina de islas: cero JS por defecto
+Astro no envía JavaScript de framework a menos que lo pidas con una directiva `client:*`. Esta plantilla lo lleva al extremo correcto: una búsqueda de `client:` en todo el repo da **cero** resultados. La única interactividad —menú, acordeón del FAQ, formulario de WhatsApp— son scripts vanilla diminutos. Para un sitio de catálogo, eso es óptimo: el mejor *Total Blocking Time* y el mejor *INP* posibles son los que se obtienen cuando no hay JS que bloquee.
 
-Astro envía **cero JavaScript al cliente por defecto**; cada componente es HTML estático salvo que se le indique explícitamente lo contrario con una directiva `client:*`. Esa es la base del rendimiento del stack, y la disciplina del proyecto es mantenerla: hidratar solo lo que de verdad necesita interactividad, y hacerlo con la directiva más barata posible.
+Cuando la interactividad sea genuina, la regla es hidratar con la directiva más barata que funcione: `client:visible` o `client:idle` antes que `client:load`, y nunca hidratar contenido estático. La cita que conviene tatuarse es de los propios docs: *el JavaScript es uno de los activos más lentos que puedes cargar por byte.* Y un detalle del componente real: `CategoryCard` fija `width`/`height` en cada imagen y marca `loading="lazy"` para todo lo que no esté en la primera fila. No es decoración —previene CLS y evita descargar imágenes que el usuario aún no ve—.
 
-La jerarquía de preferencia es: **`client:visible` o `client:idle` antes que `client:load`.** `client:load` hidrata de inmediato y compite con el render inicial; `client:idle` espera a que el navegador esté ocioso; `client:visible` espera a que el componente entre en viewport —ideal para algo que vive en el footer o muy abajo en la página, que quizá el usuario nunca vea. Para contenido personalizado por usuario (un saludo con su nombre, un bloque dependiente de sesión) sin sacrificar el resto del HTML estático, la herramienta correcta son los **Server Islands**, que difieren solo ese fragmento mientras el resto se sirve estático desde el edge.
+## 8. Imágenes y el gotcha de Cloudflare/Sharp
 
-`CategoryCard.astro` es el ejemplo de la postura llevada al extremo sano: es una tarjeta **completamente estática**, sin una sola directiva de hidratación. Su único movimiento es una transición CSS en el hover del botón, y hasta eso respeta `prefers-reduced-motion`. Cero JavaScript para una tarjeta de catálogo es lo correcto porque la tarjeta no tiene estado: mostrarla con JS sería pagar bytes y tiempo de hidratación a cambio de nada.
+La buena práctica de Astro es `<Image>`/`<Picture>` de `astro:assets`: optimiza, fija dimensiones (protege CLS), exige `alt` y genera AVIF/WebP con `srcset`. Pero aquí muerde una trampa específica: **el adapter de Cloudflare no ejecuta Sharp**, el motor de transformación. En Cloudflare Pages, Astro no transforma nada.
 
-```astro
-// src/components/CategoryCard.astro — tarjeta 100% estática, sin client:*
-const eager = index < 4; // las 4 primeras (1.ª fila) cargan imagen sin lazy
-// …
-<img src={image} alt={imageAlt ?? label} width="640" height="400"
-     loading={eager ? "eager" : "lazy"} decoding="async" class="ccard__img" />
-```
+Hay dos salidas legítimas. La primera es `passthroughImageService()`, que conserva las garantías (CLS, `alt`) sin transformar, asumiendo que las imágenes ya vengan optimizadas. La segunda —la que usamos— es **pre-construir los AVIF antes del deploy** con un lote (calidad ≈50, ancho máx 1280 px, EXIF removido) y servirlos desde `public/images/`. Cada foto de tarjeta pesa 40–60 KB en vez de ~800 KB de origen: cerca de un 94% menos. Hay un matiz operativo propio del repo: el lote se corre **en la Mac**, porque el mount FUSE del entorno lanza `EPERM` al convertir dentro del flujo automatizado. Es manual, sí, y por eso la guía de la fábrica (`05`) lo pone como primer candidato a automatizar. La adquisición de Astro por Cloudflare (enero 2026) no cambió esto: el workaround sigue siendo el camino.
 
-Ese `width`/`height` fijo y el `loading="lazy"` para todo lo que no esté en la primera fila no son decoración: previenen CLS (saltos de layout) y evitan descargar imágenes que el usuario aún no ve. Es disciplina de Core Web Vitals aplicada en el componente, no delegada a un plugin.
+Detalle barato y de alto impacto que la auditoría marcó: la imagen Open Graph es un **SVG**, y ni WhatsApp ni Facebook ni LinkedIn renderizan OG en SVG. Cada enlace que se comparte sale sin preview. La corrección es un `og.jpg` raster de 1200×630. Tres minutos; impacto en el CTR de todo lo que se comparta.
 
-## 8. Pipeline de imágenes y el gotcha de Cloudflare/Sharp
+## 9. Prefetch, transiciones y los alias que viven por duplicado
 
-Astro trae un pipeline de imágenes de primera clase vía `astro:assets`: los componentes `<Image>` y `<Picture>` generan automáticamente formatos modernos (**AVIF y WebP**) con `srcset` para servir el tamaño correcto a cada dispositivo. Ese es el camino ideal y es lo que recomendamos para imágenes gestionadas por el build.
+Dos mejoras de bajo costo que el repo aún no aprovecha. **`prefetch`** (estrategia `hover` o por viewport) carga la siguiente página antes del clic; la navegación se siente instantánea por casi nada. Y **`<ClientRouter>`** da transiciones tipo SPA, con un matiz honesto: a medida que los navegadores adopten transiciones nativas entre documentos, esta pieza se volverá cada vez menos necesaria. Es un puente, no un destino.
 
-Pero aquí hay un **gotcha real y específico de este stack** que cualquiera que despliegue en Cloudflare debe conocer: el **adapter de Cloudflare no ejecuta Sharp**, el motor que Astro usa para transformar imágenes en build. Sin Sharp, la optimización automática de `<Image>` no puede correr en el entorno de Cloudflare. Hay dos salidas:
+Nota de mantenimiento que ahorra una tarde: los **alias** (`@components`, `@layouts`, `@config`) viven **por duplicado** —en `tsconfig.json` para TypeScript y en `astro.config.mjs` para Vite—. Tienen que coincidir. El comentario del config es contundente: *"Sin esto, los que importan '@components/\*' compilan en el editor pero REVIENTAN en `astro build`."* Trátalos como un par inseparable: agregas uno, agregas el otro, en el mismo commit.
 
-1. **`passthroughImageService()`** — configurar Astro para que no intente transformar y deje pasar las imágenes tal cual. Esto exige que las imágenes ya vengan optimizadas desde antes.
-2. **Pre-construir los AVIF** fuera del pipeline de Cloudflare y commitearlos como assets ya optimizados.
+## 10. Análisis de escalabilidad: dónde se rompe esto
 
-Este repositorio toma la segunda vía con un matiz operativo propio: **construye los AVIF en la Mac local** porque el mount FUSE del entorno de trabajo lanza un error `EPERM` al intentar la conversión dentro del flujo automatizado. Por eso las rutas de imagen en las colecciones apuntan a archivos ya optimizados —el esquema lo fuerza con `imagePath`, que obliga a una ruta absoluta bajo `/images/` (`z.string().regex(/^\/images\//)`), por convención `.avif`. La consecuencia de diseño: la optimización de imágenes es, en este proyecto, un **paso manual disciplinado** y no automático, y ese es —lo veremos enseguida— uno de los dos cuellos de botella reales del sistema.
+¿Aguanta trescientas páginas y dieciocho sitios? La *generación* sí, sin sudar: `getStaticPaths` + Content Collections escalan a decenas de miles de entradas por diseño, y clonar a un sitio nuevo es reemplazar `site.ts` + `tokens.css` + las carpetas de contenido, no reescribir componentes. Lo que **no** escala solo es lo que sigue siendo manual:
 
-## 9. Prefetch, view transitions y alias duplicados
+- **Las imágenes**, mientras se optimicen a mano. A diez fotos por sitio y dieciocho sitios, el lote manual es medio día recurrente. Primer candidato a automatizar.
+- **La integridad de enlaces**, mientras no haya chequeo en CI. Los 404 de nav de un sitio se multiplicarían por la flota.
+- **Los datos demo**, mientras no exista un *gate* que falle el build si detecta `0000`, `Av. Demo` o `(DEMO)` en producción.
 
-Para que la navegación se sienta instantánea, Astro ofrece **prefetch** (precargar el HTML de un enlace antes de que el usuario haga clic) y el componente **`<ClientRouter>`** para **view transitions** (transiciones suaves entre páginas que evitan el parpadeo blanco de una recarga completa). Ambos se activan a nivel de configuración/layout y son la guinda de UX sobre un sitio que ya es rápido por ser estático; conviene activarlos cuando el sitio tiene navegación frecuente entre secciones, que es justo el caso de un catálogo.
-
-El gotcha de cierre es de configuración y muerde temprano a quien no lo conoce: **los alias de rutas deben declararse por duplicado**, en `tsconfig.json` (para que el editor y `astro check` resuelvan los tipos) y en `astro.config.mjs` bajo `vite.resolve.alias` (para que el bundler resuelva el import en `build`). El comentario del config es contundente sobre la consecuencia de olvidar el segundo: *"Sin esto, los layouts/páginas que importan '@components/\*' compilan en el editor pero REVIENTAN en `astro build` (Could not resolve)."*
-
-```js
-// astro.config.mjs — espejo EXACTO de tsconfig.json compilerOptions.paths (sin el /*)
-vite: {
-  resolve: {
-    alias: {
-      '@config': r('./src/config'),
-      '@lib': r('./src/lib'),
-      '@layouts': r('./src/layouts'),
-      '@components': r('./src/components'),
-      '@content': r('./src/content'),
-    },
-  },
-},
-```
-
-La regla práctica: cada vez que agregues un alias en `tsconfig.json`, agrégalo en el mismo commit a `vite.resolve.alias`. Si los dos no coinciden, el síntoma es traicionero —todo se ve bien en el IDE y solo falla en el build de CI— y por eso conviene tratarlos como un par inseparable.
-
-## 10. Análisis de escalabilidad
-
-La pregunta que importa para el negocio es: **¿cómo se comporta esta arquitectura cuando crece?** Conviene separar dos ejes de crecimiento.
-
-**Crecimiento dentro de un sitio (cientos de páginas por colección).** Aquí el sistema escala casi linealmente en esfuerzo humano: agregar la página 300 de una colección es agregar un archivo `.md` con frontmatter válido. La página dinámica con `getStaticPaths()` ya existe y la genera sola; el `<head>`, el SEO y el chrome se heredan; el menú no cambia. El límite técnico no es el modelo de contenido —el Content Layer API está hecho para decenas de miles de entradas— sino el **tiempo de build**, que crece con el número de páginas y, sobre todo, con la proporción de `.mdx` (que compila más caro que `.md`). De ahí la política de `.md` por defecto: mantiene el build manejable a gran volumen.
-
-**Crecimiento a través de sitios (docenas de sitios).** Aquí es donde la SSoT paga su inversión. Como toda la identidad, la taxonomía y los datos viven en `site.ts` y `content.config.ts`, **clonar el sistema para un cliente nuevo es copiar la plantilla y reemplazar datos**, no reescribir componentes. Los comentarios del propio repo lo confirman: los valores son DEMO y la instrucción es reemplazar cada slug de `z.enum([...])` por la taxonomía real del cliente, manteniendo sincronizados los enums de `content.config.ts` con `TAXONOMY` de `site.ts`. El código —layouts, componentes, librería de SEO— se mantiene idéntico entre sitios.
-
-**Dónde están los cuellos de botella (los dos reales).** Ser honestos sobre los límites es parte de la arquitectura:
-
-1. **Rutas faltantes.** El contenido escala solo, pero las **páginas de ruteo no**. Si una categoría nueva necesita una landing propia, o un slug esperado no tiene su `getStaticPaths`, falta una ruta que ningún `.md` crea por sí mismo. Este es el punto donde el crecimiento de contenido se adelanta al de ruteo y aparecen 404. Mitigación: tratar "¿existe la ruta dinámica que cubre este slug?" como parte del checklist al añadir una colección o una categoría.
-2. **Imágenes manuales.** Como vimos, en este stack los AVIF se pre-construyen a mano en la Mac por el límite de Sharp en Cloudflare y el `EPERM` del mount FUSE. A 50 productos eso es molesto pero llevadero; a 500, el paso manual de optimización es el verdadero freno de throughput del sistema. Mitigación: un script local reproducible de conversión a AVIF (q50, ancho objetivo, nombres SEO) y, a futuro, evaluar `passthroughImageService()` con un pipeline de optimización previo automatizado.
-
-En resumen: el contenido y la clonación de sitios escalan con muy poca fricción; los dos puntos a vigilar activamente son la **cobertura de rutas** y la **producción de imágenes optimizadas**.
+El veredicto: la arquitectura no se rompe por diseño, se rompe por **completitud**. La diferencia entre "buen template" y "fábrica" no son más patrones de Astro; son las compuertas automáticas alrededor de esos tres pasos manuales. Eso es lo que documentan las guías 04 y 05.
 
 ## 11. Casos de uso
 
-**Catálogo de productos o servicios de tamaño medio-grande.** Es el caso para el que la arquitectura está afinada: colecciones `.md` con enum de categoría, fichas generadas por `getStaticPaths`, interlinking tipado con `reference()` y landings de categoría que agregan autoridad. Escala a cientos de fichas sin tocar código de páginas.
-
-**Red de sitios locales multi-zona.** La colección `zonas` (con `type: ciudad|estado|alcaldia|municipio|zona`, `colonias`, `geo`) está pensada para SEO local: una página por zona, cada una enlazando a los servicios disponibles. Combinado con la SSoT, permite levantar el mismo sistema para varias ciudades cambiando solo datos.
-
-**Agencia que opera docenas de sitios cliente.** La plantilla DEMO se clona, se reemplazan `site.ts` y los enums de `content.config.ts`, se sustituyen las imágenes y se publica. El código compartido (layouts, `lib/seo`, componentes) se mantiene y se mejora una vez para todos.
-
-**Blog técnico o editorial con componentes.** La colección `articulos` en `.mdx` cubre el caso en que el contenido necesita callouts, tablas ricas o componentes embebidos, asumiendo conscientemente el mayor costo de build que eso implica.
+- **Agencia que produce sitios de negocio local en serie.** Clona la plantilla, edita tres zonas (config, tokens, contenido) y publica. El código no se toca.
+- **Directorio de servicios por zona.** Cada zona es una entrada de la colección `zonas` (con `geo`, `colonias`); una ruta `[...slug]` genera todas las páginas. Crece agregando Markdown.
+- **Catálogo que cambia seguido.** Un redactor administra productos como notas de texto; Zod impide que una ficha rota llegue al sitio.
+- **Blog editorial de volumen.** `articulos` en `.mdx` para los pocos artículos que necesiten componentes; el resto, `.md`.
 
 ## 12. Buenas prácticas
 
-La práctica raíz es **respetar la dirección del flujo de datos**: los datos viven en `config` y `content`, y fluyen hacia componentes y páginas, nunca al revés. Un componente que necesita un dato lo recibe por props; si descubre que necesita inventar uno, la señal es que ese dato debería estar en la SSoT. Mantener esto evita la deriva silenciosa donde un teléfono o un enlace empiezan a divergir entre páginas.
-
-En el modelo de contenido, **toda entidad repetible va a una colección con `.strict()` y enums cerrados**, sin excepciones por comodidad. La tentación de meter un producto "rápido" como bloque hardcodeado en un `.astro` es exactamente lo que `.strict()` y el enum existen para impedir, porque ese atajo es el origen de la fragmentación a la que el sistema es alérgico. Igualmente, **todo consumo de colección lleva `.sort()` explícito**, porque el orden de `getCollection` no es determinista; tratarlo como ordenado es un bug latente que se manifiesta en algún build futuro sin causa visible.
-
-En rendimiento, **cero JS hasta que se demuestre la necesidad**, y cuando se necesite, la directiva más perezosa que funcione (`client:visible`/`idle` antes que `load`). En SEO, **una sola fuente para cada pieza estructural**: un `BreadcrumbList`, un canonical, un grafo JSON-LD heredado de `BaseLayout`. Y en configuración, **alias siempre duplicados** en `tsconfig` y `vite` en el mismo cambio, e imágenes siempre referenciadas como rutas optimizadas bajo `/images/` que el esquema valida.
+- Decide dónde vive cada cosa preguntando *con qué frecuencia y por qué cambia*.
+- Centraliza todo dato del negocio en `site.ts`; si aparece dos veces, ya es un bug en gestación.
+- Cierra vocabularios con `z.enum()` y blinda el frontmatter con `.strict()`.
+- Ordena siempre con `.sort()` explícito; nunca confíes en el orden "natural".
+- Markdown por defecto; MDX solo cuando una página de contenido necesite componentes.
+- Cero `client:*` sin justificación; entonces, la directiva más barata posible.
+- Un enlace en la nav implica una página que existe. Sin excepción.
 
 ## 13. Errores comunes y su porqué
 
-| Error | Por qué es un problema | Solución |
-| --- | --- | --- |
-| `category: z.string()` libre | Genera variantes tipográficas ("Guias"/"Guías") tratadas como categorías distintas → autoridad SEO fragmentada entre URLs | `z.enum([...])` cerrado, sincronizado con `TAXONOMY` |
-| Olvidar `.strict()` en el schema | Campos mal escritos (`hero_image:`) se ignoran en silencio; el dato se pierde sin error | `.strict()` convierte el typo en fallo de build inmediato |
-| Asumir orden en `getCollection` | El orden es no determinista; los listados cambian entre builds sin causa aparente | `.sort()` explícito siempre antes de pintar |
-| Alias en `tsconfig` pero no en `vite` | Compila en el editor pero `astro build` revienta con "Could not resolve" | Espejar `vite.resolve.alias` en el mismo commit |
-| `<Image>` esperando Sharp en Cloudflare | El adapter de Cloudflare no ejecuta Sharp → la optimización falla en build | `passthroughImageService()` o pre-construir AVIF (aquí, en la Mac) |
-| MDX para todo el contenido | MDX compila a módulo JS; a escala pesa más y alarga el build sin aportar nada en fichas de prosa | `.md` por defecto; `.mdx` solo si hay componentes embebidos |
-| Header y footer con enlaces propios | Las dos listas se desincronizan con el tiempo | Un único `NAV` derivado de la taxonomía |
-| Hardcodear `wa.me/<número>` en una página | Duplica el número y el encoding; difícil de cambiar globalmente | Constructor central `waUrl(WA_MESSAGES.<intención>)` |
-| Crear una categoría sin su landing/ruta | El contenido existe pero la URL no se genera → 404 | Verificar la ruta dinámica (`getStaticPaths`) al añadir categorías |
+| Error | Por qué duele | Antídoto |
+|---|---|---|
+| God layout | Mezcla responsabilidades que cambian distinto; tocar una rompe otras | Cadena `Base → Page → tipo` |
+| Dato duplicado (NAP, número, categoría) | Tarde o temprano se contradicen entre sí | SSoT + regla D4 (`waUrl()`) |
+| `category: z.string()` libre | "Guias"/"Guías" = dos URLs que reparten autoridad SEO | `z.enum()` cerrado |
+| Sin `.strict()` | Un typo de frontmatter se pierde en silencio | `.strict()` lo vuelve fallo de build |
+| Colección sin `.sort()` | Orden no determinista; se desordena en CI | `.sort()` explícito siempre |
+| Layout/contenido sin ruta | Aparenta una capacidad inexistente | Tratarlo como promesa, no característica |
+| Enlace de nav a página inexistente | 404 al visitante, credibilidad al piso | Chequeo de enlaces en CI |
+| `.mdx` por defecto | Builds lentos sin razón | `.md` salvo necesidad de componentes |
+| `<Image>` esperando Sharp en Cloudflare | El adapter no ejecuta Sharp; la optimización falla | `passthroughImageService()` o pre-build AVIF |
+| OG en SVG | Cada compartido sale sin preview | Raster 1200×630 |
 
-El hilo conductor de todos estos errores es el mismo: **cada uno cambia un fallo ruidoso y barato por un fallo silencioso y caro.** `.strict()`, los enums, los alias duplicados y el `.sort()` existen precisamente para que el sistema falle pronto y fuerte, en build, donde arreglarlo cuesta minutos, en vez de en producción semanas después.
+El hilo conductor: cada error cambia un fallo **ruidoso y barato** (en build) por uno **silencioso y caro** (en producción). `.strict()`, los enums, los alias duplicados y el `.sort()` existen para que el sistema falle pronto y fuerte.
 
-## 14. Procedimiento: añadir una colección nueva
+## 14. Procedimiento: añadir una colección de cero
 
-Supongamos que un cliente necesita una colección de "proyectos" (portafolio). Los pasos, en orden:
+1. **Define el enum de taxonomía** cerrado en `content.config.ts` (`PROJECT_CATEGORIES = [...] as const`).
+2. **Define la colección** con `loader: glob(...)` y `schema: z.object({...}).strict()`, con `category: z.enum(...)`, `image: imagePath` y los `reference()` que apliquen.
+3. **Crea la carpeta** `src/content/<colección>/` con un par de `.md` válidos.
+4. **Crea la ruta dinámica** `[...slug].astro` con `getStaticPaths` filtrando borradores, y `render()`.
+5. **Crea el índice** `index.astro` que liste con `getCollection()` **y `.sort()`**.
+6. **Sincroniza la taxonomía** en `site.ts` (los slugs deben coincidir con el `z.enum`).
+7. **Conecta la nav** solo cuando las dos rutas existan (no antes).
+8. **Verifica** `astro check` + build local; confirma en el `sitemap` y que no haya 404 en los slugs esperados.
+9. **Optimiza y commitea** las imágenes AVIF bajo `/images/<colección>/`, en la Mac.
 
-1. **Crear la carpeta de contenido**: `src/content/proyectos/` y, dentro, al menos un `.md` de prueba con frontmatter.
-2. **Definir el enum de taxonomía** en `content.config.ts`, cerrado: `export const PROJECT_CATEGORIES = ['residencial','comercial','industrial'] as const;`.
-3. **Definir la colección** con `loader: glob({ pattern: '**/*.md', base: './src/content/proyectos' })` y un `schema: z.object({...}).strict()` que incluya `category: z.enum(PROJECT_CATEGORIES)`, `image: imagePath`, los `reference()` de interlinking que apliquen y el spread `...seoFields`.
-4. **Registrar la colección** en el export: añadir `proyectos` al objeto `collections`.
-5. **Sincronizar la taxonomía** en `site.ts`: agregar la categoría a `TAXONOMY` para que el menú y el footer la conozcan (recordando que los slugs de `TAXONOMY` deben coincidir con los del `z.enum`).
-6. **Crear la ruta dinámica**: `src/pages/proyectos/[...slug].astro` con `getStaticPaths()` que mapee la colección, y la **landing** `src/pages/proyectos/index.astro` que liste las entradas **con `.sort()`**.
-7. **Crear o reutilizar el layout de tipo** (`ProjectLayout` extendiendo `PageLayout`) con el schema adecuado.
-8. **Verificar `astro check`** (tipos y referencias) y **`astro build`** (que todas las rutas y los `reference()` resuelven).
-9. **Optimizar y commitear las imágenes** AVIF bajo `/images/proyectos/` con nombres SEO, en la Mac, antes del build de despliegue.
-10. **Confirmar en el sitemap** que las URLs nuevas reciben la prioridad correcta (ajustar el regex de `serialize` si hace falta) y revisar que no haya 404 en los slugs esperados.
+## 15. Checklist de arquitectura
 
-## 15. Checklist accionable
-
-- [ ] Cada entidad repetible vive en una Content Collection, no hardcodeada en `.astro`.
-- [ ] Toda colección usa `.strict()` y `category` es un `z.enum()` cerrado.
-- [ ] Los slugs de los enums en `content.config.ts` coinciden con `TAXONOMY` en `site.ts`.
-- [ ] Todo consumo de `getCollection` aplica `.sort()` explícito.
-- [ ] Los `reference()` apuntan a entradas existentes (el build lo valida).
-- [ ] El menú sale de un único `NAV` derivado de la taxonomía; no hay listas duplicadas.
-- [ ] Ningún dato compartido (NAP, enlaces, WhatsApp) está hardcodeado fuera de `site.ts`.
-- [ ] Los alias están duplicados y sincronizados en `tsconfig.json` y `vite.resolve.alias`.
-- [ ] `output: 'static'` y `trailingSlash` coinciden entre `astro.config.mjs` y `site.ts`.
-- [ ] El contenido por defecto es `.md`; `.mdx` solo donde hay componentes embebidos.
-- [ ] Las imágenes son AVIF/WebP optimizadas, referenciadas bajo `/images/` (esquema lo valida).
-- [ ] La estrategia de imágenes contempla que Cloudflare no ejecuta Sharp (passthrough o pre-build).
-- [ ] Los componentes interactivos usan `client:visible`/`idle` antes que `client:load`.
-- [ ] Cada categoría/colección nueva tiene su ruta dinámica y su landing (sin 404).
-- [ ] `astro check` y `astro build` pasan en limpio antes de desplegar.
+- [ ] Cada layout tiene una sola responsabilidad; la cadena `Base → Page → tipo` se respeta.
+- [ ] Ningún dato del negocio está escrito a mano dos veces (SSoT).
+- [ ] Cero `wa.me/<número>` hardcodeado; todo vía `waUrl()` (regla D4).
+- [ ] Toda colección tiene esquema Zod `.strict()` con enums y validación de imagen.
+- [ ] Los slugs de los enums coinciden con `TAXONOMY` en `site.ts`.
+- [ ] Todo listado ordena con `.sort()` explícito.
+- [ ] No hay `.mdx` que pudiera ser `.md`.
+- [ ] Cero directivas `client:*` sin justificación.
+- [ ] Ningún layout ni archivo de contenido queda sin ruta que lo active.
+- [ ] Ningún enlace de nav/footer apunta a una página inexistente.
+- [ ] La imagen OG es raster 1200×630; los favicons existen.
+- [ ] Los alias coinciden en `tsconfig.json` y `astro.config.mjs`.
 
 ## 16. KPIs e indicadores de calidad
 
-| Indicador | Meta | Por qué |
-| --- | --- | --- |
-| Errores de validación Zod en build | 0 | `.strict()` debe atrapar todo typo de frontmatter antes de producción |
-| Variantes de `category` por colección | = nº de valores del enum | Cualquier exceso indica fragmentación; el enum lo previene |
-| Enlaces internos rotos (`reference()`) | 0 | El build valida referencias; un fallo aquí bloquea el deploy |
-| Páginas sin canonical o con `<title>` > 60 | 0 | Heredado de `BaseLayout`; cualquier desvío es un bug del layout |
-| JS enviado en páginas sin interactividad | 0 KB | La disciplina de islas exige cero JS por defecto |
-| CLS (Cumulative Layout Shift) | < 0.1 | `width`/`height` fijos en imágenes y fuentes self-hosted lo garantizan |
-| LCP en páginas de contenido | < 2.5 s | SSG en CDN + AVIF + preload de imagen LCP |
-| Cobertura de rutas (slugs con página) | 100 % | Mitiga el cuello de botella nº 1 (rutas faltantes) |
-| Imágenes en AVIF/WebP vs sin optimizar | 100 % optimizadas | Mitiga el cuello de botella nº 2 (imágenes manuales) |
-| Tiempo de build | Vigilado y estable al crecer | Crece con nº de páginas y proporción de `.mdx` |
-| 404 en producción | 0 | Síntoma directo de contenido que se adelantó al ruteo |
+| Indicador | Meta | Cómo se mide |
+|---|---|---|
+| Errores de validación Zod en build | 0 | `.strict()` debe atrapar todo typo antes de producción |
+| Variantes de `category` por colección | = nº de valores del enum | Cualquier exceso = fragmentación |
+| Enlaces internos rotos (`reference()`) | 0 | El build valida; un fallo bloquea el deploy |
+| JS en páginas sin interactividad | 0 KB | Disciplina de islas |
+| LCP / CLS / INP | < 2.5 s / < 0.1 / < 200 ms | SSG + AVIF + dimensiones fijas |
+| Cobertura de rutas (slugs con página) | 100 % | Mitiga el cuello de botella nº 1 |
+| Imágenes optimizadas (AVIF/WebP) | 100 % | Mitiga el cuello de botella nº 2 |
+| 404 en producción | 0 | Síntoma de contenido que se adelantó al ruteo |
+| Tiempo de build | Estable al crecer | Crece con nº de páginas y proporción de `.mdx` |
 
 ## 17. Conclusiones
 
-La arquitectura de `EJEMPLOS` no es elaborada por gusto: cada capa resuelve un problema concreto y medible. La **jerarquía de layouts** evita el god layout repartiendo en tres niveles responsabilidades que cambian a ritmos distintos, de modo que ningún cambio toca más de lo que debe. La **fuente única de verdad** elimina la desincronización entre header, footer, menú y JSON-LD haciendo que los datos manden sobre la UI. Las **Content Collections con `.strict()` y enums cerrados** convierten el contenido en algo validado en build, donde el SEO no se fragmenta y los enlaces no se rompen sin avisar. Y la postura de **SSG estático en CDN con cero JS por defecto** entrega rendimiento de primera sin operar servidores.
+La arquitectura de esta plantilla no necesita reinventarse: separa responsabilidades, centraliza datos y valida contenido en *build-time*, las tres disciplinas que hacen que la página trescientos cueste lo mismo que la tres. Lo que la distingue de la mayoría no es un truco de Astro; es la *terquedad* en sostener esas tres disciplinas cuando la prisa invita a romperlas.
 
-El resultado es un sistema que **escala en los dos ejes que importan**: agregar contenido dentro de un sitio cuesta un archivo `.md`, y clonar el sistema a un sitio nuevo cuesta reemplazar datos, no reescribir código. Los dos límites reales —cobertura de rutas y producción manual de imágenes optimizadas, este último agravado por que Cloudflare no ejecuta Sharp— están identificados y son administrables con disciplina de checklist y un script de imágenes. El respaldo estratégico llegó con la **adquisición de Astro por Cloudflare en enero de 2026**, que confirma que apostar por Astro estático sobre el edge de Cloudflare es una dirección sólida y de largo plazo.
+Donde flaquea no es en sus patrones, sino en su **completitud** —rutas que faltan— y en sus **bordes manuales** —imágenes, enlaces, datos demo—. Buena noticia: son problemas de plomería y de automatización, no de diseño. Se resuelven terminando de cablear y poniendo compuertas, no rediseñando. El respaldo estratégico llegó solo: cuando Cloudflare compró Astro en enero de 2026, confirmó que apostar por Astro estático sobre el edge es una dirección de largo plazo.
 
 ## 18. Recomendaciones finales
 
-Trate la SSoT y los esquemas como **contratos inviolables**: la tentación de hardcodear "solo esta vez" un dato o una categoría es exactamente el primer paso de la fragmentación que toda esta arquitectura existe para evitar. Mantenga `.md` como formato por defecto y exija una justificación concreta —componentes embebidos— para subir un archivo a `.mdx`, porque el costo de build de MDX a escala es real y no se nota hasta que ya duele.
+1. **Termina de cablear el ruteo** antes que nada: servicios, blog, contacto y cobertura convierten un demo de cinco páginas en un template completo, y los layouts ya existen.
+2. **Pon compuertas en CI**: gate de datos demo + chequeo de enlaces. Atrapan en segundos los dos errores que más erosionan la credibilidad.
+3. **Migra las imágenes de contenido a `astro:assets`** con `passthroughImageService()`, o automatiza el lote AVIF; es lo que peor escala.
+4. **Genera el OG raster y los favicons.** Esfuerzo mínimo, impacto en cada compartido.
+5. **Consume `reference()`** para los relacionados y extrae un `publishedFilter`; deudas pequeñas que, pagadas, hacen el contenido más intencional.
 
-Invierta temprano en cerrar los dos cuellos de botella: un **script reproducible de conversión a AVIF** (con nombres SEO y tamaño objetivo) que cualquiera pueda correr en la Mac, y una **revisión sistemática de cobertura de rutas** cada vez que se añade contenido o una categoría, para que el ruteo nunca se quede atrás del contenido. Active **prefetch** y **`<ClientRouter>`** una vez que el sitio tenga navegación frecuente, ya que sobre una base estática rápida son una mejora de UX de bajo riesgo. Y mantenga `astro check` y `astro build` como **puerta obligatoria antes de cada despliegue**: son el lugar donde esta arquitectura está diseñada para que los errores aparezcan baratos, y saltárselos es renunciar a su principal ventaja.
+> Documento vivo. Si en seis meses una decisión de aquí ya no se cumple, no edites la realidad para que encaje con la guía: edita la guía. Relacionado: `02` (SEO) · `03` (contenido) · `04` (homologación) · `05` (fábrica).
