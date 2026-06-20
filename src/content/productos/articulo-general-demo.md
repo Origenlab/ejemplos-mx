@@ -2,7 +2,7 @@
 title: "Producto general de ejemplo sin marca"
 description: "Tercer producto DEMO en la categoría general. Muestra una ficha mínima válida: solo los campos obligatorios del esquema (título, descripción, categoría e imagen)."
 category: "general"
-image: "/images/productos/articulo-general-demo.svg"
+image: "/images/productos/sitio-web-rapido-astro.avif"
 order: 3
 ---
 

@@ -2,7 +2,7 @@
 title: "Servicio de instalación de ejemplo"
 description: "Ficha de servicio DEMO en la categoría instalación. Muestra los campos de servicio: pricing transparente, qué incluye y un hero opcional, todo validado por Zod."
 category: "instalacion"
-image: "/images/servicios/instalacion-demo.svg"
+image: "/images/servicios/implementacion-deploy-sitio-astro.avif"
 pricing:
   min: 0
   max: 0

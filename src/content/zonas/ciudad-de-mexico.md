@@ -4,7 +4,7 @@ description: "Página de zona DEMO para cobertura local. Muestra cómo modelar u
 zoneName: "Ciudad de México"
 type: "ciudad"
 state: "CDMX"
-image: "/images/zonas/ciudad-de-mexico.svg"
+image: "/images/zonas/cobertura-desarrollo-web-ciudad-de-mexico.avif"
 geo:
   lat: 19.4326
   lng: -99.1332

@@ -2,7 +2,7 @@
 title: "Equipo base de ejemplo para catálogo"
 description: "Ficha de producto DEMO que muestra cómo se ve un equipo en el catálogo: título, descripción, categoría, imagen y precio editorial. Reemplaza este contenido por un producto real."
 category: "equipos"
-image: "/images/productos/equipo-base.svg"
+image: "/images/productos/desarrollo-web-astro-profesional.avif"
 price: "Desde $0 (DEMO)"
 sku: "DEMO-EQ-001"
 brand: "EJEMPLOS"

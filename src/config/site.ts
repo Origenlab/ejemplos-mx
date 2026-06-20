@@ -311,9 +311,10 @@ export const NAV: readonly NavItem[] = [
 //                     catálogo (`/productos/`) para no romper enlaces; en un sitio
 //                     real cada categoría y subcategoría llevan a SU propia URL.
 //
-// DEMO: textos e imágenes son de ejemplo (genéricos). Reemplázalos por la oferta
-// real del cliente. Para añadir/quitar una tarjeta, edita SOLO este array: la
-// home se regenera sola (data-driven, SSoT).
+// DEMO (modo guía): en vez de productos falsos, las 4 tarjetas ENSEÑAN las partes
+// de una categoría (imagen+alt, título, texto de venta, subcategorías+CTA). En un
+// sitio real, reemplázalas por tus categorías reales. Para añadir/quitar una
+// tarjeta, edita SOLO este array: la home se regenera sola (data-driven, SSoT).
 export type ShowcaseSub = { label: string; href: string };
 export type ShowcaseCategory = {
   slug: string;
@@ -328,68 +329,68 @@ export type ShowcaseCategory = {
 };
 export const SHOWCASE: readonly ShowcaseCategory[] = [
   {
-    slug: 'suministro',
-    label: 'Suministro de Equipo',
+    slug: 'imagen',
+    label: 'La imagen y su texto alt',
     href: '/productos/',
-    image: '/images/productos/equipo-base.svg',
-    imageAlt: 'Equipo profesional certificado listo para entrega',
-    badge: 'Stock inmediato',
+    image: '/images/showcase/imagen-optimizada-avif-sitio-web.avif',
+    imageAlt: 'Imagen de ejemplo de una categoría con su texto alternativo',
+    badge: 'Entra por los ojos',
     blurb:
-      'Equipo profesional certificado, en stock y listo para entrega inmediata en toda la república. Te asesoramos sin costo para elegir el modelo correcto a la primera.',
+      'Pon una foto real y ligera de la categoría. El texto alternativo (alt) describe qué se ve e incluye tu palabra clave: orienta a quien no puede ver la imagen y da contexto. Con un tamaño fijo evitas saltos al cargar.',
     subcategories: [
-      { label: 'Línea profesional', href: '/productos/' },
-      { label: 'Accesorios', href: '/productos/' },
-      { label: 'Refacciones', href: '/productos/' },
+      { label: 'Foto real', href: '/productos/' },
+      { label: 'Peso ligero', href: '/productos/' },
+      { label: 'alt descriptivo', href: '/productos/' },
     ],
-    ctaLabel: 'Ver catálogo',
+    ctaLabel: 'Ver más',
   },
   {
-    slug: 'instalacion',
-    label: 'Instalación Profesional',
+    slug: 'titulo',
+    label: 'El título y su jerarquía',
     href: '/productos/',
-    image: '/images/servicios/instalacion-demo.svg',
-    imageAlt: 'Técnico certificado realizando una instalación profesional',
-    badge: 'Certificada',
+    image: '/images/showcase/jerarquia-titulos-seo-pagina-web.avif',
+    imageAlt: 'Ejemplo del título de una categoría dentro de la jerarquía de la página',
+    badge: 'Orden claro',
     blurb:
-      'Instalación con técnicos certificados para proyectos residenciales, comerciales e industriales. Cumplimos la normativa y entregamos en tiempo, sin paros en tu operación.',
+      'El título de la tarjeta va como H3 y respeta el orden de la página: H1 en el hero, H2 en la sección, H3 en cada tarjeta. Nómbralo con la palabra clave de la categoría: claro, corto y fácil de escanear.',
     subcategories: [
-      { label: 'Residencial', href: '/productos/' },
-      { label: 'Comercial', href: '/productos/' },
-      { label: 'Industrial', href: '/productos/' },
+      { label: 'H1 · hero', href: '/productos/' },
+      { label: 'H2 · sección', href: '/productos/' },
+      { label: 'H3 · tarjeta', href: '/productos/' },
     ],
-    ctaLabel: 'Ver instalación',
+    ctaLabel: 'Ver más',
   },
   {
-    slug: 'mantenimiento',
-    label: 'Mantenimiento Programado',
+    slug: 'texto',
+    label: 'El texto de venta',
     href: '/productos/',
-    image: '/images/servicios/mantenimiento-demo.svg',
-    imageAlt: 'Especialista en mantenimiento preventivo de equipo',
-    badge: 'Planes anuales',
+    image: '/images/showcase/texto-venta-contenido-markdown.avif',
+    imageAlt: 'Ejemplo del texto de venta de una categoría',
+    badge: 'Para la persona',
     blurb:
-      'Planes de mantenimiento preventivo y correctivo que alargan la vida útil de tu equipo y evitan fallas costosas. Con reportes, recordatorios y respuesta ágil cuando la necesitas.',
+      'Una o dos frases que unen el beneficio con tu palabra clave y una señal de confianza. Escribe para la persona, no para el buscador: la palabra clave entra natural, nunca apilada. Apunta a 120–160 caracteres.',
     subcategories: [
-      { label: 'Preventivo', href: '/productos/' },
-      { label: 'Correctivo', href: '/productos/' },
-      { label: 'Emergencias 24/7', href: '/productos/' },
+      { label: 'Beneficio', href: '/productos/' },
+      { label: 'Palabra clave', href: '/productos/' },
+      { label: 'Confianza', href: '/productos/' },
     ],
-    ctaLabel: 'Ver planes',
+    ctaLabel: 'Ver más',
   },
   {
-    slug: 'asesoria',
-    label: 'Asesoría y Normatividad',
+    slug: 'enlaces',
+    label: 'Subcategorías y botón',
     href: '/productos/',
-    image: '/images/servicios/asesoria-general-demo.svg',
-    imageAlt: 'Asesor técnico revisando documentación de cumplimiento',
-    badge: 'Sin costo',
+    image: '/images/showcase/enlaces-internos-navegacion-web.avif',
+    imageAlt: 'Ejemplo de enlaces a subcategorías y botón de una categoría',
+    badge: 'Atajos útiles',
     blurb:
-      'Diagnóstico técnico y acompañamiento para cumplir la normativa vigente sin contratiempos. Dejamos tu documentación lista para auditorías y capacitamos a tu equipo.',
+      'Enlaces a las subcategorías con texto real ("Línea profesional", "Accesorios"): le dan al visitante el atajo exacto y conectan con las páginas hijas. Cierra con un solo botón claro, sin competir con otros.',
     subcategories: [
-      { label: 'Diagnóstico', href: '/productos/' },
-      { label: 'Cumplimiento', href: '/productos/' },
-      { label: 'Capacitación', href: '/productos/' },
+      { label: 'Texto real', href: '/productos/' },
+      { label: 'Página hija', href: '/productos/' },
+      { label: 'Un solo botón', href: '/productos/' },
     ],
-    ctaLabel: 'Solicitar asesoría',
+    ctaLabel: 'Ver más',
   },
 ];
 

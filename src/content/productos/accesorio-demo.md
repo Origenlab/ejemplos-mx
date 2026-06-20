@@ -2,7 +2,7 @@
 title: "Accesorio DEMO complementario del catálogo"
 description: "Segundo producto de ejemplo, en la categoría accesorios, para demostrar cómo el grid de catálogo lista múltiples entradas de la misma colección sin tocar código."
 category: "accesorios"
-image: "/images/productos/accesorio-demo.svg"
+image: "/images/productos/componentes-plantilla-astro-markdown.avif"
 price: "Cotizar"
 featured: false
 order: 2
