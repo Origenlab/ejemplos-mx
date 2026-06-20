@@ -15,6 +15,7 @@ import SectionHeading from "@components/SectionHeading.astro";
 import CategoryCard from "@components/CategoryCard.astro";
 import CategoryDetail from "@components/CategoryDetail.astro";
 import CompanyAbout from "@components/CompanyAbout.astro";
+import Benefits from "@components/Benefits.astro";
 import FAQAccordion from "@components/FAQAccordion.astro";
 import CTABanner from "@components/CTABanner.astro";
 import GuiaNota from "@components/GuiaNota.astro";
@@ -163,6 +164,27 @@ const empresa = {
     { value: "+500", label: "proyectos entregados" },
     { value: "98%", label: "clientes que repiten" },
     { value: "24 h", label: "tiempo de respuesta" },
+  ],
+};
+
+// ── Por qué elegirnos (beneficios: ícono + título + texto) ──
+// Contenido DEMO de la plantilla-guía. En un sitio real: tus diferenciadores
+// REALES (hechos, no adjetivos). Cada `icon` = nombre de un SVG del set de Benefits.
+const beneficios = {
+  eyebrow: "Por qué elegirnos",
+  title: "Los beneficios: di por qué elegirte a ti",
+  desc: "Tres a seis razones concretas —beneficios para el cliente, no adjetivos— que responden «¿por qué tú y no otro?». Cada una con su ícono para escanear de un vistazo.",
+  body: [
+    "Este bloque responde la pregunta que el visitante trae sin decirla: «¿por qué contigo y no con el de al lado?». No es presumir: es darle razones concretas para quedarse. Funciona porque convierte tu propuesta en beneficios que se entienden de un vistazo —qué gana la persona al elegirte, no una lista de lo que haces—.",
+    "La regla es la misma de toda la guía: hechos, no adjetivos. «Respuesta el mismo día» o «garantía por escrito» convencen; «los mejores» no dice nada. Quédate en tres a seis razones —las que de verdad te distinguen—, cada una con un ícono y una frase corta. En un sitio real, cámbialas por tus diferenciadores reales.",
+  ],
+  items: [
+    { icon: "clock", title: "Respuesta el mismo día", desc: "Contestamos tu solicitud en horas, no en días: sabes a qué atenerte desde el primer mensaje." },
+    { icon: "shield", title: "Garantía por escrito", desc: "Cada trabajo va respaldado por una garantía clara: si algo falla, lo resolvemos sin discutir." },
+    { icon: "tag", title: "Precio transparente", desc: "Cotización detallada y sin sorpresas: lo que acordamos es lo que pagas, sin cargos ocultos." },
+    { icon: "users", title: "Trato directo", desc: "Hablas con quien hace el trabajo, no con un intermediario: comunicación clara de principio a fin." },
+    { icon: "star", title: "Calidad comprobada", desc: "Materiales y procesos que cumplen norma, con resultados que puedes ver y verificar." },
+    { icon: "pin", title: "Cobertura local", desc: "Conocemos tu zona y llegamos a tiempo: servicio cercano, con presencia donde estás." },
   ],
 };
 
@@ -509,6 +531,51 @@ const faqs: { question: string; answer: string }[] = [
           eres, y el lugar natural del <em>schema de Organización</em> que ya emite el
           sistema. Edita texto y cifras en el objeto <code>empresa</code> de esta
           página; el diseño vive en el componente.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ═══ 2e) POR QUÉ ELEGIRNOS — beneficios (ícono + título + texto) ═══
+       Módulo Benefits: rejilla data-driven (1→2→3 col). El título va vía
+       SectionHeading (regla duo). Datos demo en `beneficios` (arriba). En un
+       sitio real: tus diferenciadores REALES (hechos, no adjetivos). */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow={beneficios.eyebrow}
+        title={beneficios.title}
+        desc={beneficios.desc}
+        body={beneficios.body}
+      />
+      <Benefits
+        items={beneficios.items}
+        cta={{ label: "Cotizar por WhatsApp", href: waUrl(WA_MESSAGES.cotizar), external: true }}
+      />
+      <GuiaNota titulo="Componente Benefits (por qué elegirnos)" archivo="src/components/Benefits.astro · src/pages/index.astro">
+        <p>
+          Es el bloque «por qué elegirnos» (o «ventajas», «diferenciadores»): de 3 a
+          6 beneficios con <strong>ícono + título + una frase</strong>. Responde la
+          duda que el visitante no dice —«¿por qué tú y no otro?»— y por eso pesa en
+          la conversión: los sitios mejor estructurados (estilo Apple/Stripe) lo
+          ponen cerca del inicio.
+        </p>
+        <p>
+          Es <strong>data-driven</strong>: edita el objeto <code>beneficios</code> de
+          esta página (<code>eyebrow</code>, <code>title</code>, <code>body</code> y la
+          lista <code>items</code>); el diseño vive en el componente. Cada
+          <code>icon</code> es el nombre de un SVG del set interno de Benefits
+          (<code>clock, shield, tag, users, star, pin, award, zap</code>); si no
+          existe, cae a un <code>check</code>.
+        </p>
+        <p>
+          Regla de oro (la misma del sistema): <strong>hechos, no adjetivos</strong>.
+          «Respuesta el mismo día» convence; «los mejores» no. Las 6 de aquí son
+          EJEMPLO: cámbialas por tus diferenciadores <strong>reales</strong>. Apoya tu
+          <strong>marketing</strong> (propuesta de valor) y tu
+          <strong>posicionamiento</strong> (contenido de confianza que los buscadores
+          valoran).
         </p>
       </GuiaNota>
     </div>
