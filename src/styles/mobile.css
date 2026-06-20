@@ -1,0 +1,130 @@
+/* ============================================================================
+   mobile.css — FUENTE ÚNICA de overrides responsive de layout del sistema
+   Ejemplos.mx. Se importa en BaseLayout DESPUÉS de tokens.css (último en el
+   cascade global). tokens.css ya es mobile-first y casi todo el sitio colapsa
+   bien por sí solo; esta hoja UNIFICA los breakpoints dispersos (antes 480/520/
+   560/640/760/768/900/1024/1100) en la escala canónica y añade el pulido pro de
+   móvil: gutters en %, tipografía fluida del hero, áreas táctiles ≥44px, anti-
+   zoom iOS, FAB de WhatsApp, safe-area (notch) y guardas anti-desborde.
+
+   BREAKPOINTS CANÓNICOS:  1024 · 768 · 640 · 480 · 380  (cubren 95%+ devices).
+
+   POR QUÉ !important: los estilos de cada componente son SCOPED por Astro
+   (selector con [data-astro-cid-…] → mayor especificidad). Para vencerlos desde
+   una hoja global sin reescribir cada .astro, las reglas que SOBRESCRIBEN un
+   valor existente llevan !important quirúrgico. Las reglas nuevas (guardas de
+   media, áreas táctiles) no lo necesitan, pero se mantiene por consistencia.
+   Las medidas van en % / vw / clamp / rem (regla «todo en %»); quedan en px solo
+   donde es un estándar técnico: 16px en inputs (evita el zoom de iOS) y 44–52px
+   de área táctil (Apple HIG / WCAG 2.5.5).
+   ============================================================================ */
+
+/* ── 1) GUARDAS ANTI-DESBORDE ───────────────────────────────────────────────
+   Nada de overflow-x:hidden en body/html (rompería el position:sticky del
+   topbar). Se contiene en el origen: medios al 100%, bloques anchos con scroll
+   propio y palabras/URLs largas que se parten. */
+@media (max-width: 768px) {
+  img, picture, video, canvas, svg { max-width: 100%; height: auto; }
+  pre, table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  p, li, h1, h2, h3, h4, dd, dt, blockquote, figcaption,
+  .meta-line__v, .serp__url, .serp__title {
+    overflow-wrap: break-word; word-break: break-word;
+  }
+}
+
+/* ── 2) CONTAINER · GUTTERS EN % + SAFE-AREA ────────────────────────────────
+   El ancho del container pasa a 100% en móvil (tokens.css baja --container-max
+   a 100% ≤768) para que el ÚNICO margen sea --container-px y no se pierda ~19%
+   del ancho en gutters dobles. Aquí se respeta además el notch en horizontal. */
+@supports (padding: max(0px)) {
+  @media (max-width: 768px) {
+    .container, .hdr-inner, .tb-inner, .hero__inner, .mega-panel__inner,
+    .footer__grid, .footer__cert-inner, .footer__bottom-inner, .footer__cta-inner {
+      padding-left:  max(var(--container-px), env(safe-area-inset-left))  !important;
+      padding-right: max(var(--container-px), env(safe-area-inset-right)) !important;
+    }
+  }
+}
+
+/* ── 3) RITMO VERTICAL DE SECCIÓN ───────────────────────────────────────────
+   .section/.band usan --sp-8 directo; se compactan en pantallas chicas para un
+   ritmo más mobile sin tocar el desktop. */
+@media (max-width: 480px) {
+  .section { padding-block: 2.5rem !important; }
+  .band    { padding-top: 1.5rem !important; }
+}
+@media (max-width: 380px) {
+  .section { padding-block: 2.1rem !important; }
+}
+
+/* ── 4) HERO · TIPOGRAFÍA FLUIDA + APILADO ──────────────────────────────────
+   El título usaba --text-4xl FIJO (36px). Se vuelve fluido en % de viewport y
+   se unifica el apilado/CTAs en los breakpoints canónicos. */
+@media (max-width: 768px) {
+  .hero__inner   { grid-template-columns: 1fr !important; gap: clamp(1.5rem, 5vw, 2.25rem) !important; }
+  .hero__title   { font-size: clamp(1.9rem, 7vw, 2.6rem) !important; }
+  .hero__subtitle, .hero__desc { font-size: clamp(1rem, 4vw, 1.0625rem) !important; }
+  .hero__right   { gap: var(--sp-4, 1rem) !important; }
+}
+@media (max-width: 480px) {
+  .hero__ctas { flex-direction: column !important; width: 100%; }
+  .hero__btn  { width: 100% !important; justify-content: center !important; min-height: 48px; }
+}
+
+/* ── 5) ÁREAS TÁCTILES ≥44px (Apple HIG / WCAG) ─────────────────────────────
+   Nav móvil, enlaces de footer, topbar y botones reciben altura tappable. */
+@media (max-width: 1024px) {
+  .mob-direct, .mob-item__trigger { min-height: 48px; }
+  .mob-item__link, .mob-item__all {
+    min-height: 44px; display: flex !important; align-items: center;
+  }
+  .hdr-burger { width: 44px; height: 44px; }
+  a, button, [role="button"], summary, label, .hdr-cta, .hero__btn, .cform__submit {
+    -webkit-tap-highlight-color: rgba(91, 61, 245, .15);
+  }
+}
+@media (max-width: 768px) {
+  .footer__nav-link  { min-height: 40px; align-items: center; }
+  .footer__legal-link { padding: .35rem .25rem; }
+  .tb-item { min-height: 32px; }
+}
+
+/* ── 6) FORMULARIOS · ANTI-ZOOM iOS + CONFORT ───────────────────────────────
+   16px en controles evita el zoom automático de Safari iOS. Se reduce el padding
+   del bloque en pantallas chicas (2rem era apretado en 320px). */
+@media (max-width: 640px) {
+  .cform { padding: clamp(1.1rem, 5vw, 1.75rem) !important; }
+  .cform input, .cform textarea, .cform select {
+    font-size: 16px !important; min-height: 48px;
+  }
+  .cform textarea { min-height: 120px; }
+  .cform__submit  { width: 100% !important; min-height: 50px; }
+}
+
+/* ── 7) FAB WHATSAPP · CÍRCULO LIMPIO + SAFE-AREA ───────────────────────────
+   En móvil se vuelve un círculo de 52px sin etiqueta, anclado con margen y
+   respetando el área segura inferior/derecha (notch / barra de gestos iOS). */
+@media (max-width: 640px) {
+  .wa-float {
+    width: 52px; height: 52px; padding: 0 !important; justify-content: center;
+    bottom: max(1rem, env(safe-area-inset-bottom)) !important;
+    right:  max(1rem, env(safe-area-inset-right))  !important;
+  }
+  .wa-float__label { display: none !important; }
+}
+
+/* ── 8) FOOTER · CIERRE EN 1 COLUMNA ────────────────────────────────────────
+   Refuerza el apilado y centra la barra legal/CTA en pantallas chicas. */
+@media (max-width: 480px) {
+  .footer__cta-actions { width: 100%; }
+  .footer__btn { flex: 1 1 100%; justify-content: center; min-height: 46px; }
+  .footer__social { justify-content: flex-start; }
+}
+
+/* ── 9) HEADER · BARRA COMPACTA ─────────────────────────────────────────────
+   El alto del header lo baja tokens.css por breakpoint; aquí solo se asegura
+   que el inner no apriete el logo contra el burger en pantallas muy chicas. */
+@media (max-width: 380px) {
+  .hdr-inner { gap: .75rem !important; }
+  .hdr-logo__word { font-size: 1.05rem !important; }
+}

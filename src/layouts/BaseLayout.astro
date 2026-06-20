@@ -30,6 +30,10 @@ import { buildMeta, buildSchema, buildKeywordTitle, buildKeywordDescription, typ
 // sitio cuelga de BaseLayout, así que basta este import para exponer las
 // variables :root a cada página/componente. NO reimportar tokens.css en otro lado.
 import "../styles/tokens.css";
+// Overrides responsive de LAYOUT — ÚLTIMO en el cascade global (vence a los
+// estilos scoped de cada componente con !important quirúrgico). Breakpoints
+// canónicos 1024/768/640/480/380. Ver src/styles/mobile.css.
+import "../styles/mobile.css";
 
 export interface Props {
   /** Título de la página (sin marca; ≤60). Opcional si pasas `keywords`. */

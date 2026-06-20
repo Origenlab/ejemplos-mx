@@ -106,3 +106,43 @@ body {
 }
 
 img, picture, video, canvas { max-width: 100%; }
+
+/* ============================================================================
+   TOKENS RESPONSIVE — overrides de tokens GLOBALES por breakpoint. Viven aquí
+   porque tokens.css es la FUENTE ÚNICA de tokens (C2). Unifican la cascada en la
+   escala canónica 1024 / 768 / 640 / 480 / 380. Los overrides de LAYOUT puntuales
+   viven en src/styles/mobile.css (se importa DESPUÉS en BaseLayout). Todo en
+   % / vw / clamp.
+   ============================================================================ */
+@media (max-width: 1024px) {
+  :root {
+    --header-height: 60px;
+    --section-py: clamp(2.75rem, 6vw, 4rem);
+  }
+}
+@media (max-width: 768px) {
+  :root {
+    /* Ancho del container a 100%: en móvil el único margen lo da --container-px.
+       Antes (90% + padding) había gutter DOBLE que comía ~19% del ancho. */
+    --container-max: 100%;
+  }
+}
+@media (max-width: 640px) {
+  :root {
+    --topbar-height: 34px;
+    --header-height: 58px;
+    --section-py: clamp(2.5rem, 7vw, 3.25rem);
+  }
+}
+@media (max-width: 480px) {
+  :root {
+    --section-py: 2.5rem;
+  }
+}
+@media (max-width: 380px) {
+  :root {
+    --topbar-height: 32px;
+    --header-height: 56px;
+    --container-px: clamp(.85rem, 4vw, 1rem);
+  }
+}
