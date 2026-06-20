@@ -14,14 +14,11 @@ import SectionMenu from "@components/SectionMenu.astro";
 import SectionHeading from "@components/SectionHeading.astro";
 import CategoryCard from "@components/CategoryCard.astro";
 import CategoryDetail from "@components/CategoryDetail.astro";
-import ProductCard from "@components/ProductCard.astro";
-import ServiceCard from "@components/ServiceCard.astro";
 import FAQAccordion from "@components/FAQAccordion.astro";
 import CTABanner from "@components/CTABanner.astro";
 import GuiaNota from "@components/GuiaNota.astro";
 import { SITE, KEYWORDS, NAV, WA_MESSAGES, SHOWCASE, waUrl } from "@config/site";
 import { buildKeywordTitle, buildKeywordDescription, metaAudit } from "@lib/seo";
-import { getCollection } from "astro:content";
 
 // ── WhatsApp: SIEMPRE vía waUrl() (regla D4, nunca número hardcodeado) ──
 const waLink = waUrl();
@@ -38,14 +35,6 @@ const malTitle = `Plantilla web astro | diseño web astro | página web astro | 
 const malDesc =
   "Plantilla web astro: la mejor plantilla web astro. Diseño web astro y página web astro. Plantilla web astro para todo tu sitio web astro.";
 const metaMal = metaAudit(KEYWORDS, malTitle, malDesc);
-
-// ── Catálogo de ejemplo desde Content Collections (filtra borradores) ──
-const productos = (await getCollection("productos", ({ data }) => !data.draft))
-  .sort((a, b) => a.data.order - b.data.order)
-  .slice(0, 3);
-const servicios = (await getCollection("servicios", ({ data }) => !data.draft))
-  .sort((a, b) => a.data.order - b.data.order)
-  .slice(0, 3);
 
 // ── Detalle de la PRIMERA categoría (módulo "categoría a fondo" + galería) ──
 // Amplía la 1.ª tarjeta del catálogo (SHOWCASE[0]). El título y la imagen
@@ -165,27 +154,6 @@ const menuCta = {
   sub: "Respuesta inmediata",
   external: true,
 };
-
-// ── Las 7 estaciones de la fábrica de sitios (Selección → Deploy) ──
-const estaciones: { paso: string; titulo: string; detalle: string }[] = [
-  { paso: "1", titulo: "Selección", detalle: "Defines arquetipo (A/B/C/D) y alcance del sitio." },
-  { paso: "2", titulo: "Scaffold", detalle: "Copias el esqueleto y llenas site.ts con datos reales." },
-  { paso: "3", titulo: "Contenido", detalle: "Cargas productos, servicios y blog en Content Collections." },
-  { paso: "4", titulo: "Metadatos", detalle: "Title, description, JSON-LD por tipo y sitemap por sección." },
-  { paso: "5", titulo: "Diseño", detalle: "Ajustas tokens de marca y montas componentes." },
-  { paso: "6", titulo: "Imágenes", detalle: "Optimizas a AVIF, nombras por keyword y conectas el CDN." },
-  { paso: "7", titulo: "QA + Deploy", detalle: "Checklist en verde y publicación en Cloudflare Pages." },
-];
-
-// ── Paleta viva: leen los MISMOS tokens de src/styles/tokens.css ──
-const swatches: { varName: string; label: string }[] = [
-  { varName: "--c-primary", label: "Primary" },
-  { varName: "--c-primary-dark", label: "Primary dark" },
-  { varName: "--c-ink", label: "Ink" },
-  { varName: "--c-muted", label: "Muted" },
-  { varName: "--c-surface", label: "Surface" },
-  { varName: "--c-border", label: "Border" },
-];
 
 // ── Tipos de página del sistema (estado en esta plantilla) ──
 const tiposPagina: { nombre: string; estado: "ok" | "next"; nivel: string }[] = [
@@ -464,152 +432,6 @@ const faqs: { question: string; answer: string }[] = [
     </div>
   </section>
 
-  {/* ═══ 3) CÓMO USAR — las 7 estaciones de la fábrica ═══ */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Flujo de producción"
-        title="Cómo se construye un sitio"
-        desc="Siete pasos, de definir el alcance hasta publicar. Síguelos en orden: cada paso deja listo el siguiente, así no rehaces trabajo ni se te olvida nada."
-        body={[
-          "Piénsalo como una línea de montaje, no como una lista que atacas al azar. Cada estación le entrega a la siguiente lo que necesita: defines el alcance antes que el contenido, el contenido antes que los metadatos, el diseño antes que las imágenes. Si te saltas un paso, lo pagas al final —contenido sin estructura, diseño sin nada que vestir—.",
-          "El orden también cuida tu tiempo, que casi siempre es el recurso corto. Avanzar en secuencia significa tocar cada archivo una vez y seguir, en vez de regresar a arreglar lo que un paso anterior dejó a medias. Para cuando llegas a QA y deploy ya no hay sorpresas: es una revisión, no un rescate.",
-        ]}
-      />
-      <ol class="estaciones">
-        {estaciones.map((e) => (
-          <li class="estacion">
-            <span class="estacion__num" aria-hidden="true">{e.paso}</span>
-            <div class="estacion__body">
-              <p class="estacion__titulo">{e.titulo}</p>
-              <p class="estacion__detalle">{e.detalle}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
-      <GuiaNota titulo="Cómo seguir este flujo">
-        <p>
-          Construye en este orden: Selección → Scaffold → Contenido → Metadatos →
-          Diseño → Imágenes → QA → Deploy. Cada etapa prepara la siguiente; saltarte
-          una se nota al final (contenido sin estructura, diseño sin contenido…).
-          Avanza paso a paso y llegas al deploy sin sorpresas.
-        </p>
-      </GuiaNota>
-    </div>
-  </section>
-
-  {/* ═══ 4) CATÁLOGO DE EJEMPLO — desde Content Collections ═══ */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Content Collections"
-        title="Catálogo de ejemplo"
-        desc="Productos y servicios DEMO cargados desde src/content/. Cada tarjeta nace de un archivo Markdown validado por Zod."
-        body={[
-          "Cada tarjeta que ves aquí no se escribió a mano en la página: nace de un archivo Markdown en src/content/. Redactas el producto o servicio como una nota simple —título, descripción, imagen, precio si aplica— y el sitio arma la tarjeta por ti. Agregas un archivo y aparece; lo quitas y desaparece, sin tocar la página.",
-          "La ventaja es consistencia y tranquilidad: un esquema (Zod) revisa cada archivo antes de publicar, así un campo faltante o una ruta de imagen mal puesta detiene el build y te dice qué corregir —ninguna tarjeta rota llega al sitio—. Tú administras el catálogo como texto y el sistema se encarga del diseño: contenido y diseño separados, cada uno en su lugar.",
-        ]}
-      />
-
-      <h3 class="sub">Productos</h3>
-      <div class="grid">
-        {productos.map((p, i) => (
-          <ProductCard
-            title={p.data.title}
-            href={`/productos/${p.id}`}
-            image={p.data.image}
-            description={p.data.description}
-            index={i}
-          />
-        ))}
-      </div>
-
-      <h3 class="sub">Servicios</h3>
-      <div class="grid">
-        {servicios.map((s) => (
-          <ServiceCard
-            title={s.data.title}
-            description={s.data.description}
-            href={`/servicios/${s.id}`}
-            image={s.data.image}
-          />
-        ))}
-      </div>
-
-      <GuiaNota titulo="Vienen de Content Collections" archivo="src/content.config.ts">
-        <p>
-          Salen de <code>getCollection('productos')</code> y
-          <code>getCollection('servicios')</code> (se filtran los
-          <code>draft: true</code>). Agrega un <code>.md</code> en
-          <code>src/content/&lt;colección&gt;/</code> y aparece aquí, sin tocar esta página.
-        </p>
-        <p>
-          El frontmatter se valida contra el esquema en
-          <code>src/content.config.ts</code> (longitudes, enums, ruta de imagen).
-          Un campo inválido detiene el build y te dice qué corregir.
-        </p>
-      </GuiaNota>
-    </div>
-  </section>
-
-  {/* ═══ 5) SISTEMA DE DISEÑO EN VIVO — paleta + tipografía desde tokens.css ═══ */}
-  <section class="section section--surface">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Identidad"
-        title="Sistema de diseño en vivo"
-        desc="Estos colores y tipografías leen los MISMOS tokens que todo el sitio. Cambia la marca en un solo archivo y se reviste completo."
-        body={[
-          "Lo que ves no es una muestra estática de marca: es la paleta y la tipografía reales que lee todo el sitio, en vivo. Colores, fuentes, espaciados y radios viven como «tokens» en un solo archivo (tokens.css), y cada componente bebe de ahí —nada tiene su color escrito a mano—.",
-          "Por eso un cambio de marca aquí toma minutos, no días: ajustas --c-primary y la fuente principal y los botones, las tarjetas, el header y esta misma sección se revisten de golpe. Una sola fuente de verdad significa cero búsqueda de colores sueltos regados por mil archivos. Defines la marca una vez y el sitio se mantiene coherente solo.",
-        ]}
-      />
-
-      <div class="ds">
-        <div class="ds__block">
-          <p class="ds__label">Paleta</p>
-          <div class="swatches">
-            {swatches.map((s) => (
-              <div class="swatch">
-                <span class="swatch__chip" style={`background: var(${s.varName})`}></span>
-                <span class="swatch__name">{s.label}</span>
-                <code class="swatch__var">{s.varName}</code>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div class="ds__block">
-          <p class="ds__label">Tipografía</p>
-          <div class="type">
-            <p class="type__heading">Aa — Títulos</p>
-            <p class="type__meta"><code>--font-heading</code> · Outfit</p>
-            <p class="type__body">Aa — Texto corrido del sitio, legible y neutro.</p>
-            <p class="type__meta"><code>--font-body</code> · Inter</p>
-            <div class="type__scale">
-              <span style="font-size: var(--text-xl)">XL</span>
-              <span style="font-size: var(--text-lg)">LG</span>
-              <span style="font-size: var(--text-base)">Base</span>
-              <span style="font-size: var(--text-sm)">SM</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <GuiaNota titulo="Fuente única de diseño" archivo="src/styles/tokens.css">
-        <p>
-          Marca, tinta, neutros, espaciado, radios y tipografía viven en
-          <code>:root</code> dentro de <code>tokens.css</code> (se importa una sola
-          vez en <code>BaseLayout</code>). Cambia <code>--c-primary</code> y las
-          fuentes y el sitio entero se reviste: esta misma sección lo refleja.
-        </p>
-      </GuiaNota>
-    </div>
-  </section>
-
   {/* ═══ 5b) METAS — title + description de cada página (Astro) ═══ */}
   <section class="section">
     <div class="container">
@@ -804,13 +626,6 @@ const faqs: { question: string; answer: string }[] = [
   .section { padding: var(--sp-8) 0; }
   .section--surface { background: var(--c-surface); }
   .band { padding: var(--sp-5) 0 0; }
-  .sub {
-    font-family: var(--font-heading); font-size: var(--text-xl);
-    font-weight: var(--weight-bold); color: var(--c-ink); margin: var(--sp-6) 0 var(--sp-4);
-  }
-
-  /* ── Grid de tarjetas ── */
-  .grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
 
   /* ── Vitrina de categorías — 4 por fila en escritorio (2 en tablet, 1 en móvil) ── */
   .showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
@@ -819,37 +634,6 @@ const faqs: { question: string; answer: string }[] = [
 
   /* ── Pila de módulos "categoría a fondo" — separación uniforme, SIN zig-zag ── */
   .afondo { display: grid; gap: clamp(2.5rem, 6vw, 5rem); }
-
-  /* ── Estaciones (pasos) ── */
-  .estaciones { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-3); }
-  .estacion {
-    display: flex; align-items: flex-start; gap: var(--sp-4);
-    background: var(--c-white); border: 1px solid var(--c-border);
-    border-radius: var(--radius-md); padding: var(--sp-4);
-  }
-  .estacion__num {
-    flex-shrink: 0; display: grid; place-items: center; width: 34px; height: 34px;
-    border-radius: var(--radius-full); background: var(--c-primary); color: #fff;
-    font-family: var(--font-heading); font-weight: var(--weight-bold);
-  }
-  .estacion__body { display: grid; gap: 2px; }
-  .estacion__titulo { margin: 0; font-weight: var(--weight-semibold); color: var(--c-ink); }
-  .estacion__detalle { margin: 0; font-size: var(--text-sm); color: var(--c-muted); }
-
-  /* ── Sistema de diseño en vivo ── */
-  .ds { display: grid; grid-template-columns: 1fr; gap: var(--sp-6); margin-top: var(--sp-6); }
-  .ds__block { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-lg); padding: var(--sp-5); }
-  .ds__label { margin: 0 0 var(--sp-4); font-family: var(--font-heading); font-weight: var(--weight-bold); color: var(--c-ink); }
-  .swatches { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-4); }
-  .swatch { display: flex; flex-direction: column; gap: 4px; }
-  .swatch__chip { height: 44px; border-radius: var(--radius-md); border: 1px solid var(--c-border); }
-  .swatch__name { font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--c-ink); }
-  .swatch__var { font-family: ui-monospace, Menlo, monospace; font-size: var(--text-xs); color: var(--c-muted); }
-  .type__heading { font-family: var(--font-heading); font-size: var(--text-2xl); font-weight: var(--weight-bold); color: var(--c-ink); margin: 0; }
-  .type__body { font-family: var(--font-body); font-size: var(--text-base); color: var(--c-ink-2); margin: var(--sp-4) 0 0; }
-  .type__meta { margin: 2px 0 0; font-size: var(--text-xs); color: var(--c-muted); }
-  .type__meta code { font-family: ui-monospace, Menlo, monospace; }
-  .type__scale { display: flex; align-items: baseline; gap: var(--sp-4); margin-top: var(--sp-5); color: var(--c-primary); font-family: var(--font-heading); font-weight: var(--weight-bold); }
 
   /* ── Tipos de página ── */
   .tipos { display: grid; grid-template-columns: 1fr; gap: var(--sp-2); }
@@ -917,10 +701,7 @@ const faqs: { question: string; answer: string }[] = [
   /* ── Desktop ── */
   @media (min-width: 768px) {
     .section { padding: var(--sp-10) 0; }
-    .grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
     .ribbon__text { font-size: var(--text-base); }
-    .ds { grid-template-columns: 1fr 1fr; }
-    .swatches { grid-template-columns: repeat(3, 1fr); }
     .kw-row { grid-template-columns: repeat(3, 1fr); }
   }
 </style>
