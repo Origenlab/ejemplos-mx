@@ -99,18 +99,13 @@ const eager = index < 4; // las 4 primeras tarjetas (1.ª fila) cargan imagen si
 </article>
 
 <style>
+  /* Card ESTÁTICA: sin animaciones ni transiciones (regla de motion). */
   .ccard {
     display: flex; flex-direction: column; height: 100%;
     background: var(--c-white);
     border: 1px solid var(--c-border);
     border-radius: var(--radius-lg);
     overflow: hidden;
-    transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
-  }
-  .ccard:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-md);
-    border-color: var(--c-primary);
   }
 
   /* Imagen de cabecera */
@@ -119,8 +114,7 @@ const eager = index < 4; // las 4 primeras tarjetas (1.ª fila) cargan imagen si
     position: relative; aspect-ratio: 16 / 10; overflow: hidden;
     background: var(--c-surface);
   }
-  .ccard__img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s ease; }
-  .ccard:hover .ccard__img { transform: scale(1.04); }
+  .ccard__img { width: 100%; height: 100%; object-fit: cover; }
   .ccard__overlay { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, rgba(0,0,0,.18) 100%); }
   .ccard__badge {
     position: absolute; top: var(--sp-3); left: var(--sp-3);
@@ -137,7 +131,6 @@ const eager = index < 4; // las 4 primeras tarjetas (1.ª fila) cargan imagen si
     line-height: var(--leading-snug); color: var(--c-ink);
   }
   .ccard__title a { color: inherit; text-decoration: none; }
-  .ccard:hover .ccard__title a { color: var(--c-primary-dark); }
   .ccard__desc {
     margin: 0; font-size: var(--text-sm); color: var(--c-ink-2);
     line-height: var(--leading-normal);
@@ -155,7 +148,6 @@ const eager = index < 4; // las 4 primeras tarjetas (1.ª fila) cargan imagen si
     background: var(--c-surface);
     border: 1px solid var(--c-border); border-radius: var(--radius-full);
     padding: .3em .8em;
-    transition: background var(--transition), color var(--transition), border-color var(--transition);
   }
   .ccard__sub:hover, .ccard__sub:focus-visible {
     color: #fff; background: var(--c-primary); border-color: var(--c-primary);
@@ -177,9 +169,8 @@ const eager = index < 4; // las 4 primeras tarjetas (1.ª fila) cargan imagen si
   .ccard__cta:hover { background: var(--c-primary-dark); gap: var(--sp-3); }
   .ccard__cta:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; }
 
+  /* Único elemento con transición: el botón CTA. */
   @media (prefers-reduced-motion: reduce) {
-    .ccard, .ccard__img, .ccard__sub, .ccard__cta { transition: none; }
-    .ccard:hover { transform: none; }
-    .ccard:hover .ccard__img { transform: none; }
+    .ccard__cta { transition: none; }
   }
 </style>

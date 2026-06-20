@@ -208,45 +208,22 @@ const faqs: { question: string; answer: string }[] = [
     </div>
   </section>
 
-  {/* ═══ 2) CÓMO USAR — las 7 estaciones de la fábrica ═══ */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        eyebrow="Flujo de producción"
-        title="Cómo se construye un sitio"
-        desc="Siete pasos, de definir el alcance hasta publicar. Síguelos en orden: cada paso deja listo el siguiente, así no rehaces trabajo ni se te olvida nada."
-      />
-      <ol class="estaciones">
-        {estaciones.map((e) => (
-          <li class="estacion">
-            <span class="estacion__num" aria-hidden="true">{e.paso}</span>
-            <div class="estacion__body">
-              <p class="estacion__titulo">{e.titulo}</p>
-              <p class="estacion__detalle">{e.detalle}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
-      <GuiaNota titulo="Cómo seguir este flujo">
-        <p>
-          Construye en este orden: Selección → Scaffold → Contenido → Metadatos →
-          Diseño → Imágenes → QA → Deploy. Cada etapa prepara la siguiente; saltarte
-          una se nota al final (contenido sin estructura, diseño sin contenido…).
-          Avanza paso a paso y llegas al deploy sin sorpresas.
-        </p>
-      </GuiaNota>
-    </div>
-  </section>
-
-  {/* ═══ 3) LO QUE OFRECES — vitrina de categorías (cards 4 por fila) ═══
-       Cada categoría se presenta como producto: imagen + copy de venta + atajos a
-       sus subcategorías + CTA. Data-driven desde SHOWCASE (site.ts). */}
+  {/* ═══ 2) EL CATÁLOGO — vitrina de categorías (cards 4 por fila) ═══
+       ORDEN CANÓNICO del index: Hero → SectionMenu → cards de secciones. Esta
+       vitrina va SIEMPRE justo debajo del menú del hero. Cada categoría se presenta
+       como producto: imagen + texto + atajos a subcategorías + CTA. Data-driven
+       desde SHOWCASE (site.ts). */}
   <section class="section section--surface">
     <div class="container">
       <SectionHeading
+        layout="duo"
         eyebrow="Catálogo"
-        title="Lo que ofreces, por categoría"
-        desc="Cada tarjeta presenta una categoría como si fuera un producto: una imagen real, un texto que une beneficio y palabra clave, y accesos directos a sus subcategorías. Así el visitante —y Google— entienden tu oferta de un vistazo."
+        title="El catálogo: agrupa tu oferta en categorías"
+        desc="Cada tarjeta arma una categoría como si fuera un producto: imagen, título, un texto breve y atajos a las subcategorías. Las cuatro de abajo te muestran, parte por parte, qué poner en cada una y cómo redactarla."
+        body={[
+          "Aquí tu oferta deja de ser una lista larga y se vuelve un mapa: agrupas lo que vendes en pocas categorías que cualquiera entiende de un vistazo. Cada tarjeta funciona como una mini portada —una imagen real, un título con la palabra que la gente busca y una frase que adelanta qué hay dentro—, así el visitante pasa de «¿qué venden aquí?» a «esto es justo lo que necesito» en segundos. Es la diferencia entre una bodega amontonada y una tienda bien señalizada.",
+          "Para que funcione, ordena las categorías como las piensa tu cliente, no como las archivas tú: agrupa por lo que la gente busca, nombra cada una con su término real y mantén el mismo criterio en todo el sitio. Redacta cada tarjeta para una persona —un beneficio concreto, la palabra clave sin forzar y un motivo para confiar— y deja que los atajos a las subcategorías hagan de guía. Bien armado, todos ganan: el visitante encuentra antes y los buscadores entienden tu estructura y llegan a tus páginas internas.",
+        ]}
       />
       <div class="showcase">
         {SHOWCASE.map((cat, i) => (
@@ -271,13 +248,86 @@ const faqs: { question: string; answer: string }[] = [
           quita una tarjeta ahí y la vitrina se actualiza sola (SSoT).
         </p>
         <p>
-          Diseñada para <strong>marketing + SEO</strong>: <code>imageAlt</code>
-          describe la imagen con la keyword (SEO de imágenes), el título es un
-          <code>&lt;h3&gt;</code> (jerarquía H1→H2→H3), el texto une beneficio y
-          keyword sin apilar, y las <strong>subcategorías son enlaces internos</strong>
-          con anchor text real que reparten autoridad a las páginas hijas. En esta
-          demo apuntan a <code>/productos/</code>; en un sitio real cada subcategoría
-          lleva a su propia URL.
+          Cada parte cumple una función: <code>imageAlt</code> describe la imagen
+          (también para quien no la ve), el título es un <code>&lt;h3&gt;</code>
+          (jerarquía H1→H2→H3), el texto une beneficio y palabra clave sin apilar, y
+          las <strong>subcategorías son enlaces internos</strong> con texto real que
+          llevan a las páginas hijas. En esta demo apuntan a <code>/productos/</code>;
+          en un sitio real, cada subcategoría lleva a su propia URL.
+        </p>
+        <p>
+          Aquí, a modo de guía, las 4 tarjetas <strong>enseñan las partes</strong> de
+          una categoría (imagen, título, texto, enlaces). En tu sitio real,
+          reemplázalas por tus categorías de verdad.
+        </p>
+      </GuiaNota>
+
+      <GuiaNota titulo="Optimización y tratado de las imágenes (AVIF + SEO)" archivo="public/images/ · src/components/CategoryCard.astro · ProductCard.astro · ServiceCard.astro">
+        <p>
+          Las fotos no se publican tal cual: pasan por un tratado de rendimiento.
+          Cada imagen se exporta a <strong>AVIF</strong> (códec AV1), que a igualdad
+          de calidad pesa alrededor de la mitad que un JPEG y bastante menos que un
+          WebP. En estas cards el resultado es de <strong>~40–60&nbsp;KB por foto</strong>
+          (desde ~800&nbsp;KB de origen, cerca de un <strong>−94%</strong>), con un
+          ancho máximo de <code>1280&nbsp;px</code> y sin reescalar hacia arriba: el
+          tamaño justo para verse nítida en pantallas retina sin malgastar bytes ni
+          castigar el <abbr title="Largest Contentful Paint">LCP</abbr>.
+        </p>
+        <p>
+          La carga también está cuidada. Cada <code>&lt;img&gt;</code> declara
+          <code>width</code> y <code>height</code> (relación 16:9), así el navegador
+          reserva el hueco y se evita el salto de maquetación
+          (<abbr title="Cumulative Layout Shift">CLS</abbr>). Las imágenes usan
+          <code>loading="lazy"</code> y <code>decoding="async"</code>, y las primeras
+          del catálogo se marcan <code>eager</code> con <code>fetchpriority="high"</code>
+          y <code>sizes</code> por ser el recurso LCP de la página.
+        </p>
+        <p>
+          El nombre del archivo es parte del <strong>SEO</strong>: descriptivo y con
+          la palabra clave en español separada por guiones —p.&nbsp;ej.
+          <code>desarrollo-web-astro-profesional.avif</code>—, que Google Imágenes lee
+          como señal de contenido. El <code>alt</code> describe la escena incluyendo la
+          keyword (accesibilidad y SEO de imagen, nunca relleno) y al exportar se
+          elimina la metadata <code>EXIF</code> (privacidad y unos KB menos).
+        </p>
+        <p>
+          Todo queda ordenado y es <strong>reproducible</strong>: las imágenes viven en
+          <code>public/images/&lt;sección&gt;/</code> (showcase, productos, servicios,
+          casos, articulos, zonas), espejando la taxonomía del sitio. La receta es un
+          solo paso por lote —AVIF calidad ≈50, ancho máx 1280&nbsp;px, metadata
+          removida—, de modo que reemplazar una foto real es: exportar con la misma
+          receta, nombrar por keyword y apuntar la card. Es, en concreto, el
+          <strong>paso 6 «Imágenes»</strong> del flujo de producción de arriba.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ═══ 3) CÓMO USAR — las 7 estaciones de la fábrica ═══ */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        eyebrow="Flujo de producción"
+        title="Cómo se construye un sitio"
+        desc="Siete pasos, de definir el alcance hasta publicar. Síguelos en orden: cada paso deja listo el siguiente, así no rehaces trabajo ni se te olvida nada."
+      />
+      <ol class="estaciones">
+        {estaciones.map((e) => (
+          <li class="estacion">
+            <span class="estacion__num" aria-hidden="true">{e.paso}</span>
+            <div class="estacion__body">
+              <p class="estacion__titulo">{e.titulo}</p>
+              <p class="estacion__detalle">{e.detalle}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <GuiaNota titulo="Cómo seguir este flujo">
+        <p>
+          Construye en este orden: Selección → Scaffold → Contenido → Metadatos →
+          Diseño → Imágenes → QA → Deploy. Cada etapa prepara la siguiente; saltarte
+          una se nota al final (contenido sin estructura, diseño sin contenido…).
+          Avanza paso a paso y llegas al deploy sin sorpresas.
         </p>
       </GuiaNota>
     </div>
