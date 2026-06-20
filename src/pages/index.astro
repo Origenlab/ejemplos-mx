@@ -13,6 +13,7 @@ import Hero from "@components/Hero.astro";
 import SectionMenu from "@components/SectionMenu.astro";
 import SectionHeading from "@components/SectionHeading.astro";
 import CategoryCard from "@components/CategoryCard.astro";
+import ReviewCard from "@components/ReviewCard.astro";
 import CategoryDetail from "@components/CategoryDetail.astro";
 import CompanyAbout from "@components/CompanyAbout.astro";
 import FAQAccordion from "@components/FAQAccordion.astro";
@@ -185,6 +186,30 @@ const beneficios = {
     { image: "/images/servicios/consultoria-desarrollo-web-astro.avif", imageAlt: "Asesoría directa, persona a persona, sin intermediarios (imagen de ejemplo)", badge: "Trato 1 a 1", title: "Trato directo", desc: "Hablas siempre con quien hace el trabajo, no con un conmutador. Una sola persona te acompaña de la cotización a la entrega, con comunicación clara en cada paso.", subs: [{ label: "Una sola persona", href: waLink }, { label: "De inicio a fin", href: waLink }, { label: "Comunicación clara", href: waLink }] },
     { image: "/images/productos/sitio-web-rapido-astro.avif", imageAlt: "Resultado de calidad, verificable y bajo norma (imagen de ejemplo)", badge: "100% bajo norma", title: "Calidad comprobada", desc: "Usamos materiales y procesos que cumplen la norma aplicable. Te mostramos evidencia del avance y del resultado para que lo verifiques, no para que confíes a ciegas.", subs: [{ label: "Con evidencia", href: waLink }, { label: "Verificable", href: waLink }, { label: "Materiales certificados", href: waLink }] },
     { image: "/images/zonas/cobertura-desarrollo-web-ciudad-de-mexico.avif", imageAlt: "Cobertura local del servicio en tu zona (imagen de ejemplo)", badge: "Cobertura local", title: "Cobertura local", desc: "Trabajamos en tu área y conocemos sus accesos y tiempos. Llegamos puntuales y damos seguimiento de cerca, con presencia real donde estás.", subs: [{ label: "Tu zona", href: waLink }, { label: "Puntualidad", href: waLink }, { label: "Seguimiento cercano", href: waLink }] },
+  ],
+};
+
+// ── Reseñas / prueba social (testimonios con ReviewCard) ──
+// Contenido DEMO de la plantilla-guía. REGLA DURA: usa reseñas REALES (con
+// permiso); NUNCA inventes testimonios para publicarlos. Mezcla empresas y
+// personas, y no todas de 5★ (la imperfección da credibilidad).
+const resenas = {
+  eyebrow: "Reseñas",
+  title: "Lo que dicen quienes ya confiaron",
+  desc: "Prueba social: testimonios concretos de clientes y negocios. Una cita específica —con nombre y rol— convence más que diez adjetivos sobre ti mismo.",
+  body: [
+    "La gente confía en la gente. Antes de decidir, tu visitante busca una señal de que alguien como él ya te eligió y le fue bien. Por eso pesa tanto una reseña: una frase concreta —«me entregaron en tres días», «no me cobraron de más»— vale más que cualquier promesa que tú hagas sobre tu propio trabajo.",
+    "Para que funcionen tienen que ser creíbles: nombre, rol o negocio, y un detalle específico que solo un cliente verdadero diría. Mezcla voces —empresas y personas— y no las pongas todas en cinco estrellas: una reseña de cuatro da más credibilidad que un muro de dieces. Y la regla que no se negocia: usa reseñas REALES, nunca inventadas.",
+  ],
+  items: [
+    { quote: "Pedí mi sitio un martes y el viernes ya estaba en línea. Lo que más me gustó es que me explicaron cada paso sin tecnicismos. A las dos semanas empecé a recibir pedidos por WhatsApp.", name: "Laura Méndez", role: "Dueña · Ferretería del Centro", rating: 5 },
+    { quote: "Llevábamos años con una página que nadie encontraba. Ahora aparecemos en Google cuando buscan en la zona y las llamadas subieron de verdad; no es para presumir, es lo que pasó.", name: "Carlos Rentería", role: "Gerente · Clima Norte", rating: 5 },
+    { quote: "Tenía miedo de que me cobraran de más a medio camino. No pasó: el presupuesto que me dieron fue exactamente lo que pagué al final. Eso ya casi no se ve.", name: "Mariana Soto", role: "Cliente particular", rating: 5 },
+    { quote: "Trabajo serio y a tiempo. Le pongo cuatro porque al inicio quería más opciones de color, pero en cuanto lo pedí me lo resolvieron sin poner peros.", name: "Jorge Padilla", role: "Fundador · Estudio Raíz", rating: 4 },
+    { quote: "Me respondieron una duda un domingo por la tarde. Para mí eso lo dice todo: hay alguien del otro lado a quien de verdad le importa que te vaya bien.", name: "Ana Gutiérrez", role: "Coordinadora · Colegio Sur", rating: 5 },
+    { quote: "Soy malo para la tecnología y aun así puedo cambiar fotos y precios yo solo. Me enseñaron y me dejaron una guía corta. Cero depender de alguien para una tontería.", name: "Tomás Herrera", role: "Dueño · Taller Herrera", rating: 5 },
+    { quote: "Comparé tres presupuestos. Éste no era el más barato, pero fue el único que se tomó el tiempo de explicarme el porqué de cada cosa. Pagué por confianza y no me arrepiento.", name: "Patricia Ramos", role: "Cliente particular", rating: 5 },
+    { quote: "El sitio carga volando aunque la señal del local esté floja. Mis clientes ven el menú al instante; parece poca cosa, pero en hora pico se nota muchísimo.", name: "Diego Fuentes", role: "Socio · Mariscos La Marea", rating: 5 },
   ],
 };
 
@@ -582,6 +607,44 @@ const faqs: { question: string; answer: string }[] = [
           Regla de oro (la misma del sistema): <strong>hechos, no adjetivos</strong>.
           El <code>badge</code> lleva el dato corto («menos de 4 h», «12 meses»). Las 6
           de aquí son EJEMPLO: cámbialas por tus diferenciadores <strong>reales</strong>.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ═══ 2f) RESEÑAS — prueba social (testimonios) con ReviewCard ═══
+       Card DISTINTA al catálogo (texto-céntrica: estrellas + cita + autor).
+       Título vía SectionHeading (regla duo). Datos demo en `resenas` (arriba).
+       CONTENIDO REAL: usa reseñas verdaderas, nunca inventadas. */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow={resenas.eyebrow}
+        title={resenas.title}
+        desc={resenas.desc}
+        body={resenas.body}
+      />
+      <div class="showcase">
+        {resenas.items.map((r) => (
+          <ReviewCard quote={r.quote} name={r.name} role={r.role} rating={r.rating} />
+        ))}
+      </div>
+      <GuiaNota titulo="Componente ReviewCard (prueba social)" archivo="src/components/ReviewCard.astro · src/pages/index.astro">
+        <p>
+          Es la sección de <strong>prueba social</strong>: testimonios que responden
+          la duda «¿le funcionó a alguien como yo?». Usa un card propio
+          (<code>ReviewCard</code>) <strong>distinto</strong> al del catálogo —estrellas
+          + cita + autor con avatar de iniciales (cero peso de imagen)—, porque el
+          contenido es otro: aquí manda la voz del cliente.
+        </p>
+        <p>
+          Es <strong>data-driven</strong>: edita el objeto <code>resenas</code> (cada
+          reseña = <code>quote</code>, <code>name</code>, <code>role</code>,
+          <code>rating</code>). Regla dura: usa reseñas <strong>REALES</strong> y con
+          permiso de la persona; <strong>nunca inventes testimonios</strong> para
+          publicarlos —es engañoso y va contra las políticas de reseñas—. Las 8 de
+          aquí son EJEMPLO; mezcla empresas y personas y no todas de 5★.
         </p>
       </GuiaNota>
     </div>

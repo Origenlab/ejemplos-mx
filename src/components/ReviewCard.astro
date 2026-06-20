@@ -1,0 +1,101 @@
+---
+// ============================================================================
+// ReviewCard.astro — Tarjeta de RESEÑA (testimonio) para la prueba social.
+// ----------------------------------------------------------------------------
+// QUÉ ES
+// Tarjeta de testimonio, texto-céntrica: calificación + cita + autor (avatar con
+// iniciales, nombre y rol/empresa). DISTINTA del card de catálogo (ese es
+// imagen + badge + CTA); ésta manda la voz del cliente. Para rejilla de 4/fila.
+//
+// POR QUÉ ASÍ (marketing/SEO):
+//   • La cita CONCRETA (no «excelente servicio») convence: prueba social real.
+//   • Estrellas = señal rápida de confianza; el autor (nombre+rol) da credibilidad.
+//   • Avatar con INICIALES → cero peso de imagen, uniforme y profesional.
+//   • <article> + <blockquote> + <cite> → semántica correcta y accesible.
+//
+// DATA-DRIVEN: la página pasa cada reseña. CONTENIDO REAL: usa reseñas
+// VERDADERAS (con permiso); NUNCA inventes testimonios para publicarlos.
+//
+// PROPS
+//   quote   → texto de la reseña.                       [requerido]
+//   name    → nombre de quien reseña.                   [requerido]
+//   role    → rol/empresa o «Cliente particular».
+//   rating  → 1–5 (default 5); pinta estrellas llenas/vacías.
+//
+// ESTILO: tokens de src/styles/tokens.css. Alturas iguales en el grid (flex col +
+// autor al fondo). Mobile-first. Card estática (sin animaciones).
+// ============================================================================
+interface Props {
+  quote: string;
+  name: string;
+  role?: string;
+  rating?: number;
+}
+const { quote, name, role, rating = 5 } = Astro.props;
+const stars = Math.max(0, Math.min(5, Math.round(rating)));
+const initials = name
+  .split(/\s+/)
+  .slice(0, 2)
+  .map((w) => w.charAt(0))
+  .join("")
+  .toUpperCase();
+const STAR = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>`;
+---
+
+<article class="rcard">
+  <div class="rcard__stars" role="img" aria-label={`${stars} de 5 estrellas`}>
+    {Array.from({ length: 5 }).map((_, i) => (
+      <span class={i < stars ? "is-on" : "is-off"} set:html={STAR}></span>
+    ))}
+  </div>
+
+  <blockquote class="rcard__quote">{quote}</blockquote>
+
+  <footer class="rcard__author">
+    <span class="rcard__avatar" aria-hidden="true">{initials}</span>
+    <span class="rcard__who">
+      <cite class="rcard__name">{name}</cite>
+      {role && <span class="rcard__role">{role}</span>}
+    </span>
+  </footer>
+</article>
+
+<style>
+  .rcard {
+    display: flex; flex-direction: column; height: 100%; gap: var(--sp-4);
+    background: var(--c-white); border: 1px solid var(--c-border);
+    border-radius: var(--radius-lg); padding: var(--sp-6);
+  }
+
+  /* Estrellas */
+  .rcard__stars { display: inline-flex; gap: 3px; }
+  .rcard__stars span { display: inline-flex; }
+  .rcard__stars .is-on { color: #f5a623; }
+  .rcard__stars .is-off { color: var(--c-border); }
+
+  /* Cita */
+  .rcard__quote {
+    margin: 0; flex-grow: 1;
+    font-size: var(--text-base); line-height: var(--leading-relaxed);
+    color: var(--c-ink); quotes: "\201C" "\201D";
+  }
+  .rcard__quote::before { content: open-quote; }
+  .rcard__quote::after { content: close-quote; }
+
+  /* Autor */
+  .rcard__author {
+    display: flex; align-items: center; gap: var(--sp-3);
+    margin-top: auto; padding-top: var(--sp-4);
+    border-top: 1px solid var(--c-border);
+  }
+  .rcard__avatar {
+    flex-shrink: 0; width: 46px; height: 46px; border-radius: var(--radius-full);
+    display: grid; place-items: center;
+    font-family: var(--font-heading); font-weight: var(--weight-bold);
+    font-size: var(--text-sm); letter-spacing: .02em; color: #fff;
+    background: linear-gradient(135deg, var(--c-primary), var(--c-primary-dark));
+  }
+  .rcard__who { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .rcard__name { font-style: normal; font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .rcard__role { font-size: var(--text-sm); color: var(--c-muted); }
+</style>
