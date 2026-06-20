@@ -137,9 +137,12 @@ const cat3Detalle = {
 // inventadas, regla del sistema) y datos del negocio desde site.ts.
 const empresa = {
   eyebrow: "La empresa",
-  title: "Qué hacemos y",
-  titleAccent: "cómo lo hacemos",
+  title: "Qué hacemos y cómo lo hacemos",
   lead: "El bloque que cuenta quién está detrás del negocio: a qué se dedica, cómo trabaja y por qué se puede confiar en él. Es de los más decisivos de la página —la gente le compra a quien entiende y le da confianza—.",
+  body: [
+    "Es el bloque donde el negocio deja de ser una marca anónima y se vuelve alguien con nombre, trayectoria y forma de trabajar. Antes de pedir precio o agendar, la gente quiere saber con quién trata: aquí se lo dices en tres movimientos —qué haces, cómo lo haces y con qué lo respaldas— para que la decisión deje de ser un salto al vacío.",
+    "Lo que convierte es la concreción: cambia los adjetivos por hechos —años, proyectos, garantías, tiempos— y habla como una persona, no como un folleto corporativo. Es, además, el contenido de experiencia y confianza que sostiene tu reputación dentro y fuera del sitio. Redáctalo una vez, con datos reales, y tendrás el argumento que más pesa cuando alguien duda entre tú y la competencia.",
+  ],
   que: {
     title: "Qué hacemos",
     body: [
@@ -469,11 +472,14 @@ const faqs: { question: string; answer: string }[] = [
        Datos demo en `empresa` (arriba). En un sitio real: cifras REALES desde site.ts. */}
   <section class="section section--surface">
     <div class="container">
-      <CompanyAbout
+      <SectionHeading
+        layout="duo"
         eyebrow={empresa.eyebrow}
         title={empresa.title}
-        titleAccent={empresa.titleAccent}
-        lead={empresa.lead}
+        desc={empresa.lead}
+        body={empresa.body}
+      />
+      <CompanyAbout
         que={empresa.que}
         como={empresa.como}
         stats={empresa.stats}
