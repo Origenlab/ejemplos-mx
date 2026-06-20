@@ -235,7 +235,7 @@ export type Modulo = { slug: string; label: string; href: string; desc: string; 
 export const MODULOS: readonly Modulo[] = [
   // Chrome + bloques de contenido, en ORDEN DE APARICIÓN (arriba → abajo).
   { slug: 'topbar',              label: 'Topbar',                  href: '/modulos/topbar',              desc: 'La barra utilitaria superior: contacto y confianza siempre a la vista.', estado: 'listo' },
-  { slug: 'header',              label: 'Header',                  href: '/modulos/header',              desc: 'Logotipo + navegación principal: el mapa del sitio, en cada página.', estado: 'proximo' },
+  { slug: 'header',              label: 'Header',                  href: '/modulos/header',              desc: 'Logotipo + navegación principal: el mapa del sitio, en cada página.', estado: 'listo' },
   { slug: 'breadcrumbs',         label: 'Migas de pan',            href: '/modulos/breadcrumbs',         desc: 'Dónde estás y el camino de vuelta: el rastro de navegación en páginas internas.', estado: 'proximo' },
   { slug: 'hero',                label: 'Hero',                    href: '/modulos/hero',                desc: 'La primera impresión: un H1 único con tu propuesta de valor.', estado: 'proximo' },
   { slug: 'menu-secciones',      label: 'Menú de secciones',       href: '/modulos/menu-secciones',      desc: 'La franja de botones bajo el hero para saltar a cada sección.', estado: 'proximo' },

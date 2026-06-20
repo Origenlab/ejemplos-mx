@@ -151,13 +151,14 @@ Cuatro patrones, cada uno con preview en teléfono + receta comentada (Nielsen N
 ## 8. Estado y roadmap
 
 **Hecho:**
-- L1 `/` (home), L2 `/modulos` (índice data-driven desde `MODULOS`), L3 `/modulos/topbar` **completo**: las 10 secciones, la galería de 6 variantes (escritorio) y la sección de 4 patrones móviles con recetas comentadas.
+- L1 `/` (home), L2 `/modulos` (índice data-driven desde `MODULOS`).
+- L3 `/modulos/topbar` **completo** y L3 `/modulos/header` **completo**: cada uno con las 10 secciones, su galería de 6 variantes (escritorio) y la sección de 4 patrones móviles con recetas comentadas. Ambos marcados `estado: 'listo'` en `MODULOS`.
 - Kit reutilizable: `GaleriaDisenos`, `DisenoCard`, `MarcoMovil`, `Receta`.
 - Migas de pan corregidas a ruta completa (componente antepone «Inicio»).
 
 **Pendiente:**
-- Correr `npm run build` en la Mac (valida también el resaltado Shiki de `<Code>`) antes de desplegar.
-- Publicar los siguientes L3 con el mismo molde: **header, hero, menú, footer**.
+- Publicar los siguientes L3 con el mismo molde: **hero, menú de secciones, footer** y el resto del roadmap de `MODULOS` (breadcrumbs, título de sección, cards, reseñas, faq, cta-banner, formulario, whatsapp flotante).
+- Por cada uno: correr `npm run build` en la Mac (valida también el resaltado Shiki de `<Code>`) antes de desplegar.
 
 ---
 
