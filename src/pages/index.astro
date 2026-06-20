@@ -179,12 +179,12 @@ const beneficios = {
     "La regla es la misma de toda la guía: hechos, no adjetivos. Un dato corto en el badge («respuesta en menos de 4 h», «garantía de 12 meses») convence; «los mejores» no dice nada. Reusa el card del catálogo para no inventar diseño; en un sitio real, cámbialas por tus diferenciadores y fotos reales.",
   ],
   items: [
-    { image: "/images/servicios/soporte-mantenimiento-web-astro.avif", imageAlt: "Atención al cliente con respuesta el mismo día (imagen de ejemplo)", badge: "Respuesta el mismo día", title: "Respuesta el mismo día", desc: "Escríbenos y te contestamos en horas, no en días. Recibes un primer diagnóstico claro y los siguientes pasos desde el primer mensaje, sin filtros ni esperas." },
-    { image: "/images/casos/caso-exito-proyecto-web-astro.avif", imageAlt: "Trabajo terminado y respaldado por garantía por escrito (imagen de ejemplo)", badge: "Garantía 12 meses", title: "Garantía por escrito", desc: "Cada trabajo queda respaldado por una garantía clara y por escrito. Si algo falla dentro del periodo, volvemos y lo resolvemos sin costo ni discusiones." },
-    { image: "/images/productos/desarrollo-web-astro-profesional.avif", imageAlt: "Cotización detallada y transparente, sin sorpresas (imagen de ejemplo)", badge: "Sin cargos ocultos", title: "Precio transparente", desc: "Recibes una cotización detallada antes de empezar: materiales, mano de obra y tiempos. Lo que acordamos es exactamente lo que pagas, sin extras de última hora." },
-    { image: "/images/servicios/consultoria-desarrollo-web-astro.avif", imageAlt: "Asesoría directa, persona a persona, sin intermediarios (imagen de ejemplo)", badge: "Trato 1 a 1", title: "Trato directo", desc: "Hablas siempre con quien hace el trabajo, no con un conmutador. Una sola persona te acompaña de la cotización a la entrega, con comunicación clara en cada paso." },
-    { image: "/images/productos/sitio-web-rapido-astro.avif", imageAlt: "Resultado de calidad, verificable y bajo norma (imagen de ejemplo)", badge: "100% bajo norma", title: "Calidad comprobada", desc: "Usamos materiales y procesos que cumplen la norma aplicable. Te mostramos evidencia del avance y del resultado para que lo verifiques, no para que confíes a ciegas." },
-    { image: "/images/zonas/cobertura-desarrollo-web-ciudad-de-mexico.avif", imageAlt: "Cobertura local del servicio en tu zona (imagen de ejemplo)", badge: "Cobertura local", title: "Cobertura local", desc: "Trabajamos en tu área y conocemos sus accesos y tiempos. Llegamos puntuales y damos seguimiento de cerca, con presencia real donde estás." },
+    { image: "/images/servicios/soporte-mantenimiento-web-astro.avif", imageAlt: "Atención al cliente con respuesta el mismo día (imagen de ejemplo)", badge: "Respuesta el mismo día", title: "Respuesta el mismo día", desc: "Escríbenos y te contestamos en horas, no en días. Recibes un primer diagnóstico claro y los siguientes pasos desde el primer mensaje, sin filtros ni esperas.", subs: [{ label: "Diagnóstico inicial", href: waLink }, { label: "Sin formularios", href: waLink }, { label: "Seguimiento", href: waLink }] },
+    { image: "/images/casos/caso-exito-proyecto-web-astro.avif", imageAlt: "Trabajo terminado y respaldado por garantía por escrito (imagen de ejemplo)", badge: "Garantía 12 meses", title: "Garantía por escrito", desc: "Cada trabajo queda respaldado por una garantía clara y por escrito. Si algo falla dentro del periodo, volvemos y lo resolvemos sin costo ni discusiones.", subs: [{ label: "Por escrito", href: waLink }, { label: "Sin letra chica", href: waLink }, { label: "Sin costo", href: waLink }] },
+    { image: "/images/productos/desarrollo-web-astro-profesional.avif", imageAlt: "Cotización detallada y transparente, sin sorpresas (imagen de ejemplo)", badge: "Sin cargos ocultos", title: "Precio transparente", desc: "Recibes una cotización detallada antes de empezar: materiales, mano de obra y tiempos. Lo que acordamos es exactamente lo que pagas, sin extras de última hora.", subs: [{ label: "Cotización detallada", href: waLink }, { label: "Sin anticipos", href: waLink }, { label: "Precio cerrado", href: waLink }] },
+    { image: "/images/servicios/consultoria-desarrollo-web-astro.avif", imageAlt: "Asesoría directa, persona a persona, sin intermediarios (imagen de ejemplo)", badge: "Trato 1 a 1", title: "Trato directo", desc: "Hablas siempre con quien hace el trabajo, no con un conmutador. Una sola persona te acompaña de la cotización a la entrega, con comunicación clara en cada paso.", subs: [{ label: "Una sola persona", href: waLink }, { label: "De inicio a fin", href: waLink }, { label: "Comunicación clara", href: waLink }] },
+    { image: "/images/productos/sitio-web-rapido-astro.avif", imageAlt: "Resultado de calidad, verificable y bajo norma (imagen de ejemplo)", badge: "100% bajo norma", title: "Calidad comprobada", desc: "Usamos materiales y procesos que cumplen la norma aplicable. Te mostramos evidencia del avance y del resultado para que lo verifiques, no para que confíes a ciegas.", subs: [{ label: "Con evidencia", href: waLink }, { label: "Verificable", href: waLink }, { label: "Materiales certificados", href: waLink }] },
+    { image: "/images/zonas/cobertura-desarrollo-web-ciudad-de-mexico.avif", imageAlt: "Cobertura local del servicio en tu zona (imagen de ejemplo)", badge: "Cobertura local", title: "Cobertura local", desc: "Trabajamos en tu área y conocemos sus accesos y tiempos. Llegamos puntuales y damos seguimiento de cerca, con presencia real donde estás.", subs: [{ label: "Tu zona", href: waLink }, { label: "Puntualidad", href: waLink }, { label: "Seguimiento cercano", href: waLink }] },
   ],
 };
 
@@ -549,7 +549,7 @@ const faqs: { question: string; answer: string }[] = [
         desc={beneficios.desc}
         body={beneficios.body}
       />
-      <div class="bene-grid">
+      <div class="showcase">
         {beneficios.items.map((b) => (
           <CategoryCard
             label={b.title}
@@ -558,7 +558,8 @@ const faqs: { question: string; answer: string }[] = [
             imageAlt={b.imageAlt}
             badge={b.badge}
             blurb={b.desc}
-            ctaLabel="Cotizar"
+            subcategories={b.subs}
+            ctaLabel="Ver más"
           />
         ))}
       </div>
@@ -785,11 +786,6 @@ const faqs: { question: string; answer: string }[] = [
   .showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
   @media (min-width: 640px) { .showcase { grid-template-columns: repeat(2, 1fr); } }
   @media (min-width: 1024px) { .showcase { grid-template-columns: repeat(4, 1fr); } }
-
-  /* Rejilla de beneficios (reusa CategoryCard) — 1 → 2 → 3 columnas */
-  .bene-grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
-  @media (min-width: 640px) { .bene-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (min-width: 1024px) { .bene-grid { grid-template-columns: repeat(3, 1fr); } }
 
   /* ── Pila de módulos "categoría a fondo" — separación uniforme, SIN zig-zag ── */
   .afondo { display: grid; gap: clamp(2.5rem, 6vw, 5rem); }
