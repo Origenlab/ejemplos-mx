@@ -44,6 +44,7 @@ interface Props {
   subcategories?: readonly Sub[];
   ctaLabel?: string;
   index?: number;
+  disabled?: boolean; // tarjeta sin enlace (p. ej. módulo 'próximo'); muestra badge en el cuerpo si no hay imagen.
 }
 const {
   label,
@@ -55,13 +56,17 @@ const {
   subcategories = [],
   ctaLabel = "Ver más",
   index = 99,
+  disabled = false,
 } = Astro.props;
 const eager = index < 4; // las 4 primeras tarjetas (1.ª fila) cargan imagen sin lazy.
+// 'disabled' (p. ej. módulo 'próximo'): ni la imagen ni los chips enlazan (evita 404s).
+const MediaTag = disabled ? "div" : "a";
+const ChipTag = disabled ? "span" : "a";
 ---
 
 <article class="ccard">
   {image && (
-    <a class="ccard__media-link" href={href} tabindex="-1" aria-hidden="true">
+    <MediaTag class="ccard__media-link" href={disabled ? undefined : href} tabindex={disabled ? undefined : "-1"} aria-hidden="true">
       <div class="ccard__media">
         <img
           src={image}
@@ -74,27 +79,36 @@ const eager = index < 4; // las 4 primeras tarjetas (1.ª fila) cargan imagen si
         <span class="ccard__overlay" aria-hidden="true"></span>
         {badge && <span class="ccard__badge">{badge}</span>}
       </div>
-    </a>
+    </MediaTag>
   )}
 
   <div class="ccard__body">
-    <h3 class="ccard__title"><a href={href}>{label}</a></h3>
+    {badge && !image && (
+      <span class:list={["ccard__badge", "ccard__badge--inline", { "ccard__badge--soon": disabled }]}>{badge}</span>
+    )}
+    <h3 class="ccard__title">
+      {disabled ? <span>{label}</span> : <a href={href}>{label}</a>}
+    </h3>
     {blurb && <p class="ccard__desc">{blurb}</p>}
 
     {subcategories.length > 0 && (
       <ul class="ccard__subs" aria-label={`Subcategorías de ${label}`}>
         {subcategories.map((s) => (
           <li>
-            <a class="ccard__sub" href={s.href}>{s.label}</a>
+            <ChipTag class="ccard__sub" href={disabled ? undefined : s.href}>{s.label}</ChipTag>
           </li>
         ))}
       </ul>
     )}
 
-    <a class="ccard__cta" href={href}>
-      {ctaLabel}
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-    </a>
+    {disabled ? (
+      <span class="ccard__cta ccard__cta--soon">Próximamente</span>
+    ) : (
+      <a class="ccard__cta" href={href}>
+        {ctaLabel}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    )}
   </div>
 </article>
 
@@ -122,6 +136,9 @@ const eager = index < 4; // las 4 primeras tarjetas (1.ª fila) cargan imagen si
     letter-spacing: .04em; text-transform: uppercase; color: #fff;
     background: var(--c-primary); padding: .25em .6em; border-radius: var(--radius-sm);
   }
+  /* Badge en el cuerpo (cuando la tarjeta no lleva imagen, p. ej. módulos). */
+  .ccard__badge--inline { position: static; align-self: flex-start; }
+  .ccard__badge--soon { color: var(--c-muted); background: var(--c-surface); border: 1px solid var(--c-border); }
 
   /* Cuerpo */
   .ccard__body { display: flex; flex-direction: column; flex-grow: 1; gap: var(--sp-3); padding: var(--sp-5); }
@@ -168,6 +185,9 @@ const eager = index < 4; // las 4 primeras tarjetas (1.ª fila) cargan imagen si
   }
   .ccard__cta:hover { background: var(--c-primary-dark); gap: var(--sp-3); }
   .ccard__cta:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; }
+  /* CTA inactivo para tarjetas 'próximo' (no enlaza). */
+  .ccard__cta--soon { background: var(--c-surface); color: var(--c-muted); border: 1px solid var(--c-border); cursor: default; }
+  .ccard__cta--soon:hover { background: var(--c-surface); gap: var(--sp-2); }
 
   /* Único elemento con transición: el botón CTA. */
   @media (prefers-reduced-motion: reduce) {

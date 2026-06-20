@@ -39,3 +39,6 @@ pnpm-debug.log*
 Thumbs.db
 .idea/
 *.swp
+
+# FUSE mount artifacts (Cowork / mount FUSE)
+.fuse_hidden*

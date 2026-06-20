@@ -1,0 +1,58 @@
+---
+// ============================================================================
+// Receta.astro — Bloque de CÓDIGO comentado (receta de implementación).
+// ----------------------------------------------------------------------------
+// Code block con barra de título estilo editor y resaltado de sintaxis. Usa el
+// componente <Code> integrado de Astro (Shiki, sin dependencias extra), que
+// resalta en build. Pensado para mostrar recetas «copia y pega» bien comentadas.
+//
+// USO:
+//   <Receta titulo="CSS · ocultar por prioridad" lang="css" code={miReceta} />
+// `code` es un string (normalmente un template literal en el frontmatter de la
+// página). `lang`: 'css' | 'html' | 'js' | 'ts' … (gramáticas de Shiki).
+// ============================================================================
+import { Code } from 'astro:components'
+
+interface Props {
+  /** Etiqueta de la barra superior (p. ej. «CSS · zona del pulgar»). */
+  titulo: string
+  /** Lenguaje para el resaltado (Shiki). Default 'css'. */
+  lang?: string
+  /** Código a mostrar (string). */
+  code: string
+}
+const { titulo, lang = 'css', code } = Astro.props
+---
+
+<figure class="receta">
+  <figcaption class="receta__bar">
+    <span class="receta__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="receta__titulo">{titulo}</span>
+  </figcaption>
+  <Code code={code} lang={lang as any} theme="github-dark" />
+</figure>
+
+<style>
+  .receta {
+    margin: 0; border: 1px solid #21262d; border-radius: var(--radius-md);
+    overflow: hidden; background: #0d1117;
+  }
+  .receta__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: .55rem .8rem; background: #161b22; border-bottom: 1px solid #21262d;
+  }
+  .receta__dots { display: inline-flex; gap: 6px; }
+  .receta__dots i { width: 10px; height: 10px; border-radius: 50%; background: #30363d; }
+  .receta__dots i:nth-child(1) { background: #ff5f56; }
+  .receta__dots i:nth-child(2) { background: #ffbd2e; }
+  .receta__dots i:nth-child(3) { background: #27c93f; }
+  .receta__titulo {
+    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+    font-size: var(--text-xs); color: #8b949e; letter-spacing: .02em;
+  }
+  /* El <pre> lo genera <Code>; ajustamos padding y tamaño desde aquí. */
+  .receta :global(pre) {
+    margin: 0; padding: var(--sp-4);
+    font-size: .76rem; line-height: 1.65; overflow-x: auto;
+  }
+</style>

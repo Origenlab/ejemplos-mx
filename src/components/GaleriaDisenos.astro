@@ -1,0 +1,33 @@
+---
+// ============================================================================
+// GaleriaDisenos.astro — Marco de la GALERÍA de variantes de un módulo.
+// ----------------------------------------------------------------------------
+// Contenedor reutilizable de toda la serie /modulos/*: recibe varias <DisenoCard>
+// como hijos (slot por defecto) y las acomoda en una grilla responsive (1 → 2 col).
+// No sabe nada del módulo: el Topbar le pasa sus tarjetas; header, hero, menú y
+// footer le pasan las suyas con el MISMO molde. La tarjeta (mockup + meta) vive en
+// DisenoCard.astro; el mockup en vivo lo dibuja la PÁGINA dentro de cada tarjeta.
+//
+// USO:
+//   <GaleriaDisenos ariaLabel="Variantes de topbar">
+//     <DisenoCard {...disenos[0]}><div class="…">…mockup…</div></DisenoCard>
+//     <DisenoCard {...disenos[1]}><div class="…">…mockup…</div></DisenoCard>
+//   </GaleriaDisenos>
+// ============================================================================
+interface Props {
+  ariaLabel?: string
+}
+const { ariaLabel = 'Galería de diseños' } = Astro.props
+---
+
+<ul class="gd" aria-label={ariaLabel}>
+  <slot />
+</ul>
+
+<style>
+  .gd {
+    list-style: none; margin: var(--sp-6) 0 0; padding: 0;
+    display: grid; grid-template-columns: 1fr; gap: var(--sp-5);
+  }
+  @media (min-width: 900px) { .gd { grid-template-columns: repeat(2, 1fr); } }
+</style>

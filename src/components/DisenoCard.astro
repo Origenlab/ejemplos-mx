@@ -1,0 +1,62 @@
+---
+// ============================================================================
+// DisenoCard.astro — UNA tarjeta de variante dentro de <GaleriaDisenos>.
+// ----------------------------------------------------------------------------
+// Arriba, un «escenario» con la RÉPLICA EN VIVO (mockup) que entra por el slot
+// por defecto; debajo, la meta: nombre, tag del tipo de proyecto donde encaja, y
+// una descripción de cuándo usarla. Reutilizable en toda la serie /modulos/*.
+//
+// USO (dentro de GaleriaDisenos):
+//   <DisenoCard nombre="Barra de anuncio" tag="E-commerce" desc="…">
+//     <div class="…">…mockup en vivo…</div>
+//   </DisenoCard>
+// El markup y los estilos del mockup viven en la PÁGINA (cada módulo dibuja los
+// suyos); esta tarjeta solo pone el marco.
+// ============================================================================
+interface Props {
+  /** Nombre de la variante (p. ej. «Barra de anuncio»). */
+  nombre: string
+  /** Tipo de proyecto/uso donde brilla, en formato badge (p. ej. «E-commerce · Promoción»). */
+  tag: string
+  /** Qué es y cuándo conviene usarla (un párrafo). */
+  desc: string
+}
+const { nombre, tag, desc } = Astro.props
+---
+
+<li class="gd__card">
+  <div class="gd__stage"><slot /></div>
+  <div class="gd__meta">
+    <div class="gd__head">
+      <h3 class="gd__nombre">{nombre}</h3>
+      <span class="gd__tag">{tag}</span>
+    </div>
+    <p class="gd__desc">{desc}</p>
+  </div>
+</li>
+
+<style>
+  .gd__card {
+    display: flex; flex-direction: column; height: 100%;
+    background: var(--c-white); border: 1px solid var(--c-border);
+    border-radius: var(--radius-md); overflow: hidden;
+  }
+  /* Escenario: trama tenue a 45° para que el mockup «flote» como una demo. */
+  .gd__stage {
+    display: flex; align-items: center; min-height: 96px;
+    padding: var(--sp-5); border-bottom: 1px solid var(--c-border);
+    background: repeating-linear-gradient(45deg, var(--c-surface) 0 7px, color-mix(in srgb, var(--c-surface) 60%, #000 4%) 7px 8px);
+  }
+  .gd__meta { display: grid; gap: var(--sp-2); padding: var(--sp-4) var(--sp-5) var(--sp-5); }
+  .gd__head { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
+  .gd__nombre {
+    margin: 0; font-family: var(--font-heading); font-size: var(--text-lg);
+    font-weight: var(--weight-semibold); color: var(--c-ink);
+  }
+  .gd__tag {
+    font-size: .625rem; font-weight: var(--weight-bold); letter-spacing: .04em; text-transform: uppercase;
+    color: var(--c-primary); background: rgba(var(--c-primary-rgb), .1);
+    border: 1px solid rgba(var(--c-primary-rgb), .22); padding: .12rem .5rem; border-radius: var(--radius-full);
+  }
+  .gd__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+</style>

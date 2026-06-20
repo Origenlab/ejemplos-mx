@@ -1,0 +1,51 @@
+---
+// ============================================================================
+// MarcoMovil.astro — Marco de TELÉFONO para previsualizar mockups en móvil.
+// ----------------------------------------------------------------------------
+// Dibuja un teléfono (bisel + pantalla + barra de estado falsa) y, dentro, lo
+// que se le pase por el slot por defecto: el mockup móvil del módulo. La pantalla
+// es `position: relative`, así que el contenido puede fijar elementos al borde
+// inferior (barra de acciones en la «zona del pulgar») o flotar paneles (overflow).
+//
+// Reutilizable en toda la serie /modulos/*: cada módulo mete su propio mockup.
+//
+// USO:
+//   <MarcoMovil ariaLabel="Topbar en móvil: solo las acciones">
+//     <div class="…">…mockup móvil…</div>
+//   </MarcoMovil>
+// ============================================================================
+interface Props {
+  ariaLabel?: string
+}
+const { ariaLabel = 'Vista en móvil' } = Astro.props
+---
+
+<div class="movil" role="img" aria-label={ariaLabel}>
+  <div class="movil__screen">
+    <div class="movil__status" aria-hidden="true">
+      <span class="movil__time">9:41</span>
+      <span class="movil__dots"><i></i><i></i><i></i></span>
+    </div>
+    <slot />
+  </div>
+</div>
+
+<style>
+  .movil {
+    width: 234px; margin-inline: auto; padding: 8px;
+    background: #1f2430; border-radius: 30px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .18);
+  }
+  /* Pantalla: relative para anclar barras inferiores y paneles flotantes. */
+  .movil__screen {
+    position: relative; height: 384px; overflow: hidden;
+    display: flex; flex-direction: column;
+    background: var(--c-white); border-radius: 22px;
+  }
+  .movil__status {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 16px 4px; font-size: 11px; font-weight: 700; color: var(--c-ink);
+  }
+  .movil__dots { display: inline-flex; gap: 3px; }
+  .movil__dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--c-ink); opacity: .55; }
+</style>
