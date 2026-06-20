@@ -73,6 +73,75 @@ const cat0Detalle = {
   },
 };
 
+// ── Detalle de la SEGUNDA categoría (mismo módulo, galería alternada con reverse) ──
+const cat1 = SHOWCASE[1];
+const cat1Detalle = {
+  eyebrow: "La categoría a fondo",
+  body: [
+    "El título es el letrero de la tarjeta: en dos o tres palabras le dice al visitante —y al buscador— de qué trata esta categoría. Va como H3 porque respeta el orden de la página: un solo H1 en el hero, los H2 abren cada sección y los H3 nombran cada tarjeta. Ese escalonado no es capricho, es el índice que la gente y los lectores de pantalla siguen para ubicarse sin perderse.",
+    "Para que funcione, nómbralo con la palabra clave de la categoría, no con un nombre interno ni un juego de palabras: claro, corto y fácil de escanear de un vistazo. Mantén un nivel por escalón —no saltes de H2 a H4— y evita repetir el mismo título en varias tarjetas. Un buen título se entiende fuera de contexto: si alguien lo lee solo, sabe exactamente a dónde llega.",
+  ],
+  points: [
+    "Va como H3, respetando H1 (hero) → H2 (sección) → H3 (tarjeta)",
+    "Nombrado con la palabra clave de la categoría",
+    "Claro, corto y fácil de escanear de un vistazo",
+    "Sin saltos de nivel ni títulos repetidos entre tarjetas",
+  ],
+  gallery: {
+    main: { src: cat1.image, alt: "El título de la categoría como H3 dentro de la jerarquía de la página" },
+    thumbs: [
+      { src: "/images/showcase/imagen-optimizada-avif-sitio-web.avif", alt: "Relación del título con la imagen de la categoría" },
+      { src: "/images/showcase/enlaces-internos-navegacion-web.avif", alt: "El título enlazando con las subcategorías de la categoría" },
+    ],
+  },
+};
+
+// ── Detalle de la TERCERA categoría (mismo módulo idéntico) ──
+const cat2 = SHOWCASE[2];
+const cat2Detalle = {
+  eyebrow: "La categoría a fondo",
+  body: [
+    "El texto de venta es ese párrafo corto bajo el título: una o dos frases que convierten una categoría en una razón para entrar. Su trabajo es unir tres cosas —el beneficio concreto, la palabra clave de la categoría y una señal de confianza— sin que se note el esfuerzo. No describe lo obvio («aquí hay productos»); responde la pregunta que el visitante trae en la cabeza: ¿esto me sirve y por qué contigo?",
+    "Escríbelo para la persona, no para el buscador: la palabra clave entra natural, nunca apilada ni repetida. Cambia los adjetivos por hechos —«entrega en 48 h» pesa más que «el mejor servicio»— y cierra con algo que dé seguridad: años de experiencia, garantía o una certificación. Apunta a 120–160 caracteres: lo justo para decir lo importante y que se lea de un vistazo. Si suena a folleto, recórtalo hasta que suene a alguien que sabe del tema.",
+  ],
+  points: [
+    "Une beneficio + palabra clave + señal de confianza",
+    "Escrito para la persona, no para el buscador",
+    "La palabra clave entra natural, nunca apilada",
+    "120–160 caracteres: corto y fácil de escanear",
+  ],
+  gallery: {
+    main: { src: cat2.image, alt: "Ejemplo del texto de venta de una categoría bajo su título" },
+    thumbs: [
+      { src: "/images/showcase/imagen-optimizada-avif-sitio-web.avif", alt: "El texto de venta junto a la imagen de la categoría" },
+      { src: "/images/showcase/enlaces-internos-navegacion-web.avif", alt: "El texto de venta y los enlaces a las subcategorías" },
+    ],
+  },
+};
+
+// ── Detalle de la CUARTA categoría (mismo módulo idéntico) ──
+const cat3 = SHOWCASE[3];
+const cat3Detalle = {
+  eyebrow: "La categoría a fondo",
+  body: [
+    "Al final de cada tarjeta van los atajos: enlaces a las subcategorías con texto real —«Línea profesional», «Accesorios», «Refacciones»— y un solo botón que lleva a la categoría completa. No son decoración: le dan al visitante el camino exacto a lo que busca sin obligarlo a volver al menú, y de paso tejen los enlaces internos que conectan la categoría con sus páginas hijas.",
+    "La clave está en el texto del enlace: que diga a dónde lleva, no «clic aquí» ni «ver». Usa el nombre real de la subcategoría —es lo que la persona reconoce y lo que da contexto a la navegación—. Cierra con un único botón claro, sin tres llamadas compitiendo entre sí: una acción principal por tarjeta. Cuando todo apunta al mismo lugar, el visitante avanza sin dudar.",
+  ],
+  points: [
+    "Enlaces con el texto real de cada subcategoría",
+    "Atajo directo a lo que el visitante busca",
+    "Conectan la categoría con sus páginas hijas",
+    "Un solo botón claro, sin acciones que compitan",
+  ],
+  gallery: {
+    main: { src: cat3.image, alt: "Ejemplo de enlaces a subcategorías y botón de una categoría" },
+    thumbs: [
+      { src: "/images/showcase/jerarquia-titulos-seo-pagina-web.avif", alt: "Los enlaces a subcategorías bajo el título de la categoría" },
+      { src: "/images/showcase/texto-venta-contenido-markdown.avif", alt: "Los enlaces y el botón al cierre del texto de venta" },
+    ],
+  },
+};
+
 // ── Menú de secciones (barra "section nav" bajo el hero) ─────────────────────
 // DATA-DRIVEN desde NAV (site.ts) — la MISMA fuente que alimenta el Header. Cada
 // botón es una sección principal del sitio; el `sub` resume qué hay dentro. Se
@@ -330,33 +399,66 @@ const faqs: { question: string; answer: string }[] = [
     </div>
   </section>
 
-  {/* ═══ 2b) CATEGORÍA A FONDO — detalle de la 1.ª categoría + galería ═══
-       Amplía la primera tarjeta del catálogo: 2 columnas (info detallada a la
-       izquierda + galería de 1 imagen grande y 2 debajo a la derecha). Componente
-       CategoryDetail; los datos se definen arriba (cat0Detalle, desde SHOWCASE[0]). */}
+  {/* ═══ 2b) CATEGORÍAS A FONDO — PRIMERO todos los módulos, luego TODAS las guías ═══
+       Cada categoría se amplía con el MISMO CategoryDetail (info izq · galería der),
+       diseño IDÉNTICO, sin zig-zag. Datos desde SHOWCASE[i] + catNDetalle (arriba).
+       La secuencia es: módulos arriba, todas las guías agrupadas al final. */}
   <section class="section">
     <div class="container">
-      <CategoryDetail
-        eyebrow={cat0Detalle.eyebrow}
-        title={cat0.label}
-        body={cat0Detalle.body}
-        points={cat0Detalle.points}
-        cta={{ label: "Ver la categoría", href: cat0.href }}
-        gallery={cat0Detalle.gallery}
-      />
-      <GuiaNota titulo="Componente CategoryDetail (categoría a fondo)" archivo="src/components/CategoryDetail.astro">
+      <div class="afondo">
+        <CategoryDetail
+          eyebrow={cat0Detalle.eyebrow}
+          title={cat0.label}
+          body={cat0Detalle.body}
+          points={cat0Detalle.points}
+          cta={{ label: "Ver la categoría", href: cat0.href }}
+          gallery={cat0Detalle.gallery}
+        />
+        <CategoryDetail
+          eyebrow={cat1Detalle.eyebrow}
+          title={cat1.label}
+          body={cat1Detalle.body}
+          points={cat1Detalle.points}
+          cta={{ label: "Ver la categoría", href: cat1.href }}
+          gallery={cat1Detalle.gallery}
+        />
+        <CategoryDetail
+          eyebrow={cat2Detalle.eyebrow}
+          title={cat2.label}
+          body={cat2Detalle.body}
+          points={cat2Detalle.points}
+          cta={{ label: "Ver la categoría", href: cat2.href }}
+          gallery={cat2Detalle.gallery}
+        />
+        <CategoryDetail
+          eyebrow={cat3Detalle.eyebrow}
+          title={cat3.label}
+          body={cat3Detalle.body}
+          points={cat3Detalle.points}
+          cta={{ label: "Ver la categoría", href: cat3.href }}
+          gallery={cat3Detalle.gallery}
+        />
+      </div>
+    </div>
+  </section>
+
+  {/* Guías de los módulos "categoría a fondo" — agrupadas AL FINAL. En un sitio
+     real se eliminan (son material de la plantilla-guía). */}
+  <section class="band">
+    <div class="container">
+      <GuiaNota titulo="Componente CategoryDetail (categoría a fondo)" archivo="src/components/CategoryDetail.astro · src/pages/index.astro">
         <p>
-          Bloque de <strong>2 columnas</strong> para ampliar UNA categoría: a la
-          izquierda la <strong>información detallada</strong> (título, párrafos,
-          puntos clave y CTA) y a la derecha una <strong>galería</strong> con una
-          imagen grande y dos debajo. Refuerza la categoría o servicio antes de que
-          el visitante entre a su página.
+          Cada módulo de arriba amplía UNA categoría con el <strong>mismo</strong>
+          <code>CategoryDetail</code>: 2 columnas con la <strong>información
+          detallada</strong> a la izquierda (título, párrafos, puntos clave y CTA) y
+          una <strong>galería</strong> a la derecha (una imagen grande y dos debajo).
+          Refuerza la categoría o servicio antes de que el visitante entre a su página.
         </p>
         <p>
-          El título y la imagen principal salen de <code>SHOWCASE[0]</code> (la 1.ª
-          tarjeta) para no duplicar datos; los párrafos, los puntos y la galería se
-          definen junto al contenido de la home. Es reutilizable: pasa
-          <code>reverse</code> para alternar el lado de la galería. En móvil se apila.
+          Es una instancia por categoría y <strong>todas son idénticas</strong> (info
+          izquierda · galería derecha, sin alternar): el título y la imagen principal
+          salen de <code>SHOWCASE[i]</code> y el resto —párrafos, puntos y galería— de
+          su objeto <code>catNDetalle</code> en esta misma página. En móvil se apila.
         </p>
       </GuiaNota>
     </div>
@@ -714,6 +816,9 @@ const faqs: { question: string; answer: string }[] = [
   .showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
   @media (min-width: 640px) { .showcase { grid-template-columns: repeat(2, 1fr); } }
   @media (min-width: 1024px) { .showcase { grid-template-columns: repeat(4, 1fr); } }
+
+  /* ── Pila de módulos "categoría a fondo" — separación uniforme, SIN zig-zag ── */
+  .afondo { display: grid; gap: clamp(2.5rem, 6vw, 5rem); }
 
   /* ── Estaciones (pasos) ── */
   .estaciones { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-3); }

@@ -53,7 +53,7 @@ const Tag = as;
       <ul class="cdetail__points">
         {points.map((pt: string) => (
           <li class="cdetail__point">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <span class="cdetail__check" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
             <span>{pt}</span>
           </li>
         ))}
@@ -113,9 +113,13 @@ const Tag = as;
   }
   .cdetail__p { margin: 0; font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
 
-  .cdetail__points { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
-  .cdetail__point { display: flex; align-items: flex-start; gap: var(--sp-2); font-size: var(--text-sm); color: var(--c-ink); line-height: var(--leading-normal); }
-  .cdetail__point svg { flex-shrink: 0; margin-top: .15em; color: var(--c-primary); }
+  .cdetail__points { list-style: none; margin: var(--sp-1) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-3); }
+  .cdetail__point { display: flex; align-items: flex-start; gap: var(--sp-3); font-size: var(--text-base); color: var(--c-ink-2); line-height: var(--leading-normal); }
+  .cdetail__check {
+    flex-shrink: 0; display: grid; place-items: center; margin-top: .1em;
+    width: 22px; height: 22px; border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--c-primary) 14%, transparent); color: var(--c-primary);
+  }
 
   .cdetail__cta {
     align-self: flex-start; margin-top: var(--sp-2);
@@ -135,9 +139,9 @@ const Tag = as;
     margin: 0; overflow: hidden; background: var(--c-surface);
     border: 1px solid var(--c-border);
   }
-  .cdetail__main { border-radius: var(--radius-lg); aspect-ratio: 4 / 3; }
+  .cdetail__main { border-radius: var(--radius-lg); aspect-ratio: 4 / 3; box-shadow: var(--shadow-md); }
   .cdetail__thumbs { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
-  .cdetail__thumb { border-radius: var(--radius-md); aspect-ratio: 4 / 3; }
+  .cdetail__thumb { border-radius: var(--radius-md); aspect-ratio: 4 / 3; box-shadow: var(--shadow-sm); }
   .cdetail__main img, .cdetail__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
   /* ── Escritorio: 2 columnas ── */
