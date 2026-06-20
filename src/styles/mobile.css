@@ -87,6 +87,8 @@
   .footer__nav-link  { min-height: 40px; align-items: center; }
   .footer__legal-link { padding: .35rem .25rem; }
   .tb-item { min-height: 32px; }
+  /* Chips de subcategoría de las cards: tap cómodo en el teléfono. */
+  .ccard__sub { min-height: 40px; display: inline-flex; align-items: center; }
 }
 
 /* ── 6) FORMULARIOS · ANTI-ZOOM iOS + CONFORT ───────────────────────────────

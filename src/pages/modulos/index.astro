@@ -13,9 +13,38 @@ import SectionHeading from '@components/SectionHeading.astro'
 import CategoryCard from '@components/CategoryCard.astro'
 import CategoryDetail from '@components/CategoryDetail.astro'
 import SectionMenu from '@components/SectionMenu.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import GuiaNota from '@components/GuiaNota.astro'
 import { MODULOS, waUrl, WA_MESSAGES } from '@config/site'
 
 const listos = MODULOS.filter((m) => m.estado === 'listo').length
+
+// ── Recetas de la sección «Responsive y móvil» — código real del sistema
+//    (src/styles/mobile.css · tokens.css). Las pinta <Receta>. ──
+const recetaGrid = `/* La vitrina es mobile-first: 1 → 2 → 4 por fila.
+   Arranca en UNA columna y CRECE con min-width (nunca al revés). */
+.showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
+@media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .showcase { grid-template-columns: repeat(4, 1fr); } }`
+
+const recetaImg = `/* tokens.css + mobile.css · imágenes fluidas, sin desbordar ni deformar. */
+img, picture, video, canvas, svg { max-width: 100%; }  /* nunca más anchas que su caja */
+
+@media (max-width: 768px) {
+  img, video { height: auto; }   /* escala manteniendo la proporción */
+}`
+
+const recetaCard = `/* mobile.css · la card entera se toca cómodo en el teléfono. */
+@media (max-width: 1024px) {
+  a, button, [role="button"], label {
+    -webkit-tap-highlight-color: rgba(91, 61, 245, .15);  /* feedback al tap */
+  }
+}
+@media (max-width: 768px) {
+  /* chips de subcategoría con altura tappable */
+  .ccard__sub { min-height: 40px; display: inline-flex; align-items: center; }
+}`
 
 // Presentación de cada card (foto demo + chips) — homologa el card del catálogo.
 // Las fotos son AVIF ya optimizadas que REUSAMOS (contenido DEMO, igual que los
@@ -364,6 +393,100 @@ const AFONDO: Record<string, { body: string[]; points: string[] }> = {
     </div>
   </section>
 
+  {/* ── 4) RESPONSIVE Y MÓVIL — cómo se adapta la vitrina al teléfono ──
+       Misma fórmula que /modulos/topbar e index: SectionHeading (duo) +
+       patrones con <MarcoMovil> y <Receta>. Enfocada en la vitrina (.showcase). */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="La vitrina, en el teléfono"
+        desc="La rejilla de módulos no «se encoge»: se reordena. De cuatro por fila a una sola columna, con cards que se tocan cómodo y fotos que nunca desbordan."
+        body={[
+          'La misma vitrina del catálogo (.showcase) está pensada mobile-first: nace en una columna y va sumando columnas conforme hay ancho —2 en tablet, 4 en escritorio—. Nunca al revés: así el caso base (el teléfono) es el más simple y robusto, y el escritorio solo añade.',
+          'Lo demás lo resuelve el sistema central: las imágenes son fluidas (jamás desbordan su caja), las cards y sus chips crecen al área táctil de 44 px, y el ancho del contenido pasa a 100% en móvil para no perder espacio. Cada patrón, abajo, con su vista en el teléfono y su receta.',
+        ]}
+      />
+
+      <div class="pats">
+        {/* 1 · Rejilla 4 → 2 → 1 */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="La vitrina de 4 columnas baja a una sola columna en el teléfono">
+              <div class="vm-head"><span class="vm-logo">E</span><span class="vm-sp"></span><span class="vm-burg" aria-hidden="true">≡</span></div>
+              <div class="vm-stack">
+                <span class="vm-mini"><i class="vm-mini__img"></i><b class="vm-mini__t"></b><span class="vm-mini__chips"><i></i><i></i></span></span>
+                <span class="vm-mini"><i class="vm-mini__img"></i><b class="vm-mini__t"></b><span class="vm-mini__chips"><i></i><i></i></span></span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · De cuatro por fila a una columna</h3>
+            <p class="pat__desc">La vitrina es <strong>mobile-first</strong>: declara una columna y crece con <code>min-width</code> (2 en tablet, 4 en escritorio). Es el mismo <code>.showcase</code> del catálogo —no se duplica diseño— y baja a una columna sin tocar la card.</p>
+            <Receta titulo="CSS · rejilla mobile-first" lang="css" code={recetaGrid} />
+          </div>
+        </article>
+
+        {/* 2 · Imagen fluida */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="La foto de la card ocupa el ancho sin desbordar ni deformarse">
+              <div class="vm-head"><span class="vm-logo">E</span><span class="vm-sp"></span></div>
+              <div class="vm-one">
+                <span class="vm-card">
+                  <i class="vm-card__img"><b class="vm-card__tag">AVIF</b></i>
+                  <b class="vm-card__t"></b>
+                  <b class="vm-card__d"></b>
+                </span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · Fotos que nunca desbordan</h3>
+            <p class="pat__desc">Cada imagen lleva <code>max-width: 100%</code> y <code>height: auto</code>: ocupa el ancho de la card y escala manteniendo su proporción, sin desbordar el viewport ni deformarse. Las fotos son AVIF optimizadas y cargan en lazy salvo las primeras.</p>
+            <Receta titulo="CSS · imagen fluida" lang="css" code={recetaImg} />
+          </div>
+        </article>
+
+        {/* 3 · Card táctil */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Card con chips y botón cómodos de tocar, de al menos 44 px">
+              <div class="vm-head"><span class="vm-logo">E</span><span class="vm-sp"></span></div>
+              <div class="vm-one">
+                <span class="vm-card">
+                  <i class="vm-card__img"></i>
+                  <b class="vm-card__t"></b>
+                  <span class="vm-chips"><i class="vm-chip">Foto</i><i class="vm-chip">Título</i><i class="vm-chip">Chips</i></span>
+                  <span class="vm-cta">Ver módulo<i class="vm-ruler">44px</i></span>
+                </span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · Cards cómodas de tocar</h3>
+            <p class="pat__desc">En el teléfono se toca con el dedo, no con un cursor: los chips de subcategoría y el botón «Ver módulo» crecen al área táctil de 44 px, y todo elemento tocable lleva un realce de toque suave para confirmar el tap.</p>
+            <Receta titulo="mobile.css · card táctil" lang="css" code={recetaCard} />
+          </div>
+        </article>
+      </div>
+
+      <GuiaNota titulo="La vitrina responsive vive en el sistema" archivo="src/pages/modulos/index.astro · src/components/CategoryCard.astro · src/styles/mobile.css">
+        <p>
+          La rejilla <code>.showcase</code> se declara <strong>mobile-first</strong> en esta
+          página (1 → 2 → 4 por fila), idéntica a la del catálogo. La card (<code>CategoryCard</code>)
+          y sus imágenes ya son fluidas; el toque cómodo y el ancho al 100% en móvil los
+          aporta <code>src/styles/mobile.css</code>, la hoja central del sitio.
+        </p>
+        <p>
+          Resultado: una sola vitrina que se ve y se comporta igual en escritorio y en
+          teléfono, sin diseñar dos veces ni mantener media queries por componente.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
   {/* Cierre: menú de navegación full-width (sustituye al antiguo CTABanner). */}
   <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
 </PageLayout>
@@ -382,4 +505,35 @@ const AFONDO: Record<string, { body: string[]; points: string[] }> = {
 
   /* ── Pila «a fondo» (CategoryDetail) — separación uniforme, SIN zig-zag (= home) ── */
   .afondo { display: grid; gap: clamp(2.5rem, 6vw, 5rem); margin-top: var(--sp-6); }
+
+  /* ── Sección «Responsive y móvil»: teléfono | explicación + receta ──
+     Misma estructura .pats/.pat que /modulos/topbar e index. Mockups de la
+     vitrina con prefijo .vm (vitrina mockup), scoped a esta página. */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pat__desc code { font-family: ui-monospace, Menlo, monospace; font-size: .85em; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
+
+  .vm-head { display: flex; align-items: center; gap: 7px; padding: 8px 11px; background: var(--c-white); border-bottom: 1px solid var(--c-border); }
+  .vm-logo { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-black); font-size: 12px; }
+  .vm-sp { margin-left: auto; }
+  .vm-burg { font-size: 16px; color: var(--c-ink-2); }
+
+  .vm-stack { display: grid; gap: 10px; padding: 12px; }
+  .vm-one { padding: 12px; }
+  .vm-mini, .vm-card { display: grid; gap: 6px; padding: 8px; border-radius: 9px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .vm-mini__img, .vm-card__img { position: relative; display: block; border-radius: 6px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .vm-mini__img { height: 38px; }
+  .vm-card__img { height: 92px; }
+  .vm-card__tag { position: absolute; top: 6px; left: 6px; font-size: 8px; font-weight: 700; letter-spacing: .04em; color: var(--c-primary-dark); background: #fff; border-radius: 4px; padding: 1px 5px; }
+  .vm-mini__t, .vm-card__t { height: 9px; width: 70%; border-radius: 4px; background: var(--c-ink); opacity: .8; }
+  .vm-card__d { height: 7px; width: 92%; border-radius: 4px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .vm-mini__chips { display: flex; gap: 4px; }
+  .vm-mini__chips i { width: 26px; height: 9px; border-radius: 99px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .vm-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .vm-chip { font-style: normal; font-size: 9px; color: var(--c-ink-2); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 99px; padding: 3px 7px; }
+  .vm-cta { position: relative; display: grid; place-items: center; min-height: 30px; margin-top: 2px; border-radius: 7px; background: var(--c-primary); color: #fff; font-size: 11px; font-weight: 700; }
+  .vm-ruler { position: absolute; right: 8px; font-style: normal; font-size: 8px; font-weight: 700; color: #fff; background: rgba(255,255,255,.22); border-radius: 4px; padding: 1px 4px; }
 </style>

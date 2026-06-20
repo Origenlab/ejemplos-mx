@@ -19,11 +19,61 @@ import CompanyAbout from "@components/CompanyAbout.astro";
 import FAQAccordion from "@components/FAQAccordion.astro";
 import ContactForm from "@components/ContactForm.astro";
 import GuiaNota from "@components/GuiaNota.astro";
+import MarcoMovil from "@components/MarcoMovil.astro";
+import Receta from "@components/Receta.astro";
 import { SITE, KEYWORDS, NAV, SERVICES, WA_MESSAGES, SHOWCASE, waUrl } from "@config/site";
 import { buildKeywordTitle, buildKeywordDescription, metaAudit } from "@lib/seo";
 
 // ── WhatsApp: SIEMPRE vía waUrl() (regla D4, nunca número hardcodeado) ──
 const waLink = waUrl();
+
+// ── Recetas de la sección «Responsive y móvil» — strings reales del sistema
+//    (extraídos de src/styles/mobile.css y tokens.css). Los pinta <Receta>. ──
+const recetaBreakpoints = `/* tokens.css · ancho fluido + breakpoints unificados.
+   En ≤768 el container pasa a 100%: el ÚNICO margen lo da
+   --container-px (antes 90% + padding = gutter DOBLE en móvil). */
+@media (max-width: 768px) {
+  :root { --container-max: 100%; }
+}
+@media (max-width: 640px) {
+  :root { --header-height: 58px; --topbar-height: 34px; }
+}
+/* Escala canónica de cortes: 1024 · 768 · 640 · 480 · 380 */`;
+
+const recetaTouch = `/* mobile.css · área táctil mínima 44px (Apple HIG · WCAG 2.5.5). */
+@media (max-width: 1024px) {
+  .mob-direct, .mob-item__trigger { min-height: 48px; }
+  .mob-item__link { min-height: 44px; display: flex; align-items: center; }
+  a, button, label { -webkit-tap-highlight-color: rgba(91, 61, 245, .15); }
+}`;
+
+const recetaInputs = `/* mobile.css · formularios sin zoom en iOS.
+   Safari hace zoom si el campo mide < 16px → forzamos 16px. */
+@media (max-width: 640px) {
+  .cform input, .cform textarea, .cform select {
+    font-size: 16px;       /* clave anti-zoom */
+    min-height: 48px;
+  }
+  .cform__submit { width: 100%; min-height: 50px; }
+}`;
+
+const recetaSafeArea = `/* mobile.css · respeta el notch/gestos iOS y ancla el FAB.
+   El <meta viewport> ya incluye viewport-fit=cover. */
+@supports (padding: max(0px)) {
+  @media (max-width: 768px) {
+    .container {
+      padding-left:  max(var(--container-px), env(safe-area-inset-left));
+      padding-right: max(var(--container-px), env(safe-area-inset-right));
+    }
+  }
+}
+@media (max-width: 640px) {
+  .wa-float {            /* botón flotante de WhatsApp */
+    width: 52px; height: 52px;
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    right:  max(1rem, env(safe-area-inset-right));
+  }
+}`;
 
 // ── Demo de la regla de metas (keyword-first) — se alimenta de KEYWORDS ──
 // Reproduce la generación real del <title> y la description de la home para
@@ -786,6 +836,125 @@ const faqs: { question: string; answer: string }[] = [
     </div>
   </section>
 
+  {/* ═══ 5b) RESPONSIVE Y MÓVIL — cómo se adapta el sitio al teléfono ═══
+       Misma fórmula que la sección responsive de /modulos/topbar: SectionHeading
+       (duo) + patrones, cada uno con su vista en <MarcoMovil> y una <Receta>
+       copiable. Explica el sistema REAL: mobile.css central + tokens responsive. */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="Cómo se ve en el teléfono"
+        desc="Responsive no es «encoger el escritorio»: es decidir qué se reordena, qué crece y qué se toca cómodo con el pulgar."
+        body={[
+          "Todo el comportamiento móvil vive en UNA sola hoja —src/styles/mobile.css—, cargada al final del cascade y con breakpoints unificados (1024 · 768 · 640 · 480 · 380). Las medidas van en porcentaje y clamp() para que el contenido respire en cualquier ancho; solo quedan en píxeles dos cosas por norma técnica: los 16 px de los campos (evitan el zoom de iOS) y los 44–52 px de área táctil.",
+          "Abajo, cuatro decisiones de diseño móvil, cada una con su vista en el teléfono y una receta comentada lista para copiar: el ancho sin gutter doble, el toque mínimo de 44 px, los formularios sin zoom y el respeto al notch con el WhatsApp siempre a mano.",
+        ]}
+      />
+
+      <div class="pats">
+        {/* 1 · Mobile-first + container 100% */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="En móvil las tarjetas ocupan todo el ancho, en una sola columna">
+              <div class="rm rm--head"><span class="rm__logo">E</span><span class="rm__sp"></span><span class="rm__burg" aria-hidden="true">≡</span></div>
+              <div class="rm-stack">
+                <span class="rm-card"></span>
+                <span class="rm-card"></span>
+                <span class="rm-card"></span>
+              </div>
+              <span class="rm-cal" aria-hidden="true">ancho 100%</span>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · Un solo margen, ancho completo</h3>
+            <p class="pat__desc">En escritorio el contenido vive en el 90% central; en móvil ese 90% más el padding interno se comían casi un quinto del ancho. Por eso en ≤768 px el container pasa a 100%: el único margen lo pone <code>--container-px</code>, y las rejillas de 4 columnas bajan a 1 sin tocar el componente.</p>
+            <Receta titulo="tokens.css · ancho y breakpoints" lang="css" code={recetaBreakpoints} />
+          </div>
+        </article>
+
+        {/* 2 · Áreas táctiles ≥44px */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Cada elemento del menú móvil mide al menos 44 px de alto">
+              <div class="rm rm--head"><span class="rm__logo">E</span><span class="rm__sp"></span><span class="rm__burg rm__burg--on" aria-hidden="true">✕</span></div>
+              <div class="rm-menu">
+                <span class="rm-row">Inicio</span>
+                <span class="rm-row rm-row--tap">Productos<i class="rm-ruler">44px</i></span>
+                <span class="rm-row">Servicios</span>
+                <span class="rm-row">Contacto</span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · Nada que tocar mide menos de 44 px</h3>
+            <p class="pat__desc">El estándar de Apple (HIG) y WCAG pide 44 px mínimos en cualquier cosa tocable. Los enlaces del menú móvil, los botones y los campos crecen a esa altura, y se añade un realce de toque suave para dar feedback al tap.</p>
+            <Receta titulo="mobile.css · área táctil" lang="css" code={recetaTouch} />
+          </div>
+        </article>
+
+        {/* 3 · Formularios sin zoom (iOS) */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Formulario con campos de 16 px que no disparan el zoom de iOS">
+              <div class="rm rm--head"><span class="rm__logo">E</span><span class="rm__sp"></span></div>
+              <div class="rm-form">
+                <span class="rm-label">Nombre</span>
+                <span class="rm-input rm-input--on">Juan<i class="rm-tag">16px</i></span>
+                <span class="rm-label">Mensaje</span>
+                <span class="rm-input rm-input--area"></span>
+                <span class="rm-btn">Enviar por WhatsApp</span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · Formularios que no «saltan» en iOS</h3>
+            <p class="pat__desc">Safari en iPhone hace zoom automático cuando un campo tiene la letra por debajo de 16 px —y al volver, la página queda descuadrada—. Fijar 16 px en inputs, selects y textarea lo evita de raíz; el alto sube a 48 px para tocar cómodo.</p>
+            <Receta titulo="mobile.css · campos sin zoom" lang="css" code={recetaInputs} />
+          </div>
+        </article>
+
+        {/* 4 · Safe-area + FAB de WhatsApp */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="El contenido respeta el notch y el botón de WhatsApp queda sobre el área segura">
+              <div class="rm rm--notch" aria-hidden="true"><i></i></div>
+              <div class="rm-stack rm-stack--pad">
+                <span class="rm-card rm-card--sm"></span>
+                <span class="rm-card rm-card--sm"></span>
+              </div>
+              <span class="rm-safe" aria-hidden="true"></span>
+              <span class="rm-fab" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/></svg>
+              </span>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">4 · Notch respetado, WhatsApp siempre a mano</h3>
+            <p class="pat__desc">Con <code>viewport-fit=cover</code> el sitio usa toda la pantalla, así que los bordes respetan el área segura del iPhone (<code>env(safe-area-inset-*)</code>) para no quedar bajo el notch ni la barra de gestos. El botón flotante de WhatsApp se vuelve un círculo de 52 px anclado sobre esa zona.</p>
+            <Receta titulo="mobile.css · safe-area + FAB" lang="css" code={recetaSafeArea} />
+          </div>
+        </article>
+      </div>
+
+      <GuiaNota titulo="Sistema responsive: una sola hoja + tokens" archivo="src/styles/mobile.css · src/styles/tokens.css · src/layouts/BaseLayout.astro">
+        <p>
+          Todo el responsive vive en <code>src/styles/mobile.css</code> (overrides de
+          layout) y en los <strong>tokens responsive</strong> al final de
+          <code>tokens.css</code> (anchos y alturas por breakpoint). Se importa
+          <strong>al final del cascade</strong> en <code>BaseLayout</code>, así vence a
+          los estilos scoped de cada componente con <code>!important</code> quirúrgico.
+        </p>
+        <p>
+          Breakpoints únicos <strong>1024 · 768 · 640 · 480 · 380</strong> y medidas en
+          % / <code>clamp()</code>. Cambias el comportamiento móvil en un solo lugar y se
+          propaga a todo el sitio —sin perseguir media queries dispersas por componente—.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
   {/* ═══ 6) TIPOS DE PÁGINA — hoja de ruta del template ═══ */}
   <section class="section">
     <div class="container">
@@ -1011,4 +1180,50 @@ const faqs: { question: string; answer: string }[] = [
     .ribbon__text { font-size: var(--text-base); }
     .kw-row { grid-template-columns: repeat(3, 1fr); }
   }
+
+  /* ── Sección «Responsive y móvil»: patrón teléfono | explicación + receta ──
+     Misma estructura que /modulos/topbar (.pats/.pat). Mockups con prefijo .rm
+     (responsive mockup), scoped a esta página. */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pat__desc code { font-family: ui-monospace, Menlo, monospace; font-size: .85em; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
+
+  /* Cabecera falsa común a los mockups */
+  .rm { display: flex; align-items: center; gap: 7px; padding: 8px 11px; font-size: 12px; }
+  .rm--head { background: var(--c-white); border-bottom: 1px solid var(--c-border); }
+  .rm__logo { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-black); font-size: 12px; }
+  .rm__sp { margin-left: auto; }
+  .rm__burg { font-size: 16px; color: var(--c-ink-2); }
+  .rm__burg--on { color: var(--c-primary); }
+
+  /* 1 · Stack ancho completo + caliper «100%» */
+  .rm-stack { display: grid; gap: 9px; padding: 12px; }
+  .rm-stack--pad { padding-top: 16px; }
+  .rm-card { height: 46px; border-radius: 8px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .rm-card--sm { height: 38px; }
+  .rm-cal { position: absolute; left: 12px; right: 12px; bottom: 12px; height: 18px; display: grid; place-items: center; border: 1px dashed var(--c-primary); border-radius: 4px; color: var(--c-primary-dark); font-size: 9px; font-weight: 700; background: color-mix(in srgb, var(--c-primary) 8%, #fff); }
+
+  /* 2 · Menú con filas táctiles */
+  .rm-menu { display: grid; }
+  .rm-row { display: flex; align-items: center; min-height: 40px; padding: 0 12px; border-bottom: 1px solid var(--c-border); font-size: 12px; color: var(--c-ink); }
+  .rm-row--tap { position: relative; background: color-mix(in srgb, var(--c-primary) 8%, #fff); color: var(--c-primary-dark); font-weight: 600; }
+  .rm-ruler { position: absolute; right: 10px; font-style: normal; font-size: 9px; font-weight: 700; color: var(--c-primary); background: #fff; border: 1px solid var(--c-primary); border-radius: 4px; padding: 1px 5px; }
+
+  /* 3 · Formulario */
+  .rm-form { display: grid; gap: 6px; padding: 12px; }
+  .rm-label { font-size: 10px; font-weight: 600; color: var(--c-ink); }
+  .rm-input { position: relative; display: flex; align-items: center; min-height: 30px; padding: 0 9px; border-radius: 7px; background: var(--c-surface); border: 1px solid var(--c-border); font-size: 12px; color: var(--c-ink-2); }
+  .rm-input--on { border-color: var(--c-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 18%, transparent); color: var(--c-ink); }
+  .rm-input--area { min-height: 46px; }
+  .rm-tag { position: absolute; right: 7px; font-style: normal; font-size: 9px; font-weight: 700; color: var(--c-primary); background: #fff; border: 1px solid var(--c-primary); border-radius: 4px; padding: 1px 5px; }
+  .rm-btn { margin-top: 2px; display: grid; place-items: center; min-height: 34px; border-radius: 7px; background: #25d366; color: #fff; font-weight: 700; font-size: 11px; }
+
+  /* 4 · Safe-area + FAB */
+  .rm--notch { justify-content: center; padding: 6px 0 4px; }
+  .rm--notch i { width: 56px; height: 6px; border-radius: 99px; background: var(--c-ink); opacity: .85; }
+  .rm-safe { position: absolute; left: 7px; right: 7px; bottom: 7px; height: 34px; border: 1px dashed var(--c-border); border-radius: 9px; }
+  .rm-fab { position: absolute; right: 15px; bottom: 15px; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #25d366; color: #fff; box-shadow: 0 4px 12px rgba(37,211,102,.4); }
 </style>
