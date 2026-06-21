@@ -1,0 +1,193 @@
+---
+title: "Schema Product en cards: regla del emisor único"
+description: "Cuándo emitir Product+Offer JSON-LD en una card y cuándo no, por qué la regla del único emisor B3 evita penalizaciones y duplicados en Google."
+category: "guias"
+heroImage: "/images/articulos/schema-product-cards-emisor-unico.avif"
+pubDate: 2026-04-11
+author: "Ejemplos.mx"
+tags: ["astro", "product-card", "schema", "jsonld", "seo"]
+seoTitle: "Schema Product cards: emisor único"
+seoDescription: "Schema Product+Offer en cards: dónde emitirlo, cuándo NO, regla del único emisor y errores que disparan warnings en Search Console."
+---
+
+La tentación es obvia. Acabas de armar la `ProductCard` y, ya que tienes el `title`, la `image` y el `description` en las props, parece honesto emitir un bloquecito `‹script type="application/ld+json"›` con un `Product+Offer` dentro del propio componente. La página del catálogo va a tener veinte cards, así que veinte bloques de schema —Google va a estar feliz, ¿no?—. Esta guía explica por qué exactamente eso es lo que dispara warnings en Search Console, qué dice la regla del único emisor B3 del repo y dónde sí va el `Product+Offer` (en la ficha L4, una sola vez por página). Está escrita para desarrolladores que ya leyeron el `lib/seo.ts` del proyecto y quieren entender por qué `productSchema()` no se invoca desde la card.
+
+## Contexto
+
+Google permite múltiples bloques `‹script type="application/ld+json"›` por página, pero los espera coherentes: cada entidad (`Product`, `Service`, `BreadcrumbList`, `Article`) debe aparecer una sola vez, o como mucho referenciada por `@id` desde otra. Cuando un mismo `Product` aparece dos veces —una desde la card del listado y otra desde la ficha L4 cuando navegas— el rastreador no falla, pero registra inconsistencias y deja de mostrar rich results para esas URLs. El warning que aparece en Search Console no dice «emisor duplicado»; dice «no se detectó información de precio coherente», y la causa real está enterrada tres niveles más abajo.
+
+La regla dura del proyecto cierra el debate antes de que empiece. Está escrita en `src/lib/seo.ts:387`: «UN ÚNICO EMISOR POR PÁGINA. Esta función se invoca SOLO una vez por página, desde el layout. Componentes hijos no emiten JSON-LD; solo emiten microdata HTML cuando aporta una segunda señal». En la práctica: el componente `ProductCard.astro` queda como presentación pura, sin `‹script type="application/ld+json"›` por ningún lado. El JSON-LD lo arma `buildSchema()`, una sola vez, en el `‹head›` de la página padre. La página padre decide qué tipo: si es el listado del catálogo, emite `CollectionPage + ItemList` vía `directorySchema()`; si es la ficha L4 de un producto, emite `Product + Offer` vía `productSchema()`. Nunca las dos cosas en la misma URL.
+
+La consecuencia editorial es que `productos/index.astro` y `productos/‹slug›.astro` emiten schemas distintos —porque son páginas distintas con propósitos distintos—. El listado es un índice navegable: lo correcto es `ItemList`, donde cada `ListItem` lleva `position`, `name`, `url`, `image` y `description`. La ficha L4 es la entidad real: lo correcto es `Product` con su `Offer`, su `brand`, su `sku` y, si las hay, sus reseñas reales. Un visitante que llega al listado desde Google ve la URL del catálogo con el rastro de breadcrumbs; uno que llega a la ficha ve la URL del producto con el precio y la disponibilidad. Dos rich results distintos para dos URLs distintas.
+
+## Implementación paso a paso
+
+La `ProductCard` no toca schema. Cero líneas de JSON-LD, cero `‹script›`. Recibe sus props, pinta su HTML, y termina. El único guiño semántico que vale la pena dejar es el `aria-label` en el `‹article›` para lectores de pantalla y el `‹a›` que envuelve toda la card —Google lee el anchor text completo (`title + description + ctaLabel`) y le basta para entender que la card apunta a una ficha de producto—. Si quisieras añadir microdata (`itemtype="https://schema.org/Product"` en el `‹article›`), podrías, pero entonces sí estarías emitiendo schema desde la card y rompiendo la regla. La línea es clara: HTML semántico sí, JSON-LD ni un byte.
+
+```astro
+---
+// src/components/ProductCard.astro
+// SIN <script type="application/ld+json">. SIN itemtype/itemprop.
+// La card es presentación; el schema lo emite la página padre.
+const { title, href, image, badge, description, ctaLabel = 'Ver detalles' } = Astro.props
+---
+<article class="pcard" aria-label={title}>
+  <a href={href} class="pcard__link">
+    {/* imagen + badge + título H3 + descripción + CTA inline */}
+    {/* CERO JSON-LD */}
+  </a>
+</article>
+```
+
+La página padre del listado emite `CollectionPage + ItemList` y nada más. El helper `directorySchema()` en `lib/seo.ts:837` arma el bloque a partir de un array `items` con `❴ name, path, image, description ❵`. La página padre construye ese array mapeando la colección, lo pasa como `schemaData.list` al `PageLayout`, y `buildSchema('category', …)` lo coloca en el `‹head›` una sola vez. Los rastreadores ven un índice limpio con veinte `ListItem`, no veinte `Product` separados:
+
+```astro
+---
+// src/pages/productos/index.astro — emisor de ItemList
+import PageLayout from '@layouts/PageLayout.astro'
+import ProductCard from '@components/ProductCard.astro'
+import { getCollection } from 'astro:content'
+
+const productos = (await getCollection('productos', ({ data }) => !data.draft))
+  .sort((a, b) => (a.data.order ?? 0) - (b.data.order ?? 0))
+
+const items = productos.map((p) => ({
+  name: p.data.title,
+  path: `/productos/${p.id}`,
+  image: p.data.image,
+  description: p.data.description,
+}))
+---
+
+<PageLayout
+  title="Catálogo de productos"
+  description="Todos los productos del sitio, una card por ficha."
+  pageType="category"
+  schemaData={{ list: {
+    name: 'Catálogo de productos',
+    description: 'Productos disponibles, una card por ficha.',
+    path: '/productos',
+    items,
+  } }}
+>
+  <div class="grid">
+    {productos.map((p, i) => (
+      <ProductCard
+        title={p.data.title}
+        href={`/productos/${p.id}`}
+        image={p.data.image}
+        badge={p.data.category}
+        description={p.data.description}
+        index={i}
+        priority={i === 0}
+      />
+    ))}
+  </div>
+</PageLayout>
+```
+
+La ficha L4 es la única página que emite `Product + Offer`. El helper `productSchema()` en `lib/seo.ts:636` recibe `name`, `description`, `path`, `images`, `sku`, `brand`, `price` y, opcionalmente, `reviews`. Si `price` es una cadena reconocible («Desde $890 MXN»), parsea el número y lo coloca en el `Offer.price`; si no, emite un `Offer` con `price: '0'` y un `priceSpecification` que aclara «Precio bajo cotización». La invocación canónica es esta —el `ProductLayout` la hace por ti cuando `pageType="product"`—:
+
+```astro
+---
+// src/layouts/ProductLayout.astro — UN ÚNICO emisor de Product+Offer
+import PageLayout from '@layouts/PageLayout.astro'
+const { entry } = Astro.props
+const { data } = entry
+---
+<PageLayout
+  title={data.title}
+  description={data.description}
+  pageType="product"
+  schemaData={{ product: {
+    name: data.title,
+    description: data.description,
+    path: `/productos/${entry.id}`,
+    images: [data.image, ...(data.gallery ?? [])],
+    sku: data.sku,
+    brand: data.brand,
+    price: data.price,            // string libre: "Desde $890 MXN", "Cotizar"
+    category: data.category,
+    // reviews: NO se pasan a menos que sean reales y verificables
+  } }}
+  breadcrumbs={[
+    { label: 'Productos', href: '/productos' },
+    { label: data.title },
+  ]}
+>
+  <slot />
+</PageLayout>
+```
+
+El `buildSchema()` orquesta. Cuando `pageType` es `'category'`, mete el `CollectionPage + ItemList` en el `‹head›`; cuando es `'product'`, mete `Product + Offer`. Nunca los dos a la vez para la misma URL. El `BreadcrumbList` se emite aparte (también una sola vez, también desde el layout) y se conecta a la entidad principal por `@id`. Las relaciones quedan tipadas por URL, no por duplicación —si Google sigue el `@id` del `Product` desde el `BreadcrumbList`, llega a la misma URL canónica—:
+
+```ts
+// src/lib/seo.ts — orquestación del único emisor
+case 'product':
+  if (data.product) out.push({ '@context': CTX, ...productSchema(data.product) });
+  break;
+// …
+case 'category':
+  if (data.list) out.push({ '@context': CTX, ...directorySchema(data.list) });
+  break;
+```
+
+## Tabla comparativa
+
+| Pieza de la UI | Página | Schema correcto | Por qué |
+|---|---|---|---|
+| `ProductCard` (componente) | Cualquier listado | Ninguno | Es presentación. Emitir aquí duplica con el padre |
+| `productos/index.astro` (listado) | Listado del catálogo | `CollectionPage + ItemList` | Es un índice navegable, no la ficha real |
+| Sección «Productos destacados» (home) | Home | `ItemList` recortado (3-6 items) | Curaduría, no catálogo completo; no emitir Product |
+| Bloque «Relacionados» dentro de una ficha | Ficha L4 | Nada extra | El Product principal ya está; relacionados van como `isRelatedTo` opcional |
+| `productos/‹slug›.astro` (ficha L4) | Ficha de producto | `Product + Offer` (uno) | Es la entidad real, con precio, brand y sku |
+| Ficha L4 con reseñas reales verificables | Ficha de producto | `Product + Offer + Review[]` | Reseñas reales con autor, texto y fecha; nunca fabricadas |
+| Ficha L4 sin reseñas reales | Ficha de producto | `Product + Offer` (sin AggregateRating) | `AggregateRating` inventado dispara acción manual de Google |
+
+La columna de la derecha es donde se ven los errores. Emitir `Product` desde la card del listado parece «más datos para Google», pero termina en dos `Product` con el mismo `@id` (la card uno por producto + la ficha L4 cuando navegas), y Google deja de procesar ambos. Emitir `AggregateRating` con `ratingValue: 4.8` y `reviewCount: 12` sin tener reseñas reales detrás dispara acción manual en seis a doce semanas y la pérdida de todos los rich results del sitio. La regla B4 del repo es la consecuencia de ese error en proyectos anteriores: si no hay reseñas reales con autor verificable, no se modela.
+
+## Patrones avanzados
+
+**El precio como cadena libre y `Offer` honesto.** El schema Zod de la colección declara `price: z.string().optional()`. Cuando llega a `productSchema()`, el helper parsea: si encuentra un número, emite `Offer.price = "890"` con `priceValidUntil` al final del año siguiente; si no, emite `Offer.price = "0"` con un `priceSpecification` que explica «Precio bajo cotización». Lo que no hace —y aquí está el detalle— es inventar un precio cuando no hay. Google rechaza `Offer` con `price` ausente y rechaza `Offer` con precios obviamente falsos (todos los productos a `$1`); el `priceSpecification` honesto pasa la validación y mantiene el rich result.
+
+**`AggregateRating` solo si es verificable.** El helper `emitReviews()` en `lib/seo.ts:875` devuelve `❴❵` cuando no hay `reviews` o cuando el toggle `SITE.allowSelfReviews` está apagado (el default). Para activarlo, el sitio debe tener reseñas reales importadas (de Google Business Profile, Trustpilot o equivalente) con `author`, `text`, `rating` y `date` por cada una. La razón es operativa: las reseñas auto-emitidas sobre la propia entidad son spam estructurado para Google desde 2023 y disparan «acción manual» con pérdida total de rich results en todo el dominio. Mejor cero estrellas que cinco inventadas.
+
+**`@id` estable como pegamento entre páginas.** El `productSchema()` emite `'@id': '$❴url❵#product'`. Esa cadena —URL absoluta del producto + `#product`— es la misma en todas las páginas que referencian al producto. Si la home tiene un `ItemList` de destacados y la ficha L4 emite el `Product` completo, el `ListItem` de la home apunta por `url` a la misma URL que el `@id` del `Product`. Google deduplica por URL canónica, no por contenido del bloque. Esto permite que la home «mencione» productos sin emitir `Product` completo y la ficha L4 los emita una sola vez.
+
+**Microdata HTML como segunda señal opcional.** Si quieres reforzar la card con `itemtype="https://schema.org/Product"` y `itemprop="name"` en el título, Google los respeta y los considera una señal secundaria. Pero entonces cuentan como un emisor más y, para no romper la regla B3, debes asegurarte de que ese `Product` microdata no tenga `Offer` (`itemprop="offers"`). En la práctica, el ROI de añadir microdata HTML a las cards del listado es bajo: el `ItemList` del padre ya identifica cada elemento, y la microdata añade marcup que casi nadie parsea fuera de Google. Decisión: HTML semántico (h3, alt, aria-label) sí; microdata schema.org en cards, no por defecto.
+
+## Checklist
+
+- [ ] Confirmar que `ProductCard.astro` NO contiene ningún `‹script type="application/ld+json"›`
+- [ ] Validar que `productos/index.astro` emite `CollectionPage + ItemList` vía `schemaData.list`
+- [ ] Confirmar que la ficha L4 (`ProductLayout` o equivalente) emite `Product + Offer` UNA sola vez
+- [ ] Verificar en el Test de resultados enriquecidos que no aparecen dos `Product` con el mismo `@id`
+- [ ] No pasar `reviews` a `productSchema()` salvo que sean reales, con autor verificable y fecha
+- [ ] No fabricar `AggregateRating` aunque parezca «mejor para SEO» —dispara acción manual—
+- [ ] Mantener `price` como cadena libre en la colección; dejar el parsing a `productSchema()`
+- [ ] Auditar trimestralmente Search Console por warnings de «duplicate structured data» en el directorio `/productos/`
+
+## Preguntas frecuentes
+
+### ¿Puedo emitir `Product` en la card si la ficha L4 no existe todavía?
+Puedes, pero estás creando una entidad sin URL canónica propia. Google la indexará apuntando a `/productos/` (el listado), y cuando publiques la ficha L4 vas a tener un `Product` viejo huérfano y uno nuevo correcto compitiendo por el mismo `@id`. La opción limpia: no publicar la card hasta que la ficha L4 exista. Si necesitas teaser de un producto futuro, hazlo como `Announcement` o como entrada de blog, no como `Product`.
+
+### ¿Y si vendo el mismo producto en dos URLs (catálogo y landing de campaña)?
+Elige una URL canónica con `‹link rel="canonical"›` y emite el `Product` solo desde esa. La otra URL puede tener la card pero sin schema (es una landing comercial, no una ficha técnica). Si emites `Product` desde las dos, Google detecta contenido duplicado y desindexa una al azar —rara vez la que querías—. La regla: un `Product` por URL canónica, sin excepciones.
+
+### ¿Cómo manejo variantes (talla, color) sin duplicar `Product`?
+Hay dos patrones que Google entiende: `ProductGroup` con `hasVariant: [Product, Product, …]` para variantes con URL propia, o un solo `Product` con `Offer` múltiples si las variantes solo cambian precio y disponibilidad. Para catálogos Markdown del repo, lo más práctico suele ser un `.md` por variante (`casco-rojo.md`, `casco-azul.md`) con su propio `Product`, y un campo `variantOf` en el frontmatter que vincule al producto madre. Evita el patrón «un Product con cinco offers» a menos que sea estrictamente lo mismo en cinco precios.
+
+### ¿`directorySchema()` reemplaza al `BreadcrumbList`?
+No. Son ortogonales. `directorySchema()` emite `CollectionPage + ItemList` para describir el contenido del listado. `breadcrumbSchema()` emite `BreadcrumbList` para describir la jerarquía de navegación. Una página de catálogo emite los dos —uno por el contenido, otro por la posición en el sitio— y ambos se coordinan por `@id`. Ver la [guía de breadcrumbs](/blog/migas-de-pan-astro-guia-paso-a-paso) para el detalle del `BreadcrumbList`.
+
+### ¿Search Console tarda en mostrar el warning si emito schema duplicado?
+Sí, normalmente dos a seis semanas tras el primer rastreo, y a veces aparece en «Mejoras» como una caída silenciosa de URLs válidas para rich results en lugar de un error explícito. Por eso conviene validar en el [Test de resultados enriquecidos](https://search.google.com/test/rich-results) durante el deploy: el test es síncrono y te dice en el momento si hay dos `Product` con el mismo `@id`. Auditoría trimestral de Search Console para confirmar que no se está degradando es disciplina mínima.
+
+La regla del emisor único no es una preferencia estilística —es lo que hace que Search Console deje de mandar correos a las seis semanas—. Una `ProductCard` que no emite JSON-LD, un listado que emite `ItemList`, una ficha L4 que emite `Product + Offer`. Tres páginas distintas, tres schemas distintos, cero duplicados. El día que aparezca un componente nuevo (vitrina de destacados, carrusel, recomendados), la pregunta no es «¿qué schema le pongo?», sino «¿qué emisor único de la página padre ya cubre este caso?». Casi siempre la respuesta es: ya está cubierto, no añadas un emisor más.
+
+## Sigue leyendo
+
+- [Módulo Product card en vivo](/modulos/product-card)
+- [Product card en Astro: catálogo desde Markdown](/blog/product-card-catalogo-markdown-astro)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

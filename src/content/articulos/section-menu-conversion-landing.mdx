@@ -48,7 +48,7 @@ const cta = {
 
 Tres detalles intencionales en ese ejemplo. Primero: solo tres `items`, no cuatro. Al cierre, menos opciones convierte mejor —el visitante ya leyó, no quiere un nuevo menú—. Segundo: `WA_MESSAGES.contacto`, no `WA_MESSAGES.cotizar`. El mensaje precargado refleja la intención de quien escribe desde el final de un artículo, no desde el primer pantallazo. Tercero: el copy del `sub` cambia de «Lo que ofreces» (frase de hero) a «Lo que ofrecemos» (frase de cierre, voz de marca, más cercana).
 
-Para instrumentar la franja y medir qué `item` recibe los clics, se puede envolver el componente y añadir atributos `data-` con un pequeño script. La opción más limpia, sin tocar el componente, es delegar el evento al `<nav>` desde un script de página:
+Para instrumentar la franja y medir qué `item` recibe los clics, se puede envolver el componente y añadir atributos `data-` con un pequeño script. La opción más limpia, sin tocar el componente, es delegar el evento al `‹nav›` desde un script de página:
 
 ```astro
 <SectionMenu

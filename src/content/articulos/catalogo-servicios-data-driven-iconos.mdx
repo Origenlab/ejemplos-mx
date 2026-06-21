@@ -1,0 +1,214 @@
+---
+title: "Catálogo de servicios data-driven en Astro"
+description: "Cómo armar un catálogo de servicios data-driven en Astro: iconos por categoría, mapping desde la colección y un solo grid que crece sin tocar el JSX."
+category: "guias"
+heroImage: "/images/articulos/catalogo-servicios-data-driven-iconos.avif"
+pubDate: 2026-04-17
+author: "Ejemplos.mx"
+tags: ["astro", "service-card", "data-driven", "content-collections", "iconos"]
+seoTitle: "Catálogo servicios data-driven en Astro"
+seoDescription: "Catálogo de servicios en Astro con Content Collections, iconos por enum de categoría y grid responsive. Sin hardcoded, escalable y tipado."
+---
+
+Un catálogo de servicios hardcodeado parece la solución obvia hasta que el cliente pide agregar el cuarto servicio, mover el segundo al primer lugar y cambiar el icono del tercero —todo en la misma llamada—. Si el grid está escrito a mano, cada cambio toca JSX y CSS; si el grid es data-driven desde una Content Collection, cada cambio toca un archivo Markdown y el build se ocupa del resto. Esta guía arma un catálogo `/servicios` que crece con la collection, asigna iconos por categoría con un enum cerrado y separa lo que pertenece al sitio (iconos, layout) de lo que pertenece al contenido (texto, pricing).
+
+## Contexto
+
+El antipatrón D3 del proyecto es claro: las entidades repetibles —productos, servicios, artículos, zonas, casos— viven en Content Collections con esquema Zod `.strict()`, nunca hardcodeadas en `.astro`. La razón no es purista: es operativa. Cuando el catálogo tiene tres servicios, hardcodear funciona; cuando llega a doce, agregar uno toca cuatro archivos (la página padre, el grid, el array de iconos, el CSS del nuevo color). Cada toque es una oportunidad de romper algo silenciosamente —un `key` duplicado, un alt vacío, un href que ya no existe—. La collection elimina la mayoría de estas fricciones con una sola idea: el grid lee del filesystem, valida con Zod en build, y emite el HTML una sola vez.
+
+El componente `ServiceCard.astro` está diseñado para este flujo. Acepta `title`, `description` y `href` (obligatorias) más `icon`, `image`, `imageAlt`, `badge`, `ctaLabel` y `whatsapp` (opcionales). Las tres obligatorias mapean directo a campos de la collection `servicios` (`title`, `description`, slug → href); las opcionales se calculan o derivan en el padre. La pieza que NO vive en la collection son los iconos: meter SVG inline en frontmatter rompe la legibilidad del Markdown y obliga al autor de contenido a copiar/pegar XML. El patrón canónico separa identidad visual (iconos, paleta) que vive en código, de contenido (texto, datos) que vive en Markdown.
+
+El enum cerrado de categorías es la pieza menos visible pero más importante. El schema declara `SERVICE_CATEGORIES = ['instalacion', 'mantenimiento', 'general']` y `category: z.enum(SERVICE_CATEGORIES)` (content.config.ts:79-83,127). Esto rechaza valores inválidos en build —no en producción, no en el cliente—, así el mapa de iconos `ICONS[category]` siempre tiene una llave válida y el TypeScript te lo verifica. Sin enum, alguien escribe `category: "Instalación"` con mayúscula, el grid pinta sin icono y nadie se entera hasta que un visitante reporta la card huérfana. El enum es el contrato entre la collection y el grid.
+
+## Implementación paso a paso
+
+El schema de la collection `servicios` declara todos los campos que el grid puede necesitar, sin sobre-modelar. La descripción se valida entre 70 y 280 caracteres, lo mismo que acepta `ServiceCard` sin romper la rejilla; `pricing` e `includes` son opcionales porque la card del grid no los muestra (eso es trabajo de la ficha L4); `isHub` distingue una página hub de un servicio individual; `featured` y `order` controlan jerarquía y orden en el grid:
+
+```ts
+// src/content.config.ts:121-150 — schema servicios
+const servicios = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/servicios' }),
+  schema: z
+    .object({
+      title: z.string().min(10).max(110),
+      description: z.string().min(70).max(280),
+      category: z.enum(SERVICE_CATEGORIES),     // enum cerrado: instalacion|mantenimiento|general
+      image: imagePath,                          // imagen obligatoria
+      pricing: z.object({
+        min: z.number().optional(),
+        max: z.number().optional(),
+        unit: z.enum(['pieza','set','evento','hora','dia','mes','servicio']).optional(),
+        note: z.string().optional(),
+      }).optional(),
+      includes: z.array(z.string()).optional(),
+      isHub: z.boolean().default(false),         // hub vs servicio individual
+      featured: z.boolean().default(false),      // → badge POPULAR en el grid
+      order: z.number().default(0),              // orden ASC en el grid
+      draft: z.boolean().default(false),         // se filtra antes del map
+      ...seoFields,
+    })
+    .strict(),
+})
+```
+
+Un archivo de la collection se ve así. Es el formato real del Markdown que un autor de contenido edita —cero JSX, cero SVG, cero clases CSS—. El `category` está limitado por el enum, el `image` validado contra el regex `^/images/`, y el resto es texto plano con la disciplina de las cotas Zod:
+
+```yaml
+---
+# src/content/servicios/instalacion-demo.md
+title: "Servicio de instalación de ejemplo"
+description: "Ficha de servicio DEMO en la categoría instalación. Muestra los campos de servicio: pricing transparente, qué incluye y un hero opcional, todo validado por Zod."
+category: "instalacion"
+image: "/images/servicios/implementacion-deploy-sitio-astro.avif"
+pricing:
+  min: 0
+  max: 0
+  unit: "servicio"
+  note: "Precios DEMO. Reemplaza por la tarifa real del cliente."
+includes:
+  - "Diagnóstico inicial de ejemplo"
+  - "Instalación documentada paso a paso"
+  - "Entrega y verificación final"
+featured: true
+order: 1
+---
+```
+
+El consumidor —la página `/servicios/index.astro`— lee la collection, filtra drafts, ordena y mapea cada entrada a una `ServiceCard`. El mapa `ICONS` traduce el enum de categoría a un SVG string; vive en el frontmatter de la página, no en la collection (los iconos son del sitio, no del contenido). El `href` se arma con el id del slug; el `badge` se deriva del flag `featured`; el `icon` cae al icono por categoría:
+
+```astro
+---
+// src/pages/servicios/index.astro — catálogo data-driven
+import { getCollection } from 'astro:content'
+import ServiceCard from '@components/ServiceCard.astro'
+import PageLayout from '@layouts/PageLayout.astro'
+
+// SVG inline por categoría — viven en el sitio, no en la collection.
+const iconWrench = `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+  <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`
+const iconShield = `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+  <path d="m9 12 2 2 4-4"/></svg>`
+const iconRocket = `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+  <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+  <path d="M12 15 9 12a4 4 0 0 1 1.17-2.83l4.93-4.93a1 1 0 0 1 1.41 0l2.25 2.25a1 1 0 0 1 0 1.41l-4.93 4.93A4 4 0 0 1 12 15z"/></svg>`
+
+// Mapa categoría → icono. Llaves alineadas a SERVICE_CATEGORIES del schema.
+const ICONS: Record<string, string> = {
+  instalacion:   iconWrench,
+  mantenimiento: iconShield,
+  general:       iconRocket,
+}
+
+// getCollection: filtra drafts y ordena por data.order ASC.
+const servicios = (await getCollection('servicios', ({ data }) => !data.draft))
+  .sort((a, b) => (a.data.order ?? 0) - (b.data.order ?? 0))
+---
+
+<PageLayout
+  title="Servicios — Catálogo"
+  description="Catálogo de servicios profesionales"
+  pageType="page"
+  breadcrumbs={[{ label: 'Servicios' }]}
+>
+  <section class="section">
+    <div class="container">
+      <div class="grid">
+        {servicios.map((s) => (
+          <ServiceCard
+            title={s.data.title}
+            description={s.data.description}
+            href={`/servicios/${s.id}`}
+            icon={ICONS[s.data.category]}
+            image={s.data.isHub ? undefined : s.data.image}
+            imageAlt={s.data.title}
+            badge={s.data.featured ? 'POPULAR' : undefined}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+</PageLayout>
+
+<style>
+  /* Mobile-first: 1 → 2 → 3. Servicios suelen ser 3-9, no auto-fill. */
+  .grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
+  @media (min-width: 640px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+</style>
+```
+
+El detalle que se escapa es la decisión `image=❴s.data.isHub ? undefined : s.data.image❵`. Los servicios marcados como hub (página índice de una sub-categoría) se pintan en modo icono (cara natural del catálogo); los servicios individuales con foto del trabajo se pintan en modo vitrina (foto 16:9, badge absoluto). El componente acepta ambos modos sin tocar nada: la prop `image` reemplaza al icono cuando está presente, y el badge se reposiciona solo (ServiceCard.astro:22-33). La política de mostrar foto o icono se decide en el padre, leyendo el flag `isHub` del frontmatter; el componente no se entera.
+
+## Tabla comparativa
+
+| Aspecto | Hardcoded en `.astro` | Data-driven desde collection |
+|---|---|---|
+| Agregar un servicio | Tocar JSX + array de iconos + posiblemente CSS | Crear un `.md` con frontmatter validado |
+| Reordenar el catálogo | Mover bloques manualmente, riesgo de romper claves | Cambiar `order: N` en el frontmatter |
+| Cambiar el icono de una categoría | Editar el `.map` en la página, repetir en cada consumo | Editar el `ICONS` una vez |
+| Validar formato del título | Disciplina del desarrollador (o nada) | Zod en build: `min(10).max(110)` rechaza |
+| Marcar un servicio como destacado | Hardcodear el badge en el JSX | `featured: true` → badge auto |
+| Detectar campo desconocido | Ignorado silenciosamente | `.strict()` rechaza el build |
+| Agregar SEO por servicio | Otro array paralelo de metadatos | `seoTitle`/`seoDescription` en el frontmatter |
+| Coste de mantenimiento al duplicar el sitio | Reescribir el grid en cada proyecto | Cambia el contenido, no el código |
+
+El cruce que más se subestima es la última fila. Cuando el sitio se replica para otro cliente —un caso real en agencias—, la versión hardcoded obliga a leer 200 líneas de JSX para entender qué cambiar; la versión data-driven solo necesita reemplazar los `.md` de `src/content/servicios/`. El esfuerzo de armar la collection una vez se amortiza al segundo proyecto.
+
+## Patrones avanzados
+
+**Iconos por categoría con fallback explícito.** El `ICONS[s.data.category]` funciona porque el enum garantiza que `s.data.category` es una de las llaves esperadas. Aun así, conviene el patrón `ICONS[category] ?? ICONS.general` cuando se agregan categorías nuevas al enum y los iconos no se actualizan de inmediato —el fallback evita una card sin visual mientras el equipo termina el SVG—. La regla práctica: el fallback es a la categoría `general`, nunca a `null` o a un placeholder gris, porque eso señaliza un bug al visitante (la categoría existe pero falta el icono).
+
+**Hub vs servicio individual: dos formas de pintar la misma card.** Un hub (`isHub: true`) es una página índice de sub-categoría —«Mantenimiento» que agrupa cinco servicios específicos—; un servicio individual es la ficha L4 con pricing y `includes`. En el grid principal, los hubs se pintan en modo icono (cara natural, cero foto, comunica «sección»); los servicios individuales con foto del trabajo se pintan en modo vitrina (16:9, refuerza el resultado). El consumidor decide con un ternario; el componente no necesita una prop nueva. Esto separa la decisión editorial (cuándo es hub) del componente (cómo se pinta cada modo).
+
+**Featured + order: priorización sin tocar JSX.** El `featured: true` agrega el badge `POPULAR` en el grid; el `order: N` controla la posición. Combinados, dejan al equipo editorial decidir la jerarquía sin pedirle al desarrollador que mueva bloques. La convención del proyecto: `order: 0` para el servicio destacado, `order: 1-9` para el catálogo principal, `order: 99+` para servicios secundarios. El `.sort()` los respeta y el padre nunca toca el orden. Cuando se quiere despromover un servicio, basta cambiar el número; el grid se repinta en el siguiente build.
+
+**Cross-link tipado con `reference()`.** El schema declara `relatedServices: z.array(reference('servicios')).optional()` (content.config.ts:140). Cada servicio puede declarar sus relacionados por slug —el Zod verifica que los slugs existan en la collection en build—. La ficha L4 los hidrata con `getEntry()` y los pinta vía `RelatedLinks` (no vía `ServiceCard` —evita el bucle «card de catálogo dentro de ficha de catálogo»—). El cross-link es texto plano en el `.md`, no en JSX:
+
+```yaml
+---
+title: "Consultoría de seguridad"
+relatedServices:
+  - implementacion-llave-en-mano
+  - mantenimiento-preventivo
+---
+```
+
+## Checklist de implementación
+
+- [ ] Confirmar que el `SERVICE_CATEGORIES` del schema coincide con las categorías reales del cliente (sin duplicados tipográficos)
+- [ ] Validar que TODOS los `.md` de `src/content/servicios/` tienen `category` dentro del enum y `image` bajo `/images/`
+- [ ] Verificar que el mapa `ICONS` cubre cada llave del enum (TypeScript te avisa si falta)
+- [ ] Probar el `.sort` con tres servicios con distintos `order`: el grid debe pintarlos ASC
+- [ ] Validar que `draft: true` los excluye del grid (probar con un servicio de prueba)
+- [ ] Confirmar que el grid es mobile-first (1 columna en móvil, 2 a ≥640px, 3 a ≥1024px) —no auto-fill—
+- [ ] Verificar que los SVG usan `stroke="currentColor"` para heredar el color de marca (no `stroke="#000"`)
+- [ ] Probar build con un campo desconocido en un `.md` (`hero_image:` por ejemplo): Zod `.strict()` debe rechazarlo
+
+## Preguntas frecuentes
+
+### ¿Por qué los iconos viven en código y no en el frontmatter?
+Porque los iconos son identidad visual del sitio, no contenido. Meterlos en frontmatter rompe la legibilidad del Markdown (cada archivo arrancaría con 8 líneas de XML), obliga al autor de contenido a entender SVG y, peor, acopla el contenido al diseño actual —si cambias el ancho del stroke, hay que editar 30 archivos—. El mapa `ICONS` en la página padre es la frontera correcta: el contenido declara su categoría con una palabra, el sitio decide cómo pintarla.
+
+### ¿Cómo agrego un servicio nuevo sin tocar código?
+Crear `src/content/servicios/‹slug›.md` con el frontmatter requerido (`title`, `description`, `category`, `image`) y el cuerpo Markdown opcional. Zod valida en `npm run build`; si pasa, el grid lo pinta en el siguiente despliegue. El único caso donde tocas código es cuando agregas una categoría NUEVA al enum: editas `SERVICE_CATEGORIES` en `content.config.ts` y `ICONS` en la página padre. Cada cambio toca un solo archivo.
+
+### ¿Y si tengo 50 servicios? ¿No es lento renderizar todos?
+No, porque el catálogo es estático: Astro lo compila en build y sirve HTML plano. 50 cards son ~150 KB de HTML —menos que una foto grande—. El cuello de botella es siempre las imágenes, no el HTML; la solución es paginar visualmente con un patrón móvil (scroll horizontal con snap, carrusel con dots, ver el módulo `/modulos/service-card`), no quitar cards del grid. Si el catálogo crece a 200+, conviene partirlo por sub-categoría (rutas tipo `/servicios/consultoria/`, `/servicios/implementacion/`) y reusar el mismo grid en cada hub.
+
+### ¿`getCollection` se ejecuta en cada request o solo en build?
+Solo en build. Astro es SSG por defecto: `getCollection` corre una vez, en `npm run build`, y el HTML resultante se sirve estático desde el CDN (Cloudflare Pages, Vercel, Netlify). En desarrollo se recarga con HMR cuando editas un `.md`. Esto significa que cambiar un servicio en producción requiere un rebuild —que en Cloudflare Pages dispara automáticamente al hacer push—. Para sitios con miles de cambios diarios, conviene SSR o ISR; para un catálogo de servicios, SSG sobra.
+
+### ¿Cómo combino este grid con el CTA dual (WhatsApp en algunas cards)?
+Agregando un campo nuevo al schema o derivando del existente. La opción más limpia: agregar `whatsappOnly: z.boolean().default(false)` a la collection, y en el `.map` derivar el `href` con un ternario —cuando el servicio es `whatsappOnly`, el `href` apunta a `waUrl(WA_MESSAGES.cotizar)`; en caso contrario, a `/servicios/[slug]`—. La opción sin tocar schema: usar `featured` para señalar los consultivos y derivar el modo en el padre. Ver «[Service card con CTA dual: ficha vs WhatsApp](/blog/service-card-cta-dual-whatsapp-ficha)» para la decisión editorial completa.
+
+Un catálogo data-driven no es más rápido de armar que uno hardcoded —los dos toman tarde la primera vez—. La diferencia aparece al sexto cambio: el data-driven cuesta un archivo Markdown, el hardcoded cuesta una tarde de buscar y reemplazar. Y la diferencia se vuelve abismal cuando el sitio se replica para otro cliente: la collection es portable, el JSX no. La inversión inicial se amortiza siempre —no es cuestión de si, sino de cuándo—.
+
+## Sigue leyendo
+
+- [Módulo Service card en vivo](/modulos/service-card)
+- [Service card con CTA dual: ficha vs WhatsApp](/blog/service-card-cta-dual-whatsapp-ficha)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

@@ -42,7 +42,7 @@ cero divergencia tipográfica entre vitrinas, y un único punto donde ajustar el
 radio del botón, el aspect-ratio de la imagen o el color del badge.
 
 La pieza tiene una API pequeña a propósito —diez props— y todos los defaults
-están pensados para que `<CategoryCard label="X" href="/x" />` ya sea válido sin
+están pensados para que `‹CategoryCard label="X" href="/x" /›` ya sea válido sin
 configurar nada más. El resto del artículo desmonta cada pieza, muestra cómo se
 carga desde una colección y cubre los dos props que abrieron casos nuevos:
 `disabled` para roadmap y `badge` inline para tarjetas sin imagen.
@@ -83,8 +83,8 @@ const ChipTag = disabled ? "span" : "a";
 Dos detalles que parecen menores y no lo son. Primero, `index = 99` como default
 garantiza que cualquier tarjeta nueva nazca con `loading="lazy"`; solo las
 cuatro primeras del grid cruzan el umbral y se cargan en `eager` para no
-arruinar el LCP. Segundo, `MediaTag` y `ChipTag` cambian de `<a>` a `<div>` y
-`<span>` cuando `disabled` vale `true`: así una tarjeta de roadmap nunca emite
+arruinar el LCP. Segundo, `MediaTag` y `ChipTag` cambian de `‹a›` a `‹div›` y
+`‹span›` cuando `disabled` vale `true`: así una tarjeta de roadmap nunca emite
 un enlace roto al inventario que aún no existe.
 
 Para alimentar la tarjeta desde una colección, la fuente de verdad es el
@@ -205,9 +205,9 @@ de marca. La línea clave del componente es:
 ```
 
 **Slot vs prop: por qué `subcategories` es prop, no slot.** Resulta tentador
-exponer un `<slot name="subs">` para que cada vitrina decida qué pintar. Es
+exponer un `‹slot name="subs"›` para que cada vitrina decida qué pintar. Es
 peor idea de lo que parece: el componente perdería el control sobre la
-semántica (la `<ul>` con `aria-label` que la a11y necesita), el estilo de los
+semántica (la `‹ul›` con `aria-label` que la a11y necesita), el estilo de los
 chips dejaría de ser uniforme y cada página acabaría con su propio markup.
 La regla aquí es prop tipada (`readonly Sub[]`) para todo lo que se repita en
 estructura. Slots solo para casos donde el contenedor debe ser opaco al
@@ -224,8 +224,8 @@ build —preferimos eso al 404 silencioso en producción—.
 
 - [ ] El frontmatter de cada entrada cumple el schema Zod sin campos extra (`.strict()` rechaza «hero_image», «img», «cover»).
 - [ ] `heroImage` arranca con `/images/` y apunta a un AVIF real, no a un placeholder.
-- [ ] Las 4 primeras tarjetas del grid reciben `index={i}` con `i < 4` para LCP.
-- [ ] Toda tarjeta sin enlace válido lleva `disabled={true}` (cero href provisionales).
+- [ ] Las 4 primeras tarjetas del grid reciben `index=❴i❵` con `i ‹ 4` para LCP.
+- [ ] Toda tarjeta sin enlace válido lleva `disabled=❴true❵` (cero href provisionales).
 - [ ] Cada `subcategories[].href` es ruta interna sin `/` final (`trailingSlash: 'never'`).
 - [ ] El `blurb` cabe en 1–2 frases (120–160 caracteres) y no repite el `label`.
 - [ ] El `imageAlt` describe la escena con la keyword, no el nombre del archivo.
@@ -245,7 +245,7 @@ contrato es claro: el padre da columnas, la tarjeta llena el ancho que reciba.
 de la home: el array es la fuente, el componente es el render.
 
 **¿Qué pasa si el `image` no existe?** La sección del media no se renderiza
-(el componente la envuelve en `{image && (…)}`). El badge cae al body con la
+(el componente la envuelve en `❴image && (…)❵`). El badge cae al body con la
 clase inline, el título queda como ancla principal y la tarjeta se ve austera
 pero válida. Útil para roadmap, listas internas y casos donde la foto no
 aporta.

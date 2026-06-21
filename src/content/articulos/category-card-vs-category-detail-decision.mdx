@@ -1,0 +1,163 @@
+---
+title: "CategoryDetail vs CategoryCard: árbol de decisión"
+description: "Cuándo usar CategoryDetail y cuándo CategoryCard en Astro: árbol de decisión por contexto, intent del visitante y profundidad del catálogo."
+category: "guias"
+heroImage: "/images/articulos/category-card-vs-category-detail-decision.avif"
+pubDate: 2026-04-05
+author: "Ejemplos.mx"
+tags: ["astro", "category-detail", "category-card", "ux", "diseno"]
+seoTitle: "CategoryDetail vs CategoryCard: decisión"
+seoDescription: "Árbol de decisión CategoryDetail vs CategoryCard: cuándo informar a fondo y cuándo invitar a explorar. Reglas, contextos y anti-patrones."
+---
+
+La pregunta no es cuál de los dos componentes es «mejor». Los dos son buenos. La pregunta es a quién le estás hablando en cada sección de la página, y eso depende de tres variables: qué tan profundo es el catálogo, qué tan resuelto llega el visitante a esa sección, y cuánta evidencia necesita la categoría para venderse. La rejilla de `CategoryCard` reparte el inventario; el bloque de `CategoryDetail` defiende una sola categoría. Esta guía no enseña a usar ninguno de los dos —para eso está el artículo hermano de este par—; enseña a decidir cuándo poner cada uno y cuándo no poner ninguno.
+
+## Contexto
+
+`CategoryCard` y `CategoryDetail` resuelven el mismo problema desde dos lados opuestos. La tarjeta es vitrina: una rejilla de N piezas, cada una con imagen 16:10, badge opcional, título corto y blurb de 1-2 frases. El visitante escanea, ubica la categoría que le interesa y entra. Vive en `CategoryCard.astro` y su `‹article›` con `‹h3›` deja claro que es un ítem de catálogo, no una sección por sí misma (`CategoryCard.astro:67-91`). El bloque a fondo es lo contrario: una sola categoría ocupa dos columnas a página completa, con eyebrow, `‹h2›`, dos párrafos de body, una lista de puntos clave y galería de apoyo. Vive en `CategoryDetail.astro` y su `‹h2›` por defecto lo posiciona como sección (`CategoryDetail.astro:42-44`).
+
+La tentación de quien arma una home moderna es usar siempre el que «se ve mejor», y suele ser el bloque a fondo, porque ocupa más espacio y se siente más editorial. Esa decisión por estética es el origen de las homes infinitas que no convierten: ocho bloques `CategoryDetail` apilados al hilo, doscientas palabras cada uno, y el visitante sale antes de llegar al tercero. Al revés también pasa: una rejilla de doce `CategoryCard` en una página de servicios donde cada servicio amerita un párrafo serio se siente como un sampler, no como una propuesta.
+
+La regla práctica del sitio —documentada en `/modulos/category-detail`— es que cada componente entra cuando la naturaleza de la decisión del visitante lo pide. Vitrina cuando hay que comparar entre N opciones; a fondo cuando ya está pensando una y necesita una razón más para decidir. Mezclar ambos en la misma página es no solo válido sino frecuente: la home suele empezar con vitrina (las 4-8 categorías top) y cerrar con uno o dos bloques a fondo sobre las que más venden. La pregunta es en qué orden y con qué proporción.
+
+## Implementación paso a paso
+
+El árbol de decisión empieza por la intención del visitante en esa sección. Si la sección responde «¿qué hay aquí?», es vitrina. Si responde «¿por qué esto vale la pena?», es a fondo. Aplicado a una home de servicios:
+
+```astro
+---
+// src/pages/inicio.astro — patrón típico: vitrina arriba, a fondo abajo.
+import CategoryCard from '@components/CategoryCard.astro'
+import CategoryDetail from '@components/CategoryDetail.astro'
+import { SHOWCASE } from '@config/site'
+
+// SHOWCASE = todas las categorías top del sitio (8 piezas).
+// AFONDO_HOME = las 2 que más convierten, con argumento extendido.
+---
+
+{/* ¿Qué hay aquí? — vitrina */}
+<section class="showcase">
+  {SHOWCASE.map((c, i) => (
+    <CategoryCard
+      label={c.label}
+      href={c.href}
+      image={c.image}
+      blurb={c.blurb}
+      index={i}
+    />
+  ))}
+</section>
+
+{/* ¿Por qué estas valen la pena? — bloques a fondo */}
+<div class="afondo">
+  {AFONDO_HOME.map((c) => (
+    <CategoryDetail
+      eyebrow="La categoría a fondo"
+      title={c.label}
+      body={c.body}
+      points={c.points}
+      cta={{ label: `Ver ${c.label}`, href: c.href }}
+      gallery={c.gallery}
+    />
+  ))}
+</div>
+```
+
+El segundo eje de decisión es la profundidad. Cuando el catálogo tiene más de 12 categorías top, los bloques a fondo dejan de caber: la página se vuelve interminable. Ahí la vitrina hace todo el trabajo y los bloques a fondo se mueven a la landing de cada categoría, no a la home. El árbol queda así, escrito como tabla de routing:
+
+```ts
+// src/lib/decideCard.ts — heurística de decisión documentada.
+// Devuelve qué componente conviene para esa sección del sitio.
+export type SectionIntent = 'comparar' | 'defender' | 'documentar'
+
+export function decideComponent(opts: {
+  totalCategorias: number
+  intent: SectionIntent
+  visitanteResuelto: boolean
+}): 'CategoryCard' | 'CategoryDetail' | 'ambos' {
+  // Catálogo amplio: la rejilla manda; el bloque a fondo no cabe.
+  if (opts.totalCategorias > 12) return 'CategoryCard'
+
+  // Visitante decidido a comparar: vitrina, sin discurso largo.
+  if (opts.intent === 'comparar') return 'CategoryCard'
+
+  // Defender una categoría puntual: bloque a fondo con galería.
+  if (opts.intent === 'defender') return 'CategoryDetail'
+
+  // Roadmap, documentación: a fondo (sin CTA si la página no existe).
+  if (opts.intent === 'documentar') return 'CategoryDetail'
+
+  // Home con 4-8 categorías: las dos capas, vitrina arriba + a fondo abajo.
+  return 'ambos'
+}
+```
+
+El tercer eje es el «visitante resuelto». Un visitante que llega de buscador a `/servicios/diseno-de-logotipo` ya está pensando en eso; no necesita una rejilla de doce servicios distintos, necesita razones para quedarse. Esa página interna abre con hero, sigue con un `CategoryDetail` que defiende el servicio, y cierra con un `RelatedLinks` de servicios cercanos —no con otra vitrina, que volvería al visitante a la indecisión. En cambio, la home recibe visitantes resueltos y no resueltos por igual: necesita las dos capas.
+
+El último paso es decidir cuándo no poner ninguno de los dos. Una sección de testimonios no es vitrina ni bloque a fondo, es prueba social: usa `casos` con su propio componente. Una sección de FAQ no es categoría: es `FAQ` con su JSON-LD. Forzar `CategoryCard` o `CategoryDetail` fuera de su rol genera ruido —tarjetas con badge «Testimonio» que confunden la jerarquía, bloques a fondo cuyo CTA no lleva a ninguna parte— y a la larga obliga a desmontar la página.
+
+## Tabla comparativa
+
+| Eje | `CategoryCard` | `CategoryDetail` |
+|---|---|---|
+| Intención del visitante | Comparar entre N opciones | Decidir sobre UNA |
+| Densidad de contenido | Título + 1-2 frases + chips | Eyebrow + H2 + 2 párrafos + 3-5 puntos + galería |
+| Layout | Rejilla N por fila (4 típico) | 2 columnas, info izq + galería der (siempre) |
+| Jerarquía semántica | `‹h3›` (ítem de catálogo) | `‹h2›` por defecto, `‹h3›` si anida |
+| Cuántos por página | 4-12 en rejilla | 3-8 en pila vertical |
+| Necesita galería | Una imagen sola (640×400) | Una grande (800×600) + dos thumbs (400×300) |
+| CTA | Uno claro: «Ver más» | Uno opcional con destino real |
+| Cuándo NO usarlo | Para defender una sola categoría | Para listar 12 categorías de un vistazo |
+
+La tabla no es exhaustiva, es operativa. Si tu sección cumple los criterios de la columna `CategoryCard`, ya tienes la respuesta. Si cumple los de `CategoryDetail`, lo mismo. Si está a caballo entre las dos —porque la categoría merece argumento pero compite con otras siete que también lo merecen—, la respuesta correcta suele ser «las dos capas en orden»: vitrina arriba con las ocho, a fondo abajo con las dos top.
+
+## Patrones avanzados
+
+**Todos idénticos, info izq · galería der, SIN zig-zag.** Esta regla dura del proyecto aplica a `CategoryDetail` y no a `CategoryCard` por la misma razón por la que existen los dos componentes: la tarjeta vive en rejilla y la rejilla es repetición controlada por el grid (cuatro columnas, alturas iguales por `flex-grow`); el bloque a fondo vive en pila vertical y la repetición se controla por la propia anatomía del componente. Si en la pila a fondo un bloque alterna lados —prop `reverse` activada—, el visitante pierde el ancla visual y vuelve a leer el siguiente como si fuera nuevo. La prop `reverse` existe en el componente como antipatrón documentado, no para usarse en el sitio (`CategoryDetail.astro:39,46`).
+
+**Lazy de galería con prioridad correcta.** En la vitrina, las primeras 4 tarjetas cargan con `loading="eager"` (`CategoryCard.astro:61,75`) porque están arriba del fold; el resto va lazy. En la pila a fondo, todas las imágenes van lazy por defecto (`CategoryDetail.astro:78,84`) porque el primer bloque suele estar a partir del segundo viewport. Si por diseño un bloque a fondo abre la página —reemplazando al hero—, sube esa primera imagen a `eager` editando la prop o pasando el componente vía slot. Es la diferencia entre un LCP de 1.2s y uno de 2.8s en conexiones móviles.
+
+**Alt descriptivos en ambos componentes.** En la tarjeta el alt cae a `label` si no se pasa (`CategoryCard.astro:73`); ese fallback solo es bueno cuando el `label` ya describe lo que se ve. «Cascos de seguridad» como alt funciona porque la imagen muestra cascos. «Servicios» no funciona porque la imagen muestra una persona instalando algo: ahí toca pasar `imageAlt` explícito. En el bloque a fondo el alt es siempre obligatorio porque la galería tiene tres imágenes y cada una añade ángulo distinto. Las dos reglas se reducen a una: si la imagen suma información que el texto no dice, el alt la cuenta.
+
+**Gap responsive uniforme.** Tanto la rejilla de tarjetas como la pila de bloques a fondo usan `gap` con `clamp()` para escalar entre breakpoints (rejilla: `var(--sp-4)` a `var(--sp-6)`; pila: `clamp(2.5rem, 6vw, 5rem)`). Mantener `gap` y no inventar `margin-top` por elemento es lo que hace que ambos componentes convivan en la misma página sin chocar visualmente: el ojo lee un único ritmo vertical en toda la home, independientemente de qué componente esté abajo.
+
+## Checklist de decisión
+
+- [ ] Identificar la intención de la sección: ¿comparar entre N, defender UNA, documentar?
+- [ ] Contar las categorías top del sitio: si son >12, descartar bloques a fondo en la home
+- [ ] Evaluar al visitante de esa sección: ¿llega resuelto o está escaneando?
+- [ ] Para vitrina: usar `CategoryCard` con 4-12 piezas en rejilla, imagen única y blurb corto
+- [ ] Para defender categoría: usar `CategoryDetail` con body trabajado y galería real
+- [ ] En pila de bloques a fondo: nunca alternar lados (`reverse`), ni cambiar la anatomía entre bloques
+- [ ] No forzar ninguno de los dos en secciones que no son catálogo (testimonios, FAQ, formulario)
+- [ ] Verificar que cada `CategoryDetail` con `cta` apunta a una página real (evitar 404s en módulos «próximo»)
+
+## Preguntas frecuentes
+
+### ¿Puedo poner solo `CategoryDetail` en la home, sin vitrina?
+
+Puedes, y funciona cuando el catálogo es chico (2-4 categorías top) y cada una merece argumento extendido. Una consultora con tres servicios diferenciados, por ejemplo, vive bien sin vitrina: tres bloques a fondo cubren la home completa. En un negocio con 8-12 categorías, saltarse la vitrina obliga al visitante a hacer scroll por ocho bloques de 200 palabras antes de ver siquiera la opción que le interesa.
+
+### ¿Y al revés —solo vitrina, sin bloques a fondo?
+
+También funciona, especialmente en e-commerce con catálogo amplio. Doce tarjetas en rejilla cuentan todo el inventario en una pantalla, y cada landing de categoría hace el trabajo de defender. La home en este caso es un mapa, no un argumento. El trade-off es que el visitante que no entra a ninguna landing no recibe nada de evidencia, solo etiquetas; si tu conversión depende de explicar antes de mostrar (consultoría, servicios técnicos), te quedas corto.
+
+### ¿Cuántos bloques `CategoryDetail` antes de saturar al lector?
+
+Tres a cinco en una home, seis a doce en una página de catálogo profundo como `/modulos`. El número no es lo crítico: lo crítico es que todos sigan la misma anatomía. Doce bloques idénticos se leen como un catálogo organizado; cinco bloques con variantes se leen como un sitio improvisado. La predictibilidad es lo que escala el número soportable. Para profundizar en el contrato del componente, ver [Detalle de categoría: bloques profundos en Astro](/blog/category-detail-bloques-profundos-astro).
+
+### ¿Qué hago si una categoría no tiene página propia todavía?
+
+Dos opciones, según el componente. Con `CategoryCard`, usar la prop `disabled` (`CategoryCard.astro:47,62-64`): la tarjeta pierde el enlace, los chips dejan de ser `‹a›` y el CTA cambia a «Próximamente». Con `CategoryDetail`, omitir la prop `cta`: la columna de info queda con body y puntos, sin botón al final. Las dos salidas evitan 404s y dejan documentada la categoría en la página de catálogo mientras se prepara la landing.
+
+### ¿Conviene mezclar `CategoryCard` y `CategoryDetail` en la misma sección?
+
+No. Una sección hace una cosa: vitrina o a fondo, no las dos al hilo. Mezclar en la misma sección rompe la jerarquía visual (rejilla seguida de bloques a página completa) y obliga al visitante a recalibrar la lectura a medio scroll. Lo que sí conviene es alternarlas por sección en la misma página: una sección de vitrina (rejilla de 8), seguida de una sección de a fondo (2-3 bloques), seguida de una sección de FAQ. Cada sección tiene su propio rol y su propio componente.
+
+Elegir entre `CategoryCard` y `CategoryDetail` es elegir qué pregunta del visitante estás contestando en esa parte de la página. La rejilla contesta «¿qué hay?»; el bloque a fondo contesta «¿por qué esto?». No hay una jerarquía moral entre las dos: hay una jerarquía de intención. Y la disciplina del sitio es respetarla: no usar bloques a fondo para listar, no usar tarjetas para defender, no mezclarlos en la misma sección, no alternar lados en la pila a fondo. Lo demás es contenido —y el contenido es lo único que el visitante realmente lee.
+
+## Sigue leyendo
+
+- [Módulo Detalle de categoría en vivo](/modulos/category-detail)
+- [Detalle de categoría: bloques profundos en Astro](/blog/category-detail-bloques-profundos-astro)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

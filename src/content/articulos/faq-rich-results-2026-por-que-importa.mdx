@@ -1,0 +1,159 @@
+---
+title: "FAQ y rich results en 2026: por qué importa"
+description: "Por qué el schema FAQPage sigue importando aunque Google haya cambiado sus rich results: AEO, snippets, asistentes y la web semántica más allá del SERP."
+category: "guias"
+heroImage: "/images/articulos/faq-rich-results-2026-por-que-importa.avif"
+pubDate: 2026-04-23
+author: "Ejemplos.mx"
+tags: ["faq", "schema", "seo", "rich-results", "aeo"]
+seoTitle: "FAQ y rich results en 2026"
+seoDescription: "FAQ schema en 2026: aunque rich results bajaron, FAQPage sigue alimentando AEO, snippets, asistentes y modelos. Por que emitirlo igual."
+---
+
+En mayo de 2026 medio internet técnico declaró muerto al `FAQPage`. Google había retirado el rich result —ese bloque expandible con preguntas y respuestas bajo el título del resultado— para la mayoría de los sitios, dejándolo solo a autoridades de salud y gobierno. La conclusión en blogs, hilos y newsletters fue rápida: si no aparece en la SERP, ya no sirve, mejor borrar el schema. Es una lectura razonable si el único objetivo del marcado estructurado fuera el rich result. Pero el FAQ vive en una capa más profunda: alimenta a los modelos que responden sin enlace, a los asistentes que leen en voz alta, a los buscadores que sí lo siguen mostrando y al snippet que Google genera bajo el título cuando no tiene un rich result que poner. Este artículo desarma la confusión y propone un criterio nuevo para decidir si vale la pena seguir emitiéndolo.
+
+## Contexto
+
+El cambio de Google no salió de la nada. Desde 2023, la compañía había estado recortando rich results de schemas que consideraba «inflados» o usados con propósitos puramente decorativos. Primero fueron los de eventos sin entradas reales, luego los de recetas con ingredientes copiados de otras páginas. El `FAQPage` cayó por una combinación de tres factores: abuso masivo (sitios poniendo «preguntas frecuentes» que en realidad eran títulos de productos para inflar el CTR), saturación visual de la SERP (los rich results de FAQ ocupaban dos tercios del primer scroll en consultas comerciales) y la llegada de los AI Overviews, que respondían las mismas dudas directamente sin necesidad del rich result.
+
+La decisión técnica de Google fue elegante: no eliminaron el procesamiento del schema, solo dejaron de mostrar el rich result en SERP para la mayoría de los sitios. El crawler sigue leyendo el `FAQPage`, sigue almacenándolo en el knowledge graph y sigue usándolo internamente para entender el contenido. Lo que cambió es la visibilidad en el resultado de búsqueda visual. Y eso —solo eso— es lo que llevó a la conclusión apresurada de que el schema murió.
+
+El malentendido es el mismo de siempre con el SEO: confundir un canal con todo el ecosistema. El SERP de Google es el más visible, pero no es el único destino del marcado estructurado. Bing sigue mostrando rich results de FAQ con cero restricciones (su market share en mercados europeos y en B2B no es despreciable). DuckDuckGo los procesa para sus snippets. Yandex también. Los asistentes de voz —Siri, Alexa, Google Assistant cuando lee resultados en voz alta— priorizan respuestas que vengan de un `acceptedAnswer` claro porque están estructuradas como pregunta+respuesta. Y la capa nueva, la que pesa más cada mes: los modelos de lenguaje que alimentan AI Overviews, Perplexity, ChatGPT con búsqueda, Claude con búsqueda. Todos ellos prefieren el contenido estructurado porque les ahorra trabajo de extracción.
+
+## Implementación paso a paso
+
+La decisión práctica no es «emitir o no emitir», sino «cuándo y cómo emitir para que rinda en los canales que aún lo aprovechan». El primer paso es separar el FAQ visual del FAQ semántico. El componente —el acordeón que el visitante ve y abre— tiene un propósito de UX: resolver objeciones al cierre de la página. El schema —el JSON-LD del FAQPage— tiene un propósito distinto: darle a los buscadores y modelos una representación estructurada de esas dudas. Ambos se alimentan de la misma fuente (`faqs[]` en el frontmatter del servicio o producto), pero pueden activarse de forma independiente.
+
+```ts
+// src/lib/seo.ts — el emisor único del FAQPage
+// El componente FAQAccordion deja emitSchema=false por default.
+// Quien emite el JSON-LD es buildSchema(), invocado por el layout.
+export function faqSchema(items: { question: string; answer: string }[]) {
+  if (!items?.length) return null
+  return {
+    '@type': 'FAQPage',
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer.replace(/<[^>]+>/g, ''),  // text plano para schema.org
+      },
+    })),
+  }
+}
+```
+
+El segundo paso es decidir en qué páginas tiene sentido emitir el schema y en cuáles es ruido. La métrica no es «¿hay un FAQ visual?» sino «¿estas preguntas son únicas a esta página y aportan algo que un buscador o un modelo querría citar?». Un servicio con preguntas específicas de tiempos y precios sí; una página de aterrizaje con preguntas genéricas copiadas de otra plantilla, no. La regla práctica: si las preguntas son tan generales que sirven igual en cualquier sitio del rubro, no las marques como FAQPage —no aportan valor semántico y ensucian el grafo.
+
+```yaml
+# src/content/servicios/diseno-de-logotipo.md — fuente única del FAQ
+---
+title: "Diseño de logotipo"
+description: "…"
+category: "diseno"
+image: "/images/servicios/diseno-de-logotipo.avif"
+faqs:
+  - question: "¿Cuánto tarda el proceso completo de diseño?"
+    answer: "Entre 10 y 14 días hábiles desde la sesión de descubrimiento hasta la entrega final del manual de marca."
+  - question: "¿Incluye registro de marca ante el IMPI?"
+    answer: "No por default. El registro es un servicio aparte; te orientamos sobre el proceso y conectamos con un agente especializado."
+  - question: "¿Cuántas rondas de revisión incluye?"
+    answer: "Tres rondas de ajustes después de la propuesta inicial. Cambios mayores fuera de alcance se cotizan aparte."
+---
+```
+
+El tercer paso es validar que el JSON-LD efectivamente se está emitiendo y que solo lo emite UNA fuente. El [Test de resultados enriquecidos](https://search.google.com/test/rich-results) muestra el `FAQPage` detectado aunque ya no genere rich result visible: si te aparece detectado, el crawler lo está procesando. Si te aparece duplicado, tienes un bug —el componente y el layout están emitiendo a la vez—. La regla B3 («un único emisor por página») está documentada en `docs/VALIDACION-BUENAS-PRACTICAS.md` precisamente para evitar esto.
+
+```html
+<!-- Ejemplo de FAQPage emitido por buildSchema() en el <head> -->
+<!-- Detectado por Google sin generar rich result visible (mayo 2026+) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    { "@type": "Service", "name": "Diseño de logotipo", "...": "..." },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "¿Cuánto tarda el proceso completo de diseño?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Entre 10 y 14 días hábiles desde la sesión..."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+```
+
+## Tabla comparativa
+
+| Canal | ¿Sigue usando FAQPage en 2026? | Impacto práctico |
+|---|---|---|
+| Google SERP (rich result visual) | Solo gov/health autorizados | El bloque expandible bajo el título desapareció para sitios comerciales |
+| Google AI Overviews | Sí, prioriza schema estructurado | Citas en respuestas generadas; tu pregunta puede aparecer parafraseada |
+| Google Knowledge Graph | Sí, procesa y almacena | Alimenta People Also Ask y refinamientos de consulta |
+| Bing SERP | Sí, rich results sin restricción | En B2B y mercados europeos sigue siendo visibilidad real |
+| DuckDuckGo | Sí, snippets enriquecidos | Cuota menor pero audiencia técnica y privacy-first |
+| Asistentes de voz (Siri, Alexa, GA) | Sí, prefieren `acceptedAnswer` | Tu respuesta puede ser leída en voz alta cuando alguien pregunta |
+| Perplexity / ChatGPT con búsqueda | Sí, extraen citas de schema estructurado | Tu marca aparece como fuente citada en respuestas generadas |
+| Bots de redes sociales (Facebook, X) | Parcialmente, usan Open Graph principalmente | El FAQ schema no impacta aquí; los OG sí |
+
+La tabla deja clara la trampa de cualquier headline tipo «el FAQ schema murió». Solo se retiró un canal: el más visible, pero uno de ocho. Y los canales que crecen más rápido —los modelos generativos y los asistentes— son los que más dependen de estructura semántica, no menos. La pregunta correcta no es si emitir, sino qué tan limpio es lo que emites.
+
+## Patrones avanzados
+
+**De SEO a AEO: lo que cambió en la práctica.** El acrónimo AEO (Answer Engine Optimization) circula desde 2024 como sucesor del SEO clásico. La diferencia operativa es concreta: en SEO el objetivo era posicionar una página para que el visitante hiciera clic; en AEO el objetivo es que el contenido sea citado por un modelo generativo aunque el visitante nunca llegue al sitio. El FAQ es uno de los formatos que mejor encaja en AEO porque ya viene en la forma exacta que un modelo necesita: pregunta directa + respuesta acotada. Cuando alguien le pregunta a Perplexity «¿cuánto tarda un diseño de logotipo?», el modelo busca documentos con esa pregunta literal y devuelve la respuesta más confiable, citando la fuente. Si tu FAQPage está bien marcado, eres la fuente.
+
+**Zero-click no significa zero-value.** La métrica que muchos abandonaron en 2024 —«visitas desde Google»— está cayendo en consultas informativas porque las AI Overviews responden en la SERP sin clic. Lo que sustituye al clic es la mención: la marca aparece en la respuesta generada, el usuario la recuerda, y la búsqueda directa («tal marca») crece. Un FAQ bien marcado es citado más, mencionado más, y termina alimentando búsquedas de marca que sí convierten. La métrica que importa no es CTR del rich result viejo, sino frecuencia de mención en respuestas generadas. Es más difícil de medir, pero hay herramientas en el mercado (Profound, Otterly, Athena) que empiezan a tracker apariciones en LLMs.
+
+**El criterio editorial pesa más que el técnico.** En 2025 cualquier dev podía emitir un FAQPage perfectamente formado y aún así no aparecer citado en ninguna respuesta generada. La razón: el modelo descarta preguntas genéricas con respuestas vagas. Si tu FAQ dice «¿Cuánto cuesta?» con respuesta «Depende, contacta para cotización», el modelo no tiene nada que extraer. Si dice «¿Cuánto cuesta un diseño de logotipo para PYME en CDMX?» con respuesta «Entre $8,000 y $25,000 según rondas de revisión», el modelo tiene una respuesta concreta que puede citar con confianza. La diferencia es editorial, no técnica. La buena noticia es que las mismas preguntas que rinden en AEO son las que cierran ventas en el chat de WhatsApp: específicas, honestas, accionables.
+
+**Validación cruzada con la lista canónica del proyecto.** El validador de buenas prácticas del proyecto (`docs/VALIDACION-BUENAS-PRACTICAS.md`) documenta este caveat de mayo 2026 en su sección P1 («huecos prioritarios que retan reglas previas»). El criterio que adoptamos: seguir emitiendo `FAQPage` desde `lib/seo.ts` en todas las páginas que tengan `faqs` reales en el frontmatter, pero NO esperar rich results visibles en Google SERP. La medición real va por dos vías: validación técnica con Rich Results Test (que el schema esté detectado y sin warnings) y monitoreo de menciones en Perplexity/ChatGPT/Claude con búsqueda activada para términos de marca. Lo primero confirma que la infraestructura funciona; lo segundo, que está rindiendo en el canal que importa hoy.
+
+## Checklist
+
+- [ ] Auditar páginas con `FAQPage` emitido: ¿las preguntas son únicas y específicas, o genéricas y copiadas?
+- [ ] Reescribir preguntas que empiecen con verbos vagos («¿Qué es...?») para que sean específicas («¿Cuánto cuesta X para Y?»)
+- [ ] Confirmar que el `FAQPage` se emite UNA sola vez por página (regla B3) y validar con Rich Results Test
+- [ ] Verificar que el `acceptedAnswer.text` esté en texto plano (sin HTML), de 100–300 caracteres ideal
+- [ ] Eliminar `FAQPage` de páginas con FAQs decorativas (genéricas, sin valor de cita)
+- [ ] Configurar tracking de menciones en LLMs (Perplexity, ChatGPT, Claude) para términos de marca
+- [ ] No esperar rich results en Google SERP salvo para sitios gov/health autoritarios
+- [ ] Revisar Search Console: el `FAQPage` debe seguir apareciendo como «detectado» aunque no genere rich result
+- [ ] Mantener las preguntas en español natural (cómo realmente las hace el cliente, no como las escribiría un copy)
+
+## Preguntas frecuentes
+
+### ¿Vale la pena emitir `FAQPage` si Google ya no lo muestra como rich result?
+
+Sí, por dos razones independientes. Primero, Google sigue procesando el schema —lo usa internamente para entender el contenido y alimentar AI Overviews, People Also Ask y refinamientos de consulta—. Segundo, hay otros canales que sí lo siguen renderizando: Bing como rich result completo, asistentes de voz como fuente para respuestas habladas, y modelos generativos (Perplexity, ChatGPT, Claude con búsqueda) como contenido estructurado preferido. El esfuerzo de emitirlo es cero (vive en `lib/seo.ts` y se alimenta del mismo `faqs[]` del frontmatter); el costo de no emitirlo es perder esos canales.
+
+### ¿Cómo sé si mi `FAQPage` está siendo citado por modelos como Perplexity o ChatGPT?
+
+Hay tres formas. La más directa: hacer las mismas preguntas que están en tu FAQ a Perplexity, ChatGPT con búsqueda y Claude con búsqueda, y revisar si tu sitio aparece como fuente citada. La segunda: usar herramientas especializadas como Profound, Otterly o Athena que monitorean apariciones de marca en respuestas generadas. La tercera, indirecta: medir el crecimiento de búsquedas directas de marca en Google Trends y Search Console —si crecen sin que estés invirtiendo en awareness, parte viene de menciones en respuestas generadas que la gente vio y recordó—.
+
+### ¿Debo borrar los `FAQPage` que ya emitía para que no estén «de gratis» en el grafo?
+
+No. Borrarlos no tiene upside —solo pierdes los canales que aún los aprovechan—. Lo que sí conviene es auditar las preguntas: si son genéricas («¿qué es nuestra empresa?», «¿qué hacemos?»), reescríbelas para que sean específicas y citables. Una FAQ con tres preguntas concretas vale más que una con diez vagas. El grafo de schema no penaliza por tener `FAQPage`; lo que sí pesa es la calidad editorial de las preguntas.
+
+### ¿El cambio de Google afectó otros schemas además del `FAQPage`?
+
+Sí, en su momento Google también recortó rich results de `HowTo` (instrucciones paso a paso) en 2023 y restringió varios otros. La tendencia es clara: los rich results derivados de schemas «conversacionales» o «didácticos» se están reservando para sitios autoritarios, mientras que los schemas comerciales (`Product`, `Service`, `Review`, `LocalBusiness`) siguen rindiendo en SERP. El criterio adoptado en el proyecto: emitir todos los schemas relevantes en el grafo, sin esperar rich results visibles salvo para los comerciales.
+
+### Si los rich results de FAQ desaparecieron, ¿hay que repensar el FAQ visual del sitio?
+
+No, son cosas independientes. El FAQ visual (el acordeón al cierre de la página) sigue cumpliendo su trabajo de UX: resolver objeciones antes del cierre de pestaña, bajar la carga de WhatsApp, mejorar la conversión. Ese trabajo nunca dependió del rich result. Lo que cambió es solo la capa de visibilidad en SERP. Mantener el `FAQAccordion` en su sitio actual (cierre de página de venta) sigue siendo correcto; lo que cambia es la expectativa sobre el SEO derivado, no la decisión de UI.
+
+La pregunta de fondo no es si el `FAQPage` sigue vivo, sino qué canal de distribución importa para el negocio. Si la apuesta era CTR del rich result de Google, mayo de 2026 cerró esa puerta. Si la apuesta es ser citado por modelos generativos, ser leído por asistentes de voz y mantener presencia en buscadores que sí siguen mostrando FAQ enriquecido, la respuesta es seguir emitiendo —con preguntas específicas, respuestas honestas, y un único emisor por página—. El schema no murió, cambió de público.
+
+## Sigue leyendo
+
+- [Módulo FAQ en vivo](/modulos/faq)
+- [FAQAccordion en Astro: details nativo + FAQPage](/blog/faqaccordion-astro-details-faqpage)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

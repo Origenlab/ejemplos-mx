@@ -1,0 +1,179 @@
+---
+title: "Detalle de categoría: bloques profundos en Astro"
+description: "Cómo armar páginas de detalle de categoría con CategoryDetail en Astro: bloques info + galería que educan al visitante y mantienen el ritmo de lectura."
+category: "guias"
+heroImage: "/images/articulos/category-detail-bloques-profundos-astro.avif"
+pubDate: 2026-04-03
+author: "Ejemplos.mx"
+tags: ["astro", "category-detail", "contenido", "ux", "catalogo"]
+seoTitle: "CategoryDetail en Astro: bloques profundos"
+seoDescription: "Bloques info+galería con CategoryDetail en Astro: regla de no zig-zag, layout 2 col, sin reverse, copy y galería que educan al visitante."
+---
+
+Hay un momento en cada catálogo donde la tarjeta de la vitrina se queda corta. Cabe una imagen, un título de tres palabras y dos frases de venta; el resto —el por qué, los matices, las pruebas— vive en la página interior. Ese hueco entre la rejilla y la landing es donde entra `CategoryDetail`: un bloque de dos columnas que amplía una sola categoría sin pedirle al visitante que haga clic. Esta guía arma el componente desde el contrato de props hasta el patrón data-driven con el que `/modulos/index.astro` pinta doce bloques sin tocar el JSX, y deja documentadas las dos reglas duras del proyecto: todos los bloques idénticos, sin zig-zag.
+
+## Contexto
+
+El catálogo de una home moderna trabaja por capas. La primera es la vitrina, que reparte el inventario en una rejilla de cuatro tarjetas por fila y deja al visitante leer todo de un vistazo. Funciona para escanear, no para vender: una `CategoryCard` con `‹h3›`, imagen 16:10, badge opcional y blurb de una o dos frases (`CategoryCard.astro:67-113`). Si la categoría amerita más argumento —certificaciones, alcance del servicio, capacidad real—, la tarjeta no es el lugar.
+
+La segunda capa es el bloque a fondo. `CategoryDetail` toma una sola categoría y le da dos columnas: a la izquierda el eyebrow con barra de acento, el título `‹h2›`, los párrafos de body, la lista de puntos clave y un CTA al final; a la derecha la galería con una imagen grande de 4:3 y dos miniaturas debajo. La columna de info pesa, la galería ilustra. Ese reparto está fijo en el componente y no se discute por bloque (`CategoryDetail.astro:46-90`).
+
+La tercera capa es la página dedicada de la categoría, con su hero, sus productos y sus FAQs. Esta guía vive en la segunda: cuando la home, el L2 de módulos o la sección de servicios necesita un argumento de 150-250 palabras con galería de apoyo, sin obligar al visitante a abrir una pestaña nueva. El componente está pensado para repetirse —cinco, ocho, doce veces seguidas— manteniendo la misma anatomía. Cualquier variación visual entre bloques rompe el ritmo de lectura: el ojo aprende la estructura en el primero y a partir del segundo solo lee el contenido.
+
+## Implementación paso a paso
+
+El uso básico cabe en un bloque. La página le pasa cuatro propiedades mínimas —`eyebrow`, `title`, `body`, `gallery`— y el componente arma el grid, el CLS de las imágenes y el colapso a una sola columna en móvil. El siguiente ejemplo es el caso real que documenta `/modulos/category-detail`:
+
+```astro
+---
+// src/pages/inicio.astro — uso suelto en la home.
+// Las 4 props mínimas + dos opcionales (points, cta).
+import CategoryDetail from '@components/CategoryDetail.astro'
+---
+
+<section class="section">
+  <div class="container">
+    <CategoryDetail
+      eyebrow="La categoría a fondo"
+      title="Cascos de seguridad"
+      body={[
+        'Cascos homologados para industria pesada, ligeros y con barboquejo ajustable. Stock para entrega 24 h en CDMX y zona metropolitana, garantía de fábrica.',
+        'Reposición de piezas, asesoría de uso y capacitación opcional para equipos grandes —el casco se cambia cuando toca, no cuando se ve gastado—.',
+      ]}
+      points={[
+        'Homologación NOM-115-STPS y EN 397',
+        'Entrega 24 h en CDMX (stock permanente)',
+        'Reposición de barboquejo y suspensión',
+        'Capacitación opcional para equipos grandes',
+      ]}
+      cta={{ label: 'Ver catálogo de cascos', href: '/productos/cascos' }}
+      gallery={{
+        main:   { src: '/images/showcase/cascos-seguridad-industrial.avif', alt: 'Cascos de seguridad industrial certificados, vista de catálogo' },
+        thumbs: [
+          { src: '/images/productos/cascos-construccion.avif', alt: 'Cascos para obra de construcción' },
+          { src: '/images/productos/cascos-accesorios.avif',   alt: 'Accesorios para cascos: barboquejo y suspensión' },
+        ],
+      }}
+    />
+  </div>
+</section>
+```
+
+El contrato real del componente vive en su frontmatter (`CategoryDetail.astro:30-42`). Notar la firma de `gallery`: `main` es obligatoria, `thumbs` es un `readonly` array que puede ir vacío (sin caer). El `as` permite bajar el título a `h3` cuando el bloque se anida bajo una sección `‹h2›` mayor —p. ej. un servicio con sub-servicios— y mantener la jerarquía semántica:
+
+```ts
+export type GalleryImg = { src: string; alt: string };
+export interface Props {
+  id?: string;
+  eyebrow?: string;
+  title: string;
+  body?: string[];
+  points?: string[];
+  cta?: { label: string; href: string; external?: boolean };
+  gallery: { main: GalleryImg; thumbs: readonly GalleryImg[] };
+  reverse?: boolean;
+  as?: 'h2' | 'h3';
+}
+```
+
+El paso interesante es el patrón data-driven. `/modulos/index.astro` no escribe doce `‹CategoryDetail /›` con sus props llenas a mano; mantiene un objeto `AFONDO` indexado por slug y recorre `MODULOS` (la SSoT de `site.ts`) emitiendo un bloque por módulo. Agregar un nuevo módulo a la serie agrega su bloque a fondo sin tocar el JSX:
+
+```astro
+---
+// /modulos/index.astro — DATA-DRIVEN desde un map.
+// Una sola fuente (AFONDO en la página) alimenta los N bloques.
+import CategoryDetail from '@components/CategoryDetail.astro'
+import { MODULOS } from '@config/site'
+
+const AFONDO: Record<string, { body: string[]; points: string[] }> = {
+  'topbar':  { body: [/* … */], points: [/* … */] },
+  'header':  { body: [/* … */], points: [/* … */] },
+  // …un objeto por cada módulo
+}
+const POOL = ['/images/showcase/a.avif', '/images/productos/b.avif', /* … */]
+---
+
+<div class="afondo">
+  {MODULOS.map((m, i) => (
+    <CategoryDetail
+      eyebrow="El módulo a fondo"
+      title={m.label}
+      body={AFONDO[m.slug].body}
+      points={AFONDO[m.slug].points}
+      cta={m.estado === 'listo' ? { label: `Ver el módulo ${m.label}`, href: m.href } : undefined}
+      gallery={{
+        main:   { src: POOL[i % POOL.length], alt: `${m.label} — vista principal` },
+        thumbs: [],
+      }}
+    />
+  ))}
+</div>
+```
+
+Dos detalles del recorrido. El `cta` se omite cuando el módulo aún no tiene página propia (`estado !== 'listo'`): si lo dejaras siempre, los bloques «próximo» generarían 404s al hacer clic. Y el contenedor `.afondo` aplica un `gap` uniforme (`gap: clamp(2.5rem, 6vw, 5rem)`, `category-detail.astro:991`); ese espacio entre bloques es lo único que cambia en la pila, no la alineación interna.
+
+Si el catálogo vive en una Content Collection, el patrón se traslada sin fricción. Reemplazas `MODULOS` por `await getCollection('productos')` y `AFONDO[slug]` por una propiedad del frontmatter (`longDescription`, `keyPoints`). El componente sigue siendo el mismo: la página decide qué pasarle.
+
+## Tabla comparativa
+
+| Bloque | Cuándo usarlo | Trade-off |
+|---|---|---|
+| `CategoryCard` | Vitrina de N categorías en rejilla | Escaneable, cabe poca palabra; no convierte por sí solo |
+| `CategoryDetail` canónica | Ampliar UNA categoría con texto largo + galería | Densa, dos columnas; pide imagen real y body trabajado |
+| `CategoryDetail` sin CTA | Documentar categorías «próximas» (roadmap) | Misma anatomía, no enlaza; útil cuando aún no hay página |
+| `CategoryDetail` sin puntos | Servicios consultivos o productos con narrativa | Pierde el resumen escaneable; el body carga todo el peso |
+| `CategoryDetail` con `as="h3"` | Sub-bloques dentro de una sección `‹h2›` mayor | Mantiene jerarquía semántica; el visual es idéntico |
+| Galería sin thumbs | Editorial, caso de estudio con una sola imagen fuerte | Bloque visualmente más liviano; menos cobertura visual |
+
+La trampa típica es elegir variante por estética. Si el sitio mezcla la canónica, la editorial y la versión sin puntos en la misma pila, el visitante deja de leer al tercer bloque: el ojo está buscando una estructura que no se mantiene. La regla canónica del proyecto cierra el debate: en una pila de bloques a fondo, todos usan la configuración canónica.
+
+## Patrones avanzados
+
+**Todos idénticos, info izq · galería der, SIN zig-zag.** La prop `reverse` existe en el componente (`CategoryDetail.astro:39`) como antipatrón documentado, no para usarse en producción. Alternar lados —«para romper el ritmo»— rompe exactamente lo contrario: el ritmo. La página `/modulos/category-detail` lo dice explícito (`category-detail.astro:84`): «Mantén SIEMPRE el orden info izq · galería der: la regla dura del sitio es todos idénticos, sin zig-zag». La alineación de columnas también es siempre la misma (`align-items: center` en escritorio), y el `gap` entre bloques es uniforme. La predictibilidad es la función.
+
+**Lazy en la galería sin pelear con el CLS.** Las imágenes del bloque ya llevan `loading="lazy"` y `decoding="async"` por defecto (`CategoryDetail.astro:78,84`), con `width="800"` y `height="600"` en la principal y `width="400"` y `height="300"` en cada thumb. Esos atributos fijos son los que evitan el salto: el navegador reserva la caja antes de descargar el bitmap. Si el bloque vive arriba del fold (cosa rara, suele ir a partir del segundo viewport), reemplaza `loading="lazy"` por `eager` en la imagen `main` del primer bloque y deja las demás con lazy. La medición de LCP lo agradece.
+
+**Alt descriptivos, no nombres de archivo.** La regla no escrita: el alt debería poder leerse y contar qué se ve sin abrir la imagen. «Cascos de seguridad industrial certificados, vista de catálogo» pasa; «cascos1.avif», «imagen-principal» o el `label` repetido no. Cada figure es independiente, así que en los thumbs el alt explica qué añade ese ángulo («Cascos para obra de construcción», «Accesorios para cascos: barboquejo y suspensión»). El lector de pantalla recorre los tres como tres unidades de información, no como una imagen y dos repeticiones.
+
+**Gap responsive con `clamp()`.** En móvil el bloque colapsa a una columna (`grid-template-columns: 1fr`), la info arriba y la galería debajo, con `gap: var(--sp-6)`. En escritorio pasa a `1fr 1fr` y el `gap` salta a `clamp(2rem, 5vw, 4rem)`, que escala con el viewport sin pasar de 4rem en pantallas anchas (`CategoryDetail.astro:148-152`). Ese `clamp` es el que evita el «hueco oceánico» en monitores de 27 pulgadas y el «pegado» en laptops de 13. Si añades un nuevo breakpoint intermedio para tablets en landscape, mantén el `1fr 1fr` y solo ajusta el `gap`; tocar las columnas obliga a reordenar la galería.
+
+## Checklist de implementación
+
+- [ ] Pasar `eyebrow`, `title`, `body` y `gallery.main` en todos los bloques (las 4 props mínimas)
+- [ ] Mantener `info izq · galería der`: nunca usar `reverse` en producción, ni alternar bloques
+- [ ] Limitar el `body` a 2 párrafos y los `points` a 3-5 ideas escaneables
+- [ ] Declarar `alt` descriptivos por imagen (qué se ve), no nombres de archivo ni el `label` repetido
+- [ ] Omitir `cta` cuando la categoría aún no tiene página propia (evita 404s en bloques «próximo»)
+- [ ] Reusar el componente desde una fuente única (collection, `TAXONOMY` o map indexado por slug)
+- [ ] Verificar en móvil real que la pila apila bien (info → galería) y que el `gap` no estrangula
+- [ ] No emitir `‹h1›` dentro del bloque: el H1 vive en el hero, `CategoryDetail` emite `‹h2›` por defecto
+
+## Preguntas frecuentes
+
+### ¿Cuándo conviene `CategoryDetail` y cuándo basta `CategoryCard`?
+
+Si la categoría se vende en 1-2 frases, basta la tarjeta y el visitante entra a la landing por más. Si necesitas dar argumento —certificación, alcance, casos, números reales— y aún así quieres mantener al visitante en la misma página, sumas un `CategoryDetail`. La decisión por contexto está cubierta en el artículo hermano de este par: [CategoryDetail vs CategoryCard: árbol de decisión](/blog/category-card-vs-category-detail-decision).
+
+### ¿Cuántos bloques `CategoryDetail` puedo apilar seguidos sin agotar al lector?
+
+Tres a cinco es lo cómodo en una home, ocho a doce en una página de catálogo profundo como `/modulos`. La clave no es el número, es la predictibilidad: si todos siguen la misma anatomía, el visitante baja por la pila escaneando títulos y leyendo a fondo los que le interesan. Si cada bloque cambia de lado o de estructura, el quinto ya cansa.
+
+### ¿Y si la categoría no tiene una galería de imágenes reales?
+
+Dos salidas. La conservadora: usa la prop `gallery.thumbs = []` y deja solo la imagen principal —la página `/modulos/category-detail` lista esta como variante real («Galería de 1 imagen»). La intermedia: reusa una imagen del catálogo (un producto representativo) como `main` y dos detalles como thumbs. Lo que no se hace es pintar el bloque sin galería: la columna derecha vacía rompe la simetría del componente.
+
+### ¿Cómo evito que el bloque se vea «relleno» en móvil?
+
+En móvil el componente apila info arriba y galería debajo con `gap: var(--sp-6)`. Si el body es muy largo, el visitante hace scroll por texto antes de ver la imagen, y la sensación de relleno desaparece. El problema aparece cuando el body es de una sola frase y los puntos son dos: el bloque queda corto y la galería ocupa más que el texto. La solución es de edición: si no hay argumento para 2 párrafos + 3 puntos, no necesitas el bloque a fondo, basta la tarjeta de la vitrina.
+
+### ¿Puedo poner dos CTAs en la columna de info?
+
+El contrato del componente acepta uno solo (`cta?: ❴ label, href, external? ❵`). No es restricción técnica, es decisión de UX: el bloque a fondo trabaja para llevar al visitante a la landing de esa categoría, y dos CTAs compiten entre sí y diluyen la conversión. Si necesitas un segundo enlace —«ver casos» además de «ver catálogo»—, ese segundo vive mejor como link textual dentro del body o como CTA secundario en la landing de la categoría, no junto al principal.
+
+El bloque a fondo es uno de esos componentes que se ve simple desde fuera —«dos columnas, foto y texto»— y se complica desde dentro cuando empiezas a apilar cinco de ellos en una página. La disciplina que lo sostiene es chica: misma anatomía, mismo lado, mismo gap. El resto —el body trabajado, los puntos escaneables, la galería con alt descriptivos— es contenido, y el contenido es lo único que el visitante realmente lee.
+
+## Sigue leyendo
+
+- [Módulo Detalle de categoría en vivo](/modulos/category-detail)
+- [CategoryDetail vs CategoryCard: árbol de decisión](/blog/category-card-vs-category-detail-decision)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

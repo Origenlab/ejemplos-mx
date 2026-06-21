@@ -1,0 +1,161 @@
+---
+title: "Service card con CTA dual: ficha vs WhatsApp"
+description: "Tarjetas de servicio en Astro con CTA dual: cuándo enviar a la ficha del servicio y cuándo abrir WhatsApp para no perder el lead caliente."
+category: "guias"
+heroImage: "/images/articulos/service-card-cta-dual-whatsapp-ficha.avif"
+pubDate: 2026-04-15
+author: "Ejemplos.mx"
+tags: ["astro", "service-card", "cta", "whatsapp", "conversion"]
+seoTitle: "Service card: CTA dual ficha vs WhatsApp"
+seoDescription: "ServiceCard en Astro con CTA dual ficha+WhatsApp: copy del botón, jerarquía visual y patrón WA_MESSAGES para mensajes en contexto."
+---
+
+La mayoría de los sitios de servicios cometen el mismo error de conversión: tratan todas las tarjetas del catálogo como si fueran iguales. La consultoría sin precio público lleva al mismo botón «Ver más» que la instalación con tarifa fija, y se pierde la pista al lead que quería chatear ahí mismo. Esta guía arma una `ServiceCard` con CTA dual en Astro —enlace inline a la ficha L4 o botón verde directo a WhatsApp con mensaje pre-cargado—, decide cuál usar en cada servicio y mantiene el contrato del componente lo bastante chico para que no se vuelva un panel de configuración.
+
+## Contexto
+
+La intención del visitante en el catálogo de servicios no es uniforme. Cuando llega buscando «mantenimiento preventivo de aire acondicionado», quiere comparar fichas, ver precios y rasgos, y decidir; cuando llega buscando «cotización urgente de evento corporativo», quiere chatear ya, no leer otra página. Si el catálogo presenta a ambos el mismo botón inline gris, la segunda intención —que suele ser la más caliente— se enfría en la transición. El lead pulsa, llega a una ficha con más bloques que respuestas y abandona porque el chat seguía a tres clics.
+
+El componente `ServiceCard` de la plantilla resuelve este desajuste con una sola prop booleana: `whatsapp`. Por defecto la card cierra con un enlace inline rojo (`Ver servicio →`) que lleva a la ficha L4 del catálogo, donde vive el detalle schema-driven (`Service` JSON-LD, pricing, `includes`, FAQs). Cuando el padre del grid pasa `whatsapp=❴true❵`, el mismo componente muta el CTA a un botón verde con el icono de WhatsApp y abre `wa.me` en pestaña nueva con un mensaje pre-cargado de `WA_MESSAGES`. Una sola card, dos comportamientos —el de catálogo y el de venta consultiva—.
+
+Lo que se documenta aquí no es «cómo agregar un botón verde» —eso son seis líneas de CSS— sino la decisión editorial: qué servicios merecen la ficha, cuáles merecen el chat directo, qué dice el copy del botón en cada caso, cómo se ve la jerarquía visual cuando coexisten ambos modos en la misma vitrina, y por qué el mensaje de WhatsApp se centraliza en `WA_MESSAGES` —nunca hardcodeado en la página— para no perder contexto del lead.
+
+## Implementación paso a paso
+
+El componente vive en `src/components/ServiceCard.astro` y declara una API pequeña a propósito (ServiceCard.astro:4-17). Las tres props obligatorias son `title`, `description` y `href`; lo demás es opcional, incluido `whatsapp` que es la prop responsable del CTA dual:
+
+```astro
+---
+// src/components/ServiceCard.astro:4-18
+interface Props {
+  title: string
+  description: string
+  href: string
+  /** SVG inline (string) para el ícono. Opcional. */
+  icon?: string
+  /** Imagen de cabecera. Si se pasa, reemplaza al ícono superior. */
+  image?: string
+  imageAlt?: string
+  badge?: string
+  ctaLabel?: string
+  /** true → CTA estilo WhatsApp (verde) + target _blank. */
+  whatsapp?: boolean
+}
+const { title, description, href, icon, image, imageAlt, badge, ctaLabel = 'Ver servicio', whatsapp = false } = Astro.props
+---
+```
+
+La lógica del CTA dual son tres líneas de marcado dentro del cierre de la card (ServiceCard.astro:36-44). El `class:list` aplica la clase `scard__cta--wa` solo cuando `whatsapp` es `true`; el `target` y el `rel` se abren en pestaña nueva si el modo WhatsApp está activo o si el `href` empieza con `http` (un enlace externo cualquiera). Y al inicio del botón, un SVG con el icono de WhatsApp aparece solo en modo WhatsApp; al final, una flecha solo en modo inline:
+
+```astro
+<a
+  href={href}
+  class:list={['scard__cta', whatsapp && 'scard__cta--wa']}
+  target={whatsapp || href.startsWith('http') ? '_blank' : undefined}
+  rel={whatsapp || href.startsWith('http') ? 'noopener noreferrer' : undefined}
+>
+  {whatsapp && <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">{/* path de WhatsApp */}</svg>}
+  {ctaLabel}
+  {!whatsapp && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>}
+</a>
+```
+
+En la página padre, el href de WhatsApp NUNCA se construye a mano. La regla dura del proyecto (D4) prohíbe hardcodear `wa.me/‹número›` en una página o componente; siempre se arma con `waUrl(WA_MESSAGES.‹intencion›)`. Esto centraliza el número en `CONTACT.whatsapp` —cambiarlo de país o de cuenta es una sola edición— y, más importante, deja los mensajes pre-cargados en un solo archivo (`src/config/site.ts:470-480`) donde el equipo editorial los puede afinar sin tocar componentes:
+
+```astro
+---
+// src/pages/servicios/index.astro — uso típico de las dos variantes
+import ServiceCard from '@components/ServiceCard.astro'
+import { waUrl, WA_MESSAGES } from '@config/site'
+
+const iconShield = `<svg viewBox="0 0 24 24" width="28" height="28"
+  fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+  <path d="m9 12 2 2 4-4"/></svg>`
+---
+
+<div class="grid">
+  {/* Modo ficha: catálogo público, descripción larga, comparación */}
+  <ServiceCard
+    icon={iconShield}
+    title="Consultoría de seguridad industrial"
+    description="Diagnóstico y acompañamiento técnico para alinear tu operación a la NOM-035-STPS."
+    href="/servicios/consultoria"
+    badge="POPULAR"
+    ctaLabel="Ver servicio"
+  />
+
+  {/* Modo WhatsApp: cotización al vuelo, sin pasar por formulario */}
+  <ServiceCard
+    icon={iconShield}
+    title="Cotización urgente"
+    description="¿Necesitas el alcance hoy? Cotizamos por chat sin pasar por formulario."
+    href={waUrl(WA_MESSAGES.urgente)}
+    ctaLabel="Cotizar por WhatsApp"
+    whatsapp
+  />
+</div>
+```
+
+El mensaje de `WA_MESSAGES.urgente` en `src/config/site.ts` es `"Hola, necesito atención urgente hoy."`. Cuando el visitante toca el botón verde, WhatsApp abre con ese texto pre-cargado en el campo de mensaje, así el asesor del otro lado entra en materia sin pedir el clásico «hola, ¿en qué te ayudo?». La intención del lead viaja con el clic; el botón es la primera línea del chat, no la última pantalla del sitio.
+
+## Tabla comparativa
+
+| Tipo de servicio | Modo de CTA | Por qué |
+|---|---|---|
+| Catálogo público con descripción larga | Ficha (`whatsapp=❴false❵`) | El visitante necesita leer pricing, `includes` y FAQs antes de decidir |
+| Servicio con tarifa fija publicada | Ficha (`whatsapp=❴false❵`) | La ficha cierra la venta sola; el chat sería un paso redundante |
+| Cotización a la medida sin precio público | WhatsApp (`whatsapp=❴true❵`) | La ficha agregaría fricción; el chat es el siguiente paso real |
+| Servicio de urgencia (24 h, hoy mismo) | WhatsApp (`whatsapp=❴true❵`) | El visitante busca respuesta inmediata, no comparar opciones |
+| Servicio destacado con badge «POPULAR» | Ficha + badge | La ficha refuerza la elección; el badge la señala sin gritarla |
+| Servicio en pausa o sin agenda | Ficha estática + nota | Mantener visible pero sin CTA activo evita falsos positivos |
+| Paquete bundle (servicio + add-ons) | Ficha (`whatsapp=❴false❵`) | El paquete necesita explicar qué incluye; el chat lo simplifica de más |
+| Consultoría inicial gratuita | WhatsApp (`whatsapp=❴true❵`) | El gancho es la conversación, no el formulario de contacto |
+
+La regla práctica: si el siguiente paso natural del visitante es LEER más, el CTA va a la ficha; si el siguiente paso natural es HABLAR, va a WhatsApp. Cuando esa pregunta se vuelve difícil de responder, casi siempre es porque el servicio está mal posicionado —no sabes si vendes catálogo o consultoría— y el catálogo no es el lugar para resolver esa duda.
+
+## Patrones avanzados
+
+**Jerarquía visual: no llenes todo el grid de botones verdes.** El CTA verde de WhatsApp llama mucho la atención por diseño —contrasta con la paleta de marca, ocupa más alto que un enlace inline, lleva un icono universalmente reconocido—. Si TODAS las cards del catálogo usan `whatsapp=❴true❵`, el patrón se quema: deja de leerse como «atajo a chat» y empieza a leerse como «relleno de botones verdes». La regla operativa del proyecto: máximo 1-2 servicios consultivos con CTA verde por cada 5-7 servicios de ficha. La jerarquía emerge sola; el visitante ve la vitrina entera y entiende que los verdes son la excepción —los que valen una conversación—.
+
+**Copy del botón: que el verbo coincida con la intención del mensaje.** El `ctaLabel` no es decorativo: es la primera lectura del lead antes del clic, y debe coincidir con el mensaje pre-cargado de `WA_MESSAGES`. Si el botón dice «Cotizar por WhatsApp» y el mensaje cargado es «Hola, necesito información», hay desajuste —el lead esperaba pedir precio y termina en una conversación genérica—. La tabla mínima de pares: `Cotizar por WhatsApp` con `WA_MESSAGES.cotizar`, `Agendar visita` con un mensaje de agenda, `Hablar con un asesor` con `WA_MESSAGES.contacto`. Cada par vive en `site.ts`, una vez, y se reusa.
+
+**Mensaje con contexto del servicio (extensión).** El `WA_MESSAGES` actual son strings fijos, lo que basta para la mayoría de los casos. Cuando el catálogo crece y conviene que el asesor sepa de qué servicio venía el lead, una pequeña extensión sin tocar el componente: armar el mensaje en el padre del grid con el título del servicio. Por ejemplo, `text=Hola, me interesa el servicio «$❴servicio.data.title❵»`. La función `waUrl()` ya hace `encodeURIComponent` del mensaje, así que pasar un string con comillas y acentos es seguro. Importante: deja el mensaje genérico (`WA_MESSAGES.cotizar`) cuando el catálogo se renderiza desde la collection y solo personaliza cuando el servicio lo justifica —no quieres 50 mensajes distintos en `site.ts`—.
+
+**El href no se valida en el componente.** El `ServiceCard.astro` recibe `href` y lo pasa al `‹a›` tal cual: si la página padre lo deja vacío (`href=""`), el botón queda muerto sin warning ni error. La defensa vive en el padre, no en el componente: filtra los servicios sin ficha en el `.map` antes de pintar, o si el servicio existe pero no tiene L4 publicada, pasa `whatsapp=❴true❵` con un `waUrl(WA_MESSAGES.servicios)` como fallback. La opción que NO funciona es dejar el `href` vacío y rezar para que nadie pulse —es exactamente el lead caliente el que pulsa primero—.
+
+## Checklist de implementación
+
+- [ ] Confirmar que el catálogo decide por servicio: cuáles van a ficha, cuáles a WhatsApp (regla 1-2 verdes por cada 5-7 fichas)
+- [ ] Verificar que TODOS los hrefs de WhatsApp se construyen con `waUrl(WA_MESSAGES.‹intencion›)`, ninguno con `wa.me/‹número›` hardcodeado
+- [ ] Validar que el `ctaLabel` coincide con el mensaje pre-cargado (cotizar↔cotización, urgencia↔urgencia)
+- [ ] Probar en móvil real que el botón verde tiene blanco táctil ≥ 44px y se abre WhatsApp (no el navegador con `wa.me`)
+- [ ] Confirmar que los enlaces externos llevan `target="_blank"` y `rel="noopener noreferrer"` (el componente lo hace solo cuando `whatsapp=true` o `href` empieza con `http`)
+- [ ] Validar que NINGUNA card tiene `href=""`: el `.map` del padre filtra antes
+- [ ] Confirmar que el badge y el CTA verde NO conviven en la misma card del catálogo principal (sobrecarga visual)
+- [ ] Probar con teclado: el CTA verde y el inline deben tener foco visible (`:focus-visible` con outline de marca)
+
+## Preguntas frecuentes
+
+### ¿Por qué no poner siempre WhatsApp si convierte más?
+Porque la ficha L4 hace trabajo que el chat no hace: SEO (`Service` JSON-LD), comparación lado a lado, descripción larga, FAQs, `includes`, casos relacionados. Un sitio donde todo el catálogo lleva a WhatsApp es un directorio telefónico con logo bonito —Google no ve servicios, ve botones verdes—. La regla práctica: la ficha es el activo SEO, el chat es el atajo de conversión. Necesitas ambos, en el orden correcto.
+
+### ¿El componente emite `Service` JSON-LD si pongo `whatsapp=❴true❵`?
+No. `ServiceCard` es presentación pura: no emite ningún JSON-LD —ni `Service`, ni `Offer`, ni `BreadcrumbList`—. El schema `Service` vive centralizado en `lib/seo.ts` y solo lo invoca el `ServiceLayout` de la ficha L4 (regla B3: un único emisor por página). El grid del catálogo emitirá `ItemList` vía `directorySchema`, pero eso sucede en `/servicios/index.astro`, no en la card. La prop `whatsapp` solo cambia el CSS y el `target` del enlace.
+
+### ¿Qué pasa con `prefers-reduced-motion` en el botón verde?
+El CTA inline anima el `gap` en hover (la flecha se separa del texto) y lo desactiva bajo `prefers-reduced-motion: reduce` (ServiceCard.astro:67). El CTA verde de WhatsApp NO anima el gap por diseño —es un botón estático, no un enlace inline—; solo cambia el verde a un tono más oscuro en hover. Por eso es seguro en sistemas con movimiento reducido sin necesidad de una regla adicional.
+
+### ¿Puedo personalizar el mensaje por servicio sin tocar el componente?
+Sí, y es la extensión natural. En el `.map` del padre del grid, arma el `href` pasando a `waUrl()` un mensaje construido con template literal —interpolas el título del servicio dentro del string «Hola, me interesa el servicio «...». ¿Tienes disponibilidad esta semana?» antes de pasarlo—. `waUrl()` se encarga del `encodeURIComponent`. El componente recibe el href ya armado y no se entera del contenido. Conviene reservar la personalización para los servicios consultivos —no para los 30 del catálogo principal—.
+
+### ¿Y el CTA dual funciona también con `image` en lugar de `icon`?
+Sí, las dos props (visual y CTA) son ortogonales. Una card puede tener `image` (modo vitrina, foto 16:9 con badge absoluto sobre la esquina) Y `whatsapp=❴true❵` (CTA verde abajo). Es el caso de un servicio con resultado visible que se cotiza al vuelo —un evento, una instalación con foto del último trabajo—. El componente no impone reglas sobre esta combinación; la decisión es editorial: si la foto comunica el servicio y el chat es el siguiente paso, ambas props conviven.
+
+El CTA dual no es una feature: es una decisión sobre el catálogo. Bien aplicada, el visitante encuentra la fricción correcta en cada servicio —lectura para los que se venden por catálogo, chat para los que se venden consultando— y el equipo comercial recibe leads ya tibios, con el contexto pre-cargado en el primer mensaje. Mal aplicada —todos los botones verdes o todos inline—, el componente sigue funcionando, pero el catálogo se vuelve un panel de configuración donde el visitante elige por estética. El código es trivial; la disciplina editorial es la que convierte.
+
+## Sigue leyendo
+
+- [Módulo Service card en vivo](/modulos/service-card)
+- [Catálogo de servicios data-driven en Astro](/blog/catalogo-servicios-data-driven-iconos)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

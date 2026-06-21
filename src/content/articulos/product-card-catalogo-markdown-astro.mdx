@@ -1,0 +1,225 @@
+---
+title: "Product card en Astro: catálogo desde Markdown"
+description: "Cómo armar una vitrina de productos performante en Astro: del frontmatter Markdown a la ProductCard, con loaders, reference() y precios honestos."
+category: "guias"
+heroImage: "/images/articulos/product-card-catalogo-markdown-astro.avif"
+pubDate: 2026-04-09
+author: "Ejemplos.mx"
+tags: ["astro", "product-card", "content-collections", "catalogo", "markdown"]
+seoTitle: "Product card en Astro desde Markdown"
+seoDescription: "Catálogo de productos en Astro: Content Collections, ProductCard, glob loader, reference() entre colecciones y vitrina performante real."
+---
+
+Un catálogo de productos parece trivial hasta que el cliente pide subir veinte fichas más y el sitio empieza a tener tres maneras distintas de pintar una card —una en la home, otra en el listado, otra en «relacionados»—. Esta guía arma una vitrina performante en Astro de principio a fin: el frontmatter Markdown del producto, el `glob` loader que lo recoge, la `ProductCard` que la página padre mapea con `getCollection()`, el `reference()` que vincula producto con servicios y el precio escrito como cadena libre («Desde $X MXN») para no inventar tarifas que no existen. Es para desarrolladores que ya tocaron Content Collections y quieren un patrón que escale sin reescribir el componente cuando entra el producto número treinta.
+
+## Contexto
+
+La regla canónica del repo (anti-patrón D3) prohíbe hardcodear entidades repetibles en `.astro`. Un producto no vive en `src/pages/productos/casco.astro`; vive en `src/content/productos/casco.md`, con su frontmatter validado por Zod `.strict()` en `src/content.config.ts`, y la página padre lo recoge con `getCollection('productos')`. Cuando el cliente edita la ficha, toca un archivo Markdown legible, no un componente Astro con JSX dentro. Cuando agrega un producto, copia un `.md` y le cambia los campos; nadie tiene que tocar `productos/index.astro`.
+
+La fuente única que vincula todo el sistema es el schema Zod de la colección `productos`. Allí se declara que `title` mide entre 10 y 110 caracteres, que `category` es un enum cerrado (`equipos`, `accesorios`, `general`), que `image` debe ser una ruta absoluta bajo `/images/`, que `price` es un `string` opcional —no un `number` forzado— y que `relatedServices` es un array de `reference('servicios')` tipado. Si el frontmatter rompe una de esas reglas, el build falla en local antes de subir a producción. La validación no es decorativa: detiene el deploy.
+
+La `ProductCard.astro` se queda como presentación pura. Recibe `title`, `href`, `image`, `imageAlt`, `badge`, `description`, `ctaLabel`, `index` y `priority`; emite un `‹article›` con imagen 16:9 (con `width="640" height="360"` para reservar el hueco), badge superior, título H3, descripción corta y un CTA inline. No emite JSON-LD, no toca `getCollection()`, no conoce la colección. Esa separación —datos en la colección, presentación en el componente, ensamble en la página— es lo que permite que un catálogo de cinco productos use exactamente el mismo código que uno de cincuenta.
+
+## Implementación paso a paso
+
+El frontmatter del producto vive en `src/content/productos/‹slug›.md`. Cada campo está declarado en el schema; cualquier campo de más (un `hero_image:` por error) hace fallar el build —`.strict()` rechaza propiedades desconocidas en silencio—. El cuerpo Markdown se renderiza en la ficha L4 (`/productos/‹slug›`), pero la card del listado solo lee `data.*`:
+
+```markdown
+---
+title: "Casco de seguridad industrial NOM-115"
+description: "Casco homologado para industria pesada, con barboquejo ajustable y suspensión de 6 puntos. Stock para entrega en 24 horas dentro de CDMX y zona conurbada."
+category: "equipos"
+image: "/images/productos/casco-seguridad-industrial.avif"
+price: "Desde $890 MXN"
+sku: "EQ-CASCO-115"
+brand: "EJEMPLOS"
+relatedServices:
+  - "instalacion-redes-vida"
+  - "mantenimiento-equipo-altura"
+featured: true
+order: 1
+seoTitle: "Casco NOM-115 industrial | EJEMPLOS"
+seoDescription: "Casco industrial certificado NOM-115-STPS. Entrega 24 h en CDMX, accesorios y mantenimiento. Cotiza por WhatsApp."
+keywords: ["casco industrial", "NOM-115", "EPP"]
+---
+
+## Especificación técnica
+
+Casco de polietileno de alta densidad con suspensión ajustable…
+```
+
+La colección se declara una vez en `src/content.config.ts` con `glob(❴ pattern: '**/*.md', base: './src/content/productos' ❵)`. El loader recorre el directorio en build-time y devuelve cada archivo como una entrada tipada. Las dos decisiones que vale la pena entender están en el schema: `price` es `z.string().optional()` —no un número— y `relatedServices` es `z.array(reference('servicios')).optional()`. La primera evita el problema clásico de catálogos B2B donde la tarifa real es «Desde $X», «Cotizar», «$X / m²» o un rango; un `number` te obliga a inventar `0` o `null` y a que el componente sepa qué pintar. La segunda valida que cada slug exista en la colección `servicios` durante el build; si renombras un servicio, los productos que lo referencian dejan de compilar y te enteras antes del deploy:
+
+```ts
+// src/content.config.ts — extracto de la colección productos
+const productos = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/productos' }),
+  schema: z
+    .object({
+      title: z.string().min(10).max(110),
+      description: z.string().min(70).max(280),
+      category: z.enum(PRODUCT_CATEGORIES),   // ['equipos','accesorios','general']
+      image: imagePath,                        // regex ^/images/
+      price: z.string().optional(),            // "Desde $X", "Cotizar", "$X/m²"
+      sku: z.string().optional(),
+      brand: z.string().optional(),
+      relatedProducts: z.array(reference('productos')).optional(),
+      relatedServices: z.array(reference('servicios')).optional(),
+      faqs: faqSchema,
+      featured: z.boolean().default(false),
+      order: z.number().default(0),
+      draft: z.boolean().default(false),
+      ...seoFields,
+    })
+    .strict(),
+});
+```
+
+La página padre del listado es `src/pages/productos/index.astro`. Recoge la colección, filtra drafts, ordena por `order` ascendente y mapea cada entrada a una `‹ProductCard›`. La clave de rendimiento está en `index=❴i❵` y `priority=❴i === 0❵`: el componente decide qué imágenes carga en `eager` (las primeras 4 cards) y qué imagen recibe `fetchpriority="high"` (solo la primera, para ganar el LCP). El visitante ve la vitrina arriba del pliegue mientras el resto se hidrata en `lazy` durante el scroll:
+
+```astro
+---
+// src/pages/productos/index.astro
+import PageLayout from '@layouts/PageLayout.astro'
+import ProductCard from '@components/ProductCard.astro'
+import { getCollection } from 'astro:content'
+
+const productos = (await getCollection('productos', ({ data }) => !data.draft))
+  .sort((a, b) => (a.data.order ?? 0) - (b.data.order ?? 0))
+
+const items = productos.map((p) => ({
+  name: p.data.title,
+  path: `/productos/${p.id}`,
+  image: p.data.image,
+  description: p.data.description,
+}))
+---
+
+<PageLayout
+  title="Catálogo de productos"
+  description="Todos los productos del sitio, una card por ficha."
+  pageType="category"
+  schemaData={{ list: {
+    name: 'Catálogo de productos',
+    description: 'Productos disponibles, una card por ficha.',
+    path: '/productos',
+    items,
+  } }}
+  breadcrumbs={[{ label: 'Productos' }]}
+>
+  <div class="grid">
+    {productos.map((p, i) => (
+      <ProductCard
+        title={p.data.title}
+        href={`/productos/${p.id}`}
+        image={p.data.image}
+        imageAlt={p.data.title}
+        badge={p.data.category}
+        description={p.data.description}
+        index={i}
+        priority={i === 0}
+      />
+    ))}
+  </div>
+</PageLayout>
+
+<style>
+  .grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
+  @media (min-width: 768px) {
+    .grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  }
+</style>
+```
+
+El componente `ProductCard.astro` queda corto a propósito. Decide su `loading` y su `fetchpriority` en función de `index` y `priority`, declara `width="640" height="360"` para reservar el espacio del cuadro y monta un único `‹a›` que envuelve toda la card —imagen, badge, título, descripción y CTA—. El visitante puede hacer clic en cualquier parte de la tarjeta y el lector de pantalla anuncia un solo enlace, no cuatro:
+
+```astro
+---
+// src/components/ProductCard.astro (extracto)
+const { title, href, image, imageAlt, badge, description, ctaLabel = 'Ver detalles', index = 99, priority = false } = Astro.props
+const eager = priority || index < 4
+---
+
+<article class="pcard" aria-label={title}>
+  <a href={href} class="pcard__link">
+    {image && (
+      <div class="pcard__media">
+        <img
+          src={image}
+          alt={imageAlt ?? title}
+          width="640" height="360"
+          loading={eager ? 'eager' : 'lazy'}
+          decoding="async"
+          fetchpriority={priority ? 'high' : undefined}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 320px"
+          class="pcard__img"
+        />
+        <span class="pcard__overlay" aria-hidden="true"></span>
+        {badge && <span class="pcard__badge">{badge}</span>}
+      </div>
+    )}
+    <div class="pcard__body">
+      <h3 class="pcard__title">{title}</h3>
+      {description && <p class="pcard__desc">{description}</p>}
+      <span class="pcard__cta">{ctaLabel}<!-- + flecha SVG --></span>
+    </div>
+  </a>
+</article>
+```
+
+## Tabla comparativa
+
+| Patrón de catálogo | Cuándo usarlo | Trade-off |
+|---|---|---|
+| `.astro` por producto (hardcoded) | Catálogo de 1-3 piezas que nunca crecerá | Cero ceremonia inicial; cada producto nuevo abre un PR; sin validación de campos |
+| Markdown + glob loader (este patrón) | 5-500 productos editados por el cliente | Validación Zod en build, cliente edita texto plano; requiere disciplina con el schema |
+| MDX por producto | Productos con bloques ricos (vídeo, tablas, componentes) | Permite `‹Component /›` en la ficha; pesa más en parse, requiere `@astrojs/mdx` |
+| CMS headless (Sanity, Strapi) | 500+ productos, varios editores, workflow de aprobación | Edición visual, roles, preview; agrega infra externa y latencia de fetch |
+| API externa (ERP, Shopify) | Tienda con stock y precios reales sincronizados | Datos siempre frescos; pierde el control editorial y obliga a SSR o ISR |
+
+La trampa habitual es saltar al CMS o al ERP demasiado pronto. Un catálogo de cuarenta productos editado por una sola persona vive feliz en Markdown con validación Zod durante años; el momento de cambiar es cuando hay tres editores simultáneos o cuando el stock real importa más que la descripción comercial. El patrón Markdown te da `git blame` por línea, branches para reorganizar la categoría completa y previews de PR sin tocar producción —tres cosas que un CMS pide pagar aparte—.
+
+## Patrones avanzados
+
+**Precio como cadena libre, no como `number`.** El schema declara `price: z.string().optional()`. Suena raro hasta que entra el primer cliente B2B y la mitad del catálogo dice «Cotizar» y la otra mitad dice «Desde $890 MXN». Si fuerzas `number`, terminas con un campo `price` y un campo `priceLabel` y un componente que decide cuál mostrar. La cadena libre permite escribir la tarifa como el cliente la diría por teléfono y deja el cálculo de schema (precio mínimo, rango) en `lib/seo.ts`, donde sí hay lógica. La regla práctica: el frontmatter es para humanos, no para el JSON-LD.
+
+**`reference()` entre colecciones para cross-sell tipado.** Cuando un producto declara `relatedServices: ["instalacion-redes-vida"]`, Astro valida en build que ese slug exista en la colección `servicios`. Si renombras el servicio a `instalacion-redes-anticaida`, los productos que lo referencian dejan de compilar con un error claro («referenced entry does not exist»). Sin `reference()`, el enlace se rompe en silencio y el visitante llega a un 404. Esa validación tipada es lo que diferencia un catálogo Markdown serio de uno hecho con strings sueltos.
+
+**`order` + `featured` como dos ejes ortogonales.** `order` controla la posición en el listado completo; `featured` marca productos para vitrinas curadas (home, sección «destacados»). Ambos viven en el frontmatter, así el cliente decide sin tocar código. La página padre filtra por `data.featured` cuando arma la home y ordena por `data.order` cuando arma el listado completo. La regla: nunca derivar destacados de un truco frágil («los primeros 3 por orden») —deja un toggle explícito que el cliente entienda.
+
+**Imagen obligatoria con regex `^/images/`.** El schema usa `imagePath` —`z.string().regex(/^\/images\//)`—. Si alguien escribe `image: "casco.avif"` o `image: "https://otrocdn.com/casco.jpg"`, el build falla. Esto evita dos errores comunes: rutas relativas que rompen en producción y CDNs externos que no controlas. Todas las imágenes pasan por `public/images/`, todas son AVIF y la card las sirve con `width/height` para evitar CLS. Una decisión de schema que ahorra incidentes a los seis meses.
+
+## Checklist
+
+- [ ] Validar que `src/content.config.ts` tenga la colección `productos` con `.strict()` y `category` como `z.enum()` cerrado
+- [ ] Confirmar que cada `.md` de `src/content/productos/` cumple `title` 10-110 chars y `description` 70-280
+- [ ] Verificar que `image` apunta a una ruta absoluta bajo `/images/` (la regex del schema lo exige)
+- [ ] Mantener `price` como cadena libre («Desde $X MXN», «Cotizar») —no convertirlo a `number`—
+- [ ] Pasar `index=❴i❵` y `priority=❴i === 0❵` al mapear en el grid para que LCP no sufra
+- [ ] Filtrar `draft: true` con el segundo argumento de `getCollection()` para no publicar borradores
+- [ ] Usar `reference('servicios')` (no string suelto) en `relatedServices` para validación tipada en build
+
+## Preguntas frecuentes
+
+### ¿Por qué Markdown y no MDX para los productos?
+Porque la ficha de producto es texto estructurado, no un compuesto de componentes. Si necesitas incrustar un `‹Galeria /›` o un `‹Cotizador /›` dentro del cuerpo, MDX cobra sentido —pero entonces validas el costo: parse más lento, dependencia de `@astrojs/mdx` y editores que ven JSX en su CMS. El blog (`articulos`) sí es `.mdx` porque cada post puede llevar bloques ricos; el catálogo se queda en `.md` mientras la ficha sea texto + frontmatter.
+
+### ¿`reference()` enlaza productos con servicios en ambas direcciones?
+No: la relación se declara desde donde tenga sentido editorialmente. Si un producto «se instala con» tal servicio, declara `relatedServices` en el producto. Si un servicio «requiere» tal producto, declara `relatedProducts` en el servicio. Astro no las sincroniza solas. La regla práctica: declara desde la entidad menos volátil (suelen ser los servicios) y consulta desde la otra cuando renderizas.
+
+### ¿Y si necesito mostrar el precio numérico en la card?
+Lo haces, pero parseando en la página padre, no forzando el schema. Ejemplo: extraes el número con un regex (`p.data.price?.match(/\$([\d,]+)/)?.[1]`) y lo pasas como prop adicional. El frontmatter sigue diciendo «Desde $890 MXN»; el componente recibe `priceLabel="Desde"` + `priceAmount="890"` si lo necesitas separar visualmente. Lo que no haces es romper el contrato `string` del schema, porque otros productos no tendrán número.
+
+### ¿Cómo manejo productos sin stock sin sacarlos del catálogo?
+Hoy la `ProductCard` no tiene prop `disabled` (la `CategoryCard` sí). Las dos opciones limpias son: agregar un boolean `inStock` al schema y filtrarlos en el `map` (más simple, mantiene el catálogo «sin tachones»), o agregar `disabled?: boolean` a la card y pintarla en gris con `aria-disabled` (más completo, conserva la señal). La elección depende del cliente: B2B suele querer ver lo que no hay; B2C prefiere no mostrarlo.
+
+### ¿El `glob` loader recoge subcarpetas?
+Sí, el patrón `**/*.md` recorre subcarpetas. Útil si quieres organizar `src/content/productos/equipos/`, `src/content/productos/accesorios/`, etc. El `id` que devuelve `getCollection()` incluye la ruta relativa (`equipos/casco-115`), así que la URL de la ficha L4 hereda esa estructura. Decisión: o categorizas por carpeta (URL refleja jerarquía) o por campo `category` (URL plana, filtrado en runtime). Las dos funcionan; mezclarlas confunde.
+
+Un catálogo Markdown bien armado se siente «invisible»: el cliente edita un `.md`, hace push, y a los noventa segundos la card está en producción con su imagen optimizada y su badge correcto. No hay backend, no hay CMS, no hay panel de administración —hay un schema Zod estricto, un loader que recoge archivos y un componente que pinta sin opinar—. La disciplina está en respetar el contrato: el frontmatter es la fuente única, la card no toca datos y la página padre ensambla. Treinta productos después, el código sigue siendo el mismo.
+
+## Sigue leyendo
+
+- [Módulo Product card en vivo](/modulos/product-card)
+- [Schema Product en cards: regla del emisor único](/blog/schema-product-cards-emisor-unico)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

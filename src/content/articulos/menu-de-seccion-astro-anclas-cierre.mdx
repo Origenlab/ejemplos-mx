@@ -10,11 +10,11 @@ seoTitle: "Menú de sección en Astro: anclas + cierre"
 seoDescription: "Cómo construir un SectionMenu en Astro con anclas internas, items data-driven y un patrón de cierre que aumenta la profundidad de sesión."
 ---
 
-El menú de sección es la franja de botones grandes que va pegada al hero y, bien armada, hace dos trabajos al mismo tiempo: reparte tráfico a las secciones clave y deja el CTA de conversión a un clic del primer pantallazo. Esta guía es la mecánica del componente: cómo se arma el `MenuItem`, qué cambia entre un `href` externo (`/productos`) y uno interno (`#faq`), cómo etiquetar el `<nav>` con `ariaLabel` y cómo reusar la misma pieza al final de la página para cerrarla sin que parezca un footer. Está pensada para quien implementa el componente por primera vez y quiere entender cada prop antes de tocarla.
+El menú de sección es la franja de botones grandes que va pegada al hero y, bien armada, hace dos trabajos al mismo tiempo: reparte tráfico a las secciones clave y deja el CTA de conversión a un clic del primer pantallazo. Esta guía es la mecánica del componente: cómo se arma el `MenuItem`, qué cambia entre un `href` externo (`/productos`) y uno interno (`#faq`), cómo etiquetar el `‹nav›` con `ariaLabel` y cómo reusar la misma pieza al final de la página para cerrarla sin que parezca un footer. Está pensada para quien implementa el componente por primera vez y quiere entender cada prop antes de tocarla.
 
 ## Contexto
 
-El patrón viene de los catálogos profesionales: el visitante entra, lee la promesa del hero y, sin tener que volver al menú del header, encuentra los destinos clave a la altura del ojo. En `src/components/SectionMenu.astro` esa franja se materializa con tres props: `items` (la lista de botones), `cta` (el botón de conversión, opcional) y `ariaLabel` (la etiqueta accesible del `<nav>`). Nada más. El responsive lo resuelve el propio componente —apila en móvil, una fila en escritorio— y el CTA se distingue automáticamente cuando llega la prop.
+El patrón viene de los catálogos profesionales: el visitante entra, lee la promesa del hero y, sin tener que volver al menú del header, encuentra los destinos clave a la altura del ojo. En `src/components/SectionMenu.astro` esa franja se materializa con tres props: `items` (la lista de botones), `cta` (el botón de conversión, opcional) y `ariaLabel` (la etiqueta accesible del `‹nav›`). Nada más. El responsive lo resuelve el propio componente —apila en móvil, una fila en escritorio— y el CTA se distingue automáticamente cuando llega la prop.
 
 La regla canónica del proyecto se lee aquí en voz alta: **el hero presenta, la franja convierte**. Por eso el último botón nunca es una sección más; es la acción, en color de marca. Y por eso el componente no acepta un wa.me tecleado a mano: el href del CTA siempre se arma con `waUrl(WA_MESSAGES.cotizar)` desde `src/config/site.ts` (regla D4). Lo que esta guía añade es lo siguiente: la misma pieza, con datos distintos, también sirve para **cerrar** una página y empujar al visitante hacia otras rutas internas (fichas, contacto, casos) antes de que llegue al footer.
 
@@ -68,7 +68,7 @@ const cta = {
 <SectionMenu items={items} cta={cta} ariaLabel="Secciones del sitio" />
 ```
 
-Para landings de una sola página, los `href` se convierten en anclas a secciones de la misma URL (`#catalogo`, `#faq`). La franja deja de ser un atajo a otras páginas y se vuelve un índice navegable de la página actual. El CSS necesario va en un bloque global —para que `html { scroll-behavior: smooth }` afecte a toda la página— y compensa el header sticky con `scroll-margin-top` en cada destino:
+Para landings de una sola página, los `href` se convierten en anclas a secciones de la misma URL (`#catalogo`, `#faq`). La franja deja de ser un atajo a otras páginas y se vuelve un índice navegable de la página actual. El CSS necesario va en un bloque global —para que `html ❴ scroll-behavior: smooth ❵` afecte a toda la página— y compensa el header sticky con `scroll-margin-top` en cada destino:
 
 ```astro
 ---
@@ -143,9 +143,9 @@ html { scroll-behavior: smooth; }
 }
 ```
 
-**Prefetch del destino más probable.** Astro tiene prefetch nativo. Si la franja tiene un botón que sabes que es el más clicado (por analytics o por intención del negocio), márcalo con `data-astro-prefetch` y el navegador descargará la página destino mientras el visitante lee el hero. Cuando hace clic, la transición es instantánea. Esto se hace dentro del propio componente o, sin tocarlo, envolviendo el `<SectionMenu>` con un script que añada el atributo al `<a>` del primer botón. La opción menos intrusiva es la primera variante: aceptar un prop opcional `prefetch?: boolean` en `MenuItem`.
+**Prefetch del destino más probable.** Astro tiene prefetch nativo. Si la franja tiene un botón que sabes que es el más clicado (por analytics o por intención del negocio), márcalo con `data-astro-prefetch` y el navegador descargará la página destino mientras el visitante lee el hero. Cuando hace clic, la transición es instantánea. Esto se hace dentro del propio componente o, sin tocarlo, envolviendo el `‹SectionMenu›` con un script que añada el atributo al `‹a›` del primer botón. La opción menos intrusiva es la primera variante: aceptar un prop opcional `prefetch?: boolean` en `MenuItem`.
 
-**`ariaLabel` por instancia, no global.** El componente acepta `ariaLabel` y por defecto es `"Secciones del sitio"`. Si la página usa la franja dos veces —una bajo el hero, otra al cierre—, los dos `<nav>` competirían por el mismo nombre accesible. Cámbialos: el de arriba se queda con el default, el de abajo recibe `ariaLabel="Sigue explorando"`. Los lectores de pantalla diferencian, y los enlaces internos navegables por teclado quedan separados como dos landmarks distintos.
+**`ariaLabel` por instancia, no global.** El componente acepta `ariaLabel` y por defecto es `"Secciones del sitio"`. Si la página usa la franja dos veces —una bajo el hero, otra al cierre—, los dos `‹nav›` competirían por el mismo nombre accesible. Cámbialos: el de arriba se queda con el default, el de abajo recibe `ariaLabel="Sigue explorando"`. Los lectores de pantalla diferencian, y los enlaces internos navegables por teclado quedan separados como dos landmarks distintos.
 
 ## Checklist de implementación
 
@@ -153,8 +153,8 @@ html { scroll-behavior: smooth; }
 - [ ] Los `href` internos van sin barra final (`/productos`, no `/productos/`).
 - [ ] La franja tiene entre 4 y 6 botones; si supera 6, se rediseña la jerarquía del menú.
 - [ ] Cada `MenuItem` tiene `label` corto (1–2 palabras) y `sub` de 2–4 palabras.
-- [ ] Si la página usa el componente dos veces, cada `<nav>` recibe un `ariaLabel` distinto.
-- [ ] Para landings, hay un `:target { scroll-margin-top }` global que compensa el header sticky.
+- [ ] Si la página usa el componente dos veces, cada `‹nav›` recibe un `ariaLabel` distinto.
+- [ ] Para landings, hay un `:target ❴ scroll-margin-top ❵` global que compensa el header sticky.
 - [ ] El último botón siempre es el CTA, en color de marca, con `external: true` si es WhatsApp.
 
 ## Preguntas frecuentes

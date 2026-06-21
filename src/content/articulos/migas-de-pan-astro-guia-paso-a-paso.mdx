@@ -18,7 +18,7 @@ El visitante de una página interna llega de buscador o de un enlace lateral, y 
 
 Las migas hacen dos trabajos al mismo tiempo. El primero es navegación visible: cada eslabón superior es un enlace de verdad, así el visitante salta a la categoría o a la home sin recurrir al botón «atrás» del navegador, que en escritorio rompe scroll y en móvil a veces ni siquiera está. El segundo es estructura para el buscador: el `BreadcrumbList` de schema.org le dice a Google la posición de la página dentro de la jerarquía. Cuando se cumplen los requisitos, ese rastro aparece bajo el título en los resultados en lugar de la URL cruda, que se lee fatal en `dominio.com/servicios/categoria-x/sub-categoria-y/pagina-actual`.
 
-El error más caro al implementarlas viene de no decidir quién emite el JSON-LD. Si el componente visual lo emite y el layout también, terminas con dos `BreadcrumbList` en el `<head>` y Google ignora ambos. La regla dura del proyecto (B3) cierra el debate: el componente solo emite microdata HTML (`itemtype`, `itemprop`); el JSON-LD lo arma `buildSchema()` en `lib/seo.ts`, una sola vez por página, leyendo la misma prop `breadcrumbs` que recibe el componente. Una fuente, dos consumidores.
+El error más caro al implementarlas viene de no decidir quién emite el JSON-LD. Si el componente visual lo emite y el layout también, terminas con dos `BreadcrumbList` en el `‹head›` y Google ignora ambos. La regla dura del proyecto (B3) cierra el debate: el componente solo emite microdata HTML (`itemtype`, `itemprop`); el JSON-LD lo arma `buildSchema()` en `lib/seo.ts`, una sola vez por página, leyendo la misma prop `breadcrumbs` que recibe el componente. Una fuente, dos consumidores.
 
 ## Implementación paso a paso
 
@@ -55,7 +55,7 @@ const trail: BreadcrumbItem[] =
 ---
 ```
 
-El render real (sin modo guía) emite un `<ol>` con `itemscope itemtype="https://schema.org/BreadcrumbList"`. Cada `<li>` es un `ListItem` con su `position` por `<meta>`, y el último eslabón —sin `href`— se marca con `aria-current="page"` para que los lectores de pantalla lo anuncien como destino actual. El separador es un SVG con `aria-hidden="true"`; no es enlace ni se lee. Esto está en `Breadcrumbs.astro:97-111`:
+El render real (sin modo guía) emite un `‹ol›` con `itemscope itemtype="https://schema.org/BreadcrumbList"`. Cada `‹li›` es un `ListItem` con su `position` por `‹meta›`, y el último eslabón —sin `href`— se marca con `aria-current="page"` para que los lectores de pantalla lo anuncien como destino actual. El separador es un SVG con `aria-hidden="true"`; no es enlace ni se lee. Esto está en `Breadcrumbs.astro:97-111`:
 
 ```html
 <nav aria-label="Migas de pan">
@@ -79,7 +79,7 @@ El render real (sin modo guía) emite un `<ol>` con `itemscope itemtype="https:/
 </nav>
 ```
 
-El detalle que se escapa es el `<meta itemprop="position">`: schema.org requiere que cada `ListItem` declare su posición numérica empezando en 1. Sin eso, el `BreadcrumbList` se valida con advertencias y Google a veces no lo procesa. Va dentro del `<li>`, no fuera, y va con `String(index + 1)` porque el atributo `content` solo acepta string.
+El detalle que se escapa es el `‹meta itemprop="position"›`: schema.org requiere que cada `ListItem` declare su posición numérica empezando en 1. Sin eso, el `BreadcrumbList` se valida con advertencias y Google a veces no lo procesa. Va dentro del `‹li›`, no fuera, y va con `String(index + 1)` porque el atributo `content` solo acepta string.
 
 La barra visible se carga sola dentro del `PageLayout`. No hay que importar `Breadcrumbs.astro` en cada página: el layout lo monta justo debajo del header, antes del hero, en cuanto detecta la prop `breadcrumbs`. La página solo declara la ruta.
 
@@ -98,9 +98,9 @@ La decisión por contexto importa más que el aspecto. Un sitio de servicios con
 
 ## Patrones avanzados
 
-**Microdata visible coexistiendo con JSON-LD central.** El componente lleva `itemtype/itemprop` en el HTML porque cuesta cero y suma una segunda señal estructurada para los rastreadores que no parsean JSON-LD (algunos motores antiguos, scrapers de redes sociales). El JSON-LD vive aparte, en el `<head>`, emitido por `buildSchema()`. Las dos representaciones leen exactamente la misma prop `breadcrumbs`, así que no se desincronizan. Si modificas la jerarquía en un lugar, cambia en los dos al mismo tiempo. La regla práctica: una sola fuente de datos (la prop), varios formatos de salida.
+**Microdata visible coexistiendo con JSON-LD central.** El componente lleva `itemtype/itemprop` en el HTML porque cuesta cero y suma una segunda señal estructurada para los rastreadores que no parsean JSON-LD (algunos motores antiguos, scrapers de redes sociales). El JSON-LD vive aparte, en el `‹head›`, emitido por `buildSchema()`. Las dos representaciones leen exactamente la misma prop `breadcrumbs`, así que no se desincronizan. Si modificas la jerarquía en un lugar, cambia en los dos al mismo tiempo. La regla práctica: una sola fuente de datos (la prop), varios formatos de salida.
 
-**Accesibilidad real, no de checklist.** El `aria-label="Migas de pan"` en el `<nav>` deja que los lectores de pantalla anuncien el landmark; sin él, el `<nav>` se confunde con el menú principal. El `aria-current="page"` en el último eslabón le dice al lector «esta es la página actual», y el separador SVG con `aria-hidden="true"` evita que el lector deletree `chevron right` entre cada palabra. Si añades hover effects, asegúrate de que el `:focus-visible` del enlace sea igual de claro que el `:hover`: la navegación por teclado debe ver el mismo highlight que el cursor.
+**Accesibilidad real, no de checklist.** El `aria-label="Migas de pan"` en el `‹nav›` deja que los lectores de pantalla anuncien el landmark; sin él, el `‹nav›` se confunde con el menú principal. El `aria-current="page"` en el último eslabón le dice al lector «esta es la página actual», y el separador SVG con `aria-hidden="true"` evita que el lector deletree `chevron right` entre cada palabra. Si añades hover effects, asegúrate de que el `:focus-visible` del enlace sea igual de claro que el `:hover`: la navegación por teclado debe ver el mismo highlight que el cursor.
 
 **Scroll horizontal en móvil sin partir la línea.** En pantallas chicas, una ruta de tres o cuatro niveles se parte en dos renglones y empuja el hero hacia abajo. La solución sin sacrificar el rastro completo es `flex-wrap: nowrap` + `overflow-x: auto` + ocultar la barra de scroll:
 
@@ -123,7 +123,7 @@ El resultado se siente como una app: la ruta se desliza con el dedo, sin línea 
 
 - [ ] Declarar la prop `breadcrumbs` en cada `PageLayout` de página interna (no en la home)
 - [ ] Confirmar que el último eslabón va sin `href` y se renderiza con `aria-current="page"`
-- [ ] Verificar que `Breadcrumbs.astro` NO emite ningún `<script type="application/ld+json">`
+- [ ] Verificar que `Breadcrumbs.astro` NO emite ningún `‹script type="application/ld+json"›`
 - [ ] Confirmar que `buildSchema()` emite el `BreadcrumbList` una sola vez por página
 - [ ] Probar la barra con tecla Tab: cada eslabón debe tener foco visible y el separador debe saltarse
 - [ ] Validar dos URLs en el [Test de resultados enriquecidos](https://search.google.com/test/rich-results) sin advertencias

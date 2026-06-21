@@ -26,7 +26,7 @@ Cambiar el espaciado de todo el sitio se hace en un archivo.
 ## Contexto
 
 `CategoryCard.astro` es deliberadamente agnóstico al grid. Su HTML raíz es un
-`<article>` con `display: flex; flex-direction: column; height: 100%` para que
+`‹article›` con `display: flex; flex-direction: column; height: 100%` para que
 el CTA quede anclado al fondo —ese es el truco que mantiene todas las tarjetas
 de una fila alineadas al pie aunque el blurb difiera en longitud—. El resto es
 responsabilidad del contenedor padre, que decide cuántas columnas hay a cada
@@ -39,7 +39,7 @@ otra regla dura: el `--container-max` pasa de 90 % a 100 % en pantallas ≤768 p
 y el gutter se duplica con `--container-px` para evitar que las tarjetas se
 peguen al borde del cristal.
 
-La prevención de CLS no es opcional. Cada `<img>` declara `width="640"
+La prevención de CLS no es opcional. Cada `‹img›` declara `width="640"
 height="400"` (ratio 16:10) para que el navegador reserve el hueco antes de
 descargar el archivo. Sin esos atributos, el grid colapsa al pintar la imagen y
 arruina el LCP medido por PageSpeed. El componente ya los lleva; tu trabajo es
@@ -93,7 +93,7 @@ order: 1
 ```
 
 El componente recibe esa imagen junto con `index`, que decide el modo de carga.
-Las cuatro primeras tarjetas del grid reciben `i < 4` y por lo tanto
+Las cuatro primeras tarjetas del grid reciben `i ‹ 4` y por lo tanto
 `loading="eager"`; el resto cae en `loading="lazy"`:
 
 ```astro
@@ -159,16 +159,16 @@ estable en desktop. La regla de oro: en pantallas ≤768, el container ocupa el
 
 **`aspect-ratio` para reservar el hueco de la imagen.** El componente declara
 `aspect-ratio: 16 / 10` en `.ccard__media` y `width="640" height="400"` en el
-`<img>`. Eso significa que el navegador conoce las proporciones antes de
+`‹img›`. Eso significa que el navegador conoce las proporciones antes de
 descargar el archivo y reserva el espacio exacto, evitando el reflujo que
 caracteriza a los sitios mal optimizados. PageSpeed lo mide como CLS; el
 visitante lo percibe como «este sitio se siente sólido».
 
 **Lazy loading inteligente con `index`.** El componente decide entre `eager` y
-`lazy` con `const eager = index < 4`. La regla del padre es pasar `index={i}`
+`lazy` con `const eager = index ‹ 4`. La regla del padre es pasar `index=❴i❵`
 del map, no inventarlo: las cuatro primeras tarjetas son el LCP del fold; las
-demás esperan al scroll. Pasar `index={0}` a todas mata el LCP; pasar
-`index={99}` a las primeras hace que se vea una vitrina en blanco mientras
+demás esperan al scroll. Pasar `index=❴0❵` a todas mata el LCP; pasar
+`index=❴99❵` a las primeras hace que se vea una vitrina en blanco mientras
 cargan.
 
 **Prevención de CLS al cambiar de columnas.** Cada salto de columnas modifica
@@ -184,8 +184,8 @@ desplazamientos verticales que distraigan al ojo.
 - [ ] Los breakpoints suben con `min-width` (mobile-first), nunca con `max-width`.
 - [ ] `gap` usa un token (`var(--sp-5)`), no un valor en px duro.
 - [ ] El `.container` aplica `max-width: var(--container-max)` y `padding-inline: var(--container-px)`.
-- [ ] Las cuatro primeras tarjetas reciben `index={i}` con `i < 4` para LCP.
-- [ ] Cada `<img>` lleva `width` y `height` intrínsecos (el componente ya lo hace; no lo envuelvas en un wrapper que los borre).
+- [ ] Las cuatro primeras tarjetas reciben `index=❴i❵` con `i ‹ 4` para LCP.
+- [ ] Cada `‹img›` lleva `width` y `height` intrínsecos (el componente ya lo hace; no lo envuelvas en un wrapper que los borre).
 - [ ] La imagen es AVIF optimizado a 1280 px, no JPG sin compresión.
 - [ ] Probaste en 380 px reales o en DevTools con el viewport exacto (no en una ventana de Chrome de 1200 px arrastrada hasta 380).
 
@@ -209,9 +209,9 @@ Eligiendo el grid según el número de elementos: 1→2→4 para 4, 8, 12…; 1�
 para 3, 6, 9, 12. Si la cantidad es variable (una colección que crece), 1→2→3
 es más tolerante porque tolera múltiplos de 3 y 6, ambos comunes en blogs.
 
-**¿Necesito un wrapper extra para el container?** No. El `<section>` lleva la
+**¿Necesito un wrapper extra para el container?** No. El `‹section›` lleva la
 clase `.container` y dentro va directamente el `.showcase`. Anidar
-`<div class="wrapper"><div class="container">…</div></div>` agrega DOM inútil y
+`‹div class="wrapper"›‹div class="container"›…‹/div›‹/div›` agrega DOM inútil y
 suele meter padding duplicado que rompe el cálculo de columnas en breakpoints
 intermedios. La regla: un solo nivel de container por sección.
 

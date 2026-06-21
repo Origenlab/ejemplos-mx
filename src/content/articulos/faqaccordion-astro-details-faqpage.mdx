@@ -1,0 +1,187 @@
+---
+title: "FAQAccordion en Astro: details nativo + FAQPage"
+description: "Del estado nativo de details/summary al schema FAQPage: cómo construir un FAQAccordion accesible en Astro sin JavaScript y con SEO bien resuelto."
+category: "guias"
+heroImage: "/images/articulos/faqaccordion-astro-details-faqpage.avif"
+pubDate: 2026-04-21
+author: "Ejemplos.mx"
+tags: ["astro", "faq", "accordion", "a11y", "schema"]
+seoTitle: "FAQAccordion Astro: details + FAQPage"
+seoDescription: "FAQAccordion en Astro con details/summary nativo: a11y por default, JSON-LD FAQPage con emisor unico y patrones para evitar duplicados."
+---
+
+Un acordeón de preguntas frecuentes es de esos componentes que parecen triviales hasta que aparecen tres versiones distintas en el mismo proyecto: una con `useState` que pesa 14 kB de hidratación, otra que emite el `FAQPage` dos veces porque el componente y el layout lo escupen a la vez, y una tercera donde el botón pierde el foco visible al tabularse. Esta guía construye el componente en Astro de cabo a rabo apoyado en `‹details›`/`‹summary›` nativos, define el contrato de la prop `items`, y reparte responsabilidades entre la presentación del HTML y la emisión del JSON-LD. Para devs que ya pasaron la curva de Content Collections y quieren un FAQ accesible, indexable y sin JavaScript de gestión de estado.
+
+## Contexto
+
+El FAQ vive al cierre de la página por una razón funcional: recoge las dudas que sobrevivieron al hero, a la sección de beneficios y al catálogo. El visitante que aún está scrolleando es el que casi se decide; las preguntas que no resuelva ahí terminan en WhatsApp o, peor, en una pestaña cerrada. Por eso el componente tiene que cumplir dos exigencias contradictorias en apariencia: ser denso (responder rápido, escanear, no estorbar) y ser semántico (que los buscadores entiendan el patrón y que un lector de pantalla lo anuncie como acordeón).
+
+La trampa frecuente es resolverlo con un componente React o Vue hidratado. Lo que se gana en animación —desplegado con `max-height` interpolado— se paga en kilobytes de JavaScript, en saltos de hidratación (`FOUC` del acordeón cerrado que aparece abierto medio segundo después) y en accesibilidad floja: muchas librerías populares olvidan el `aria-expanded` o el foco visible al navegar con `Tab`. El navegador ya resuelve el 90% del problema con `‹details›`/`‹summary›`: gestiona open/close, el foco con teclado, el screen reader announce y la persistencia del estado al navegar atrás. Lo único que falta es el chevron rotatorio y el estilo de marca.
+
+La segunda decisión —dónde emitir el `FAQPage`— es la que separa al componente bien hecho del que se rompe en producción. Si tu componente emite el JSON-LD y el layout también, terminas con dos `‹script type="application/ld+json"›` con el mismo `@type`, Google ignora ambos y el rich result (cuando aplicaba) no llegaba. La regla dura del proyecto (B3) cierra el debate: un único emisor por página. El componente `FAQAccordion` deja `emitSchema=false` por default y delega la emisión a `lib/seo.ts → buildSchema(data.faqs)`. Esa decisión también explica por qué el componente tiene una prop tan explícita: para que ningún dev la active por accidente.
+
+## Implementación paso a paso
+
+El componente vive en `src/components/FAQAccordion.astro` y acepta seis props deliberadamente acotadas: `items[]` (obligatoria, con la shape canónica `❴question, answer❵`), `title`, `headingId`, `emitSchema`, `openFirst` y `bare`. Cada una resuelve una decisión real del consumidor; no hay props decorativas.
+
+```astro
+---
+// src/components/FAQAccordion.astro — API y defaults
+export interface FAQItem {
+  question: string
+  answer: string   // admite HTML (set:html)
+}
+interface Props {
+  items: FAQItem[]
+  title?: string
+  headingId?: string
+  emitSchema?: boolean   // true → emite FAQPage. Default false (lo hace seo.ts)
+  openFirst?: boolean    // primer item abierto por default
+  bare?: boolean         // sin section/padding/centrado, para incrustar
+}
+const {
+  items = [],
+  title = 'Preguntas frecuentes',
+  headingId = 'faq-heading',
+  emitSchema = false,
+  openFirst = true,
+  bare = false,
+} = Astro.props
+---
+```
+
+El render emite una `‹section aria-labelledby›` con N `‹details class="faq__item"›` dentro. Cada item arranca con un `‹summary class="faq__q"›` que contiene la pregunta y un SVG de chevron, y un `‹div class="faq__a"›` con la respuesta. La respuesta usa `set:html` para admitir enlaces, listas y negritas; el chevron rota 180° vía `:open` en CSS.
+
+```astro
+<section class:list={['faq', bare && 'faq--bare']}
+         aria-labelledby={title ? headingId : undefined}>
+  <div class="faq__inner">
+    {title && <h2 id={headingId} class="faq__title">{title}</h2>}
+    <div class="faq__list">
+      {items.map((item, idx) => (
+        <details class="faq__item" open={openFirst && idx === 0}>
+          <summary class="faq__q">
+            <span>{item.question}</span>
+            <svg class="faq__chevron" width="20" height="20"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </summary>
+          <div class="faq__a"><p set:html={item.answer} /></div>
+        </details>
+      ))}
+    </div>
+  </div>
+  {faqSchema && (
+    <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+  )}
+</section>
+```
+
+El bloque que se escapa al primer vistazo es la emisión condicional del schema. Solo se construye y se serializa si `emitSchema=true`. El `answer` se pasa por un regex que elimina las etiquetas HTML antes de meterlo al JSON-LD: schema.org espera texto plano en `acceptedAnswer.text`, y dejar el HTML dentro genera advertencias en el [Test de resultados enriquecidos](https://search.google.com/test/rich-results).
+
+```ts
+// src/components/FAQAccordion.astro — emisión condicional del FAQPage
+const faqSchema = emitSchema ? {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: items.map((item) => ({
+    '@type': 'Question',
+    name: item.question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: item.answer.replace(/<[^>]+>/g, ''),  // strip HTML
+    },
+  })),
+} : null
+```
+
+La invocación desde la página es de tres líneas. Lo importante es saber cuándo NO activar `emitSchema`: si el layout (por ejemplo `ServiceLayout` o `PageLayout`) ya recibe `faqs` en `data` y los pasa a `buildSchema()`, el componente se queda en false; si la página es un caso suelto que no usa `buildSchema()`, ahí sí conviene activarlo.
+
+```astro
+---
+// src/pages/sobre-nosotros.astro — uso hardcoded, schema desde el layout
+import PageLayout from '@layouts/PageLayout.astro'
+import FAQAccordion from '@components/FAQAccordion.astro'
+
+const faqs = [
+  { question: '¿Cuánto cuesta?', answer: 'Cotización en 24 h por <strong>WhatsApp</strong>.' },
+  { question: '¿Cuánto tarda?',  answer: '7–14 días hábiles desde la aprobación del contenido.' },
+  { question: '¿Puedo editar yo?', answer: 'Sí, en Markdown, sin tocar código.' },
+]
+---
+
+<PageLayout
+  title="Sobre nosotros"
+  description="…"
+  pageType="page"
+  data={{ faqs }}
+>
+  <FAQAccordion items={faqs} title="Preguntas frecuentes" openFirst />
+</PageLayout>
+```
+
+## Tabla comparativa
+
+| Estrategia | Cuándo elegirla | Trade-off |
+|---|---|---|
+| `‹details›`/`‹summary›` nativo | Default. Sitios de contenido, marketing, blog, e-commerce | A11y de fábrica, cero JS, animación limitada (sin altura interpolada) |
+| Acordeón con `useState` (React/Vue) | App con estado complejo, sincronización entre acordeones | Hidratación obligatoria, +10 kB, foco visible y `aria-expanded` a mano |
+| `‹details›` + JS para animar `max-height` | Cuando el cliente pide animación fluida sí o sí | ~30 líneas de JS, calc del scrollHeight; rompe si el contenido cambia |
+| CSS-only con `:checked` + `‹input type="radio"›` | Demos, prototipos, sitios sin acceso a JS | Sacrifica semántica HTML, no sirve para schema FAQPage |
+| Lista plana sin acordeón (`‹h3›` + `‹p›`) | Artículos largos, FAQ destinada a indexación pura | El visitante ve todo de golpe; sin patrón visual de FAQ |
+
+La columna del medio es la que duele: la mayoría de los devs eligen React por inercia y descubren al medir Web Vitals que pagaron 15 puntos de LCP por una animación que el `‹details›` resuelve gratis. La excepción real son las apps con acordeones sincronizados (cerrar uno abre otro automáticamente), donde el estado compartido sí justifica la hidratación.
+
+## Patrones avanzados
+
+**El default `openFirst=true` no es decorativo.** Cuando el visitante llega al FAQ, la primera pregunta abierta sirve dos propósitos: enseña la mecánica del componente (acordeón, no lista plana) y entrega una respuesta sin pedir un clic. Para FAQs de soporte donde todas las preguntas pesan igual, pásalo a `false` y deja que el lector elija; para FAQs de venta donde el precio o el tiempo de entrega son la pregunta crítica, déjalo en `true` y ordena `items[]` para que la pregunta clave esté primero. El detalle de implementación: el atributo `open` se aplica con `open=❴openFirst && idx === 0❵`, no con una clase CSS, para que la persistencia del estado al navegar funcione.
+
+**El `headingId` y el `aria-labelledby` van juntos o no van.** El componente vincula la `‹section›` al `‹h2›` con `aria-labelledby=❴headingId❵`, pero solo si hay `title`. Eso significa que si quitas el título (`title=""`), también se pierde el labelledby y la sección deja de tener nombre accesible. Cuando uses `bare=true` para incrustar el FAQ dentro de una columna que ya tiene su propio `‹h2›` (el patrón del home: FAQ a la izquierda + ContactForm a la derecha), pasa `title=""` y asegúrate de que el `‹h2›` del contenedor padre cumpla la función. Si lo dejas con título por error, terminas con dos `‹h2›` en la misma columna y el outline accesible se enreda.
+
+**`bare=❴true❵` es para columnas, no para cualquier embebido.** El modo `bare` quita la `‹section›` con padding y el centrado a 820px, dejando al componente ocupar el ancho de su contenedor. Es la única forma limpia de incrustar el FAQ dentro de un `grid-template-columns: 1fr 1fr` sin que pelee con el padding propio. Lo que NO debe hacer `bare`: usarse como hack para reducir márgenes en un FAQ que sigue siendo una sección completa. Si necesitas menos padding pero quieres mantener el centrado, ajusta los tokens `--section-py` o usa una variante del SectionHeading, no `bare`.
+
+**La regla del único emisor (B3) en código.** En el repo el contrato es: `lib/seo.ts → faqSchema(items)` arma el nodo, `buildSchema('page', ❴ faqs ❵)` lo mete en el grafo, y `BaseLayout`/`PageLayout` lo serializa con `‹JsonLd›`. El componente NUNCA participa salvo que se le active explícitamente con `emitSchema=❴true❵`. Una forma de blindarlo: en code review, buscar con grep `emitSchema=❴true❵` o `emitSchema` y, por cada match, verificar que la página padre NO pase `faqs` a `data`. Si encuentras la combinación, es un bug latente: el día que activen `data=❴❴ faqs ❵❵` en el layout, aparece el FAQPage duplicado.
+
+## Checklist
+
+- [ ] Importar `FAQAccordion` solo donde haya 3+ preguntas reales (no inventar para llenar)
+- [ ] Pasar `items[]` con la shape `❴question, answer❵` validada por Zod en el frontmatter
+- [ ] Confirmar que `emitSchema` queda en `false` cuando el layout ya pasa `faqs` a `buildSchema`
+- [ ] Activar `bare=❴true❵` cuando el FAQ se incrusta en una columna (y vaciar `title`)
+- [ ] Decidir conscientemente `openFirst`: `true` para FAQ de venta, `false` para FAQ de soporte
+- [ ] Verificar que las respuestas con HTML usen solo `‹strong›`, `‹em›`, `‹a›` y listas cortas
+- [ ] Probar con `Tab`: el foco debe moverse de `‹summary›` en `‹summary›`, y `Enter`/`Space` debe abrir
+- [ ] Validar en [Rich Results Test](https://search.google.com/test/rich-results) que solo haya UN `FAQPage`
+- [ ] Revisar en móvil real: la zona tappable del `‹summary›` debe ser ≥48 px de alto
+
+## Preguntas frecuentes
+
+### ¿Por qué `emitSchema` está en `false` por default si el FAQPage es útil?
+
+Porque el patrón canónico del proyecto centraliza el JSON-LD en `lib/seo.ts → buildSchema()` para evitar duplicados. El componente PUEDE emitir el schema, pero quien manda es el layout: si la página pasa `faqs` a `data`, `buildSchema('page', ❴ faqs ❵)` lo emite una sola vez en el grafo. Activar `emitSchema=❴true❵` con el layout ya emitiendo genera dos `‹script type="application/ld+json"›` con el mismo `FAQPage` y Google ignora ambos. El default `false` es una salvaguarda.
+
+### ¿Cuándo conviene activar `emitSchema=❴true❵`?
+
+Solo cuando la página NO pase `faqs` por `buildSchema()`. Por ejemplo: un componente FAQ insertado en un artículo del blog donde el `pageType` es `article` y el grafo de schema no contempla un FAQPage. Ahí el componente es la única fuente y `emitSchema=❴true❵` tiene sentido. La regla mental: si tu layout no recibe `faqs` en `data`, el componente puede emitir; si los recibe, no.
+
+### ¿El `‹details›` nativo es accesible sin agregar `aria-expanded`?
+
+Sí. El navegador maneja el atributo `open` y los lectores de pantalla (NVDA, JAWS, VoiceOver) lo interpretan correctamente como acordeón colapsable. No hace falta agregar `aria-expanded` ni `role="button"` al `‹summary›`: el user agent ya lo hace. Lo que sí hay que agregar manualmente es el `aria-labelledby` en la sección que envuelve los items, para que el screen reader anuncie el bloque entero como «Preguntas frecuentes, sección».
+
+### ¿Puedo poner un formulario o un iframe dentro del `answer`?
+
+Técnicamente sí, porque `set:html` no filtra nada. Recomendado, no. El acordeón se mide en milisegundos de apertura y los iframes (mapas, videos, embeds de Twitter) introducen layout shift dentro del `‹details›` que rompe el ritmo. Si necesitas un mapa o un video como respuesta, mejor enlaza desde el `answer` al recurso o crea una sección dedicada fuera del FAQ. Mantén las respuestas en párrafos cortos (2–4 líneas) con enlaces, negritas y listas. El resto rompe el patrón.
+
+### ¿Qué pasa si renombro `headingId`?
+
+Nada visible, salvo que tengas dos FAQs en la misma página. Si solo hay un acordeón, el default `faq-heading` está bien. Cuando hay dos —típico de páginas largas con FAQ general arriba y FAQ específica abajo— hay que pasar `headingId="faq-tecnicas"` al segundo para que el `aria-labelledby` apunte al `‹h2›` correcto y no haya dos elementos con el mismo `id` en el DOM (anti-patrón HTML).
+
+Un FAQ bien hecho es uno de esos componentes que el visitante usa sin notar y que el equipo deja de tocar después del primer sprint: cinco props acotadas, cero hidratación, un solo emisor de schema. La complejidad real no está en el HTML —el navegador hace el trabajo pesado—, sino en disciplinar las dos decisiones que importan: cuándo activar `emitSchema` y cuándo usar `bare`. Resolverlas bien deja el componente listo para los próximos tres años, sin que mayo de 2026 (cuando Google retiró los rich results de FAQ para casi todos los sitios) lo vuelva basura.
+
+## Sigue leyendo
+
+- [Módulo FAQ en vivo](/modulos/faq)
+- [FAQ y rich results en 2026: por qué importa](/blog/faq-rich-results-2026-por-que-importa)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)
