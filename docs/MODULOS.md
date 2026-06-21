@@ -20,7 +20,9 @@ La serie vive en una jerarquía de tres niveles. Es la misma lógica de profundi
 | **L2 — Módulos** | `/modulos` | `src/pages/modulos/index.astro` | El índice de la serie: explica qué es un módulo y lista todos (roadmap). | Inicio › Módulos |
 | **L3 — Módulo** | `/modulos/<slug>` | `src/pages/modulos/<slug>.astro` | La página de detalle de UNA pieza, a fondo. | Inicio › Módulos › <Módulo> |
 
-La primera (y por ahora única) página L3 publicada es **`/modulos/topbar`**. El L2 y el dropdown «Módulos» del Header se alimentan del array **`MODULOS`** en `src/config/site.ts` (SSoT): los de `estado: 'listo'` enlazan; los `'proximo'` se muestran como roadmap, sin enlace.
+A la fecha (2026-06-20) hay **ocho** L3 publicados —`topbar`, `header`, `hero`, `breadcrumbs`, `section-menu`, `section-heading`, `category-card`, `category-detail`— con el mismo molde de 10 secciones. El L2 y el dropdown «Módulos» del Header se alimentan del array **`MODULOS`** en `src/config/site.ts` (SSoT): los de `estado: 'listo'` enlazan; los `'proximo'` se muestran como roadmap, sin enlace.
+
+**Convención de slug (regla dura)** — los slugs viven en **inglés y singular** (`section-menu`, `section-heading`, `category-card`, `category-detail`), aunque el `label` visible al usuario sea en español (`Menú de secciones`, `Encabezado de sección`, `Tarjeta de categoría`, `Categoría a fondo`). Slug = clave técnica + ruta; label = etiqueta humana en menús, breadcrumbs y headings. Nunca se mezclan.
 
 ---
 
@@ -37,7 +39,7 @@ Una página L3 documenta un módulo en un recorrido fijo, del concepto al códig
 7. **¿Dónde va?** — posición en el layout.
 8. **Cómo está construido** — capa técnica: componente, SSoT, helpers, responsive.
 9. **Qué hacer y qué evitar** — buenas prácticas, en dos columnas (sí / no).
-10. **Cierre** — `SectionMenu` full-width (el menú reparte, el último botón —WhatsApp— convierte).
+10. **Cierre** — `SectionMenu` full-width (el menú reparte, el último botón —WhatsApp— convierte). El array `cierreItems` **NO se escribe a mano**: se deriva de `MODULOS` con el helper **`siblingsModules('<slug>')`** (ver `src/lib/modules.ts`). El helper devuelve el índice de la serie + 2 vecinos en estado `'listo'` + la home; saltarse los `'proximo'` evita 404s automáticamente. El CTA se arma con `waUrl(WA_MESSAGES.cotizar)` (regla D4).
 
 Los fondos **alternan** `.section` (blanco) y `.section--surface` (gris) para separar visualmente cada bloque.
 
@@ -150,15 +152,19 @@ Cuatro patrones, cada uno con preview en teléfono + receta comentada (Nielsen N
 
 ## 8. Estado y roadmap
 
-**Hecho:**
+**Hecho (al 2026-06-20):**
 - L1 `/` (home), L2 `/modulos` (índice data-driven desde `MODULOS`).
-- L3 **completos** (10 secciones + galería de 6 variantes + 4 patrones móviles con recetas, `estado: 'listo'` en `MODULOS`): `/modulos/topbar`, `/modulos/header`, `/modulos/hero`.
-- Kit reutilizable: `GaleriaDisenos`, `DisenoCard`, `MarcoMovil`, `Receta`.
+- L3 **completos** (10 secciones + galería de 6 variantes + 4 patrones móviles con 3 recetas en §8, `estado: 'listo'` en `MODULOS`):
+  - `/modulos/topbar` · `/modulos/header` · `/modulos/hero` (primera ola)
+  - `/modulos/breadcrumbs` (`7280cb9`) · `/modulos/section-menu` (`9a37e10`) · `/modulos/section-heading` (`7a69533`) · `/modulos/category-card` (`6d7f4b2`) · `/modulos/category-detail` (`eae415c`) (segunda ola, slug inglés singular)
+- Kit reutilizable: `GaleriaDisenos`, `DisenoCard`, `MarcoMovil`, `Receta`, `GuiaNota`.
+- Helper SSoT del cierre: `siblingsModules('<slug>')` en `src/lib/modules.ts`. Consumido por **las 5 L3 de la segunda ola**; las 3 L3 de la primera ola (`topbar`, `header`, `hero`) aún hardcodean el cierre y deben migrarse cuando se toquen.
 - Migas de pan corregidas a ruta completa (componente antepone «Inicio»).
 
 **Pendiente:**
-- Publicar los siguientes L3 con el mismo molde: **menú de secciones, footer** y el resto del roadmap de `MODULOS` (breadcrumbs, título de sección, cards, reseñas, faq, cta-banner, formulario, whatsapp flotante).
-- Por cada uno: correr `npm run build` en la Mac (valida también el resaltado Shiki de `<Code>`) antes de desplegar.
+- Publicar los L3 que faltan con el mismo molde (slug inglés singular): `cards-catalogo`, `resenas`, `faq`, `cta-banner`, `formulario-contacto`, `footer`, `whatsapp-flotante`.
+- Migrar `topbar.astro`, `header.astro`, `hero.astro` a `siblingsModules('<slug>')` cuando se toquen (hoy hardcodean el cierre).
+- Por cada nuevo L3: correr `npm run build` en la Mac (valida también el resaltado Shiki de `<Code>`) antes de desplegar.
 
 ---
 

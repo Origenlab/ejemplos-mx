@@ -24,15 +24,12 @@ import MarcoMovil from '@components/MarcoMovil.astro'
 import Receta from '@components/Receta.astro'
 import GuiaNota from '@components/GuiaNota.astro'
 import { WA_MESSAGES, waUrl } from '@config/site'
+import { siblingsModules } from '@lib/modules'
 
-// Menú de cierre (mismo patrón que el resto de la serie): navegación + sitio.
-// «El menú reparte; el último botón —WhatsApp— convierte».
-const cierreItems = [
-  { label: 'Todos los módulos', href: '/modulos', sub: 'Índice de la serie' },
-  { label: 'Módulo Encabezado de sección', href: '/modulos/section-heading', sub: 'El rótulo que ordena' },
-  { label: 'Módulo Menú de secciones', href: '/modulos/section-menu', sub: 'La franja bajo el hero' },
-  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
-]
+// Menú de cierre — derivado de MODULOS (SSoT) con el helper siblingsModules:
+// índice de la serie + dos vecinos en estado 'listo' + la home. Los 'proximo'
+// no enlazan (aún no tienen página → evitan 404s).
+const cierreItems = siblingsModules('category-card')
 const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), sub: 'Respuesta inmediata', external: true }
 
 // Las 4 piezas de la tarjeta — mapean con los pines del ejemplo en vivo. Cada
