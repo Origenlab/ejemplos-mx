@@ -97,6 +97,41 @@ import Receta from '@components/Receta.astro'
 
 > Nota técnica: `Receta` pasa `lang={lang as any}` al `<Code>` para no romper `astro check` (el `build` es `astro check && astro build`). El `code` se pasa como **string**; `<Code>` lo escapa y resalta, así que el markup/script de la receta **no se ejecuta** —es demostración—.
 
+### 3.5 Helpers de schema reutilizables (`src/lib/seo.ts`)
+
+Hay módulos que pueden acompañar JSON-LD propio (FAQ, reseñas, productos, servicios). El proyecto centraliza esos emisores en `lib/seo.ts` con dos patrones: **helper puro** (función sin gate, devuelve el bloque listo para componer) o **helper interno gateado** (función que decide si emitir según una bandera global). Cada helper tiene su rol y nunca se mezclan en la misma página (regla dura **B3 — un único emisor por página**).
+
+| Helper | Tipo | Devuelve | Reglas |
+|---|---|---|---|
+| `faqSchema(items)` | Puro | `{ '@type': 'FAQPage', mainEntity: [...] }` | Lo invoca `buildSchema` cuando `data.faqs` existe; el componente puede emitirlo si `emitSchema=true` pero NUNCA ambos. |
+| `reviewSchema({ items, aggregate? })` | Puro | `{ aggregateRating: {...}, review: [...] }` (vacío si no hay reseñas válidas) | Compone el bloque listo para mergear en un nodo Product/Service. El componente `ReviewCard` **NO** acepta `emitSchema`: el gate B4 es global, no por componente. |
+| `emitReviews(reviews)` (interno) | Gateado por `SITE.allowSelfReviews` | Mismo shape que `reviewSchema()` | Usado dentro de `productSchema`/`serviceSchema`. Devuelve `{}` si el gate está apagado o si no hay reseñas válidas. |
+
+Ejemplo canónico de uso de `reviewSchema()` (componer un nodo a mano):
+
+```ts
+import { reviewSchema, type Review } from '@lib/seo'
+
+const reviews: Review[] = [
+  { author: 'María González', text: 'El sitio quedó listo en 9 días.', rating: 5, date: '2026-05-14' },
+  { author: 'Luis Hernández',  text: 'La velocidad fue la sorpresa.',   rating: 5, date: '2026-04-22' },
+]
+
+// Opción A · dejar que reviewSchema calcule el promedio:
+const node = reviewSchema({ items: reviews })
+// node = { aggregateRating: { ratingValue: 5.0, reviewCount: 2, ... }, review: [...] }
+
+// Opción B · pasar un aggregate precomputado (típico: viene de Google Business Profile):
+const node = reviewSchema({
+  items: reviews,
+  aggregate: { ratingValue: 4.8, reviewCount: 127 },
+})
+```
+
+**Regla dura B4 — anti self-serving reviews.** Google penaliza reseñas auto-emitidas (la marca se reseña a sí misma). El proyecto vive con `SITE.allowSelfReviews=false` por default. Solo se activa si las reseñas son **reales y verificables** (Google Business Profile, Trustpilot, etc.). `reviewSchema()` es una función pura sin gate —el llamador decide cuándo es legítimo emitir—; `emitReviews()` sí está gateado para que productos/servicios no emitan aggregateRating «por accidente».
+
+**Caveat mayo 2026 → presente.** Google solo pinta estrellas en la SERP para algunos tipos schema (Product, Recipe, Movie, Book). Para `LocalBusiness` y `Service`, el schema sigue siendo válido y útil para entender la entidad, pero **no esperes el efecto visual** de las amarillas. Bing y DuckDuckGo aún lo aprovechan.
+
 ---
 
 ## 4. Catálogo de variantes de topbar (escritorio)
@@ -162,17 +197,20 @@ Corre `npm run audit:meta` antes de cada commit a `main`. Falla si algún `<titl
 
 **Hecho (al 2026-06-20):**
 - L1 `/` (home), L2 `/modulos` (índice data-driven desde `MODULOS`).
-- L3 **completos** (10 secciones + galería de 6 variantes + 4 patrones móviles con 3 recetas en §8, `estado: 'listo'` en `MODULOS`):
+- L3 **completos** (10 secciones + galería de 6 variantes + 4 patrones móviles con 3 recetas, `estado: 'listo'` en `MODULOS`):
   - `/modulos/topbar` · `/modulos/header` · `/modulos/hero` (primera ola)
   - `/modulos/breadcrumbs` (`7280cb9`) · `/modulos/section-menu` (`9a37e10`) · `/modulos/section-heading` (`7a69533`) · `/modulos/category-card` (`6d7f4b2`) · `/modulos/category-detail` (`eae415c`) (segunda ola, slug inglés singular)
+  - `/modulos/product-card` · `/modulos/service-card` · `/modulos/faq` (`692fec2`) · `/modulos/review` (tercera ola — cards de catálogo, FAQ con schema y reseñas con `reviewSchema()` puro en `lib/seo.ts`)
 - Kit reutilizable: `GaleriaDisenos`, `DisenoCard`, `MarcoMovil`, `Receta`, `GuiaNota`.
-- Helper SSoT del cierre: `siblingsModules('<slug>')` en `src/lib/modules.ts`. Consumido por **las 5 L3 de la segunda ola**; las 3 L3 de la primera ola (`topbar`, `header`, `hero`) aún hardcodean el cierre y deben migrarse cuando se toquen.
+- Helper SSoT del cierre: `siblingsModules('<slug>')` en `src/lib/modules.ts`. Consumido por **toda la segunda y tercera ola**; las 3 L3 de la primera ola (`topbar`, `header`, `hero`) aún hardcodean el cierre y deben migrarse cuando se toquen.
+- Helpers de schema reutilizables (ver §3.5): `faqSchema()`, `reviewSchema()` (puros) + `emitReviews()` (interno, gateado por `SITE.allowSelfReviews`). Regla B4 — anti self-serving reviews.
 - Migas de pan corregidas a ruta completa (componente antepone «Inicio»).
+- Gate **`npm run audit:meta`** activo (límites: title ≤60, description ≤155, espejo de `META_TITLE_MAX`/`META_DESC_MAX` en `lib/seo.ts`). Documentado en §6.1.
 
 **Pendiente:**
-- Publicar los L3 que faltan con el mismo molde (slug inglés singular): `cards-catalogo`, `resenas`, `faq`, `cta-banner`, `formulario-contacto`, `footer`, `whatsapp-flotante`.
+- Publicar los L3 que faltan con el mismo molde (slug inglés singular): `cta-banner`, `formulario-contacto`, `footer`, `whatsapp-flotante`.
 - Migrar `topbar.astro`, `header.astro`, `hero.astro` a `siblingsModules('<slug>')` cuando se toquen (hoy hardcodean el cierre).
-- Por cada nuevo L3: correr `npm run build` en la Mac (valida también el resaltado Shiki de `<Code>`) antes de desplegar.
+- Por cada nuevo L3: correr `npm run audit:meta` antes del commit + `npm run build` en la Mac (valida también el resaltado Shiki de `<Code>`) antes de desplegar.
 
 ---
 

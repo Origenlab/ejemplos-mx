@@ -377,7 +377,19 @@ export function buildMeta(input: MetaInput): MetaOutput {
  *    Sin '@context' porque viven DENTRO de un @graph que ya lo declara.
  * ════════════════════════════════════════════════════════════════════════════ */
 
-/** Organization — entidad publisher; el resto la referencia por @id. */
+/**
+ * Organization — entidad publisher; el resto la referencia por @id.
+ *
+ * NOTA: ES EL EMISOR CANÓNICO de la entidad organización (NAP + contactPoint
+ * + sameAs). Re-exportado como `organizationSchema` para naming público
+ * espejo de `localBusinessSchema()` / `faqSchema()` / `reviewSchema()`.
+ *
+ * REGLA DURA B3 — UN ÚNICO EMISOR POR PÁGINA. Esta función se invoca SOLO
+ * desde `buildSchema()` (BaseLayout). NUNCA se llama desde un componente
+ * (Footer.astro NO emite Organization; eso provocaría doble JSON-LD y Google
+ * ignoraría el rich result). El Footer es PRESENTACIÓN del NAP, no SEO; el
+ * SEO del NAP vive aquí. Documentado en `docs/MODULOS.md §3.5` y §6.2.
+ */
 export function orgSchema() {
   return {
     '@type': 'Organization',
@@ -400,6 +412,25 @@ export function orgSchema() {
     ...(SITE.organization?.sameAs?.length ? { sameAs: SITE.organization.sameAs } : {}),
   };
 }
+
+/**
+ * organizationSchema — alias público de `orgSchema()`.
+ *
+ * Mismo shape, mismo @id, misma data — solo distinto NOMBRE. Existe por
+ * coherencia de naming con la API pública (faqSchema, reviewSchema,
+ * localBusinessSchema). Los emisores nuevos importan `organizationSchema`;
+ * los antiguos siguen funcionando con `orgSchema` (no se rompe nada).
+ *
+ * USO TÍPICO (NO se llama desde Footer.astro; se llama desde un emisor único):
+ *
+ *   import { organizationSchema } from '@lib/seo'
+ *   const node = organizationSchema()   // listo para spread en un @graph
+ *
+ * Ya invocado por `buildSchema()` en TODA página (BaseLayout). No hay razón
+ * para invocarlo manualmente salvo en una página standalone que arme su
+ * propio @graph sin pasar por `buildSchema()`.
+ */
+export const organizationSchema = orgSchema;
 
 /** WebSite + SearchAction (si SITE.searchUrl está definido). */
 export function websiteSchema() {
@@ -710,6 +741,100 @@ function emitReviews(reviews?: Review[]): Record<string, unknown> {
       bestRating: 5,
       worstRating: 1,
     },
+    review: valid.map((r) => ({
+      '@type': 'Review',
+      author: { '@type': 'Person', name: r.author },
+      reviewRating: { '@type': 'Rating', ratingValue: r.rating, bestRating: 5, worstRating: 1 },
+      reviewBody: r.text,
+      datePublished: r.date,
+    })),
+  };
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * reviewSchema() — builder PURO (sin gate) de aggregateRating + review[].
+ * ----------------------------------------------------------------------------
+ * Espejo del patrón faqSchema(): función pura, sin side effects, sin acceso
+ * a SITE.allowSelfReviews ni a flags globales. Recibe la lista de reseñas y,
+ * opcionalmente, una `aggregate` con valores precomputados (útil cuando el
+ * promedio viene de Google Business Profile y no se quiere recalcular).
+ *
+ * DIFERENCIA con emitReviews():
+ *   - emitReviews(reviews) → función INTERNA que GATEA por SITE.allowSelfReviews
+ *     y se usa dentro de productSchema/serviceSchema. Decide si emitir.
+ *   - reviewSchema({items, aggregate?}) → función PÚBLICA, PURA, devuelve el
+ *     bloque listo para mergear en otro nodo. NO decide; el llamador decide.
+ *
+ * RETORNO: objeto { aggregateRating, review[] } listo para spread dentro de
+ * un nodo Product/Service/LocalBusiness/Organization. Si `items` está vacío
+ * (o ninguna reseña es válida) devuelve {} —seguro para ...spread—.
+ *
+ * REGLA DURA B3 (un emisor por página): este helper NO se conecta a ninguna
+ * página por default. La página padre decide si pasar reseñas a productSchema
+ * o componer un nodo a mano con reviewSchema; nunca ambos a la vez. Documentado
+ * en docs/MODULOS.md §3 (kit de schema reutilizable).
+ *
+ * REGLA DURA B4 (reseñas reales): aunque este helper sea puro, NO inventes
+ * reseñas para llenarlo. Google penaliza self-serving reviews; usa reseñas
+ * reales de Google Business Profile, Trustpilot, etc. SITE.allowSelfReviews
+ * sigue siendo el gate global para los esquemas auto-emitidos.
+ *
+ * CAVEAT (alineado con faqSchema · mayo 2026): Google también acotó los
+ * rich results de Review/AggregateRating; solo se muestran para algunos
+ * tipos schema (Product, Recipe, Movie, Book…). Para LocalBusiness/Service
+ * el schema sigue siendo válido y útil para entender la entidad, pero no
+ * pintará estrellas en la SERP. Sigue valiendo la pena emitirlo.
+ *
+ * USO TÍPICO (NO enchufado aún; documentado en docs/MODULOS.md):
+ *
+ *   import { reviewSchema, type Review } from '@lib/seo'
+ *
+ *   const items: Review[] = [
+ *     { author: 'María González', text: '…', rating: 5, date: '2026-05-14' },
+ *     { author: 'Luis Hernández',  text: '…', rating: 4, date: '2026-04-22' },
+ *   ]
+ *
+ *   // Opción A · dejar que reviewSchema calcule el promedio:
+ *   const node = reviewSchema({ items })
+ *   // node = { aggregateRating: {...}, review: [...] }
+ *
+ *   // Opción B · pasar un aggregate precomputado (p. ej. de Google Business):
+ *   const node = reviewSchema({
+ *     items,
+ *     aggregate: { ratingValue: 4.8, reviewCount: 127 },
+ *   })
+ * ────────────────────────────────────────────────────────────────────────── */
+export type AggregateRatingInput = {
+  ratingValue: number;
+  reviewCount: number;
+  bestRating?: number;
+  worstRating?: number;
+};
+
+export function reviewSchema(input: { items: Review[]; aggregate?: AggregateRatingInput }): Record<string, unknown> {
+  const valid = (input.items ?? []).filter(
+    (r) => r.author && r.text && r.rating >= 1 && r.rating <= 5 && r.date,
+  );
+  if (!valid.length) return {};
+
+  const aggregate = input.aggregate
+    ? {
+        '@type': 'AggregateRating',
+        ratingValue: Number(input.aggregate.ratingValue.toFixed(1)),
+        reviewCount: input.aggregate.reviewCount,
+        bestRating: input.aggregate.bestRating ?? 5,
+        worstRating: input.aggregate.worstRating ?? 1,
+      }
+    : {
+        '@type': 'AggregateRating',
+        ratingValue: Number((valid.reduce((s, r) => s + r.rating, 0) / valid.length).toFixed(1)),
+        reviewCount: valid.length,
+        bestRating: 5,
+        worstRating: 1,
+      };
+
+  return {
+    aggregateRating: aggregate,
     review: valid.map((r) => ({
       '@type': 'Review',
       author: { '@type': 'Person', name: r.author },

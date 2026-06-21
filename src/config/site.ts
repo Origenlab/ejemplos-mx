@@ -244,7 +244,7 @@ export const MODULOS: readonly Modulo[] = [
   { slug: 'category-detail',     label: 'Categoría a fondo',       href: '/modulos/category-detail',     desc: 'Dos columnas que amplían una categoría con texto y galería.', estado: 'listo' },
   { slug: 'product-card',        label: 'Tarjeta de producto',     href: '/modulos/product-card',        desc: 'La ficha breve del catálogo: imagen, badge, título y CTA.', estado: 'listo' },
   { slug: 'service-card',        label: 'Tarjeta de servicio',     href: '/modulos/service-card',        desc: 'La ficha breve del catálogo de servicios: ícono o foto + CTA dual (ficha o WhatsApp).', estado: 'listo' },
-  { slug: 'resenas',             label: 'Reseñas',                 href: '/modulos/resenas',             desc: 'Prueba social: tarjetas con opiniones reales de clientes.', estado: 'proximo' },
+  { slug: 'review',              label: 'Reseñas',                 href: '/modulos/review',              desc: 'Prueba social: tarjetas con opiniones reales de clientes.', estado: 'listo' },
   { slug: 'faq',                 label: 'Preguntas frecuentes',    href: '/modulos/faq',                 desc: 'El acordeón de dudas comunes, con esquema FAQ para SEO.', estado: 'listo' },
   { slug: 'cta-banner',          label: 'CTA banner',              href: '/modulos/cta-banner',          desc: 'La franja de llamada a la acción que cierra cada página.', estado: 'proximo' },
   { slug: 'formulario-contacto', label: 'Formulario de contacto',  href: '/modulos/formulario-contacto', desc: 'El formulario que convierte a WhatsApp sin fricción.', estado: 'proximo' },

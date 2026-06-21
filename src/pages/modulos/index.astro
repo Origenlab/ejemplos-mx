@@ -63,7 +63,7 @@ const MOD_META: Record<string, { image: string; chips: string[] }> = {
   'category-detail':     { image: `${IMG}/productos/sitio-web-rapido-astro.avif`,                  chips: ['Dos columnas', 'Galería', 'CTA'] },
   'product-card':        { image: `${IMG}/productos/desarrollo-web-astro-profesional.avif`,        chips: ['Imagen 16:9 + badge', 'Título H3 + descripción', 'CTA inline + LCP'] },
   'service-card':        { image: `${IMG}/servicios/consultoria-desarrollo-web-astro.avif`,        chips: ['Icono SVG · 56×56', 'Título H3 + descripción', 'CTA dual (ficha o WhatsApp)'] },
-  'resenas':             { image: `${IMG}/casos/caso-exito-proyecto-web-astro.avif`,               chips: ['Estrellas', 'Cita', 'Cliente'] },
+  'review':              { image: `${IMG}/casos/caso-exito-proyecto-web-astro.avif`,               chips: ['Estrellas · 5/5', 'Cita + cliente + rol', 'Avatar con iniciales'] },
   'faq':                 { image: `${IMG}/articulos/guia-plantilla-astro-contenido-markdown.avif`, chips: ['Pregunta · summary tappable', 'Respuesta · admite HTML', 'Schema FAQPage opcional'] },
   'cta-banner':          { image: `${IMG}/servicios/soporte-mantenimiento-web-astro.avif`,         chips: ['Gancho', 'Botón', 'Cierre'] },
   'formulario-contacto': { image: `${IMG}/articulos/novedades-sistema-produccion-web-astro.avif`,  chips: ['Campos', 'Validación', 'WhatsApp'] },
@@ -227,16 +227,16 @@ const AFONDO: Record<string, { body: string[]; points: string[] }> = {
       'Cero schema en la card: ItemList lo emite el grid padre, Service solo la ficha L4',
     ],
   },
-  'resenas': {
+  'review': {
     body: [
       'Son las tarjetas de prueba social: opiniones de clientes con su calificación, nombre y rol. Llegan en el momento en que el visitante duda y responden la pregunta que no hace en voz alta —«¿le funcionó a alguien como yo?»— con la voz de un tercero, que pesa más que la tuya.',
       'Cada reseña es una tarjeta uniforme (ReviewCard) alimentada por datos, así que se ven y se comportan igual en todo el sitio. En un sitio real, reseñas verdaderas y atribuibles; aquí, ejemplos. La clave es la honestidad: prueba social que se pueda sostener, nunca inventada.',
     ],
     points: [
-      'Cita + calificación + nombre y rol del cliente',
-      'Prueba social en el momento exacto de la duda',
-      'Tarjetas uniformes (ReviewCard), data-driven',
-      'Reseñas reales y atribuibles (en la demo, ejemplos)',
+      'Cita + calificación de 5 estrellas + nombre y rol del cliente',
+      'Avatar con iniciales (sin peso de imagen, uniforme y profesional)',
+      'Tarjetas uniformes (ReviewCard), data-driven desde el frontmatter',
+      'Schema Review opcional en lib/seo.ts, gateado por SITE.allowSelfReviews (regla B4)',
     ],
   },
   'faq': {
