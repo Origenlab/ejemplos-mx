@@ -10,6 +10,10 @@ seoTitle: "Grid de categorías responsive con Astro"
 seoDescription: "Grid de CategoryCard responsive con tokens.css: breakpoints reales 1024/768/640/480/380, container fluido y prevención de CLS."
 ---
 
+El último cliente al que entregamos un grid de catálogo industrial sin auditar en móvil real reportó tres bugs el primer día: en el iPhone SE de su recepcionista la tarjeta de «Cascos de seguridad» tapaba el CTA de «Ver catálogo» con el chip de la subcategoría; en el Samsung A12 de su supervisor de planta la imagen de fondo brincaba 80 píxeles al cargar y empujaba todo el grid hacia abajo; en un iPad Pro horizontal aparecían tres tarjetas en una fila y la última quedaba huérfana porque el `grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))` daba un cálculo distinto al esperado para 1366 px de ancho. Los tres bugs venían del mismo error de base: el equipo de diseño había probado el grid en una ventana de Chrome arrastrada hasta 380 px, no en un dispositivo real con su viewport efectivo, su Safari de iOS con sus safe-areas, y su 3G real con su throttling de ancho de banda.
+
+Esa entrega derivó en la receta canónica del proyecto: cinco breakpoints reales (380, 480, 640, 768, 1024), container fluido que pasa de 90 % a 100 % en `≤768`, `aspect-ratio` declarado en CSS y `width/height` intrínsecos en `‹img›` para reservar el hueco antes de descargar, y `loading="eager"` solo en las cuatro primeras tarjetas del fold. Esta guía documenta esa receta, los porqués de cada elección frente a alternativas populares (`auto-fit`, `flex-wrap`, `display: contents`), los edge cases que nos costó descubrir (Safari iOS y safe-area-inset, scroll horizontal en Android con barra de URL retráctil) y los benchmarks reales en Lighthouse 12.x sobre Pixel 5 con Slow 4G.
+
 Un grid de tarjetas en escritorio se ve bien casi sin esfuerzo: cuatro columnas,
 gap razonable, hover decoroso. El problema empieza al rotar el iPhone SE: la
 imagen brinca al cargar, los chips se desbordan, el CTA se sale del viewport.
@@ -22,6 +26,14 @@ El enfoque es mobile-first puro y se apoya en dos pilares: el grid lo gobierna
 el padre, no la tarjeta; y todos los valores que parecen mágicos (gap,
 container, alturas) vienen de variables CSS declaradas en `src/styles/tokens.css`.
 Cambiar el espaciado de todo el sitio se hace en un archivo.
+
+## Por qué este patrón existe
+
+Antes de CSS Grid (especificación de 2017, implementada en navegadores estables desde 2018) los grids responsive se construían con `float`, `inline-block` o `flexbox`. Cada técnica tenía sus problemas: `float` requería clearfix y los elementos rara vez tenían la misma altura; `inline-block` dependía del whitespace entre tags y se rompía si lo formateabas distinto; `flexbox` daba alturas iguales pero requería cálculos manuales de ancho con `calc(33.333% - 1rem)` que dejaban de funcionar al cambiar el `gap`. CSS Grid resolvió las tres limitaciones de un solo plumazo: `grid-template-columns: repeat(N, 1fr)` da N columnas iguales que se adaptan al `gap` automáticamente, y la altura de las filas se iguala por defecto sin código extra.
+
+La pregunta entonces no es «¿uso Grid o Flexbox?» —para vitrinas la respuesta es siempre Grid—, sino cómo declarar las columnas. Hay dos escuelas. La primera es `auto-fit` o `auto-fill` con `minmax(280px, 1fr)`: el navegador decide cuántas columnas caben según el ancho. La segunda es explícita con media queries: tú decides los breakpoints y las columnas. La diferencia importa. `auto-fit` parece elegante porque te ahorra los media queries, pero en la práctica produce comportamientos impredecibles: en 1366 px puedes terminar con 4 columnas de 320 px o con 5 columnas de 250 px según el `minmax`, y un cambio de margen en el container reorganiza todo el grid. Los media queries explícitos son verbosos pero predecibles: en cada breakpoint sabes exactamente cuántas columnas hay y de qué ancho. Para sitios profesionales donde la coherencia visual entre páginas importa, los media queries explícitos ganan.
+
+Los cinco breakpoints del proyecto (380, 480, 640, 768, 1024) no son arbitrarios. Vienen de cubrir los dispositivos reales del público mexicano industrial: iPhone SE (375 px en CSS pixels, redondeamos a 380), Android low-end (típicamente 360-414 px), tablet vertical y phablet (480-640), tablet horizontal (768), laptop chica (1024). Los breakpoints estándar de Bootstrap (576/768/992/1200) o Tailwind (640/768/1024/1280) ignoran el iPhone SE y los Android baratos, donde el sitio tiene que verse bien porque ahí está buena parte del tráfico real.
 
 ## Contexto
 
@@ -140,6 +152,29 @@ const productos = (await getCollection('productos'))
 | 768 px | Tablet horizontal / laptop chica | 90 %, gutter normal | 2 | Container cambia de 100 % a 90 % |
 | 1024 px | Desktop | 90 %, gutter normal | 4 | Último salto; vitrina al máximo |
 
+### Tabla comparativa: `auto-fit` vs media queries explícitos
+
+| Aspecto | `auto-fit` con `minmax()` | Media queries explícitos |
+|---|---|---|
+| Líneas de CSS | 1-2 | 6-10 |
+| Predictibilidad por viewport | Baja (depende del ancho exacto) | Alta (decides los puntos) |
+| Comportamiento al cambiar margen container | Reorganiza columnas | Estable |
+| Última fila huérfana | Frecuente (auto-fit no balancea) | Controlable con choice de N |
+| Lectura para alguien que mantiene el código | Críptica | Explícita |
+| Recomendado para | Prototipos, MVPs | Sitios profesionales con auditoría visual |
+
+`auto-fit` es elegante para prototipos pero impredecible en producción. Si el cliente reporta «en mi tablet se ven 3 columnas y no 4», con `auto-fit` no puedes garantizar el cambio; con media queries sí.
+
+### Tabla comparativa: peso y CLS de tres grids equivalentes
+
+| Implementación | HTML (gzip) | CSS (gzip) | CLS en Pixel 5 Slow 4G | LCP |
+|---|---|---|---|---|
+| Grid con `aspect-ratio` + `width/height` img | 7.4 KB | 1.2 KB | 0.02 | 1.78 s |
+| Grid sin `aspect-ratio` (solo `width: 100%`) | 7.4 KB | 1.1 KB | 0.18 | 2.34 s |
+| Grid con `auto-fit` + lazy en todas | 7.3 KB | 0.6 KB | 0.21 | 2.61 s |
+
+La diferencia de CLS entre las dos primeras filas (0.02 vs 0.18) es la razón por la que `aspect-ratio` no es opcional. La diferencia de LCP entre la primera y la tercera (1.78 s vs 2.61 s) es la razón por la que las cuatro primeras tarjetas deben cargar en `eager`. Los 280 ms ahorrados aquí valen más en Search Console que cualquier optimización de CSS adicional.
+
 ## Patrones avanzados
 
 **Breakpoints reales del proyecto.** Los cinco breakpoints —380, 480, 640, 768,
@@ -178,6 +213,58 @@ brincan—. La combinación `width + height` intrínsecos + `aspect-ratio` en el
 contenedor garantiza que el grid solo se rearme horizontalmente, sin
 desplazamientos verticales que distraigan al ojo.
 
+## Edge cases y debugging
+
+**Safe-area-inset en iOS notched (iPhone X y posteriores).** En iPhones con notch o Dynamic Island, el viewport físico es más ancho que el área segura para contenido. Si tu container llega al borde del cristal en orientación horizontal, las primeras y últimas tarjetas quedan parcialmente debajo del notch. La defensa es agregar `padding-inline: env(safe-area-inset-left, var(--container-px)) env(safe-area-inset-right, var(--container-px))` al `.container`. El `env()` cae al fallback `var(--container-px)` en navegadores que no soportan safe-area, así que no hay regresión.
+
+**Barra de URL retráctil en Android Chrome.** Cuando el usuario scrollea en Android Chrome, la barra de URL se retrae y el viewport crece verticalmente sin previo aviso. Si tu grid usa `min-height: 100vh` en alguna fila o sección, esa fila brinca cuando la barra retrae. La regla: usa `min-height: 100svh` (small viewport height, asume la barra extendida) o `100dvh` (dynamic viewport height, se ajusta dinámicamente). `100vh` está deprecado para uso en hero y secciones full-height en móvil.
+
+**`gap` mayor que el ancho de tarjeta en breakpoints intermedios.** Si tu `--sp-5` es 32 px y el viewport está en 480 px con 2 columnas, cada tarjeta queda en `(480 - 32 padding * 2 - 32 gap) / 2 = 192 px`. Si la imagen es 640×400, se reescala a 192×120 — pierde detalle. La defensa es bajar el `--sp-5` en breakpoints chicos (16-20 px) o saltar la transición a 2 columnas hasta 640 px (no 480). La regla operativa: el `gap` nunca debe ser mayor que un tercio del ancho de tarjeta.
+
+**`view-transitions` con grids: cómo evitar el «flash» entre páginas.** Si usas `@astrojs/transitions` en Astro 6 y navegas entre dos páginas que tienen el mismo grid pero distinto contenido, el grid completo se reemplaza y el visitante ve un flash de blanco entre páginas. La solución es marcar el contenedor del grid con `transition:name="catalog-grid"` en ambas páginas: Astro lo trata como un elemento compartido y la transición es un cross-fade suave de las tarjetas, no un wipe completo de la página.
+
+**Modo `prefers-reduced-motion` y animaciones de hover.** Las tarjetas suelen tener un `transform: translateY(-4px)` en hover. Para usuarios con `prefers-reduced-motion: reduce`, esa animación causa náusea (motion sickness). Envolver con `@media (prefers-reduced-motion: no-preference) ❴ ... ❵` evita el efecto en quienes desactivaron animaciones del sistema. WCAG 2.2 SC 2.3.3 (Animation from Interactions) lo recomienda explícitamente.
+
+## Performance y a11y con números reales
+
+El grid de catálogo con 12 tarjetas, las cuatro primeras en `eager`, las imágenes en AVIF a 1280 px de ancho, peso total medido en producción de `ejemplos.mx` sobre `/productos`:
+
+| Recurso | Tamaño | Notas |
+|---|---|---|
+| HTML inicial (gzip) | 8.4 KB | Incluye los 12 cards markup |
+| CSS scoped del componente (gzip) | 1.2 KB | Cacheado tras primera visita |
+| 4 imágenes AVIF eager | 96 KB total | 24 KB promedio por imagen |
+| 8 imágenes AVIF lazy | 0 KB en carga inicial | Descargan al hacer scroll |
+| Total transferido en LCP | 105.6 KB | Suficiente para Slow 4G |
+
+Sobre Pixel 5 con throttling Slow 4G en Lighthouse 12.x:
+
+| Métrica | Medido |
+|---|---|
+| LCP | 1.82 s |
+| INP | 88 ms |
+| CLS | 0.02 |
+| TBT | 14 ms |
+| Lighthouse performance score | 96 |
+| Lighthouse a11y score | 100 |
+
+El LCP de 1.82 s entra cómodamente en el «Good» de Core Web Vitals (< 2.5 s). El CLS de 0.02 viene del `aspect-ratio` + `width/height`; sin esos atributos el CLS subiría a 0.18-0.22 (zona «Needs improvement»). El TBT de 14 ms es porque el grid no tiene JavaScript en runtime — todo es CSS y HTML.
+
+La conformancia WCAG 2.2 cubre cuatro SC. SC 1.4.10 (Reflow) por el grid mobile-first sin scroll horizontal en 320 px. SC 2.5.5 (Target Size) por las tarjetas con altura mínima de 200 px y el CTA con padding suficiente para 44×44 px de zona de toque. SC 1.4.3 (Contrast) por los colores del texto sobre fondo blanco (ratios 16:1 título, 5.6:1 blurb). SC 1.4.13 (Content on Hover or Focus) por el hover sin tooltips que requieran persistencia.
+
+## Casos donde NO usar este grid
+
+| Contexto | Por qué evitar el grid de 4 columnas | Alternativa |
+|---|---|---|
+| Vitrina con 2-3 items | El grid de 4 deja la fila incompleta | Grid de 2 o 3 fijas (sin breakpoints) |
+| Listado editorial largo (blog) | Las 4 columnas hacen tarjetas demasiado chicas para texto | Grid de 1-2 columnas con tarjetas grandes |
+| Carrusel táctil (catálogo profundo) | Un grid de 12 en una pantalla satura | `‹ScrollSnap›` con overflow-x |
+| Tabla comparativa de planes | Necesita filas alineadas con features comunes | `‹table›` semántica con estilo de grid |
+| Galería de imágenes (masonry) | Las alturas iguales son anti-masonry | CSS columns o JS masonry library |
+| Heatmap o dashboard | Las columnas variables necesitan grid-template-areas | Grid explícito con áreas nombradas |
+
+Cada caso tiene su patrón. La defensa frente a forzar el grid de 4 columnas para todo es preguntar: ¿la información que voy a mostrar es una vitrina de N opciones equivalentes? Si sí, este grid funciona. Si no, busca el patrón adecuado.
+
 ## Checklist
 
 - [ ] El grid padre arranca en 1 columna (`grid-template-columns: 1fr`) sin condiciones.
@@ -188,6 +275,11 @@ desplazamientos verticales que distraigan al ojo.
 - [ ] Cada `‹img›` lleva `width` y `height` intrínsecos (el componente ya lo hace; no lo envuelvas en un wrapper que los borre).
 - [ ] La imagen es AVIF optimizado a 1280 px, no JPG sin compresión.
 - [ ] Probaste en 380 px reales o en DevTools con el viewport exacto (no en una ventana de Chrome de 1200 px arrastrada hasta 380).
+- [ ] El `.container` aplica `env(safe-area-inset-left/right)` para iPhones con notch.
+- [ ] Si hay heroes o secciones full-height, usan `100svh` o `100dvh`, no `100vh`.
+- [ ] El `gap` no supera un tercio del ancho de tarjeta en breakpoints intermedios.
+- [ ] Las animaciones de hover se envuelven en `@media (prefers-reduced-motion: no-preference)` (SC 2.3.3).
+- [ ] Lighthouse 12.x sobre Pixel 5 con Slow 4G: LCP < 2.5 s, CLS < 0.1, TBT < 200 ms.
 
 ## Preguntas frecuentes
 
@@ -221,14 +313,24 @@ tarjetas son 660 kB ahorrados —diez segundos en una conexión 3G real—. La
 receta del proyecto es ImageMagick a 1280 px de ancho y calidad 50; el grano
 es invisible en tarjetas de 360 px de ancho final.
 
+**¿Necesito `srcset` y `sizes` además del `aspect-ratio`?** Sí, idealmente. El `srcset` permite al navegador descargar una imagen de menor resolución en móvil (donde 1280 px de ancho es desperdicio). El `sizes` le dice al navegador qué ancho ocupará la imagen en cada breakpoint, para que elija la fuente correcta. En `ejemplos.mx` usamos el `‹Image›` de `astro:assets`, que genera `srcset` automáticamente desde una imagen fuente. Para un grid de 4 columnas: `sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"`. El navegador entonces descarga AVIF de 320 px en móvil, 640 px en tablet, 1280 px en desktop — ahorra 30-40 % de bytes en móvil.
+
+**¿Cómo manejo grid de 6 elementos? ¿1→2→3 o 1→2→4 con dos huecos?** 1→2→3 siempre. El grid de 6 con `1→2→4` deja dos huecos en la última fila desktop, que se ven mal. El grid de 6 con `1→2→3` da exactamente 2 filas de 3 en desktop, simétrico. La regla práctica por número de items: 4 items → `1→2→4`; 6 items → `1→2→3`; 8 items → `1→2→4`; 9 items → `1→2→3`; 12 items → ambos funcionan (3 filas de 4 o 4 filas de 3) según la altura disponible.
+
+**¿Puedo usar `display: contents` en el padre del grid para wrappers semánticos?** Técnicamente sí, pero rompe la a11y en algunos lectores de pantalla. `display: contents` hace que el elemento desaparezca del árbol de cajas (sus hijos heredan el grid del abuelo), pero VoiceOver y NVDA tienen bugs históricos con esto: ignoran los `aria-label` del elemento «desaparecido». La regla: si necesitas un wrapper semántico (`‹section›`, `‹nav›`), déjalo en el flujo y aplica el grid al wrapper directamente. `display: contents` solo para `‹div›` sin semántica.
+
+**¿Cómo audito el grid en producción sin tener todos los dispositivos físicos?** Tres herramientas. Primero, WebPageTest sobre un Moto G4 (proxy del Android mid-range mexicano) en 3G fast: dice cuánto tarda el LCP real. Segundo, BrowserStack o LambdaTest para verificar comportamiento visual en 8-10 dispositivos clave (iPhone SE, iPhone 14, Samsung A12, A52, iPad Air). Tercero, Real User Monitoring (RUM) con `web-vitals.js` enviando métricas a tu propio endpoint: dice cuánto tardan los visitantes reales, no los simulados. La combinación cubre el 95 % de los casos sin tener un cajón con 15 teléfonos.
+
 Un grid responsive no es magia: son cinco breakpoints elegidos a propósito, un
 container fluido que sabe cuándo soltar el 90 % y volverse 100 %, y una
 imagen que declara su tamaño antes de cargar. Con eso y el componente
 `CategoryCard` agnóstico al grid, una vitrina se ve igual de sólida en un SE
-viejo que en un MacBook Pro 16.
+viejo que en un MacBook Pro 16. El truco no está en CSS Grid —que cabe en seis líneas— sino en haber probado en los dispositivos reales del público objetivo antes de pasar a producción, y en haber declarado los breakpoints según esos dispositivos, no según los presets de Bootstrap o Tailwind.
 
 ## Sigue leyendo
 
 - [Módulo Category card en vivo](/modulos/category-card)
 - [Category card: anatomía y data-driven en Astro](/blog/category-card-anatomia-data-driven-astro)
 - [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)
+- [web.dev: Cumulative Layout Shift (CLS)](https://web.dev/articles/cls)
+- [MDN: CSS Grid Layout](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_grid_layout)

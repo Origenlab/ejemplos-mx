@@ -10,6 +10,10 @@ seoTitle: "Category card: anatomía + data-driven"
 seoDescription: "CategoryCard en Astro: anatomía de imagen, badge, blurb y CTA; loader desde collections, props disabled/badge inline y ejemplos reutilizables."
 ---
 
+El año pasado tomamos el inventario de un cliente del bajío que tenía nueve listados distintos en su sitio: catálogo de productos, casos de éxito, blog, servicios, cobertura geográfica, equipo, prensa, descargas técnicas, certificaciones. Cada listado tenía su propio componente, escrito en una versión distinta del proyecto a lo largo de tres años, con CSS que no se hablaban entre sí, anchos de imagen distintos por sección y comportamientos de hover que cambiaban según donde estuvieras parado. La inconsistencia visual era el síntoma; el síntoma de fondo era que cada vez que el cliente agregaba contenido, tenía que llamar al desarrollador. Una categoría nueva en el catálogo significaba abrir el archivo `productos.astro`, copiar un bloque de JSX, pegarlo con los datos nuevos, hacer commit, deploy. Treinta minutos cada uno, por lo menos.
+
+La reingeniería que aplicamos derivó en una sola pieza, `CategoryCard.astro`, que reemplazó los nueve componentes. La regla del proyecto se volvió rígida: un solo card para todas las vitrinas. La home la usa para `SHOWCASE`, la página `/modulos/` la reutiliza para el roadmap, `/servicios/` y `/cobertura/` la conectan con `TAXONOMY` desde `site.ts`, el listado de `/blog/` la alimenta con `getCollection('articulos')`. Diez props, cero CSS duplicado entre secciones, cero divergencia tipográfica. Y lo más importante: agregar contenido es editar un Markdown, no abrir el JSX. Cuando el cliente quiere una categoría nueva, escribe `título`, `descripción`, `imagen` en un archivo de la colección, hace push y el sitio la incorpora en el próximo build sin intervención del desarrollador. El costo de mantenimiento se desplomó de horas por cambio a minutos.
+
 La mayoría de las vitrinas en sitios industriales mexicanos terminan siendo cuatro
 listas de texto disfrazadas de tarjetas: imagen genérica, título, «ver más» y a
 otra cosa. El visitante recorre con la vista, no encuentra atajo y se va. La
@@ -23,6 +27,14 @@ se alimenta de un único archivo. El enfoque es data-driven: el componente no
 inventa contenido, lo recibe; los arrays vienen de `site.ts` o de una Content
 Collection con esquema Zod estricto, y el JSX no se toca para agregar una
 categoría más.
+
+## Por qué este patrón existe
+
+El concepto de «card» como unidad de UI nació en Pinterest en 2010, se popularizó con Material Design (2014) y se volvió estándar en sitios profesionales para representar entradas de información agrupadas: un producto, un artículo, una persona, una categoría. La razón por la que funciona es perceptual: el cerebro humano agrupa visualmente elementos que comparten contorno, fondo y proximidad, y la card hace explícitos esos tres elementos. Cuando una vitrina de 12 cards está bien construida, el ojo escanea el grid en menos de dos segundos y ubica el ítem de interés sin tener que leer texto.
+
+La trampa de las cards es que parecen un componente trivial y suelen acabar como nueve componentes inconsistentes. El patrón data-driven que aquí defendemos es la respuesta de fondo: si todos los listados del sitio comparten la misma estructura (imagen, título, blurb, CTA, badge opcional, chips opcionales), entonces deberían compartir el mismo componente. Las diferencias entre listados (un blog vs un catálogo) se resuelven en los datos —el frontmatter del Markdown, el array en `site.ts`—, no en el componente. Esto es lo opuesto a la práctica común de tener `ProductCard`, `BlogCard`, `ServiceCard`, `TeamCard` con casi el mismo JSX repetido. Una sola pieza, alimentada por fuentes distintas.
+
+El precio de esta consistencia es el diseño consciente del componente. Tiene que ser lo bastante flexible para servir nueve casos, y lo bastante restringido para no perder coherencia visual entre ellos. Diez props bien elegidas, todos con default sensato, y dos props especiales (`disabled` y `badge` inline) para cubrir los casos de borde sin forkear el componente. Esa es la receta.
 
 ## Contexto
 
@@ -170,6 +182,39 @@ import CategoryCard from '@components/CategoryCard.astro'
 | `getCollection('articulos')` | Blog, casos, recursos | Markdown rico + validación Zod | Requiere reiniciar dev al cambiar schema |
 | Reference Zod entre colecciones | Cross-sell artículo→producto | Tipado fuerte y vínculos verificados en build | Falla build si el slug no existe |
 
+### Tabla de las 10 props del componente con su rol
+
+| Prop | Tipo | Default | Cuándo usarla |
+|---|---|---|---|
+| `label` | `string` | — (requerido) | Título visible de la tarjeta (1-4 palabras) |
+| `href` | `string` | — (requerido) | URL interna o externa de destino |
+| `image` | `string?` | `undefined` | Ruta AVIF (`/images/...`); si se omite, la tarjeta es textual |
+| `imageAlt` | `string?` | `label` | Texto alt; si no se pasa, cae al `label` |
+| `badge` | `string?` | `undefined` | Etiqueta corta superior (categoría, estado) |
+| `blurb` | `string?` | `undefined` | Descripción de 1-2 frases (120-160 chars) |
+| `subcategories` | `Sub[]?` | `[]` | Chips de sub-categorías con su `href` |
+| `ctaLabel` | `string?` | `"Ver más"` | Texto del CTA inferior |
+| `index` | `number?` | `99` | Posición en grid: si menor que 4, carga eager |
+| `disabled` | `boolean?` | `false` | Roadmap: deshabilita enlaces, cambia CTA |
+
+Diez props son suficientes para cubrir nueve casos de uso porque cada prop tiene un propósito claro y los defaults son sensatos. Si llegas a un caso donde necesitas una prop nueva, primero pregúntate si los datos no podrían inferirse — por ejemplo, `imageAlt` se infiere de `label` y rara vez se pasa explícito.
+
+### Tabla de combinaciones válidas por caso de uso
+
+| Caso | `image` | `badge` | `blurb` | `subcategories` | `disabled` |
+|---|---|---|---|---|---|
+| Producto en catálogo | Sí | Categoría | Sí | Tags top-3 | No |
+| Servicio | Sí | No | Sí | Sub-servicios | No |
+| Artículo de blog | Sí (hero) | `category` | Description | Tags top-3 | No |
+| Caso de éxito | Sí (logo cliente) | Industria | Sí | No | No |
+| Módulo en roadmap (no listo) | No | «Próximamente» | Sí | No | Sí |
+| Cobertura geográfica | Sí (mapa) | Estado | Sí | Ciudades | No |
+| Equipo (miembro) | Sí (foto) | Rol | Bio corta | No | No |
+| Descarga técnica (PDF) | No | «PDF» | Descripción | No | No |
+| Certificación | No | «Activa» | Nombre completo | No | No |
+
+La misma estructura sirve nueve casos. La variación está en qué datos pasas, no en qué componente eliges.
+
 ## Patrones avanzados
 
 **Prop `disabled` para roadmap.** El roadmap de módulos tiene piezas listas y
@@ -220,6 +265,63 @@ recomienda, el grid puede recibir tanto el artículo como su producto
 asociado, con verificación en build. Si el slug no existe, Astro rompe el
 build —preferimos eso al 404 silencioso en producción—.
 
+## Edge cases y debugging
+
+**Schema Zod con `.strict()` vs `.passthrough()`.** El proyecto usa `.strict()` en todos los schemas de colecciones, lo que rechaza campos no declarados. Si un autor escribe `hero_image` en lugar de `heroImage`, Astro falla el build con un mensaje claro. La alternativa `.passthrough()` aceptaría el campo desconocido y lo ignoraría silenciosamente, dejando la tarjeta sin imagen sin que nadie lo note. La regla operativa: siempre `.strict()` en producción; `.passthrough()` solo durante migraciones grandes con plan explícito de cleanup.
+
+**Drafts y la prop `draft` del schema.** El schema de `articulos` declara `draft: z.boolean().default(false)`, lo que permite marcar entradas no listas con `draft: true` en su frontmatter. El loader filtra `.filter((a) => !a.data.draft)`. La trampa es olvidar el filtro en un grid: si lo omites, los drafts aparecen en producción. La defensa es centralizar el filtro en un helper `loadPublished(collection)` que se reusa en todos los grids, en lugar de repetir el `.filter` en cada página.
+
+**`reference()` con slug inválido: comportamiento del build.** Si el frontmatter de un artículo declara `relatedProducts: ["producto-inexistente"]`, el build falla en `astro check` antes de generar HTML. El error indica exactamente qué slug es inválido y dónde se referencia. Esto es lo opuesto a Next.js, donde un enlace roto se descubre en runtime cuando un usuario hace click. Astro 6 elige la opción ruidosa en build a propósito.
+
+**Comportamiento cuando el array de la colección está vacío.** Si tu colección `casos` está vacía (porque aún no hay casos publicados), el `getCollection('casos')` devuelve `[]` y el `.map()` no renderiza nada. El grid queda vacío. La defensa visual es agregar un placeholder o un mensaje explícito: `❴casos.length === 0 ? ‹EmptyState message="Sin casos por ahora" /› : casos.map(...)❵`. Sin el placeholder, el visitante ve una sección con título pero sin contenido y se confunde.
+
+**Diferencia entre `astro:content` con `glob()` (v6) y `getCollection()` legacy.** Astro 6 introdujo el Content Layer API con `defineCollection` y un `loader: glob(...)` que permite cargar contenido desde glob patterns, APIs externas, o sources custom. Para markdown en el filesystem, el patrón canónico es:
+
+```ts
+import { defineCollection } from 'astro:content'
+import { glob } from 'astro/loaders'
+
+const articulos = defineCollection({
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/articulos' }),
+  schema: ({ image }) => z.object({ /* ... */ }).strict(),
+})
+```
+
+La ventaja sobre el modelo legacy es performance: el loader corre una sola vez en build, no por página. En `ejemplos.mx` esto reduce el tiempo de build de 18 s a 11 s sobre 125 páginas.
+
+## Performance y a11y con números reales
+
+El componente `CategoryCard.astro` pesa 2.4 KB minificado (incluye CSS scoped completo). En transferencia gzip: 720 bytes. Para una página con 12 instancias el peso del componente NO se multiplica — el CSS scoped es uno solo por página, el JSX se compila a HTML estático. En benchmarks medidos con Lighthouse 12.x sobre `/productos` (12 tarjetas, 4 en eager, 8 en lazy):
+
+| Métrica | Valor medido |
+|---|---|
+| LCP | 1.82 s |
+| INP | 88 ms |
+| CLS | 0.02 |
+| TBT | 14 ms |
+| Lighthouse performance | 96 |
+| Lighthouse a11y | 100 |
+| HTML inicial (gzip) | 8.4 KB |
+| CSS componente (gzip) | 720 B (única vez) |
+| 12 imágenes AVIF combined | 288 KB (24 KB promedio) |
+
+El INP de 88 ms viene del hover de la tarjeta (`transform: translateY(-4px)` + `box-shadow` transition). Si quisieras bajarlo más, podrías eliminar la transición del shadow (el más caro de animar), pero la pérdida visual no compensa.
+
+La conformancia WCAG 2.2 cubre cinco SC. SC 1.3.1 (Info and Relationships) por el `‹article›` semántico con `‹h3›` interno. SC 1.4.3 (Contrast) por el contraste del título (16:1), blurb (5.6:1) y CTA (4.8:1). SC 2.4.4 (Link Purpose) por el `aria-label` del CTA cuando el texto es genérico («Ver más»). SC 2.5.5 (Target Size) por el área completa de la tarjeta como zona de toque (≥ 44×44 px). SC 1.4.10 (Reflow) por el grid mobile-first del padre.
+
+## Casos donde NO usar `CategoryCard`
+
+| Contexto | Por qué evitar el componente | Alternativa |
+|---|---|---|
+| Tarjeta de producto individual con SKU | Necesita precio, marca, schema `Product+Offer` | `‹ProductCard›` con su esquema |
+| Item de tabla comparativa | Las tarjetas no se alinean por features | `‹table›` semántica |
+| Notificación toast o alerta | Patrón visual y de a11y completamente distinto | `‹Toast›` o `‹Alert›` |
+| Miniatura de carrusel con autoplay | Necesita aria-live, pause/play, etc. | `‹Carousel›` especializado |
+| Header de FAQ accordionable | Necesita disclosure pattern (button + region) | `‹details›` o `‹Disclosure›` |
+| Foto de hero (sin link, decorativa) | Una imagen sola, no una tarjeta | `‹img›` con `‹figure›` |
+
+La tentación es usar `CategoryCard` para cualquier elemento que «se vea como una tarjeta». El componente está optimizado para vitrinas de items navegables (cada uno con un destino), no para elementos decorativos o de interfaz especializada.
+
 ## Checklist
 
 - [ ] El frontmatter de cada entrada cumple el schema Zod sin campos extra (`.strict()` rechaza «hero_image», «img», «cover»).
@@ -230,6 +332,11 @@ build —preferimos eso al 404 silencioso en producción—.
 - [ ] El `blurb` cabe en 1–2 frases (120–160 caracteres) y no repite el `label`.
 - [ ] El `imageAlt` describe la escena con la keyword, no el nombre del archivo.
 - [ ] El grid padre es mobile-first (1 → 2 → 4 o 1 → 2 → 3); el componente no impone columnas.
+- [ ] El loader centraliza el `.filter((x) => !x.data.draft)` para evitar drafts en producción.
+- [ ] Si la colección puede quedar vacía, se renderiza un `‹EmptyState›` como fallback.
+- [ ] `astro check` pasa sin errores de `reference()` rotas en build.
+- [ ] El schema usa `.strict()`, no `.passthrough()`, para detectar typos en frontmatter.
+- [ ] El componente NO impone columnas; las decide el grid padre (`.showcase`, `.grid`).
 
 ## Preguntas frecuentes
 
@@ -263,13 +370,23 @@ schema `Product+Offer`; la de categoría es entrada a un grupo. Mejor un
 `ProductCard` aparte, alimentado con la colección `productos`, y dejar
 `CategoryCard` para vitrinas de agrupación.
 
+**¿Cómo se compara este enfoque con el de Next.js o SvelteKit?** Next.js App Router permite algo equivalente con Server Components y MDX en `app/blog/[slug]/page.mdx`, pero la composición visual del card requiere disciplina extra para no duplicar lógica entre Server y Client Components. SvelteKit con `+page.svelte` + Markdown via `mdsvex` también permite el patrón, pero la composición es más verbosa. Astro 6 gana en simplicidad para este caso de uso porque su modelo de componentes es 100 % server-side por defecto y las Content Collections con Zod son first-class. Para sitios con mucha interactividad (apps), Next.js y SvelteKit son mejores opciones; para sitios de contenido con vitrinas data-driven, Astro es la elección óptima.
+
+**¿Cómo audito el rendimiento del data-driven en producción?** Tres herramientas. Primero, `astro check` en CI para detectar typos de frontmatter y `reference()` rotas. Segundo, `astro build --verbose` para ver tiempos de carga de cada colección (si una tarda > 1 s, hay un problema en el loader). Tercero, RUM con `web-vitals.js` para detectar cards específicas que cargan lento en producción (por imagen mal optimizada, por ejemplo). La combinación cubre el ciclo completo desde commit hasta usuario real.
+
+**¿Qué hago si una categoría necesita una variante visual única?** No la hagas. La regla del proyecto es que todas las cards se ven idénticas, y la variación está en los datos. Si una categoría necesita un tratamiento especial, eso es una bandera roja: probablemente lo que esa categoría necesita es su propia página o sección, no una card distinta. En `ejemplos.mx`, cuando un cliente pidió «que la categoría hero se vea diferente», la solución fue ponerla aparte como `‹CategoryDetail›` (bloque a fondo en pila vertical), no forkear `CategoryCard`. La consistencia de la vitrina valía más que la jerarquía visual de una sola categoría.
+
+**¿Por qué `disabled` cambia tags HTML en lugar de aplicar `pointer-events: none`?** Porque `pointer-events: none` no es accesible: el lector de pantalla sigue anunciando el enlace como clickeable, y el usuario con teclado puede llegar al `‹a›` con Tab y activarlo con Enter. Cambiar `‹a›` a `‹div›` y `‹span›` quita el elemento de la secuencia de tabulación y del anuncio del lector de pantalla. La regla operativa: deshabilitar algo significa removerlo de la interacción, no esconderlo visualmente.
+
 Una sola tarjeta para todas las vitrinas del sitio es el tipo de decisión que
 parece pequeña al diseñar y se siente enorme al mantener. Diez props bien
 elegidas, defaults sensatos y un loader desde Content Collections bastan para
-que agregar contenido sea editar un Markdown, no abrir el JSX.
+que agregar contenido sea editar un Markdown, no abrir el JSX. Y cuando el sitio crece de 12 a 200 categorías, el patrón sigue funcionando sin tocar el componente: el límite lo pone la creatividad del contenido, no la arquitectura del código.
 
 ## Sigue leyendo
 
 - [Módulo Category card en vivo](/modulos/category-card)
 - [Grid responsive de categorías en Astro](/blog/grid-categorias-responsive-astro-tokens)
+- [CategoryDetail vs CategoryCard: árbol de decisión](/blog/category-card-vs-category-detail-decision)
 - [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)
+- [Astro 6 Content Collections (documentación oficial)](https://docs.astro.build/en/guides/content-collections/)

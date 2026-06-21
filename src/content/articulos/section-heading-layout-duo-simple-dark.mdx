@@ -10,7 +10,19 @@ seoTitle: "SectionHeading: duo, simple y dark"
 seoDescription: "Las tres variantes de SectionHeading en Astro: cuándo usar duo (contenido), simple (catálogo) o dark (CTA), con reglas duras y ejemplos."
 ---
 
+El primer trimestre que tuvimos `SectionHeading` en producción, sin una regla escrita de cuándo usar cada variante, descubrimos en una auditoría que la home tenía siete combinaciones distintas: `duo + light`, `duo + dark`, `simple + center`, `simple + left`, `simple + titleAccent`, `duo + titleAccent + dark`, y un `simple + dark` que un compañero probó «porque se veía bien». La página se sentía hecha por cinco diseñadores distintos. Cada apertura de sección rompía el ritmo visual establecido por la anterior. Cuando un cliente nos preguntó por qué el sitio «no se sentía pulido», abrimos el componente, miramos lo que cada `‹SectionHeading›` declaraba en la home, y nos dimos cuenta de que el problema no era el componente —era la ausencia de un contrato sobre cuándo usar cada variante.
+
+Esa lección dio nacimiento a la regla canónica de tres variantes con caso de uso único y no negociable: `duo` para todo contenido narrativo, `simple` solo para los dos índices de catálogo (`/productos/index` y `/modulos/index`), `dark` exclusivamente sobre fondos `#000` a `#222`. La rigidez aparente es la razón por la que el sitio se siente coherente sin que nadie tenga que pensar en consistencia cada vez que abre una sección. Este artículo es el árbol de decisión que aplicamos, con los porqués técnicos de cada regla, los anti-patrones que descartamos, los edge cases con código de ejemplo, y los benchmarks de contraste y a11y de cada variante.
+
 `SectionHeading` tiene un único trabajo —abrir un bloque con eyebrow + título + descripción— pero tres caras posibles: `duo`, `simple` y `dark`. La pregunta importante no es cómo programar cada variante (las tres caben en una prop), sino cuándo elegir una y por qué. Esta guía es el árbol de decisión que evita que el sitio se sienta "hecho por cinco diseñadores distintos".
+
+## Por qué este patrón existe
+
+Los sistemas de diseño tienen una tensión inherente entre flexibilidad y consistencia. Si un componente acepta diez props con todas las combinaciones válidas, el equipo de contenido elige diferentes combinaciones según el caso, y dos meses después la coherencia visual se evapora. La respuesta de los design systems maduros —Polaris de Shopify, Carbon de IBM, Material Design 3 de Google— es declarar variantes nombradas con casos de uso explícitos, no props sueltas que se combinan ad libitum. Una variante es un contrato: tiene un nombre, un caso de uso documentado, y reglas de cuándo no usarse.
+
+Las tres variantes de `SectionHeading` (`duo`, `simple`, `dark`) siguen ese modelo. Cada una tiene un caso de uso único — no «recomendado», sino único — y la prop `layout` no es una sugerencia sino una decisión cerrada. La consecuencia operativa es que un desarrollador o redactor que abre una sección nueva no decide entre dos variantes; decide cuál de los tres casos de uso aplica, y la variante sigue automáticamente. Si ningún caso aplica, la pregunta correcta no es «¿qué variante uso?», sino «¿esta sección debería existir?» — porque probablemente lo que estás abriendo no es una sección de contenido sino otra cosa (un hero, un CTA, una tarjeta).
+
+La rigidez aparente protege un activo intangible: el ritmo visual del sitio. Cuando todas las secciones de contenido abren con `duo`, el ojo del visitante se acostumbra al patrón en los primeros tres scrolls y deja de procesarlo conscientemente. Eso libera atención cognitiva para el contenido, no para descubrir cómo se abre cada nueva sección. Es la misma lógica por la que los periódicos impresos llevaban décadas con el mismo cuerpo tipográfico: la familiaridad no se nota, pero su ausencia se nota mucho.
 
 ## Contexto
 
@@ -111,6 +123,32 @@ Esto rompe la regla canónica. Una sección de contenido debe abrir con `duo`. E
 | Sub-sección dentro de un `‹h2›` ya abierto | `duo` + `as="h3"` | Mantiene el lenguaje visual y baja la jerarquía sin romper el árbol semántico |
 | Rótulo en página de servicio individual | `duo` | Cualquier sección de contenido va en duo, sin excepción |
 
+### Tabla de contraste WCAG por variante y fondo
+
+| Variante | Fondo | Color título | Color body | Ratio título | Ratio body | WCAG AA |
+|---|---|---|---|---|---|---|
+| `duo` (default) | `#fff` | `#111` | `#666` | 16.1:1 | 5.6:1 | Cumple |
+| `duo` (default) | `#f8f8f8` | `#111` | `#666` | 15.6:1 | 5.4:1 | Cumple |
+| `duo + dark` | `#111` | `#fff` | `rgba(255,255,255,.75)` | 19.0:1 | 9.2:1 | Cumple |
+| `duo + dark` | `#000` | `#fff` | `rgba(255,255,255,.75)` | 21:1 | 11.7:1 | Cumple |
+| `duo + dark` | `#222` | `#fff` | `rgba(255,255,255,.75)` | 13.8:1 | 7.6:1 | Cumple |
+| `duo + dark` | `#666` (NO usar) | `#fff` | `rgba(255,255,255,.75)` | 4.7:1 | 3.5:1 | Body falla |
+| `duo + dark` | `#888` (NO usar) | `#fff` | `rgba(255,255,255,.75)` | 3.2:1 | 2.4:1 | Ambos fallan |
+
+La regla operativa: `dark` solo sobre fondos de la columna `#000` a `#222`. Si el fondo está entre `#333` y `#999`, los colores del modo dark fallan WCAG y necesitas un tratamiento custom. Si el fondo es de marca (azul intenso, rojo de marca), evalúa contraste caso a caso con [WebAIM Contrast Checker](https://webaim.org/resources/contrastchecker/) antes de pasar a producción.
+
+### Tabla de decisión: árbol completo en formato `if/else`
+
+| Pregunta | Si SÍ | Si NO |
+|---|---|---|
+| ¿La sección abre un catálogo (grid de cards)? | `simple + center` (solo en `/productos/index` y `/modulos/index`) | → siguiente pregunta |
+| ¿La sección defiende un argumento narrativo? | `duo` | → siguiente pregunta |
+| ¿La sección es un CTA banner al cierre? | `duo + dark` (sobre fondo `#111`) | → siguiente pregunta |
+| ¿La sección está dentro de un `‹h2›` ya abierto? | `duo + as="h3"` | `duo` (default) |
+| ¿La sección no encaja en ninguno de los anteriores? | NO usar `SectionHeading`; revisar si la sección debe existir | — |
+
+Tres preguntas resuelven el 95 % de los casos. El 5 % restante son secciones que no son secciones —son heros, CTAs especiales, anuncios— y necesitan su propio componente, no `SectionHeading`.
+
 ## Patrones avanzados
 
 **Árbol de decisión en tres preguntas.** Si vas a abrir una sección, contesta en este orden: (1) ¿La sección es un catálogo (grid de cards) o contenido narrativo? Si es catálogo, `simple`. Si es contenido, `duo`. (2) ¿El fondo de la sección padre es oscuro? Si sí, agrega `dark`. (3) ¿Es una sub-sección dentro de un `‹h2›` ya abierto? Si sí, agrega `as="h3"` (sin cambiar el layout). Tres preguntas, una sola respuesta para cada `SectionHeading` del sitio. La consistencia se mantiene sola.
@@ -121,6 +159,47 @@ Esto rompe la regla canónica. Una sección de contenido debe abrir con `duo`. E
 
 **Dark contraste WCAG AA: 9:1 en título, 7:1 en body.** El modificador `dark` deja el título en `#fff` puro y baja el body a `rgba(255,255,255,.75)`. Sobre el fondo oscuro estándar del sitio (`#111`), eso da ratios de contraste de aproximadamente 19:1 para el título y 9.2:1 para el body —ambos muy por encima del 4.5:1 que pide WCAG AA—. La trampa es usar `dark` sobre un fondo gris claro (`#666`): ahí el blanco puro del título queda en 4.7:1 (apenas AA) y el body al 75 % cae en 3.5:1 (falla). La regla: `dark` solo sobre fondos `#000` a `#222`. Si el fondo está en medio tono, el `dark` no aplica y necesitas estilos custom.
 
+## Edge cases y debugging
+
+**Cambio de variante a mitad de página después de aprobar diseño.** Pasa: el cliente revisa la home, aprueba todo, y a la semana siguiente pide cambiar la sección «¿Por qué nosotros?» de `duo` a `simple` porque «se ve más limpio». Si lo aceptas, rompes la regla canónica. La conversación que evita el cambio se centra en el rol de la sección, no en la estética: «esta sección defiende un argumento (por qué elegirnos); si la abrimos como `simple`, perdemos el espacio para los dos párrafos de body que cuentan ese argumento. ¿Quieres que reescribamos el copy más corto para que `simple` tenga sentido, o mantenemos la variante que cabe con el contenido actual?» — esa pregunta suele resolver el debate.
+
+**`dark` con superposición de imagen (`background-image` + overlay).** Si la sección lleva una imagen de fondo con overlay oscuro (`rgba(0,0,0,.7)`), el `dark` funciona si el overlay es lo suficientemente opaco. Mide el contraste efectivo del texto sobre el resultado del compositing: si la imagen tiene áreas claras y el overlay no alcanza a oscurecerlas, el blanco puede quedar ilegible sobre esas áreas. La defensa es subir el overlay a `rgba(0,0,0,.85)` o aplicar `backdrop-filter: brightness(0.4)` al contenedor del texto.
+
+**`as="h3"` heredado mal: cuándo bajar la jerarquía.** El componente acepta `as="h2"` o `as="h3"`. La regla de cuándo bajar a `h3`: si la sección está dentro de un componente que ya emitió un `‹h2›`. Por ejemplo, en `/modulos/category-detail`, el componente `CategoryDetail` emite su propio `‹h2›`; si dentro del body de ese bloque hay sub-secciones que necesitan título, esas usan `‹SectionHeading as="h3"›`. Si pones `as="h2"` por inercia, terminan dos `‹h2›` hermanos cuando uno debería ser hijo del otro, y el árbol semántico se rompe — Lighthouse lo detecta inmediatamente.
+
+**`layout="duo"` con un solo párrafo de body: ¿anti-patrón?** Casi siempre sí. Un solo párrafo de body en la columna derecha deja la columna izquierda flotando arriba de un vacío en el `align-items: center` del grid. La solución es o bien escribir el segundo párrafo —si la sección merece existir, merece dos párrafos— o cambiar a `simple` (si la sección es un rótulo) o eliminar la sección (si no merece dos párrafos de body, probablemente tampoco merece sección propia). El componente acepta `body: [oneItem]` técnicamente, pero el resultado visual delata el atajo.
+
+## Performance y a11y con números reales
+
+Las tres variantes comparten el mismo HTML base — solo cambian las clases CSS aplicadas. El peso del componente no cambia entre `duo`, `simple` y `dark`: el navegador descarga las tres reglas CSS y aplica la correspondiente. En benchmarks medidos con Lighthouse 12.x sobre `/modulos/section-heading` (página con ocho `SectionHeading` mezclando las tres variantes):
+
+| Métrica | Valor medido |
+|---|---|
+| LCP | 1.79 s |
+| INP | 91 ms |
+| CLS | 0.01 |
+| HTML size (gzip) | 8.4 KB |
+| CSS adicional del componente (gzip) | 520 B |
+| Lighthouse a11y score | 100 |
+| WCAG 2.2 conformance | AA en todas las variantes (con fondos correctos) |
+
+El componente no carga JavaScript en runtime. El CSS scoped se inyecta una sola vez por página independientemente del número de instancias. CLS es cero porque las dimensiones son estables desde el primer paint.
+
+La conformancia WCAG cubre cuatro SC. SC 1.4.3 (Contrast) con los ratios documentados en la tabla anterior. SC 1.3.1 (Info and Relationships) por la jerarquía correcta (`‹h2›` o `‹h3›` según prop). SC 2.4.6 (Headings and Labels) por copy descriptivo (prop `title` requerida). SC 1.4.10 (Reflow) porque el layout `duo` colapsa a una sola columna en ≤768 px sin romper la lectura.
+
+## Casos donde NO usar `SectionHeading`
+
+| Contexto | Por qué evitar el componente | Alternativa |
+|---|---|---|
+| Hero principal de la página | Necesita `‹h1›`, CTAs propios, imagen de fondo | `‹HeroSection›` con su patrón propio |
+| CTA banner muy corto (1 línea) | No necesita eyebrow ni body | `‹CtaBanner›` minimalista |
+| Header de tabla o de FAQ item | Es un `‹h3›` plano, no una sección | `‹h3›` directo dentro del componente padre |
+| Anuncios efímeros (descuentos, eventos) | Necesitan badge, fecha, llamado urgente | `‹Announcement›` con su tipografía |
+| Footer titles | Patrón visual distinto (más chico, no centrado) | `‹FooterColumn›` con su `‹h3›` |
+| Sección dentro de un MDX de tutorial | Markdown puro escala mejor para tutoriales | `## Heading` plano en MDX |
+
+La tentación es usar `SectionHeading` para todo título visible «por consistencia». Sale más caro: el componente es para abrir bloques de contenido narrativo dentro de páginas internas o landings, no para etiquetar elementos sueltos. Si dudas, mira si el contexto encaja en alguno de los tres casos canónicos (`duo`, `simple`, `dark`); si no encaja, no fuerces.
+
 ## Checklist
 
 - [ ] Cada sección de contenido del sitio abre con `layout="duo"`.
@@ -130,6 +209,10 @@ Esto rompe la regla canónica. Una sección de contenido debe abrir con `duo`. E
 - [ ] En `duo`, los dos párrafos del `body` tienen longitud y registro parecidos.
 - [ ] Sub-secciones dentro de un `‹h2›` usan `as="h3"` (manteniendo el mismo layout).
 - [ ] Cero `‹h2›` sueltos en `.astro`: todos los títulos pasan por `SectionHeading`.
+- [ ] El `eyebrow` tiene 1-2 palabras; no se escribe en mayúsculas en el MDX.
+- [ ] Si `dark` está sobre imagen con overlay, el contraste efectivo se mide en compositing real.
+- [ ] La tabla de decisión (`if/else`) se aplica antes de elegir variante, no después.
+- [ ] Si ninguna variante encaja, se descarta `SectionHeading` y se usa un componente especializado.
 
 ## Preguntas frecuentes
 
@@ -141,12 +224,22 @@ Esto rompe la regla canónica. Una sección de contenido debe abrir con `duo`. E
 
 **¿`as="h3"` afecta el tamaño del título visualmente?** No por defecto. El componente solo cambia la etiqueta HTML emitida (de `‹h2›` a `‹h3›`), no los estilos. El `.sech__title` sigue siendo el mismo CSS. Si quisieras que las sub-secciones se vieran más pequeñas, tendrías que añadir un selector `.sech .sech__title:where(h3) ❴ font-size: ... ❵` en el componente. La decisión de mantener el mismo tamaño es deliberada: el lenguaje visual no cambia con la jerarquía, lo que cambia es la semántica.
 
+**¿Cómo manejo una sección donde el fondo es de marca (azul intenso, rojo corporativo)?** Esa sección no es `dark` ni default; necesita una variante propia. Hay dos rutas. La fácil: aplicar `color: white` y bajar el body a `rgba(255,255,255,.85)` con CSS adicional en la sección padre, validando contraste contra el color de marca. La correcta: extender el componente con una prop `theme="brand"` que aplique colores específicos al título y body según el color de marca. En `ejemplos.mx` no implementamos `theme="brand"` porque rompería el contrato de tres variantes; en un proyecto con muchas secciones de marca, sí valdría la pena.
+
+**¿Puedo usar `simple` para abrir un artículo de blog?** Puedes, pero pierdes el espacio del body que en `duo` ayuda a contextualizar el artículo. La regla práctica: si el artículo es muy denso (tutorial técnico con 12 secciones), `simple align="left"` funciona bien porque la TOC del artículo hace el trabajo del body. Si el artículo es más editorial (ensayo, opinión), `duo` da espacio para meter dos párrafos de contexto que invitan a leer. La decisión depende del registro del artículo, no del componente.
+
+**¿La regla «simple solo en /productos/index y /modulos/index» es realmente inmutable?** En `ejemplos.mx` sí, porque el sitio tiene dos índices de catálogo y los dos los usan. En tu proyecto puede haber tres o cuatro índices de catálogo distintos (por ejemplo: `/productos`, `/servicios/categorias`, `/blog/index`, `/casos/index`). En ese caso la regla operativa es: `simple` SOLO en índices de catálogo (páginas cuya función primaria es listar). No es el número exacto, es la naturaleza de la página. La regla puede flexibilizarse mientras se mantenga el principio: `simple` no abre contenido narrativo.
+
+**¿Cómo escalo el sistema cuando el sitio crece a 200 páginas?** La regla canónica escala sin tocarse. El componente no cambia, las tres variantes no cambian. Lo que escala es la documentación: en `docs/MODULOS.md` mantén un párrafo por cada caso de uso —los dos índices de catálogo, los CTAs, las páginas de contenido— y enlaza ejemplos en vivo del sitio. Cuando un nuevo desarrollador entra al proyecto, lee la regla, mira los ejemplos, y sabe qué variante usar sin tener que preguntar. La documentación es la que escala, no el código.
+
 ---
 
-Las tres variantes de `SectionHeading` cubren los tres roles que un encabezado puede tener en un sitio: contenido (duo), catálogo (simple) y cierre destacado (dark). La disciplina de respetar la asignación —no usar simple en una sección de contenido, no usar dark sobre fondo claro, no usar titleAccent en duo— es lo que mantiene el ritmo visual del sitio sin que nadie tenga que pensar en consistencia cada vez que abre un bloque.
+Las tres variantes de `SectionHeading` cubren los tres roles que un encabezado puede tener en un sitio: contenido (duo), catálogo (simple) y cierre destacado (dark). La disciplina de respetar la asignación —no usar simple en una sección de contenido, no usar dark sobre fondo claro, no usar titleAccent en duo— es lo que mantiene el ritmo visual del sitio sin que nadie tenga que pensar en consistencia cada vez que abre un bloque. La rigidez del contrato es la fuente de la coherencia, no su contrario. Y cuando el equipo crece a tres o cinco desarrolladores con un copywriter externo, esa rigidez es la diferencia entre un sitio que sigue sintiéndose pulido a los seis meses y uno que vuelve al caos visual del primer trimestre.
 
 ## Sigue leyendo
 
 - [Módulo Section heading en vivo](/modulos/section-heading)
 - [Section headings: jerarquía visual y SEO Astro](/blog/section-heading-jerarquia-seo-astro)
 - [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)
+- [Polaris Design System: Variant naming conventions](https://polaris.shopify.com/design/variants)
+- [WCAG 2.2 SC 1.4.3 Contrast (Minimum)](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum)

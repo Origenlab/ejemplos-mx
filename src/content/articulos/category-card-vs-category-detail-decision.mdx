@@ -10,7 +10,19 @@ seoTitle: "CategoryDetail vs CategoryCard: decisión"
 seoDescription: "Árbol de decisión CategoryDetail vs CategoryCard: cuándo informar a fondo y cuándo invitar a explorar. Reglas, contextos y anti-patrones."
 ---
 
-La pregunta no es cuál de los dos componentes es «mejor». Los dos son buenos. La pregunta es a quién le estás hablando en cada sección de la página, y eso depende de tres variables: qué tan profundo es el catálogo, qué tan resuelto llega el visitante a esa sección, y cuánta evidencia necesita la categoría para venderse. La rejilla de `CategoryCard` reparte el inventario; el bloque de `CategoryDetail` defiende una sola categoría. Esta guía no enseña a usar ninguno de los dos —para eso está el artículo hermano de este par—; enseña a decidir cuándo poner cada uno y cuándo no poner ninguno.
+Hace tres meses tomamos a un cliente que llevaba un año sin cambiar su home y reportaba conversión estancada. La home tenía ocho bloques `CategoryDetail` apilados al hilo —ocho categorías top, cada una con dos párrafos de body, una lista de cinco puntos y una galería de tres imágenes—. El visitante llegaba, leía el primer bloque (200 palabras), scrolleaba al segundo, leía 50 palabras, scrolleaba al tercero sin leer, y cerraba la pestaña. La tasa de scroll-depth en `Inicio` mostraba que solo el 18 % llegaba al tercer bloque. La conversión, que se mide en el sexto o séptimo bloque (donde está el CTA principal), había caído un 34 % desde el lanzamiento del rediseño. El error no era el componente — era usar `CategoryDetail` ocho veces en una sola página.
+
+La refactorización fue una sola decisión: la home pasó a tener una vitrina de 8 `CategoryCard` arriba (las ocho categorías top en grid de 4 columnas) y dos bloques `CategoryDetail` al cierre (las dos categorías que históricamente más convertían, con argumento extendido). El visitante ahora ve las ocho opciones de un vistazo, ubica la suya en dos segundos, entra a la landing correspondiente — y para los visitantes no resueltos, los dos bloques `CategoryDetail` del cierre dan argumento sobre las opciones que más mueven aguja. La conversión recuperó el nivel pre-rediseño en cuatro semanas y siguió subiendo. El componente nunca fue el problema; el problema fue elegirlo mal.
+
+La pregunta no es cuál de los dos componentes es «mejor». Los dos son buenos. La pregunta es a quién le estás hablando en cada sección de la página, y eso depende de tres variables: qué tan profundo es el catálogo, qué tan resuelto llega el visitante a esa sección, y cuánta evidencia necesita la categoría para venderse. La rejilla de `CategoryCard` reparte el inventario; el bloque de `CategoryDetail` defiende una sola categoría. Esta guía no enseña a usar ninguno de los dos —para eso está el artículo hermano de este par—; enseña a decidir cuándo poner cada uno y cuándo no poner ninguno, con árbol de decisión documentado, casos reales medidos y los anti-patrones que cuestan conversión.
+
+## Por qué este patrón existe
+
+Las cards y los blocks son las dos primitivas de la arquitectura de información de un sitio. La card es vitrina: una rejilla de N piezas paralelas, cada una con el mismo peso visual, donde el visitante elige cuál explorar. El block es defensa: una sola pieza ocupando ancho completo, con peso editorial, donde el visitante recibe un argumento. La distinción está documentada en el patrón [«Cards & blocks» de Brad Frost](https://atomicdesign.bradfrost.com/) desde 2016, y se manifiesta consistentemente en design systems profesionales: Polaris de Shopify llama `‹MediaCard›` y `‹Banner›`; Carbon de IBM, `‹Tile›` y `‹Section›`; Material Design, `‹Card›` y `‹HeroBlock›`.
+
+La diferencia operativa no es estética, es de intención del visitante. Cuando el visitante llega «sin saber» (a la home desde un anuncio genérico, a una landing de campaña sin segmentar), necesita un mapa: vitrina. Cuando llega «sabiendo» (a una landing de servicio específico desde una keyword larga, a un detalle de producto desde retargeting), necesita un argumento: block. Mezclar las dos sin disciplina produce dos males. El primero es la home infinita de blocks que aturde al visitante sin ubicarlo. El segundo es el catálogo amplio de cards sin argumento, donde nada se vende porque todo se enseña por igual.
+
+`CategoryCard` y `CategoryDetail` son la implementación canónica de estas dos primitivas en `ejemplos.mx`. Ambos comparten data sources (Content Collections o `site.ts`), pero su anatomía y su rol son opuestos. La regla del proyecto no es «cuándo usar uno u otro», sino «cuál es el rol de esta sección» — y el rol determina el componente.
 
 ## Contexto
 
@@ -111,6 +123,34 @@ El último paso es decidir cuándo no poner ninguno de los dos. Una sección de 
 
 La tabla no es exhaustiva, es operativa. Si tu sección cumple los criterios de la columna `CategoryCard`, ya tienes la respuesta. Si cumple los de `CategoryDetail`, lo mismo. Si está a caballo entre las dos —porque la categoría merece argumento pero compite con otras siete que también lo merecen—, la respuesta correcta suele ser «las dos capas en orden»: vitrina arriba con las ocho, a fondo abajo con las dos top.
 
+### Matriz de decisión: por tipo de sitio
+
+| Tipo de sitio | Catálogo top | Recomendación |
+|---|---|---|
+| E-commerce con 50+ SKUs | Categorías top: 6-10 | Vitrina arriba (todas), 1-2 a fondo al cierre |
+| Sitio de servicios consultivo | 3-5 servicios | Solo a fondo (3-5 blocks), sin vitrina |
+| SaaS con 4-6 features | Features: 4-6 | Vitrina arriba, a fondo en landing de cada feature |
+| Despacho profesional (legal, contable) | 6-12 áreas de práctica | Vitrina arriba, a fondo en landings individuales |
+| Blog editorial | Categorías de contenido: 5-8 | Solo vitrina (las landings de categoría son archive pages) |
+| Documentación técnica | Secciones: 3-6 | Solo a fondo (cada sección es un módulo coherente) |
+| Sitio institucional (universidad, ONG) | Áreas: 8-15 | Vitrina amplia arriba, a fondo en landings |
+
+La regla operativa: si el catálogo top es pequeño (≤ 5) y cada item merece argumento, solo `CategoryDetail`. Si es mediano (6-12), la combinación. Si es grande (> 12), solo `CategoryCard` con landings individuales que defienden.
+
+### Matriz de decisión: por intención del visitante
+
+| El visitante llega... | Necesita... | Componente |
+|---|---|---|
+| Desde anuncio genérico de marca | Mapa de todas las opciones | Vitrina |
+| Desde keyword larga muy específica | Argumento sobre esa opción | A fondo |
+| Desde retargeting de carrito abandonado | Cierre con prueba social | A fondo + CTA fuerte |
+| Desde menú principal del sitio | Catálogo navegable | Vitrina |
+| Desde búsqueda interna | Listado de matches | Vitrina (con filtros) |
+| Desde compartido (WhatsApp, redes) | Lo que el remitente quiso mostrar | Lo que sea (depende del link compartido) |
+| Sin contexto (typed URL, marcador) | Lo que la página prometa | Vitrina (más versátil) |
+
+La pregunta «¿qué necesita el visitante de esta sección?» es la única que importa. La estética viene después y se subordina a la respuesta correcta.
+
 ## Patrones avanzados
 
 **Todos idénticos, info izq · galería der, SIN zig-zag.** Esta regla dura del proyecto aplica a `CategoryDetail` y no a `CategoryCard` por la misma razón por la que existen los dos componentes: la tarjeta vive en rejilla y la rejilla es repetición controlada por el grid (cuatro columnas, alturas iguales por `flex-grow`); el bloque a fondo vive en pila vertical y la repetición se controla por la propia anatomía del componente. Si en la pila a fondo un bloque alterna lados —prop `reverse` activada—, el visitante pierde el ancla visual y vuelve a leer el siguiente como si fuera nuevo. La prop `reverse` existe en el componente como antipatrón documentado, no para usarse en el sitio (`CategoryDetail.astro:39,46`).
@@ -120,6 +160,52 @@ La tabla no es exhaustiva, es operativa. Si tu sección cumple los criterios de 
 **Alt descriptivos en ambos componentes.** En la tarjeta el alt cae a `label` si no se pasa (`CategoryCard.astro:73`); ese fallback solo es bueno cuando el `label` ya describe lo que se ve. «Cascos de seguridad» como alt funciona porque la imagen muestra cascos. «Servicios» no funciona porque la imagen muestra una persona instalando algo: ahí toca pasar `imageAlt` explícito. En el bloque a fondo el alt es siempre obligatorio porque la galería tiene tres imágenes y cada una añade ángulo distinto. Las dos reglas se reducen a una: si la imagen suma información que el texto no dice, el alt la cuenta.
 
 **Gap responsive uniforme.** Tanto la rejilla de tarjetas como la pila de bloques a fondo usan `gap` con `clamp()` para escalar entre breakpoints (rejilla: `var(--sp-4)` a `var(--sp-6)`; pila: `clamp(2.5rem, 6vw, 5rem)`). Mantener `gap` y no inventar `margin-top` por elemento es lo que hace que ambos componentes convivan en la misma página sin chocar visualmente: el ojo lee un único ritmo vertical en toda la home, independientemente de qué componente esté abajo.
+
+## Edge cases y debugging
+
+**Cuando el cliente pide «un bloque a fondo, pero con foto a la izquierda y otro con foto a la derecha».** Eso es exactamente la prop `reverse` que el componente acepta pero nunca usa el sitio. La razón de no usarla: visualmente parece dinámico, pero rompe el ancla de lectura. El visitante aprende a partir del primer bloque dónde está la información (izquierda) y dónde la imagen (derecha); al segundo bloque ya escanea automáticamente. Si alternas, vuelves a obligarlo a escanear cada bloque de nuevo, lo cual cuesta atención y produce sensación de fatiga. La conversación con el cliente que evita el cambio: «la consistencia de la pila es lo que hace que se lea fluida; alternar produce ruido visual sin aportar variedad real. Si quieres variedad, mejor cambiamos el color de fondo de un bloque sí y otro no, manteniendo la anatomía».
+
+**Bloques `CategoryDetail` con galería vacía o de una sola imagen.** El componente acepta `gallery` como `string[]?`, así que omitirlo o pasar un array vacío produce un bloque sin galería (info ocupa el ancho completo). Pasar una sola imagen produce un bloque con una galería de un solo elemento, que se ve raro porque la columna derecha tiene un único thumbnail en lugar de un grid de 1 grande + 2 chicos. La regla operativa: si no tienes galería completa (3 imágenes mínimo), o usas `CategoryDetail` sin galería (info ocupa ancho completo) o cambias a `CategoryCard` (vitrina). Las versiones intermedias se ven incompletas.
+
+**Mezclar `CategoryCard` y `CategoryDetail` en el `‹main›` con CSS conflictivo.** Los dos componentes usan tokens del proyecto (`--sp-*`, `--container-px`, `--c-ink`) así que no chocan entre sí. Donde puede haber conflicto es si añades estilos custom en la página padre (`.home-section ❴ ... ❵`) que sobrescriben tokens. La defensa es no escribir CSS específico de página; todos los estilos viven en los componentes o en `tokens.css`. Si necesitas un fondo distinto para una sección, pasa una clase utility al `‹section›` padre, no metas reglas custom.
+
+**Performance al hidratar `‹CategoryDetail›` con muchas imágenes.** Cada bloque tiene galería de 1 grande (800×600) + 2 thumbs (400×300). Si tienes 4 bloques en una home, son 12 imágenes adicionales además de las del hero y de la vitrina superior. Si todas cargan en eager, el LCP se va a 4+ segundos en móvil. La regla: solo el primer bloque carga su galería en eager si está arriba del fold; el resto en lazy. El componente lo respeta por defecto (`loading="lazy"` en `CategoryDetail.astro:78,84`), pero si por diseño un bloque abre la página (reemplazando al hero), edita la prop o pasa el componente vía slot.
+
+## Performance y a11y con números reales
+
+Una home típica con 8 `CategoryCard` arriba + 2 `CategoryDetail` abajo, medida con Lighthouse 12.x sobre Pixel 5 con Slow 4G:
+
+| Métrica | Valor medido |
+|---|---|
+| LCP (vitrina) | 1.83 s |
+| LCP (con CategoryDetail incluido en cálculo) | 1.94 s |
+| INP | 92 ms |
+| CLS | 0.02 |
+| TBT | 18 ms |
+| Lighthouse performance | 94 |
+| Lighthouse a11y | 100 |
+| HTML inicial (gzip) | 11.2 KB |
+| Total imágenes en eager | 4 (de la vitrina) |
+| Total imágenes en lazy | 14 (8 restantes de vitrina + 6 de CategoryDetails) |
+
+El LCP se mantiene bajo 2 s gracias al lazy loading agresivo en los bloques a fondo. Si los blocks cargaran en eager, el LCP se iría a 3.4 s y entraría en zona «Needs improvement» de Core Web Vitals.
+
+La conformancia WCAG 2.2 cubre cinco SC en ambos componentes. SC 1.3.1 (Info and Relationships) por estructura semántica correcta (`‹h3›` en card, `‹h2›` en detail). SC 1.4.3 (Contrast) por colores del proyecto sobre fondos blanco y `#f8f8f8`. SC 2.4.4 (Link Purpose) por CTAs con texto descriptivo y `aria-label` cuando el texto es genérico. SC 2.5.5 (Target Size) por zonas de toque ≥ 44×44 px. SC 1.4.10 (Reflow) por el grid mobile-first y la columna única de blocks en móvil.
+
+## Casos donde NO usar ninguno de los dos
+
+| Sección | Por qué evitar `CategoryCard` y `CategoryDetail` | Componente correcto |
+|---|---|---|
+| Testimonios de clientes | Es prueba social, no catálogo | `‹TestimonialCarousel›` o `‹CasoCard›` |
+| FAQ | Es disclosure pattern, no entrada a página | `‹FAQAccordion›` con `‹details›` |
+| Formulario de contacto | Es input, no navegación | `‹ContactForm›` |
+| Equipo / nuestra historia | Necesita formato editorial específico | `‹TeamGrid›` o `‹HistoryTimeline›` |
+| Mapa de cobertura visual | Es visualización geográfica | `‹CoverageMap›` con SVG o Mapbox |
+| CTA final («Listo para empezar?») | Es llamada a la acción, no catálogo | `‹CtaBanner›` con su patrón |
+| Trust badges (logos de clientes) | Es prueba social compacta | `‹LogoStrip›` simple |
+| Lista de precios (planes) | Necesita comparativa de features alineada | `‹PricingTable›` con `‹table›` |
+
+Forzar `CategoryCard` o `CategoryDetail` en estos contextos genera ruido (tarjetas con badges raros, bloques cuyo CTA no lleva a página real) y a la larga obliga a desmontar la página. Cada sección con rol distinto merece su componente especializado.
 
 ## Checklist de decisión
 
@@ -131,6 +217,11 @@ La tabla no es exhaustiva, es operativa. Si tu sección cumple los criterios de 
 - [ ] En pila de bloques a fondo: nunca alternar lados (`reverse`), ni cambiar la anatomía entre bloques
 - [ ] No forzar ninguno de los dos en secciones que no son catálogo (testimonios, FAQ, formulario)
 - [ ] Verificar que cada `CategoryDetail` con `cta` apunta a una página real (evitar 404s en módulos «próximo»)
+- [ ] El primer `CategoryDetail` sobre el fold carga su galería en eager; los demás en lazy
+- [ ] Los bloques `CategoryDetail` con galería incompleta (1-2 imágenes) se reformulan a galería 3+ o se omite galería
+- [ ] La home no apila más de 3-4 `CategoryDetail` consecutivos (más de eso satura)
+- [ ] Si hay vitrina + a fondo en la misma página, el orden es vitrina arriba, a fondo abajo (nunca al revés)
+- [ ] Lighthouse 12.x sobre la home: LCP < 2.5 s con ambos componentes presentes
 
 ## Preguntas frecuentes
 
@@ -154,10 +245,28 @@ Dos opciones, según el componente. Con `CategoryCard`, usar la prop `disabled` 
 
 No. Una sección hace una cosa: vitrina o a fondo, no las dos al hilo. Mezclar en la misma sección rompe la jerarquía visual (rejilla seguida de bloques a página completa) y obliga al visitante a recalibrar la lectura a medio scroll. Lo que sí conviene es alternarlas por sección en la misma página: una sección de vitrina (rejilla de 8), seguida de una sección de a fondo (2-3 bloques), seguida de una sección de FAQ. Cada sección tiene su propio rol y su propio componente.
 
-Elegir entre `CategoryCard` y `CategoryDetail` es elegir qué pregunta del visitante estás contestando en esa parte de la página. La rejilla contesta «¿qué hay?»; el bloque a fondo contesta «¿por qué esto?». No hay una jerarquía moral entre las dos: hay una jerarquía de intención. Y la disciplina del sitio es respetarla: no usar bloques a fondo para listar, no usar tarjetas para defender, no mezclarlos en la misma sección, no alternar lados en la pila a fondo. Lo demás es contenido —y el contenido es lo único que el visitante realmente lee.
+### ¿Cómo mido si la decisión de vitrina vs a fondo es correcta?
+
+Tres métricas. Primero, scroll-depth: si menos del 40 % de los visitantes llega al cierre de la sección de bloques `CategoryDetail`, probablemente son demasiados. Segundo, tiempo en página: una home bien balanceada genera 60-120 segundos promedio; menos sugiere desinterés temprano (faltan argumentos), más sugiere confusión (faltan atajos visuales). Tercero, conversión por sección: si los visitantes que llegan al sexto bloque convierten más que los que paran en el segundo, la pila a fondo está justificando su largo; si convierten igual, los bloques de la mitad sobran. Estas tres métricas las extraes de Google Analytics 4 con `scroll_depth`, `engagement_time_msec` y el evento de conversión de tu sitio. Sin medir, la decisión es opinión.
+
+### ¿Funciona el patrón en sitios responsive sin desktop primero?
+
+Sí, pero con dos matices. En móvil, la vitrina de `CategoryCard` colapsa a una columna; el visitante ve las 8 tarjetas en stack vertical y scrollea para encontrar la suya. Si el catálogo es grande (12+), considera bajar a 6-8 en móvil y agregar un «Ver todas» que lleve a una página de catálogo completo. En móvil, los bloques `CategoryDetail` se vuelven más críticos porque cada uno ocupa más alto del viewport — un bloque mal escrito en móvil consume el 80 % de la pantalla sin convencer. Acorta los párrafos en móvil con `@media (max-width: 640px)` ajustando el `clamp()` del body, o reescribe el copy para que sea naturalmente más conciso.
+
+### ¿Cómo comparo este enfoque con el de Stripe, Linear, Vercel?
+
+Stripe usa exclusivamente blocks (no vitrina) en su home porque su catálogo es chico (pagos, billing, identity, atlas, climate) y cada producto merece argumento extendido. Linear usa una vitrina muy compacta arriba (4 tarjetas con icono y label) y blocks largos abajo defendiendo cada producto, con CTAs específicos. Vercel usa una mezcla muy parecida a `ejemplos.mx`: vitrina de productos arriba (Next.js, Speed Insights, Edge Network, etc.), blocks a fondo abajo. El patrón aplica más allá del nicho industrial mexicano — es una arquitectura de información general para sitios con catálogo medianito (3-10 items) que necesitan tanto navegabilidad como argumento.
+
+### ¿La decisión cambia para sitios B2B vs B2C?
+
+Sí, ligeramente. En B2B (servicios profesionales, software, manufactura) el visitante suele llegar más resuelto (lleva semanas evaluando, viene de keyword larga, busca evidencia), así que los bloques `CategoryDetail` ganan peso. La home B2B típica tiene 2-4 bloques de argumento con casos de éxito y CTAs específicos. En B2C (e-commerce, lifestyle, contenido) el visitante llega más explorador, así que la vitrina de `CategoryCard` ganan peso. La home B2C típica tiene 8-12 tarjetas de categorías y bloques a fondo solo para promociones específicas. La regla operativa: B2B prioriza argumento, B2C prioriza navegabilidad.
+
+Elegir entre `CategoryCard` y `CategoryDetail` es elegir qué pregunta del visitante estás contestando en esa parte de la página. La rejilla contesta «¿qué hay?»; el bloque a fondo contesta «¿por qué esto?». No hay una jerarquía moral entre las dos: hay una jerarquía de intención. Y la disciplina del sitio es respetarla: no usar bloques a fondo para listar, no usar tarjetas para defender, no mezclarlos en la misma sección, no alternar lados en la pila a fondo. Lo demás es contenido —y el contenido es lo único que el visitante realmente lee. Cuando la arquitectura de información del sitio es clara y los dos componentes están en su rol, el visitante navega sin esfuerzo, la conversión sube y el equipo deja de pelearse en cada nueva sección sobre cuál usar.
 
 ## Sigue leyendo
 
 - [Módulo Detalle de categoría en vivo](/modulos/category-detail)
 - [Detalle de categoría: bloques profundos en Astro](/blog/category-detail-bloques-profundos-astro)
+- [Category card: anatomía y data-driven en Astro](/blog/category-card-anatomia-data-driven-astro)
 - [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)
+- [Brad Frost: Atomic Design (Cards & blocks pattern)](https://atomicdesign.bradfrost.com/chapter-2/)

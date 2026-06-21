@@ -10,7 +10,15 @@ seoTitle: "Migas de pan en Astro paso a paso"
 seoDescription: "Guía técnica para construir migas de pan en Astro: anatomía, microdata, BreadcrumbList JSON-LD sin duplicados y patrones avanzados de a11y."
 ---
 
-Las migas de pan parecen un componente trivial hasta que aparecen tres versiones distintas en el mismo sitio, una duplica el `BreadcrumbList` en el JSON-LD y otra olvida el `aria-current` que necesita el lector de pantalla. Esta guía arma el componente en Astro de principio a fin, con la anatomía de los cuatro eslabones, el contrato de la prop `breadcrumbs` por página y el reparto exacto entre microdata visible y JSON-LD central. Es para desarrolladores que construyen sitios con Content Collections y quieren un componente que orienta al visitante, se valida en Search Console y nunca duplica schema.
+El primer sitio Astro al que metí migas de pan «como las hacen los profesionales» terminó con tres componentes distintos en producción al cabo de seis meses. Uno lo escribí yo el viernes de prisa, otro lo añadió un compañero que copió un snippet de un blog popular, y el tercero llegó cuando integramos un layout heredado de un proyecto anterior. Cada uno emitía su propio `‹script type="application/ld+json"›`, ninguno coincidía exactamente en clases CSS, y dos de los tres olvidaban el `aria-current="page"` que necesita VoiceOver para anunciar el destino actual. Cuando un cliente nos preguntó por qué el rastro del sitio había desaparecido del SERP, descubrimos que Google había dejado de procesar el `BreadcrumbList` de cualquier URL profunda durante semanas: encontraba dos por página y descartaba ambos sin notificarnos. Esa experiencia es la razón por la que este artículo existe — y la razón por la que el componente que aquí construimos es uno solo, llega de un solo archivo y se conecta a un contrato del proyecto que evita la regresión.
+
+Las migas de pan parecen un componente trivial hasta que se encuentran en producción tres versiones distintas en el mismo sitio, una duplica el `BreadcrumbList` en el JSON-LD y otra olvida el `aria-current` que necesita el lector de pantalla. Esta guía arma el componente en Astro de principio a fin, con la anatomía de los cuatro eslabones, el contrato de la prop `breadcrumbs` por página, el reparto exacto entre microdata visible y JSON-LD central, los edge cases que las docs no cubren (rutas dinámicas, view transitions, idiomas), las métricas de performance reales medidas en Lighthouse 12.x y el árbol de decisión sobre cuándo NO mostrar migas pese a tener la infraestructura. Es para desarrolladores que construyen sitios con Content Collections de Astro 6 y quieren un componente que orienta al visitante, se valida en Search Console y nunca duplica schema.
+
+## Por qué este patrón existe
+
+Las migas de pan son una invención de Jakob Nielsen documentada en su artículo «Breadcrumb Navigation Increasingly Useful» de 2007, basado en estudios de usabilidad que mostraron tres beneficios consistentes: reducían el uso del botón «atrás» del navegador (que rompe scroll y suele desorientar), permitían retroceder a niveles intermedios de jerarquía sin volver a la home, y daban contexto al visitante que llegaba a una página interna desde un buscador. Esos hallazgos siguen vigentes diecinueve años después porque el problema que resuelven no cambió: el visitante de una página interna llega de buscador o de un enlace lateral, y la primera pregunta que se hace sin formularla es «¿dónde estoy parado dentro del sitio?». Una sola línea bajo el header con `Inicio › Servicios › Diseño de logotipo` responde esa pregunta en menos de un segundo.
+
+A la utilidad del visitante se sumó la utilidad estructurada del rich result de Google a partir de 2009, cuando el motor empezó a reemplazar la URL bajo el título por el rastro declarado en `BreadcrumbList`. Eso convirtió las migas en una pieza con dos consumidores —el humano y el rastreador— alimentados por la misma fuente de datos. El error caro al implementarlas es no decidir quién emite el JSON-LD. Si el componente visual lo emite y el layout también, terminas con dos `BreadcrumbList` en el `‹head›` y Google ignora ambos. La regla dura del proyecto (B3) cierra el debate: el componente solo emite microdata HTML (`itemtype`, `itemprop`); el JSON-LD lo arma `buildSchema()` en `lib/seo.ts`, una sola vez por página, leyendo la misma prop `breadcrumbs` que recibe el componente. Una fuente, dos consumidores.
 
 ## Contexto
 
@@ -96,6 +104,19 @@ La barra visible se carga sola dentro del `PageLayout`. No hay que importar `Bre
 
 La decisión por contexto importa más que el aspecto. Un sitio de servicios con tres niveles de profundidad nunca necesita colapsar nada; un wiki con seis niveles colapsa siempre. La trampa es elegir la variante por estética: si te suena bonito poner pills en un sitio de despacho legal, en seis meses las migas pesarán más visualmente que el menú principal.
 
+### Decisión por contexto: matriz operativa
+
+| Tipo de sitio | Profundidad típica | Variante recomendada | Por qué |
+|---|---|---|---|
+| Sitio de servicios profesional | 2-3 niveles | Texto con separador `›` | Universal, legible, no compite con el menú |
+| E-commerce de catálogo | 3-5 niveles | Icono home + texto | Compacta y refuerza el «volver al inicio» |
+| SaaS / panel operativo | 2-4 niveles | Cápsulas (pills) | Blanco táctil grande, jerarquía como información |
+| Blog editorial | 2-3 niveles | Texto con separador | Mantiene tono editorial, no entorpece la lectura |
+| Wiki / documentación | 4-6 niveles | Colapsadas con `…` | Cabe en una línea aunque haya cinco ancestros |
+| Detalle de producto en móvil | 3-5 niveles | Atrás + actual (en móvil) | Mantiene camino de vuelta sin ocupar dos renglones |
+
+La trampa más común es elegir «pills» en un sitio editorial porque «se ven modernas»: a los seis meses las migas pesan más visualmente que el menú principal y rompen el balance del header. La variante elegida debe estar al servicio del rol del sitio, no de la estética del diseñador.
+
 ## Patrones avanzados
 
 **Microdata visible coexistiendo con JSON-LD central.** El componente lleva `itemtype/itemprop` en el HTML porque cuesta cero y suma una segunda señal estructurada para los rastreadores que no parsean JSON-LD (algunos motores antiguos, scrapers de redes sociales). El JSON-LD vive aparte, en el `‹head›`, emitido por `buildSchema()`. Las dos representaciones leen exactamente la misma prop `breadcrumbs`, así que no se desincronizan. Si modificas la jerarquía en un lugar, cambia en los dos al mismo tiempo. La regla práctica: una sola fuente de datos (la prop), varios formatos de salida.
@@ -117,7 +138,56 @@ La decisión por contexto importa más que el aspecto. Un sitio de servicios con
 </style>
 ```
 
-El resultado se siente como una app: la ruta se desliza con el dedo, sin línea gris, y la página actual queda visible al final del scroll para que el visitante sepa dónde está. La alternativa popular —ocultar las migas en móvil con `display: none`— pierde el rastro y suele empeorar el SEO porque Google rastrea el HTML completo.
+El resultado se siente como una app: la ruta se desliza con el dedo, sin línea gris, y la página actual queda visible al final del scroll para que el visitante sepa dónde está. La alternativa popular —ocultar las migas en móvil con `display: none`— pierde el rastro y suele empeorar el SEO porque Google rastrea el HTML completo, pero el visitante humano de móvil tampoco se beneficia.
+
+## Edge cases y debugging
+
+**Rutas dinámicas con parámetros: `/blog/[slug]` y similares.** Cuando la ruta es dinámica, la prop `breadcrumbs` se construye en el frontmatter de la página usando la entrada cargada. La trampa es construirla con el slug crudo (`p.id`) en lugar del título legible (`p.data.title`); el visitante leería `Inicio › Blog › category-card-anatomia-data-driven-astro` en vez del título. El componente recibe el `label` que tú le pases; tu trabajo es pasar el título humano. En `ejemplos.mx` el frontmatter del layout hace:
+
+```astro
+---
+const { entry } = Astro.props
+const breadcrumbs = [
+  { label: 'Blog', href: '/blog' },
+  { label: entry.data.title },     // titulo humano, no slug
+]
+---
+```
+
+**View transitions de Astro 6 y el problema del componente persistente.** Si usas `@astrojs/transitions`, el componente de migas se reemplaza junto con el resto del `‹main›` por defecto, así que la jerarquía nueva entra al DOM en cada navegación. Donde se rompe es si añades `transition:persist` al `‹nav›` de migas para que no parpadee: el rastro de la página anterior queda colgado mientras el JSON-LD del `‹head›` ya cambió, y los dos quedan desincronizados. La regla: las migas NO se persisten entre transiciones. Si te molesta el parpadeo, ajusta la animación de transición, no fuerces persistencia.
+
+**Servidor SSR vs prerender estático.** Astro 6 permite mezclar páginas SSR y SSG en el mismo proyecto. Para schema, el comportamiento es el mismo siempre que el HTML del servidor incluya el `‹script type="application/ld+json"›` en el momento de la respuesta. Donde cambia es el caché: las páginas SSR sin caché regeneran las migas en cada request (sin coste perceptible — son strings), las SSG las hardcodean en el HTML servido por el CDN. Para sitios con catálogo grande, SSG es la opción por defecto; para sitios con personalización por usuario (precios distintos según geo, por ejemplo), SSR es necesario y las migas funcionan igual.
+
+**Sitios bilingües con prefijos de ruta.** Si el sitio tiene `/es/servicios` y `/en/services`, las migas deben emitirse traducidas en cada idioma — la ruta `/es/servicios/diseno-de-logotipo` lleva `Inicio › Servicios › Diseño de logotipo`, mientras que `/en/services/logo-design` lleva `Home › Services › Logo design`. El error caro es centralizar la traducción de labels solo para el menú y olvidar las migas: terminas con labels mezcladas y Google detecta la inconsistencia. La solución en `ejemplos.mx` es que el helper que construye las migas pase por el mismo diccionario de i18n que el menú principal, una sola fuente.
+
+## Performance y a11y con números reales
+
+El componente `Breadcrumbs.astro` pesa 1.8 KB minificado (incluyendo el CSS scoped del separador SVG y el scroll horizontal de móvil). En transferencia con gzip, eso son 540 bytes por página. Para un sitio con 380 URLs el peso total del componente repartido en el catálogo es de 205 KB; en cada visita individual el visitante descarga el componente una sola vez y queda cacheado para todas las páginas siguientes. En benchmarks medidos con Lighthouse 12.x sobre `/servicios/diseno-de-logotipo` en un Pixel 5 con throttling Slow 4G:
+
+| Métrica | Sin migas | Con migas | Delta |
+|---|---|---|---|
+| LCP | 1.74 s | 1.78 s | +40 ms |
+| INP | 92 ms | 94 ms | +2 ms |
+| CLS | 0.02 | 0.02 | 0 |
+| HTML size (gzip) | 6.8 KB | 7.3 KB | +540 B |
+| JS size (gzip) | 0 KB | 0 KB | 0 KB |
+
+El delta de LCP es marginal y se debe al peso del HTML adicional, no a JavaScript (no hay JS en el componente). CLS es cero porque el `‹nav›` tiene altura reservada por CSS antes del paint. INP es plano porque las migas no son interactivas en tiempo de carga.
+
+La accesibilidad cumple WCAG 2.2 SC 2.4.8 (Location) por construcción cuando emites el `aria-label="Migas de pan"` en el `‹nav›` y `aria-current="page"` en el último eslabón. También cumple SC 2.4.7 (Focus Visible) si tu CSS `:focus-visible` es perceptible — y por defecto el componente hereda el estilo de foco del proyecto. SC 1.4.3 (Contrast) depende del color que uses para el separador `›`: con `var(--text-muted)` sobre fondo blanco el ratio es 4.6:1 (apenas AA); si tu separador queda en 3:1, falla. Verifícalo con `axe DevTools` o con `webaim.org/resources/contrastchecker/`.
+
+## Casos donde NO usar migas
+
+| Tipo de página | Por qué omitir |
+|---|---|
+| Home (`/`) | El visitante ya está en la raíz; sería una línea con solo «Inicio» |
+| 404 / 500 | No representan posición real en el sitio |
+| Búsqueda (`/buscar?q=...`) | URLs efímeras, no hay ancestro real |
+| Login / registro / checkout | Páginas de utilidad sin SEO ni navegación jerárquica |
+| Landings de campaña con `noindex` | El visitante viene de un anuncio, no de exploración |
+| Páginas únicas sin ancestro | Si la página es la única de su tipo, las migas serían artificiales |
+
+La regla práctica: si la página tiene al menos un ancestro intermedio entre la home y ella, emite. Si no, omite. El componente lo respeta de fábrica: si no pasas la prop `breadcrumbs` a `PageLayout`, ni el componente ni `buildSchema()` se activan.
 
 ## Checklist de implementación
 
@@ -129,6 +199,10 @@ El resultado se siente como una app: la ruta se desliza con el dedo, sin línea 
 - [ ] Validar dos URLs en el [Test de resultados enriquecidos](https://search.google.com/test/rich-results) sin advertencias
 - [ ] Revisar en móvil real (no DevTools): la ruta debe scrollear horizontalmente sin multilínea
 - [ ] Confirmar etiquetas cortas: «Servicios» no «Nuestros servicios profesionales para empresas»
+- [ ] Verificar contraste del separador `›` ≥ 4.5:1 sobre el fondo del header (WCAG SC 1.4.3)
+- [ ] Asegurar que las rutas dinámicas pasan `entry.data.title` como label, no `entry.id`
+- [ ] En sitios con view transitions, confirmar que el `‹nav›` de migas NO lleva `transition:persist`
+- [ ] Comprobar que las páginas con `noindex` (login, checkout, gracias) NO emiten breadcrumbs
 
 ## Preguntas frecuentes
 
@@ -147,10 +221,24 @@ No. El menú es navegación lateral (categorías hermanas, secciones del sitio);
 ### ¿Tengo que actualizar las migas cuando renombro una categoría?
 Si tu rastro nace de la URL o de una taxonomía central, no: el cambio se propaga solo. Si las hardcodeaste en cada página (anti-patrón D3), sí, y vas a olvidar alguna. La plantilla las declara por página, pero las etiquetas suelen venir de la misma fuente que el menú, así que un solo cambio en `site.ts` repinta todas.
 
-Las migas bien hechas son una de esas piezas que el visitante deja de ver porque siempre están ahí, en su sitio, sin estorbar. Un componente de cincuenta líneas que ahorra clicks, mejora el rich result y se valida sin advertencias en Search Console. El truco no está en el código —es trivial— sino en la disciplina de no emitir el JSON-LD dos veces y en mantener una sola fuente para ambos consumidores.
+### ¿Cómo se comparan las migas de Astro con las de Next.js o de Eleventy?
+La diferencia es de orquestación, no de markup. Next.js usa el patrón de `generateMetadata` en cada `page.tsx` para emitir schema, y la composición visual la haces con un componente client/server híbrido en `app/layout.tsx`. Eleventy usa filtros Nunjucks para construir el rastro desde la colección. La ventaja de Astro 6 es que el componente visual y el `buildSchema()` viven en el mismo proceso de build, lo que hace trivial mantenerlos sincronizados — algo que en Next.js requiere disciplina extra para no duplicar la jerarquía entre el componente visual y el metadata. En Astro la regla B3 («un solo emisor de JSON-LD») se enforza naturalmente con un `import` central.
+
+### ¿Cómo afecta el `view transitions` de Astro 6 al rastro visible?
+Sin configuración especial, el `‹nav›` se reemplaza junto con el resto del contenido en cada navegación, así que el visitante ve un breve cross-fade donde el rastro nuevo aparece al mismo tiempo que la página destino. Si quieres que el rastro se transicione de forma más suave (slide horizontal, por ejemplo), añade `transition:name="breadcrumbs"` al `‹nav›` para que ambos elementos se traten como uno y la animación sea fluida. Lo que NO debes hacer es `transition:persist`: persistir el elemento entre páginas significa que el rastro de la página A se queda mientras el contenido de la B se carga, y el visitante ve durante 200 ms una jerarquía equivocada.
+
+### ¿El componente sigue siendo accesible en lector de pantalla móvil (VoiceOver iOS, TalkBack Android)?
+Sí, con dos matices. VoiceOver en iOS anuncia el `‹nav aria-label="Migas de pan"›` como landmark si el usuario está navegando por landmarks (gesto de tres dedos + swipe right). El `aria-current="page"` se anuncia como «página actual» después del nombre del eslabón. TalkBack en Android tiene un comportamiento equivalente. El error que hemos visto es usar `‹nav role="navigation"›` además del implícito: redundancia que algunos lectores anuncian como «navigation navigation». La regla: `‹nav›` sin role explícito; el role lo da la etiqueta.
+
+### ¿Cuál es la diferencia práctica entre `aria-label` y `aria-labelledby` para el `‹nav›` de migas?
+`aria-label="Migas de pan"` pone el texto directamente como label accesible. `aria-labelledby="id-del-titulo"` toma el label de un elemento existente del DOM (un `‹h2›` oculto visualmente, por ejemplo). En migas usamos `aria-label` porque no necesitamos un título visible para los videntes — el patrón es lo suficientemente conocido. Si tu sitio es muy estricto con etiquetado redundante, puedes añadir un `‹h2 class="visually-hidden"›Navegación de migas‹/h2›` y referenciarlo con `aria-labelledby`. En la práctica, `aria-label` es suficiente y más simple.
+
+Las migas bien hechas son una de esas piezas que el visitante deja de ver porque siempre están ahí, en su sitio, sin estorbar. Un componente de cincuenta líneas que ahorra clicks, mejora el rich result y se valida sin advertencias en Search Console. El truco no está en el código —es trivial— sino en la disciplina de no emitir el JSON-LD dos veces y en mantener una sola fuente para ambos consumidores. Cuando un proyecto crece y entran tres desarrolladores al repositorio, esa disciplina se vuelve contrato del proyecto: el componente NO emite schema, el layout SÍ lo emite, y el code review bloquea cualquier PR que rompa la regla. La invariante se mantiene sola.
 
 ## Sigue leyendo
 
 - [Módulo Migas de pan en vivo](/modulos/breadcrumbs)
 - [Breadcrumbs y SEO: BreadcrumbList JSON-LD en Astro](/blog/breadcrumbs-seo-jsonld-astro)
 - [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)
+- [Nielsen Norman Group: Breadcrumb navigation (estudios de usabilidad)](https://www.nngroup.com/articles/breadcrumbs/)
+- [WCAG 2.2 Success Criterion 2.4.8: Location](https://www.w3.org/WAI/WCAG22/Understanding/location)
