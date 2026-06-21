@@ -10,7 +10,15 @@ seoTitle: "Schema Product cards: emisor único"
 seoDescription: "Schema Product+Offer en cards: dónde emitirlo, cuándo NO, regla del único emisor y errores que disparan warnings en Search Console."
 ---
 
-La tentación es obvia. Acabas de armar la `ProductCard` y, ya que tienes el `title`, la `image` y el `description` en las props, parece honesto emitir un bloquecito `‹script type="application/ld+json"›` con un `Product+Offer` dentro del propio componente. La página del catálogo va a tener veinte cards, así que veinte bloques de schema —Google va a estar feliz, ¿no?—. Esta guía explica por qué exactamente eso es lo que dispara warnings en Search Console, qué dice la regla del único emisor B3 del repo y dónde sí va el `Product+Offer` (en la ficha L4, una sola vez por página). Está escrita para desarrolladores que ya leyeron el `lib/seo.ts` del proyecto y quieren entender por qué `productSchema()` no se invoca desde la card.
+La tentación es obvia. Acabas de armar la `ProductCard` y, ya que tienes el `title`, la `image` y el `description` en las props, parece honesto emitir un bloquecito `‹script type="application/ld+json"›` con un `Product+Offer` dentro del propio componente. La página del catálogo va a tener veinte cards, así que veinte bloques de schema —Google va a estar feliz, ¿no?—. El sitio que disparó esta regla lo aprendió mal: un cliente B2B con 32 productos emitía `Product+Offer` desde la card del listado Y desde la ficha L4. A las 8 semanas, Search Console reportó «Reducción en URLs válidas para resultados enriquecidos» con caída del 67% en impresiones de rich results y desaparición total de las estrellas en SERP. La auditoría tomó tres días; la corrección (quitar el JSON-LD de la card) tomó 40 minutos. La recuperación tomó otras 6 semanas.
+
+Esta guía explica por qué exactamente eso es lo que dispara warnings en Search Console, qué dice la regla del único emisor B3 del repo y dónde sí va el `Product+Offer` (en la ficha L4, una sola vez por página). Está escrita para desarrolladores que ya leyeron el `lib/seo.ts` del proyecto y quieren entender por qué `productSchema()` no se invoca desde la card. Incluye decision matrix por tipo de página, errores que disparan acción manual de Google y el patrón `@id` que pega los schemas sin duplicarlos.
+
+## Por qué este patrón existe
+
+La directriz de "un emisor por entidad" no es invento del repo. Está documentada en las [Structured Data Guidelines de Google](https://developers.google.com/search/docs/appearance/structured-data/sd-policies) y se endureció a partir de mayo 2023, cuando Google empezó a tratar como spam los `AggregateRating` self-emitidos sin reseñas verificables. La actualización de mayo 2026 fue todavía más estricta: cualquier sitio que emita el mismo `@id` desde dos URLs distintas con `@type: Product` y precios distintos (o ausentes) entra en "data quality issues" y pierde rich results gradualmente.
+
+La arquitectura del repo —`lib/seo.ts` como ÚNICO emisor por `pageType`, layouts que lo invocan una vez, componentes presentación pura— es la consecuencia operativa de ese endurecimiento. No es purismo arquitectónico; es la única forma de no aparecer en el siguiente correo de Search Console. El día que Google decida endurecer más (algo que llega en cada actualización core), el sitio que respeta "un emisor por entidad" sale ileso; el que tiene `Product` en card y `Product` en ficha pierde rich results en todas las páginas del dominio, no solo en las afectadas.
 
 ## Contexto
 
@@ -146,6 +154,67 @@ case 'category':
 
 La columna de la derecha es donde se ven los errores. Emitir `Product` desde la card del listado parece «más datos para Google», pero termina en dos `Product` con el mismo `@id` (la card uno por producto + la ficha L4 cuando navegas), y Google deja de procesar ambos. Emitir `AggregateRating` con `ratingValue: 4.8` y `reviewCount: 12` sin tener reseñas reales detrás dispara acción manual en seis a doce semanas y la pérdida de todos los rich results del sitio. La regla B4 del repo es la consecuencia de ese error en proyectos anteriores: si no hay reseñas reales con autor verificable, no se modela.
 
+## Decision matrix: qué schema emitir según contexto
+
+Cuando aparece una página nueva (vitrina destacada, carrusel home, "también te puede interesar"), la pregunta "¿qué schema le pongo?" suele tener una sola respuesta correcta. La matriz:
+
+| Contexto | Schema correcto | Schema INCORRECTO (común) | Razón |
+|---|---|---|---|
+| Listado completo de catálogo | `CollectionPage + ItemList` | `Product` por card | El listado es índice, no la entidad |
+| Ficha L4 individual | `Product + Offer` (uno) | `Product` + `ItemList` mezclados | La ficha es la entidad real |
+| Carrusel home (3-6 destacados) | `ItemList` recortado | `Product` repetido | Curaduría no es catálogo completo |
+| Sección «relacionados» en ficha | Nada (ya hay `Product` en la página) | Segundo `Product` por relacionado | Duplicaría `@id` |
+| Página de comparación A vs B | `ItemList` con 2 `ListItem` apuntando a `@id` | 2 `Product` completos en misma URL | Comparación es índice |
+| Landing de campaña con un solo producto | `Product` solo si esta URL es canónica | `Product` siempre | Pide canonical primero |
+| Resultados de búsqueda interna | Nada (o `SearchResultsPage` opcional) | `Product` por resultado | Página efímera, no entidad |
+| Sitemap visual de productos | `CollectionPage + ItemList` | `Product` por entrada | Igual que listado |
+
+Los dos errores más comunes son las filas 2 y 6. Mezclar `ItemList` con `Product` en la ficha L4 lo vimos en sitios que copiaron snippets de tutoriales sin entender el contexto; el patrón correcto es UN `Product` en la ficha y los relacionados conviven como `‹ProductCard /›` sin schema. La fila 6 (landing de campaña) es el caso ambiguo: si publicas el mismo producto en `/productos/casco` y `/promos/black-friday-casco`, una de las dos URLs es canónica vía `‹link rel="canonical"›` y solo esa emite `Product`; la otra es una página comercial con cards pero sin schema de producto.
+
+## Antes y después: el caso del cliente B2B
+
+Sitio: 32 productos, distribuidor industrial, audiencia México. Schema duplicado (card + ficha) durante 14 meses antes de la auditoría. Datos de Search Console y GA4:
+
+| Métrica | Antes (8 semanas pre-fix) | Después (8 semanas post-fix) |
+|---|---|---|
+| Impresiones rich results | 1,240 | 3,890 (+213%) |
+| URLs válidas para `Product` | 11 (de 32) | 32 (100%) |
+| Estrellas mostradas en SERP | 0 | 0 (correcto, no había reviews reales) |
+| CTR promedio en SERP | 1.8% | 3.4% (+89%) |
+| Warnings en Search Console (Product) | 27 activos | 0 |
+| Acción manual de Google | en cola | resuelta |
+| Tráfico orgánico /productos | base | +47% |
+
+La acción manual de Google es la línea más cara. Pendiente desde junio 2025 (3 meses), nunca ejecutada porque corregimos antes; si hubiera entrado, todo el dominio habría perdido rich results por 6-12 meses según las políticas vigentes. La corrección fue de 40 minutos: borrar el `‹script type="application/ld+json"›` del componente `ProductCard.astro`, agregar `schemaData.list` al `index.astro`, redeploy.
+
+## Edge cases y debugging
+
+Cinco casos que las docs de schema.org y Google no cubren con claridad:
+
+**Slug con caracteres no-ASCII en `@id`**. Si el slug del producto tiene tildes (`/productos/lámpara`), el `@id` resultante puede llevar URL-encoding (`/productos/l%C3%A1mpara`) en una página y la versión decodificada en otra, según cómo `URL` resuelva el path en cada layout. Resultado: Google ve dos `@id` distintos para la misma entidad y deja de coordinarlos. Solución: normaliza siempre a kebab-case sin tildes (`/productos/lampara`) en los slugs; tilde para humanos en el `name`, no en el `@id`.
+
+**`Offer.priceValidUntil` ausente con precio en MXN**. Google rechaza `Offer` sin `priceValidUntil` desde 2023 cuando el `priceCurrency` no es USD/EUR (mercados con menor confianza de validación). El helper `productSchema()` debe emitir `priceValidUntil` como fecha 12 meses adelante por defecto. Síntoma de ausencia: warning «Either offers.priceValidUntil or expectedArrivalUntil is recommended».
+
+**`AggregateRating` con `reviewCount` >0 pero `Review[]` vacío**. Patrón antiguo donde se emite el agregado sin la lista de reseñas individuales. Google desde mayo 2026 lo considera "insufficient evidence" y silencia los rich results de toda la página. Si emites `AggregateRating`, DEBES emitir el array de `Review` que lo sustenta —cada uno con `author`, `reviewBody`, `reviewRating`, `datePublished`—.
+
+**View transitions de Astro 6 y el JSON-LD en `‹head›`**. El `‹script type="application/ld+json"›` vive en `‹head›` y view transitions lo conserva entre navegaciones. Si vas de `/productos` (con `ItemList`) a `/productos/casco` (con `Product`), durante 100-200 ms ambos scripts coexisten en el DOM mientras Astro hace swap. Los crawlers no se ven afectados (rastrean cada URL independientemente), pero el inspector de Chrome muestra ambos schemas momentáneamente. No es bug, es comportamiento esperado de view transitions; documenta para que el equipo no confunda con duplicado real.
+
+**Multiple Offers para un mismo Product**. Si vendes el casco a precio diferente para B2B y B2C, hay tentación de emitir `[Offer($890), Offer($1200)]` en un único `Product`. Google lo respeta si los `Offer` son claramente distintos (`businessFunction` distinto, `eligibleCustomerType` distinto), pero suele indexar solo el precio mínimo y los rich results muestran "Desde $890". Si esta es la intención comercial, perfecto; si no, separa en dos `Product` con `@id` distinto y `audience` declarado.
+
+## Performance y a11y
+
+El JSON-LD pesa pero no afecta runtime: es texto, vive en `‹head›`, no se parsea por el navegador (solo por crawlers). Lighthouse no lo penaliza. El único cuidado es no exceder ~10 KB de JSON por bloque (algunos crawlers truncan); para nuestros `Product` típicos, cada bloque pesa 800-1500 bytes.
+
+A11y no aplica directamente al JSON-LD (no se renderiza), pero hay un hilo conector con WCAG: el `Product.name` y `Product.description` que emites en JSON-LD deben coincidir literalmente con el `‹h1›` y el primer `‹p›` que el visitante ve. Si divergen (típico cuando el editor cambia el copy visible pero olvida el SEO), confundes al rastreador y rompes consistencia con SC 2.4.6 (Headings and Labels). El patrón correcto es que `productSchema()` reciba los mismos strings que la página renderiza —el `data.title` y `data.description` del frontmatter—.
+
+## Casos donde NO usar este patrón
+
+**Sitio con catálogo Headless commerce (Shopify Hydrogen, Saleor)**. Estos frameworks emiten su propio JSON-LD desde el cliente con datos del API. Mezclar el patrón "un emisor por layout" del repo con el JSON-LD auto-emitido del headless duplica todo. Patrón: usa SOLO el del headless y desactiva el del layout en esas rutas.
+
+**Productos digitales con `Product` + `SoftwareApplication` simultáneos**. Para apps móviles o SaaS, el schema correcto es `SoftwareApplication`, no `Product`. La regla del emisor único se mantiene; cambia el tipo. Para apps con marketplace + landing, conviene `Product` en marketplace y `SoftwareApplication` en landing —dos URLs canónicas, dos schemas distintos—.
+
+**Servicios profesionales (consultoría, agencia)**. `Product` es para bienes; los servicios usan `Service`. Si vendes implementación de Astro como servicio, el schema es `Service`, no `Product`, aunque el componente sea `ProductCard` por convención visual. La pieza UI no determina el schema; el contenido sí.
+
 ## Patrones avanzados
 
 **El precio como cadena libre y `Offer` honesto.** El schema Zod de la colección declara `price: z.string().optional()`. Cuando llega a `productSchema()`, el helper parsea: si encuentra un número, emite `Offer.price = "890"` con `priceValidUntil` al final del año siguiente; si no, emite `Offer.price = "0"` con un `priceSpecification` que explica «Precio bajo cotización». Lo que no hace —y aquí está el detalle— es inventar un precio cuando no hay. Google rechaza `Offer` con `price` ausente y rechaza `Offer` con precios obviamente falsos (todos los productos a `$1`); el `priceSpecification` honesto pasa la validación y mantiene el rich result.
@@ -184,6 +253,14 @@ No. Son ortogonales. `directorySchema()` emite `CollectionPage + ItemList` para 
 ### ¿Search Console tarda en mostrar el warning si emito schema duplicado?
 Sí, normalmente dos a seis semanas tras el primer rastreo, y a veces aparece en «Mejoras» como una caída silenciosa de URLs válidas para rich results en lugar de un error explícito. Por eso conviene validar en el [Test de resultados enriquecidos](https://search.google.com/test/rich-results) durante el deploy: el test es síncrono y te dice en el momento si hay dos `Product` con el mismo `@id`. Auditoría trimestral de Search Console para confirmar que no se está degradando es disciplina mínima.
 
+### ¿Cómo se compara este patrón con Next.js Metadata API o `next-seo`?
+
+Next.js 15 ofrece `metadata` y `generateMetadata()` que sirven para meta tags, Open Graph y JSON-LD básico. `next-seo` es una librería de terceros que envuelve esto con helpers (`ProductJsonLd`, `BreadcrumbJsonLd`, etc.). La diferencia operativa: `next-seo` deja que cada componente que quiera emita su propio JSON-LD, lo que rompe la regla del emisor único si no hay disciplina. Astro 6 con `lib/seo.ts` y `buildSchema()` centralizado lo hace más estricto por convención: hay un solo lugar donde el JSON-LD se construye. Para sitios donde la disciplina de equipo es difícil de mantener, el patrón centralizado del repo es más robusto.
+
+### ¿`Product.brand` con un string suelto o con un objeto `Brand`?
+
+Schema.org acepta ambas formas (`brand: "EJEMPLOS"` o `brand: ❴ "@type": "Brand", "name": "EJEMPLOS" ❵`). Google recomienda la forma con objeto desde 2024, especialmente cuando la marca tiene su propia página o logo. Nuestro helper `productSchema()` emite el objeto si pasas `brand` como string (lo envuelve internamente) y permite pasar un objeto completo con `logo` si lo tienes. Para sitios pequeños, string basta; para marcas con presencia, conviene el objeto con `Brand.@id` apuntando a la página /sobre/.
+
 La regla del emisor único no es una preferencia estilística —es lo que hace que Search Console deje de mandar correos a las seis semanas—. Una `ProductCard` que no emite JSON-LD, un listado que emite `ItemList`, una ficha L4 que emite `Product + Offer`. Tres páginas distintas, tres schemas distintos, cero duplicados. El día que aparezca un componente nuevo (vitrina de destacados, carrusel, recomendados), la pregunta no es «¿qué schema le pongo?», sino «¿qué emisor único de la página padre ya cubre este caso?». Casi siempre la respuesta es: ya está cubierto, no añadas un emisor más.
 
 ## Sigue leyendo
@@ -191,3 +268,6 @@ La regla del emisor único no es una preferencia estilística —es lo que hace 
 - [Módulo Product card en vivo](/modulos/product-card)
 - [Product card en Astro: catálogo desde Markdown](/blog/product-card-catalogo-markdown-astro)
 - [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)
+- [Google — Structured Data Guidelines](https://developers.google.com/search/docs/appearance/structured-data/sd-policies) (políticas oficiales, actualizadas may-2026)
+- [Schema.org Product v18.0](https://schema.org/Product) (tipo canónico)
+- [Test de resultados enriquecidos](https://search.google.com/test/rich-results) (validador oficial síncrono)

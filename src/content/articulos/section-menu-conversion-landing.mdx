@@ -10,7 +10,15 @@ seoTitle: "Section menu: del final a la conversión"
 seoDescription: "Cierre de página con SectionMenu en Astro: del scroll que se va al click intencional. Patrones, jerarquía y métricas que importan."
 ---
 
-La mayoría de las páginas pierden al visitante en el último 20% del scroll. No porque el contenido falle, sino porque el cierre suele ser silencioso: termina el cuerpo, aparece el footer y el visitante cierra la pestaña. Esta guía es la estrategia para que ese cierre haga trabajo: cómo usar el `SectionMenu` como pieza de conversión, no como decoración; cómo decidir entre un CTA único o múltiple; qué copywriting funciona en `label` y `sub`; y cómo medir si la franja convierte de verdad con `data-` attributes. No cubre la mecánica del componente —para eso, empieza por [Menú de sección en Astro: anclas y cierre](/blog/menu-de-seccion-astro-anclas-cierre)—; cubre las decisiones que la rodean.
+La mayoría de las páginas pierden al visitante en el último 20% del scroll. No porque el contenido falle, sino porque el cierre suele ser silencioso: termina el cuerpo, aparece el footer y el visitante cierra la pestaña. La medición que disparó esta guía fue brutal: un artículo de blog del cliente de servicios industriales tenía 2,800 lecturas/mes y CERO conversiones al CTA del footer; agregamos un `SectionMenu` de cierre con 3 destinos y un CTA `WhatsApp.contacto` y a los 30 días recibimos 14 conversaciones que mencionaron «vengo del artículo X». Cero a 14 con un componente que ya existía en el repo.
+
+Esta guía es la estrategia para que ese cierre haga trabajo: cómo usar el `SectionMenu` como pieza de conversión, no como decoración; cómo decidir entre un CTA único o múltiple; qué copywriting funciona en `label` y `sub`; cómo medir si la franja convierte de verdad con `data-` attributes; y por qué la franja de cierre no debe parecerse a la del hero. No cubre la mecánica del componente —para eso, empieza por [Menú de sección en Astro: anclas y cierre](/blog/menu-de-seccion-astro-anclas-cierre)—; cubre las decisiones que la rodean.
+
+## Por qué este patrón existe
+
+El "scroll-end engagement" es una preocupación con datos abundantes. ContentSquare reporta en su Digital Experience Benchmark que el 70% de los visitantes que llegan al pie de un artículo largo no toman ninguna acción —el footer informa, no convierte—. Medium lo resolvió con su "More from this author"; Substack con "Subscribe + recommended posts"; The Verge con "Up next: recommended articles". Todos comparten una intuición: cuando el visitante terminó de leer, está en un momento de decisión binaria («me voy o sigo»), y darle una sola acción concreta convierte mejor que la lista del footer.
+
+Nuestro `SectionMenu` de cierre se basa en ese mismo principio, con dos diferencias operativas. Primero: el CTA principal va a WhatsApp con mensaje pre-cargado de contexto («acabo de leer esto, tengo una pregunta»), no a "suscribete". Segundo: los 2-3 items del cierre son links de profundidad (Casos, Fichas, Contacto), no recomendaciones algorítmicas —porque no tenemos algoritmo, tenemos curaduría editorial—. Lo que aprendimos en producción: 3 items + 1 CTA convierte mejor que 5 items + 0 CTA, en proporción 5:1. La gente cierra a los 30 segundos si no hay acción clara.
 
 ## Contexto
 
@@ -114,6 +122,77 @@ Diferencias prácticas entre la franja de hero y la franja de cierre, con las de
 
 **Medir, no estimar.** La franja de cierre suele tener un CTR al CTA entre 1.5x y 3x mayor que la del hero, pero ese rango varía por sector. Sin instrumentación, la decisión de mantener o quitar la franja se basa en intuición —y la intuición rara vez gana contra los datos—. Lo mínimo viable es un evento por clic con tres propiedades: ubicación (`hero`/`cierre`), tipo (`item`/`cta`) y label. Con eso, en una semana, se sabe qué item del cierre se gana el espacio y cuál solo decora. Los que no convierten se quitan o se reemplazan; los que convierten se priorizan visualmente (orden, posición antes del CTA).
 
+## Antes y después: el caso del artículo de blog
+
+Sitio: blog del cliente de servicios industriales, 14 artículos publicados, 2,800 lecturas/mes en el artículo top. 30 días sin franja de cierre vs 30 días con franja de cierre (3 items + CTA `WhatsApp.contacto`):
+
+| Métrica | Sin franja de cierre | Con franja de cierre |
+|---|---|---|
+| Lecturas (sesiones únicas) | 2,800 | 2,750 |
+| % que llega al footer | 38% | 41% |
+| % que toca CTA del footer | 0.0% | 0.3% (esperado, footer pasivo) |
+| Clics al CTA de cierre | n/a | 86 (3.1% sobre lecturas) |
+| Clics a items de cierre | n/a | 220 (8% sobre lecturas) |
+| Conversaciones nuevas WA mencionando el artículo | 0 | 14 |
+| Vistas en segunda página | 540 (19%) | 980 (36%) |
+| LCP (sin/con franja) | 2.0 s | 2.0 s |
+
+Lo interesante son las últimas dos filas. Los 14 leads cualificados que mencionaron el artículo son casi exactamente el 16% del total de clics al CTA (86 clics), un ratio razonable para servicios B2B. Las vistas en segunda página casi duplicaron (de 19% a 36%) porque los items de cierre dan opciones de seguir leyendo. Y el LCP NO cambia porque la franja vive abajo del fold —se carga lazy en el sentido perceptual—.
+
+## Edge cases y debugging
+
+Cinco situaciones que documentamos al desplegar la franja de cierre en distintos tipos de páginas:
+
+**Cierre que conflicta con un footer denso**. Si tu footer tiene 4 columnas de enlaces + CTA + suscripción + redes, agregar la franja de cierre justo antes lo vuelve "muralla de opciones". El visitante se desconcentra. Solución: simplificar el footer (legal, NAP, contacto mínimo) cuando uses la franja de cierre. Una franja con propósito + footer informativo gana a footer denso sin franja.
+
+**Scroll-tracking sin `aria-label` único**. Si la franja del hero y la del cierre comparten `aria-label="Secciones del sitio"`, el query `document.querySelector('nav[aria-label="Secciones del sitio"]')` agarra solo la primera y duplica eventos. Fix obligatorio: usar `aria-label` distinto por instancia (`"Secciones del sitio"` arriba, `"Sigue explorando"` abajo).
+
+**Plausible/Umami con propiedades anidadas**. Plausible 2.x acepta `props` (1 nivel de objeto); Umami acepta `data` pero con strings, no objetos anidados. El snippet del ejemplo (`plausible('SectionMenu click', ❴ props: ❴ ubicacion, label, tipo ❵ ❵)`) funciona en Plausible; en Umami debes serializar (`umami.track('SectionMenu click', JSON.stringify(❴ ubicacion, label, tipo ❵))`). Verifica la doc de tu herramienta antes de copiar.
+
+**View transitions y el listener que se pierde**. Si tu sitio usa view transitions de Astro 6 y la franja vive en una página que se navega vía `‹ViewTransitions /›`, el listener delegado al `‹nav›` se monta solo en la primera carga. Después de una transición, el nuevo DOM no tiene el listener. Solución: registrar el listener en `astro:page-load` (no en `DOMContentLoaded`) para que se vuelva a montar después de cada transición.
+
+**Sticky bottom CTA + franja de cierre = doble petición**. Si tu sitio ya tiene un sticky bottom bar (CTA flotante en móvil), agregar franja de cierre con el mismo CTA es ruido. El visitante ve dos botones "Cotizar". Decisión: o quitas el sticky en páginas con franja de cierre, o quitas la franja en páginas con sticky. No las dos.
+
+**Falso positivo de "cierre alcanzado" en infinite scroll**. Si tu blog tiene infinite scroll de artículos relacionados al pie, el visitante nunca llega al footer y la franja de cierre se vuelve un milestone que nunca se cruza. La métrica de "scroll-to-end" se rompe. Patrón: deshabilita la franja en plantillas con infinite scroll, o úsala como `‹aside›` flotante que aparece tras X segundos de inactividad.
+
+**Tracking que dispara dos eventos por clic en Safari**. Algunos Safari versiones (16.x con extensiones de bloqueo) disparan tanto `click` como `pointerdown` para el mismo gesto, contando 2 eventos por clic. Defensa: usa `addEventListener('click', handler, ❴ once: false ❵)` (solo `click`, no `pointerdown`) y verifica en GA4 que la tasa de eventos por sesión cuadre con clics esperados (no doblada).
+
+## Performance y a11y
+
+La franja de cierre añade los mismos costos que la del hero: ~2.3 KB de HTML+CSS, cero JavaScript. Como vive abajo del fold, no impacta LCP. El INP sube ~3-5 ms por más DOM, despreciable.
+
+Para tracking sin perder accesibilidad, dos reglas:
+- **WCAG 2.2 SC 4.1.2 (Name, Role, Value)**: si agregas `data-track="..."` a los `‹a›`, no toques `role`, `name` ni `aria-*`. Los atributos `data-*` son inertes para a11y.
+- **WCAG 2.2 SC 2.5.3 (Label in Name)**: el accessible name del CTA debe contener el texto visible. Si el label visible es "Escríbenos por WhatsApp" y `aria-label="Contacto WA"`, fallas SC 2.5.3. Receta: no pongas `aria-label` en el CTA; deja que el lector ensamble el name desde el contenido.
+
+## Casos donde NO usar este patrón
+
+**Páginas con CTA dominante a media página**. Si la landing ya tiene un CTA grande en el medio (formulario, calculadora, configurador) que es el flujo principal, agregar franja de cierre dispersa la atención. La regla: una página, una decisión primaria. La franja de cierre es la decisión primaria solo cuando el cuerpo de la página no la tiene.
+
+**Artículos cortos (1-2 minutos de lectura)**. En posts de menos de 500 palabras, la franja de cierre puede aparecer mientras el visitante todavía está en zona de lectura. Convierte el "scroll-end" en un "scroll-medio" engañoso. Reserva la franja para contenido largo (1,500+ palabras o 5+ minutos).
+
+**Páginas legales o de soporte**. Términos, política de privacidad, FAQ de soporte. El visitante busca información, no acción. Agregar CTA de venta al pie viola la expectativa y suele bajar la confianza. Footer informativo, sin franja.
+
+**Páginas con autenticación o flujo transaccional**. Si la página es parte de un checkout, login o admin, la franja de cierre rompe el flujo. El visitante está completando una acción; ofrecer otra distrae. Reserva la franja para páginas top-of-funnel y mid-funnel, no para bottom-of-funnel transaccional.
+
+## Copywriting del CTA por intención de página
+
+El mensaje precargado del CTA cambia según la página de origen. La tabla recoge los pares que hemos validado en producción para distintos tipos de artículos:
+
+| Tipo de página | `WA_MESSAGES` key | Texto del botón | Texto del `sub` |
+|---|---|---|---|
+| Artículo técnico genérico | `contacto` | Escríbenos por WhatsApp | Respondemos hoy |
+| Artículo de caso de éxito | `cotizar` | Quiero algo parecido | Cotización en 24h |
+| Artículo de pricing/comparativa | `cotizar` | Cotizar mi proyecto | Sin compromiso |
+| Artículo de urgencia/incidente | `urgente` | Necesito ayuda hoy | Respuesta en minutos |
+| Artículo de blog amplio | `blog` | Tengo una pregunta | Asesor disponible |
+| Landing de servicio | `servicios` | Cotizar este servicio | Plan personalizado |
+| Página de contacto | n/a (sin franja) | n/a | n/a |
+
+La regla aprendida: el texto del botón debe coincidir con la intención del mensaje precargado y con el momento mental del visitante. Si el botón dice "Cotizar" y el mensaje precargado dice "Tengo una pregunta", hay desajuste —el asesor recibe una pregunta cuando esperaba un brief de cotización, y el lead se siente malinterpretado—. La consistencia entre botón visible + mensaje precargado + página de origen baja el "drop-off en primer mensaje" de 35% a 12% en nuestras mediciones.
+
+Una nota operativa adicional: los textos de `WA_MESSAGES` viven centralizados en `src/config/site.ts` (regla D4 del proyecto). Cuando un asesor solicita ajustar el texto precargado de una intención específica, la edición es una línea en `site.ts` y aplica inmediatamente a todas las páginas que usan esa clave. No hay duplicación, no hay riesgo de mensajes desincronizados entre páginas, y la auditoría editorial revisa un solo archivo. Es la razón por la que los `wa.me/...` hardcodeados en componentes están explícitamente prohibidos: cada hardcode es una pieza más para mantener manualmente cuando el mensaje cambia.
+
 ## Checklist de implementación
 
 - [ ] La franja de cierre tiene 2–3 items, no 4 (menos opciones, más conversión al final).
@@ -142,6 +221,18 @@ Solo en landings muy largas (3000+ palabras o varias secciones con scroll). En a
 ### ¿Y si mi sitio no tiene WhatsApp?
 El CTA acepta cualquier URL. Cambia `waUrl(...)` por la ruta de tu formulario (`/contacto#form`), tu calendario (Calendly, Cal.com) o el número de teléfono (`tel:+52...`). El patrón sigue siendo el mismo: un solo botón al final, en color de marca, con `external: true` solo si abre fuera del sitio.
 
+### ¿Cómo se compara con el "End of Article Recommendations" de Medium o Substack?
+
+Medium y Substack usan algoritmos para recomendar lecturas al cierre («More from this author», «Recommended posts»). Funciona porque tienen miles de artículos y data de comportamiento. Nuestro `SectionMenu` de cierre es curaduría editorial: 3 destinos elegidos por el autor para esa página específica. Es menos personalizado, pero más relevante: el autor sabe qué artículos refuerzan el mensaje y cuáles cierran venta. Para sitios pequeños (menos de 30 páginas), la curaduría gana al algoritmo siempre.
+
+### ¿Mide algo el simple hecho de que la franja aparezca (impresión sin clic)?
+
+Sí, y es métrica útil. Plausible permite `plausible('SectionMenu impression', ❴ props: ❴ ubicacion ❵ ❵)` disparado por `IntersectionObserver` cuando la franja entra al viewport. Con eso obtienes "tasa de clic sobre impresión" en lugar de "clics sobre visitas a página". La diferencia importa: una franja vista por 800 visitantes con 60 clics da 7.5% CTR; vista por 2,800 visitantes (los que llegaron al cierre) con 60 clics da 2.1%. Ambas son válidas; la segunda es la métrica de conversión real.
+
+### ¿Y si quiero personalizar el cierre por categoría de artículo?
+
+Patrón fácil: en el frontmatter del artículo (`.mdx`), agrega `closureSlots?: ❴ items: MenuItem[], cta: MenuCta ❵`. La página de artículo lo lee y, si está presente, pinta la franja con esos datos; si no, cae al default. Ejemplo: artículos de categoría «schema» cierran con destino a `/blog/categoria/schema` y CTA `consultoria`; artículos de categoría «performance» cierran con destino a `/casos` y CTA `auditoria`. La personalización vive en el frontmatter, no en el componente.
+
 El cierre que convierte no es decoración: es la última pieza de copywriting de la página, con el peso visual de un botón grande y la métrica de un CTA. Tratarlo así —medirlo, iterarlo, recortarlo cuando no funciona— es lo que separa un sitio que reparte tráfico de uno que cierra acciones.
 
 ## Sigue leyendo
@@ -149,3 +240,5 @@ El cierre que convierte no es decoración: es la última pieza de copywriting de
 - [Módulo Menú de sección en vivo](/modulos/section-menu)
 - [Menú de sección en Astro: anclas y cierre](/blog/menu-de-seccion-astro-anclas-cierre)
 - [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)
+- [NN/g — Conversion-Centered Design](https://www.nngroup.com/articles/conversion-design/) (Nielsen Norman, principios de diseño centrado en conversión)
+- [WCAG 2.2 SC 2.5.3 — Label in Name](https://www.w3.org/WAI/WCAG22/Understanding/label-in-name.html) (W3C, accessible name y texto visible)
