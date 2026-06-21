@@ -62,7 +62,7 @@ const MOD_META: Record<string, { image: string; chips: string[] }> = {
   'category-card':       { image: `${IMG}/productos/componentes-plantilla-astro-markdown.avif`,    chips: ['Imagen + alt', 'Título H3', 'Chips + CTA'] },
   'category-detail':     { image: `${IMG}/productos/sitio-web-rapido-astro.avif`,                  chips: ['Dos columnas', 'Galería', 'CTA'] },
   'product-card':        { image: `${IMG}/productos/desarrollo-web-astro-profesional.avif`,        chips: ['Imagen 16:9 + badge', 'Título H3 + descripción', 'CTA inline + LCP'] },
-  'cards-catalogo':      { image: `${IMG}/servicios/consultoria-desarrollo-web-astro.avif`,        chips: ['Producto', 'Servicio', 'Markdown'] },
+  'service-card':        { image: `${IMG}/servicios/consultoria-desarrollo-web-astro.avif`,        chips: ['Icono SVG · 56×56', 'Título H3 + descripción', 'CTA dual (ficha o WhatsApp)'] },
   'resenas':             { image: `${IMG}/casos/caso-exito-proyecto-web-astro.avif`,               chips: ['Estrellas', 'Cita', 'Cliente'] },
   'faq':                 { image: `${IMG}/articulos/guia-plantilla-astro-contenido-markdown.avif`, chips: ['Pregunta', 'Respuesta', 'Schema'] },
   'cta-banner':          { image: `${IMG}/servicios/soporte-mantenimiento-web-astro.avif`,         chips: ['Gancho', 'Botón', 'Cierre'] },
@@ -215,16 +215,16 @@ const AFONDO: Record<string, { body: string[]; points: string[] }> = {
       'Cero schema en la card: ItemList lo emite el padre, Product solo la ficha L4',
     ],
   },
-  'cards-catalogo': {
+  'service-card': {
     body: [
-      'Son las fichas de producto y servicio del catálogo. A diferencia de las tarjetas de categoría, cada una nace de un archivo Markdown en src/content/: escribes el producto como una nota simple —título, descripción, imagen, precio— y el sitio arma la ficha por ti.',
-      'La ventaja es consistencia con tranquilidad: un esquema (Zod) valida cada archivo antes de publicar, así un campo faltante o una ruta mal puesta detiene el build y te dice qué corregir. Agregas un .md y la ficha aparece; lo quitas y desaparece, sin tocar código.',
+      'Es la ficha breve del catálogo de servicios: cada servicio como una card uniforme con ÍCONO SVG por defecto (no foto, porque las fotos de servicios suelen ser genéricas), título H3, descripción corta y un CTA dual. La foto 16:9 solo entra cuando aporta algo concreto —un evento, una instalación— y reemplaza al ícono. El badge va inline o sobre la foto, según el modo.',
+      'La novedad respecto a la tarjeta de producto: el CTA es DUAL. Por defecto enlaza a la ficha L4 («Ver servicio»); si pasas whatsapp={true}, muta a un botón verde con el ícono de WhatsApp y abre wa.me con mensaje pre-armado. Útil para servicios consultivos donde el siguiente paso real es chatear, no leer. La card no emite Service schema: vive en lib/seo.ts y solo lo invoca la ficha L4. Regla B3: un solo emisor por página.',
     ],
     points: [
-      'Fichas de producto y servicio, una por archivo Markdown',
-      'Contenido en src/content/: editas notas, no plantillas',
-      'Validadas por Zod: ninguna ficha rota llega al sitio',
-      'Agregar o quitar un .md actualiza el catálogo solo',
+      'Modo ícono por defecto (caja 56×56 roja clara) o modo imagen 16:9 con overlay',
+      'Badge opcional: inline arriba del título (modo ícono) o absoluto sobre la foto (modo vitrina)',
+      'CTA dual: enlace «Ver servicio» a la ficha L4, o botón verde WhatsApp con waUrl()',
+      'Cero schema en la card: ItemList lo emite el grid padre, Service solo la ficha L4',
     ],
   },
   'resenas': {

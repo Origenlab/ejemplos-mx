@@ -164,9 +164,11 @@ const jsonLd = buildSchema(pageType, schemaData);
     */}
     <slot name="head" />
 
-    {/* ── JSON-LD: un <script> por nodo del grafo, generado por buildSchema ── */}
+    {/* ── JSON-LD: un <script> por nodo del grafo, generado por buildSchema ──
+       is:inline obligatorio: JSON-LD es DATA, no JS — saltar el bundler
+       de Astro evita el hint astro(4000) y mantiene el script tal cual. */}
     {jsonLd.map((node) => (
-      <script type="application/ld+json" set:html={JSON.stringify(node)} />
+      <script type="application/ld+json" is:inline set:html={JSON.stringify(node)} />
     ))}
   </head>
 

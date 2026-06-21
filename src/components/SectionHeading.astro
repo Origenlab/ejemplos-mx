@@ -2,7 +2,7 @@
 // SectionHeading.astro — Encabezado de sección reutilizable: eyebrow con barra de acento, H2 con segunda línea resaltada, descripción. ORIGEN: PROYECTORED/src/components/ui/SectionHeader.astro + SectionHeaderDuo.astro (fusionados: layout 'simple' centrado/izquierda y layout 'duo' en dos columnas).
 // COMPLEMENTO TÍTULO (duo): IZQ = eyebrow + título + desc (el bloque de título completo); DER = body[] (párrafos que explican el módulo). Un solo componente para TODOS los títulos → menos código y peso. En 'simple' el desc va bajo el título como siempre.
 // Componente atómico de UI — sin dependencias de config. Estilos scoped con tokens.
-interface Props {
+export interface Props {
   id?: string
   eyebrow?: string
   /** Primera línea del título (obligatoria). */

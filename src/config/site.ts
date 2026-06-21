@@ -243,7 +243,7 @@ export const MODULOS: readonly Modulo[] = [
   { slug: 'category-card',       label: 'Tarjeta de categoría',    href: '/modulos/category-card',       desc: 'La vitrina del catálogo: cada categoría como una tarjeta con foto.', estado: 'listo' },
   { slug: 'category-detail',     label: 'Categoría a fondo',       href: '/modulos/category-detail',     desc: 'Dos columnas que amplían una categoría con texto y galería.', estado: 'listo' },
   { slug: 'product-card',        label: 'Tarjeta de producto',     href: '/modulos/product-card',        desc: 'La ficha breve del catálogo: imagen, badge, título y CTA.', estado: 'listo' },
-  { slug: 'cards-catalogo',      label: 'Cards de catálogo',       href: '/modulos/cards-catalogo',      desc: 'Las fichas de producto y servicio, generadas desde Markdown.', estado: 'proximo' },
+  { slug: 'service-card',        label: 'Tarjeta de servicio',     href: '/modulos/service-card',        desc: 'La ficha breve del catálogo de servicios: ícono o foto + CTA dual (ficha o WhatsApp).', estado: 'listo' },
   { slug: 'resenas',             label: 'Reseñas',                 href: '/modulos/resenas',             desc: 'Prueba social: tarjetas con opiniones reales de clientes.', estado: 'proximo' },
   { slug: 'faq',                 label: 'Preguntas frecuentes',    href: '/modulos/faq',                 desc: 'El acordeón de dudas comunes, con esquema FAQ para SEO.', estado: 'proximo' },
   { slug: 'cta-banner',          label: 'CTA banner',              href: '/modulos/cta-banner',          desc: 'La franja de llamada a la acción que cierra cada página.', estado: 'proximo' },
