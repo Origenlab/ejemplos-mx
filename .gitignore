@@ -42,3 +42,6 @@ Thumbs.db
 
 # FUSE mount artifacts (Cowork / mount FUSE)
 .fuse_hidden*
+
+# QA scratch (screenshots locales, no deploy)
+.qa/

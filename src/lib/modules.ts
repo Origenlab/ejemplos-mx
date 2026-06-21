@@ -51,3 +51,32 @@ export function siblingsModules(slug: string): SiblingItem[] {
     { label: 'Inicio', href: '/', sub: 'Volver a la home' },
   ]
 }
+
+// ============================================================================
+// MODULE_CARD_META — presentación visual de cada módulo como card (foto + chips).
+// ----------------------------------------------------------------------------
+// SSoT del ASPECTO de las cards de módulo (no de los datos: esos viven en MODULOS,
+// site.ts). Lo consumen DOS vistas para que se vean idénticas: el índice
+// /modulos/index.astro y la vitrina «el sistema» de la home (index.astro).
+// Las fotos son AVIF demo reutilizadas; en un sitio real cada módulo llevaría la
+// suya. `chips` = las piezas que componen cada módulo (valor didáctico).
+// ============================================================================
+const IMG = '/images'
+export const MODULE_CARD_META: Record<string, { image: string; chips: string[] }> = {
+  'topbar':              { image: `${IMG}/showcase/imagen-optimizada-avif-sitio-web.avif`,        chips: ['Contacto', 'Horario', 'WhatsApp'] },
+  'header':              { image: `${IMG}/productos/desarrollo-web-astro-profesional.avif`,        chips: ['Logotipo', 'Navegación', 'Menú móvil'] },
+  'breadcrumbs':         { image: `${IMG}/showcase/enlaces-internos-navegacion-web.avif`,          chips: ['Ruta', 'Jerarquía', 'Volver'] },
+  'hero':                { image: `${IMG}/showcase/jerarquia-titulos-seo-pagina-web.avif`,         chips: ['H1 único', 'Subtítulo', 'Llamada'] },
+  'section-menu':        { image: `${IMG}/servicios/implementacion-deploy-sitio-astro.avif`,       chips: ['Botones', 'Saltos', 'CTA'] },
+  'section-heading':     { image: `${IMG}/showcase/texto-venta-contenido-markdown.avif`,           chips: ['Eyebrow', 'Título', 'Descripción'] },
+  'category-card':       { image: `${IMG}/productos/componentes-plantilla-astro-markdown.avif`,    chips: ['Imagen + alt', 'Título H3', 'Chips + CTA'] },
+  'category-detail':     { image: `${IMG}/productos/sitio-web-rapido-astro.avif`,                  chips: ['Dos columnas', 'Galería', 'CTA'] },
+  'product-card':        { image: `${IMG}/productos/desarrollo-web-astro-profesional.avif`,        chips: ['Imagen 16:9 + badge', 'Título H3 + descripción', 'CTA inline + LCP'] },
+  'service-card':        { image: `${IMG}/servicios/consultoria-desarrollo-web-astro.avif`,        chips: ['Icono SVG · 56×56', 'Título H3 + descripción', 'CTA dual (ficha o WhatsApp)'] },
+  'review':              { image: `${IMG}/casos/caso-exito-proyecto-web-astro.avif`,               chips: ['Estrellas · 5/5', 'Cita + cliente + rol', 'Avatar con iniciales'] },
+  'faq':                 { image: `${IMG}/articulos/guia-plantilla-astro-contenido-markdown.avif`, chips: ['Pregunta · summary tappable', 'Respuesta · admite HTML', 'Schema FAQPage opcional'] },
+  'cta-banner':          { image: `${IMG}/servicios/soporte-mantenimiento-web-astro.avif`,         chips: ['Heading + desc + badge', 'btns[] tipados (wa/arrow/phone/quote)', '3 variantes: red · dark · light'] },
+  'contact-form':        { image: `${IMG}/articulos/novedades-sistema-produccion-web-astro.avif`,  chips: ['Form HTML5 nativo', 'Validación es-MX + honeypot', 'Envío a WhatsApp · waUrl()'] },
+  'footer':              { image: `${IMG}/zonas/cobertura-desarrollo-web-ciudad-de-mexico.avif`,   chips: ['CTA + NAP + 4 cols + legales', 'Data-driven desde site.ts', 'Schema Organization en lib/seo.ts'] },
+  'whatsapp-flotante':   { image: `${IMG}/showcase/imagen-optimizada-avif-sitio-web.avif`,         chips: ['Botón', 'Fijo', 'Mensaje'] },
+}

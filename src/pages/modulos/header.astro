@@ -2,10 +2,12 @@
 // ============================================================================
 // /modulos/header — PÁGINA DEL MÓDULO «Header».
 // ----------------------------------------------------------------------------
-// Segunda de la serie /modulos/* (después de topbar), MISMO molde (docs/MODULOS.md):
-// qué es, para qué sirve, qué lleva (anatomía + ejemplo en vivo), variantes,
-// responsive/móvil, dónde va, cómo está construido y buenas prácticas. Todo dato
-// real sale de site.ts (SSoT: SITE.brand, NAV); el CTA, de waUrl(WA_MESSAGES).
+// Segunda pieza de la serie /modulos/* (después de topbar), con el MISMO molde
+// (docs/MODULOS.md): qué es, para qué sirve, qué lleva (anatomía + ejemplo en
+// vivo), variantes, responsive/móvil, dónde va y cómo está construido por dentro.
+// Material didáctico: explica el patrón data-driven de Astro (un array, NAV, que
+// genera las tres vistas) para que cualquiera arme una navegación profesional.
+// Todo dato real sale de site.ts (SSoT: SITE.brand, NAV); el CTA, de waUrl().
 // ============================================================================
 import PageLayout from '@layouts/PageLayout.astro'
 import Hero from '@components/Hero.astro'
@@ -18,6 +20,7 @@ import Receta from '@components/Receta.astro'
 import { SITE, NAV, WA_MESSAGES, waUrl } from '@config/site'
 
 // Menú de cierre (mismo patrón que topbar): navegación de la serie + el sitio.
+// «El menú reparte; el último botón —WhatsApp— convierte».
 const cierreItems = [
   { label: 'Todos los módulos', href: '/modulos', sub: 'Índice de la serie' },
   { label: 'Módulo Topbar', href: '/modulos/topbar', sub: 'La barra de arriba' },
@@ -26,30 +29,31 @@ const cierreItems = [
 ]
 const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), sub: 'Respuesta inmediata', external: true }
 
-// Las 4 piezas del header (misma fuente que la leyenda guía del componente Header).
+// Las 4 piezas del header — misma fuente que la leyenda guía del componente
+// (Header.astro · PUNTOS). El número mapea con los pines del ejemplo en vivo.
 const partes = [
   {
     n: 1,
     nombre: 'Logotipo',
-    que: 'La marca, a la izquierda, enlazando a la home. Es el ancla de identidad y el «volver al inicio» que todos esperan por instinto. Aquí SÍ va el logo (en el topbar, no).',
+    que: 'La marca, a la izquierda y enlazada a la home. Es el ancla de identidad y el «volver al inicio» que todos buscan por instinto. Aquí sí va el logotipo —en el topbar, no—.',
     dato: 'SITE.brand · SITE.name',
   },
   {
     n: 2,
     nombre: 'Navegación',
-    que: 'Las secciones del sitio. No se hardcodea ningún enlace: se itera NAV, la misma fuente para escritorio y móvil. En móvil colapsa en el menú ☰.',
+    que: 'Las secciones del sitio. Ningún enlace se escribe a mano: el componente recorre NAV, la misma lista para escritorio y móvil. Por debajo de 1024 px se pliega en el menú ☰.',
     dato: 'NAV',
   },
   {
     n: 3,
-    nombre: 'Paneles (mega / dropdown)',
-    que: 'Las secciones con hijos despliegan un panel al pasar el cursor o con el teclado; su contenido sale de la taxonomía, no de una lista aparte.',
+    nombre: 'Paneles (mega · dropdown)',
+    que: 'Las secciones con hijos despliegan un panel al pasar el cursor o con el teclado. Su contenido nace de la taxonomía (productos, servicios, módulos), no de una lista aparte que mantener en paralelo.',
     dato: 'NAV[].panel · items',
   },
   {
     n: 4,
     nombre: 'CTA · Cotizar',
-    que: 'El botón de conversión a WhatsApp, siempre visible a la derecha. El enlace se arma con waUrl(); el mensaje precargado sale de WA_MESSAGES.',
+    que: 'El botón de conversión, siempre visible a la derecha. Su enlace no se teclea: lo arma waUrl() con el mensaje precargado de WA_MESSAGES, para que la conversación empiece con contexto.',
     dato: 'waUrl(WA_MESSAGES.cotizacion)',
   },
 ]
@@ -57,135 +61,185 @@ const partes = [
 const beneficios = [
   {
     titulo: 'Orientación constante',
-    desc: 'El visitante siempre sabe dónde está y a dónde puede ir. La navegación, idéntica en cada página, es el mapa que evita que alguien se pierda o se vaya por no encontrar el camino.',
+    desc: 'En cualquier página, el visitante ve el mapa completo y sabe a dónde ir. La misma navegación en todas partes evita callejones sin salida y mantiene a la gente explorando en lugar de abandonar.',
   },
   {
-    titulo: 'Identidad a la vista',
-    desc: 'El logotipo, siempre arriba a la izquierda, ancla la marca y ofrece el «volver al inicio» que casi todos buscan por instinto al primer clic.',
+    titulo: 'Identidad siempre a la vista',
+    desc: 'El logotipo, fijo arriba a la izquierda, recuerda de quién es el sitio y ofrece el «volver al inicio» que casi todos buscan por reflejo. Es el ancla a la que se regresa cuando uno se pierde.',
   },
   {
-    titulo: 'Conversión siempre cerca',
-    desc: 'Un único botón de acción (Cotizar) viaja en cada página: la puerta de conversión nunca queda a más de un clic, sin competir con otros botones.',
+    titulo: 'Una fuente, cero desajustes',
+    desc: 'Escritorio y móvil salen del mismo array (NAV). El visitante encuentra lo mismo en cualquier pantalla y tú editas en un solo lugar, sin dos menús que se contradigan con el tiempo.',
   },
 ]
 
 const sis = [
-  'Deriva TODO el menú de una sola fuente (NAV en site.ts); no hardcodees ningún <li>.',
-  'Logo a la izquierda, enlazando a la home: es el «volver al inicio» que el visitante espera.',
-  'Un solo CTA de conversión visible (Cotizar); que no compita con otros botones.',
-  'En móvil colapsa en ☰ con un panel accesible (foco por teclado, aria-expanded), del MISMO NAV.',
-  'Mantén ~7 ítems de primer nivel; agrupa el resto en paneles mega/dropdown.',
+  'Deriva todo el menú de una sola fuente (NAV en site.ts); no hardcodees ni un solo <li> en el componente.',
+  'Deja el logotipo a la izquierda y enlazado a la home: es el «volver al inicio» que el visitante da por hecho.',
+  'Mantén un único CTA de conversión visible (Cotizar) y ármalo con waUrl(); que no compita con otros botones.',
+  'Hazlo accesible de fábrica: que abra con cursor y teclado, marque aria-expanded y cierre con Escape.',
+  'Sostén la barra ligera: ~7 secciones de primer nivel; agrupa el resto en paneles mega o dropdown.',
 ]
 const nos = [
   'No metas el logotipo en el topbar: la marca vive aquí, en el header.',
-  'No dupliques el menú a mano para móvil: misma fuente NAV, un solo array.',
-  'No abras los paneles solo por hover: deja también clic y teclado (accesibilidad).',
-  'No amontones dos o tres CTAs compitiendo; el header lleva uno.',
-  'No dejes datos DEMO (marca, enlaces) en producción.',
+  'No dupliques el menú a mano para móvil: una sola lista (NAV), dos presentaciones.',
+  'No abras los paneles solo por hover: sin teclado, dejas fuera a quien no usa ratón.',
+  'No amontones dos o tres CTAs compitiendo entre sí; el header lleva uno.',
+  'No pongas la navegación en Markdown ni dejes datos DEMO (marca, enlaces) en producción.',
 ]
 
 // Variantes de header (galería). Réplica en vivo abajo, mismo orden. Patrones
-// reales de la industria (NN/g, Material Design, guías de e-commerce y SaaS).
+// reales de la industria (Nielsen Norman, Material Design, guías de e-commerce).
 const disenos = [
   {
     nombre: 'Clásico: logo · nav · CTA',
     tag: 'Negocio local · Servicios',
-    desc: 'El de esta plantilla: logotipo a la izquierda, navegación a la derecha y un botón de conversión. Claro, predecible y probado; el que mejor funciona para la mayoría de sitios de negocio y servicios.',
+    desc: 'El de esta plantilla. Logotipo a la izquierda, navegación a la derecha y un botón de conversión al final. Es la disposición que el ojo ya tiene memorizada, así que el visitante no gasta ni un segundo en aprenderla: la opción más segura para la mayoría de negocios y servicios.',
   },
   {
-    nombre: 'Logo centrado, nav partida',
+    nombre: 'Logotipo centrado, nav partida',
     tag: 'Marca · Moda · Restaurante',
-    desc: 'El logotipo manda al centro y la navegación se reparte a sus lados. Da protagonismo a la identidad; luce en sitios donde la marca pesa más que el tamaño del catálogo.',
+    desc: 'El logo manda al centro y la navegación se reparte a sus dos lados. Da aire y protagonismo a la identidad; brilla cuando la marca vende tanto como el producto. Pide un número par de secciones para que el equilibrio se sienta intencional y no accidental.',
   },
   {
     nombre: 'Mega-menú por categorías',
     tag: 'E-commerce · Catálogo grande',
-    desc: 'Una entrada abre un panel ancho con columnas de subcategorías. Cuando hay mucho que ordenar, el mega-menú deja todo a la vista en un gesto, sin perder al visitante en niveles.',
+    desc: 'Una entrada abre un panel ancho con columnas de subcategorías. Es la respuesta cuando hay mucho que ordenar: deja decenas de destinos a la vista en un solo gesto, en lugar de enterrarlos en submenús que nadie despliega. El estándar de las tiendas con inventario profundo.',
   },
   {
     nombre: 'Buscador, cuenta y carrito',
     tag: 'E-commerce',
-    desc: 'Suma a la marca y al menú un buscador prominente y los accesos de tienda —cuenta y carrito— a la derecha. Es el header de quien vende en línea: encontrar y comprar, a un clic.',
+    desc: 'Suma a la marca y al menú un buscador prominente y los accesos de tienda —cuenta y carrito— a la derecha. Cuando el catálogo es grande, buscar le gana a navegar; por eso el campo va ancho y al centro, siempre visible. Es el header de quien vive de vender en línea.',
   },
   {
     nombre: 'Header de aplicación',
     tag: 'SaaS · Paneles',
-    desc: 'Logo compacto, buscador global y acciones de usuario —notificaciones, perfil—. No es marketing: es la barra de una herramienta web, centrada en hacer, no en presentar.',
+    desc: 'Logo compacto, búsqueda global y acciones de usuario —notificaciones, perfil—. No es una barra de marketing sino la de una herramienta: prioriza hacer sobre presentar, y suele convivir con un menú lateral en lugar de una fila de secciones.',
   },
   {
     nombre: 'Transparente sobre el hero',
     tag: 'Landing · Marca visual',
-    desc: 'El header flota encima de una imagen o gradiente, sin fondo propio, y se vuelve sólido al hacer scroll. Inmersivo para landings con foto potente; exige cuidar el contraste.',
+    desc: 'El header flota sin fondo sobre una imagen o un degradado y se vuelve sólido al hacer scroll. Inmersivo para landings con una foto potente; a cambio, exige cuidar el contraste del texto sobre la imagen para no sacrificar la legibilidad por la estética.',
   },
 ]
 
-// ── Recetas de implementación (móvil) — strings que pinta <Receta> ───────────
-const recetaHamburguesa = `/* HEADER MÓVIL · hamburguesa + panel (drawer)
-   El estándar: en móvil la nav colapsa en un botón ☰ que
-   abre un panel a pantalla completa. MISMO NAV que escritorio. */
+// ── Recetas de implementación — strings que <Receta> resalta con Shiki ────────
+// El corazón del header: un array (NAV) que el componente recorre para generar
+// el menú. Esto es lo que conviene entender para armar una navegación profesional.
+const recetaNav = `// site.ts — la navegación es CONFIG, no contenido editorial:
+// vive en un array TIPADO (no en Markdown). Editar el menú = editar esto,
+// y un menú mal formado lo caza el compilador antes de publicar.
+export type NavItem = {
+  label: string;
+  href: string;
+  panel?: 'mega' | 'dropdown';   // ¿despliega panel? y de qué tipo
+  items?: { label: string; href: string; desc?: string }[];
+};
 
-@media (max-width: 1024px) {
-  .hdr-nav  { display: none; }          /* se oculta la barra de enlaces */
-  .hdr-burger { display: inline-flex; } /* aparece el botón ☰ */
-}
+export const NAV: readonly NavItem[] = [
+  { label: 'Productos', href: '/productos', panel: 'mega',     items: /* …de la taxonomía… */ [] },
+  { label: 'Servicios', href: '/servicios', panel: 'dropdown', items: /* …de la taxonomía… */ [] },
+  { label: 'Blog',      href: '/blog' },        // sin panel = enlace directo
+  { label: 'Contacto',  href: '/contacto' },
+];`
 
-/* JS: abrir/cerrar el panel y bloquear el scroll del fondo */
-const btn = document.querySelector('.hdr-burger');
-const nav = document.getElementById('mobile-nav');
-btn.addEventListener('click', () => {
-  const open = nav.getAttribute('aria-hidden') === 'false';
-  nav.setAttribute('aria-hidden', open ? 'true' : 'false');
-  btn.setAttribute('aria-expanded', open ? 'false' : 'true');
-  document.body.style.overflow = open ? '' : 'hidden';
-});`
+const recetaDataDriven = `---
+// Header.astro — el menú NO se escribe a mano: se ITERA NAV.
+// El mismo recorrido alimenta escritorio, paneles y móvil.
+import { NAV } from '@config/site'
+---
+<nav aria-label="Navegación principal">
+  <ul>
+    {NAV.map((item) => (
+      <li>
+        <a href={item.href}>{item.label}</a>
 
-const recetaAcordeon = `/* PANEL MÓVIL · secciones en acordeón
-   Los mega/dropdown del escritorio se vuelven acordeón:
-   un toque expande sus hijos; solo una sección abierta a la vez. */
+        {/* ¿La sección tiene hijos? Entonces despliega su panel. */}
+        {item.panel && (
+          <div class="panel" role="region" aria-label={item.label}>
+            {item.items?.map((sub) => (
+              <a href={sub.href}>{sub.label}</a>
+            ))}
+          </div>
+        )}
+      </li>
+    ))}
+  </ul>
+</nav>`
 
-document.querySelectorAll('.mob-item__trigger').forEach((btn) => {
+const recetaHamburguesa = `<!-- HEADER MÓVIL · hamburguesa + panel (drawer)
+     En móvil la barra de enlaces se oculta y aparece el botón ☰,
+     que abre un panel a pantalla completa con el MISMO NAV que el
+     escritorio. Mientras está abierto, el fondo no hace scroll. -->
+<button class="hdr-burger" aria-label="Abrir menú"
+        aria-expanded="false" aria-controls="mobile-nav">☰</button>
+
+<nav id="mobile-nav" class="mobile-nav" aria-hidden="true"><!-- enlaces de NAV --></nav>
+
+<script>
+  const btn = document.querySelector('.hdr-burger');
+  const nav = document.getElementById('mobile-nav');
   btn.addEventListener('click', () => {
-    const open = btn.getAttribute('aria-expanded') === 'true';
-    // cerrar las demás (una abierta a la vez)
-    document.querySelectorAll('.mob-item__trigger')
-      .forEach((o) => o.setAttribute('aria-expanded', 'false'));
-    btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+    const abierto = nav.getAttribute('aria-hidden') === 'false';
+    nav.setAttribute('aria-hidden', abierto ? 'true' : 'false');
+    btn.setAttribute('aria-expanded', abierto ? 'false' : 'true');
+    document.body.style.overflow = abierto ? '' : 'hidden'; // bloquea el fondo
   });
-});`
+</script>`
 
-const recetaBottomNav = `/* NAVEGACIÓN INFERIOR (bottom nav) · estilo app
-   3–5 destinos en la «zona del pulgar». Objetivos ≥ 44px
-   y respeta el área segura del iPhone. */
+const recetaAcordeon = `/* SUBMENÚS EN MÓVIL · acordeón con transición real de altura
+   El truco moderno: animar grid-template-rows de 0fr a 1fr.
+   No hace falta adivinar un max-height; el grid mide el contenido
+   por ti y la animación queda suave con 2 enlaces o con 12. */
+
+.mob-panel {
+  display: grid;
+  grid-template-rows: 0fr;                  /* cerrado */
+  transition: grid-template-rows .25s ease;
+}
+.mob-panel.is-open { grid-template-rows: 1fr; }   /* abierto */
+
+/* El hijo debe poder colapsar a 0: de ahí el overflow:hidden. */
+.mob-panel > * { min-height: 0; overflow: hidden; }
+
+/* JS · alternar .is-open al tocar, y solo una sección abierta a la vez. */`
+
+const recetaBottomNav = `/* NAVEGACIÓN INFERIOR (bottom-nav) · estilo app
+   3–5 destinos en la «zona del pulgar». Cada objetivo táctil
+   mide ≥ 44 px y la barra respeta el área segura del iPhone
+   (la franja de gestos) con env(safe-area-inset-bottom). */
 
 @media (max-width: 640px) {
   .bottom-nav {
-    position: fixed; inset: auto 0 0 0; z-index: 50;
+    position: fixed; inset: auto 0 0 0; z-index: var(--z-sticky);
     display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
-    background: #fff; border-top: 1px solid #e8e8e8;
+    background: var(--c-white); border-top: 1px solid var(--c-border);
     padding-bottom: env(safe-area-inset-bottom);
   }
   .bottom-nav a {
-    min-height: 44px; display: grid; place-items: center;
-    gap: 2px; font-size: 11px; color: #374151; text-decoration: none;
+    min-height: 44px; display: grid; place-items: center; gap: 2px;
+    font-size: var(--text-xs); color: var(--c-ink-2); text-decoration: none;
   }
 }`
 
 const recetaCondensado = `/* HEADER QUE SE CONDENSA AL HACER SCROLL
-   Al bajar, el header encoge (menos alto + sombra) para
-   ceder pantalla; al volver arriba, recupera su tamaño. */
+   Al bajar, el header encoge (menos alto + sombra) para ceder
+   pantalla; al volver arriba, recupera su tamaño. La transición
+   vive en CSS; el JS solo alterna una clase. */
 
 .site-header { transition: height .2s ease, box-shadow .2s ease; }
-.site-header.is-shrink { height: 56px; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+.site-header.is-shrink { height: 56px; box-shadow: var(--shadow-md); }
 
-addEventListener('scroll', () => {
-  document.querySelector('.site-header')
-    .classList.toggle('is-shrink', scrollY > 40);
-}, { passive: true });`
+/* JS · passive:true le avisa al navegador que no haremos
+   preventDefault → el scroll sigue fluido:
+   addEventListener('scroll', () =>
+     header.classList.toggle('is-shrink', scrollY > 40),
+     { passive: true }); */`
 ---
 
 <PageLayout
   title="El Header — logotipo y navegación principal"
-  description="Qué es un header, para qué sirve, qué lleva (logo, navegación, paneles, CTA) y dónde va — más cómo está construido en esta plantilla: menú data-driven desde NAV en site.ts, accesible y responsive."
+  description="Header: logotipo a la izquierda y navegación principal a la derecha. Menú data-driven desde NAV en site.ts, accesible y responsive, mobile incluido."
   pageType="page"
   guia={false}
   breadcrumbs={[{ label: 'Módulos', href: '/modulos' }, { label: 'Header' }]}
@@ -193,11 +247,11 @@ addEventListener('scroll', () => {
   <Hero
     badge="Módulo del sitio · Header"
     title="El Header:"
-    accent="logotipo y navegación"
-    subtitle="La barra de marca y menú que va justo debajo del topbar. Es el mapa del sitio: dice quién eres, a dónde se puede ir y deja la conversión a un clic, en cada página."
+    accent="navegación e identidad"
+    subtitle="La franja de marca y menú que se asienta bajo el topbar y acompaña al visitante en cada página. Si el topbar susurra «aquí estamos», el header responde a las dos preguntas que todos traen al llegar: «¿de quién es esto?» y «¿a dónde puedo ir?»."
     descRight={[
-      'No es una ficha técnica más: es el módulo entero, abierto y explicado. Qué problema resuelve y por qué se gana su lugar, de qué piezas se compone, dónde encaja en el layout y cómo está construido —el recorrido completo, del criterio de diseño a la implementación.',
-      'Y todo se apoya en un mismo principio: una única fuente de verdad. El menú no se escribe a mano en el componente: se genera iterando NAV en site.ts, la misma fuente para escritorio y móvil. Cambias una entrada y se actualiza, idéntica, en toda la navegación.',
+      'Esta página no resume el módulo: lo abre por completo. Verás qué problema resuelve y por qué se gana su lugar fijo, de qué piezas se compone, cómo se comporta en el teléfono, dónde encaja en el armado de la página y, al final, cómo está construido por dentro —del criterio de diseño a la línea de código.',
+      'Todo descansa sobre una idea que se repite en cada módulo de esta plantilla: una sola fuente de verdad. El menú no se escribe a mano en ningún componente; vive en un único array, NAV, dentro de site.ts. De ahí nacen, a la vez y sin copiar nada, el menú de escritorio, los paneles desplegables y la versión móvil. Cambias una sección una vez y aparece, idéntica, en todo el sitio.',
     ]}
   />
 
@@ -208,10 +262,10 @@ addEventListener('scroll', () => {
         layout="duo"
         eyebrow="Definición"
         title="¿Qué es un header?"
-        desc="La barra de cabecera: logotipo + navegación principal, fija en la parte alta y repetida idéntica en todas las páginas."
+        desc="La barra de cabecera: logotipo y navegación principal, en una franja constante que corona cada página justo debajo del topbar."
         body={[
-          'El header (o cabecera) es la barra que corona cada página, justo debajo del topbar. Reúne dos cosas que el visitante busca por reflejo: la marca —arriba a la izquierda, como botón de «volver al inicio»— y el menú con las secciones del sitio. Es, literalmente, el mapa: de un vistazo se entiende qué hay y cómo llegar.',
-          'A diferencia del topbar, que es accesorio, el header es estructural: sin él, un sitio se siente perdido. Por eso se repite igual en cada página y cambia lo menos posible —la constancia es justo lo que lo hace útil—. Piensa en la señalización de un edificio: aburrida a propósito, porque su trabajo es que nunca te pierdas.',
+          'El header —o cabecera— es la barra que encabeza todas las páginas del sitio, pegada bajo el topbar. Reúne las dos cosas que cualquier visitante busca por reflejo apenas llega: la marca, arriba a la izquierda, que dice de quién es el sitio y funciona como botón de «volver al inicio»; y el menú, con las secciones por las que puede moverse. Junta identidad y orientación en una sola línea.',
+          'Su virtud no es destacar, sino ser fiable. Aparece en el mismo lugar, con la misma forma, página tras página —y esa constancia es justo lo que lo vuelve útil: el visitante aprende dónde está el menú una sola vez y lo encuentra ahí para siempre. Es la señalización de un buen edificio: discreta a propósito, porque su trabajo es que nunca tengas que detenerte a pensar por dónde seguir.',
         ]}
       />
     </div>
@@ -224,10 +278,10 @@ addEventListener('scroll', () => {
         layout="duo"
         eyebrow="Función e importancia"
         title="¿Para qué sirve?"
-        desc="Hace tres trabajos a la vez: orientar, mostrar la marca y dejar la conversión siempre a mano."
+        desc="Hace tres trabajos a la vez, en todas las páginas: orientar con el menú, anclar la marca con el logotipo y dejar la conversión a un clic con el CTA."
         body={[
-          'Su función es ser el sistema de orientación del sitio. Mientras el hero presenta y el contenido convence, el header responde en todo momento a tres preguntas que el visitante trae consigo: «¿de quién es esto?», «¿a dónde puedo ir?» y «¿cómo doy el paso?». Tenerlas resueltas, en cada página, es lo que mantiene a la gente navegando en vez de abandonando.',
-          'Y ahí está su importancia: el header es el elemento que más se mira y más se usa de todo el sitio. Una navegación confusa o un logo que no lleva a la home cuestan visitas de inmediato. Bien resuelto, en cambio, es invisible: la gente lo usa sin pensar, que es exactamente la señal de que funciona.',
+          'Su función es ser el sistema de orientación del sitio. Mientras el hero presenta y el contenido convence, el header está ahí, callado, resolviendo en todo momento tres preguntas que el visitante trae consigo: de quién es esto, a dónde puede ir y cómo dar el siguiente paso. Tener esas respuestas siempre a la vista es lo que convierte un puñado de páginas sueltas en un sitio que se recorre con confianza.',
+          'Y por eso pesa tanto: es el elemento más mirado y más usado de todo el sitio. Una navegación confusa, o un logotipo que no lleva a la home, cuestan visitas en el acto —porque rompen expectativas que la gente ni siquiera sabe que tiene—. Bien resuelto, en cambio, se vuelve invisible: se usa sin pensar. Y esa es, justamente, la señal de que está bien hecho.',
         ]}
       />
       <div class="bene">
@@ -248,10 +302,10 @@ addEventListener('scroll', () => {
         layout="duo"
         eyebrow="Anatomía"
         title="¿Qué va en el header?"
-        desc="Cuatro piezas: la marca, la navegación, sus paneles desplegables y un botón de conversión."
+        desc="Cuatro piezas, cada una con un trabajo: la marca, la navegación, los paneles que ordenan lo que tiene hijos y un único botón de conversión."
         body={[
-          'Cada pieza cumple un papel claro. El logotipo ancla la identidad y devuelve a la home; la navegación reparte hacia las secciones; los paneles ordenan lo que tiene hijos; y el CTA deja la conversión siempre a la vista. Ni una sobra, ni una compite con otra.',
-          'Abajo lo ves montado con los datos reales de la plantilla. Cada punto numerado se desglosa en su tarjeta —qué resuelve y de qué dato de site.ts sale—, para que distingas de un vistazo qué es diseño y qué es contenido.',
+          'Cada pieza se gana su lugar. El logotipo ancla la identidad y devuelve a la home; la navegación reparte hacia las secciones; los paneles despliegan los hijos de una sección sin saturar la barra; y el CTA mantiene la conversión a un clic. Nada sobra, y nada compite con otra cosa por la atención.',
+          'Abajo lo ves montado con los datos reales de la plantilla —la marca sale de site.ts y los enlaces, de NAV—. Cada punto numerado se explica en su tarjeta: qué resuelve y de qué dato nace, para que distingas a simple vista qué es diseño y qué es contenido. En el teléfono, esta misma barra se pliega tras el botón ☰; ese menú móvil lo abrimos a fondo más adelante.',
         ]}
       />
 
@@ -293,15 +347,15 @@ addEventListener('scroll', () => {
         layout="duo"
         eyebrow="Variantes"
         title="Otros diseños y aplicaciones"
-        desc="El de esta plantilla es un header clásico, pero la cabecera adopta muchas formas según el negocio."
+        desc="El de esta plantilla es un header clásico, pero la cabecera cambia de forma según lo que un sitio necesita mostrar y vender."
         body={[
-          'No hay un único header: hay una barra de cabecera que cada tipo de sitio adapta a su objetivo. Una tienda añade buscador y carrito; una marca centra el logo; una aplicación pone acciones de usuario. Mismo lugar, prioridades distintas.',
-          'Abajo, seis variantes reales —cada una con su réplica en vivo y el tipo de proyecto donde brilla—. Sirven para reconocer cuál te conviene y para ver cómo el mismo molde se reescribe sin perder su sitio.',
+          'No existe un único header, sino una franja de cabecera que cada tipo de proyecto afina a su objetivo. Una tienda con catálogo profundo abre un mega-menú; una marca de moda centra el logotipo para que respire; una aplicación cambia secciones por acciones de usuario. Mismo lugar en la página, prioridades distintas.',
+          'Abajo, seis variantes reales —cada una con su réplica en vivo y el tipo de proyecto donde rinde mejor—. No están para copiarlas tal cual, sino para que reconozcas cuál encaja con tu caso y veas cómo el mismo molde se reescribe sin perder su sitio.',
         ]}
       />
 
       <GaleriaDisenos ariaLabel="Variantes de header">
-        {/* 0 · Clásico: logo · nav · CTA (la de esta plantilla) */}
+        {/* 0 · Clásico: logo · nav · CTA (el de esta plantilla) */}
         <DisenoCard {...disenos[0]}>
           <div class="hdv hdv--clasico" role="img" aria-label="Header clásico: logo a la izquierda, navegación y botón">
             <span class="hdv__logo"><span class="hdv__mark">O</span>Marca</span>
@@ -372,10 +426,10 @@ addEventListener('scroll', () => {
         layout="duo"
         eyebrow="Responsive y móvil"
         title="Cómo se comporta en el teléfono"
-        desc="En móvil la navegación no cabe en una fila: se colapsa, se prioriza y se acerca al pulgar."
+        desc="En el móvil la navegación no se encoge: se replantea. La barra de enlaces se pliega tras el botón ☰ y todo pasa a regirse por el pulgar."
         body={[
-          'La barra de menú de escritorio no entra en un teléfono, así que el header se replantea: la marca se queda, y la navegación se pliega tras un botón ☰ que abre un panel. Es el patrón que todo el mundo ya conoce, y por eso funciona —no hay que enseñar a usarlo—.',
-          'A partir de ahí, manda la ergonomía: las secciones con hijos se vuelven acordeón, los destinos clave pueden bajar a una barra inferior en la «zona del pulgar», y el header puede condensarse al hacer scroll para ceder pantalla. Abajo, cuatro patrones, cada uno con su vista en el teléfono y una receta comentada.',
+          'Una fila de secciones no cabe en la pantalla de un teléfono, así que el header cambia de modo en lugar de apretarse. La marca se queda donde está; la navegación se recoge detrás del botón ☰ —la hamburguesa— y se despliega como un panel a pantalla completa. Es un gesto que todo el mundo ya conoce, y por eso funciona: no hay que enseñar a usarlo.',
+          'A partir de ahí, manda la ergonomía. Las secciones con hijos se abren en acordeón para no saltar de pantalla; los destinos más usados pueden bajar a una barra inferior, donde el pulgar llega sin esfuerzo; y el header puede condensarse al hacer scroll para devolverle altura al contenido. Abajo, cuatro patrones, cada uno con su vista en el teléfono y una receta comentada lista para adaptar.',
         ]}
       />
 
@@ -398,8 +452,8 @@ addEventListener('scroll', () => {
           </div>
           <div class="pat__info">
             <h3 class="pat__title">1 · Hamburguesa + panel</h3>
-            <p class="pat__desc">El estándar: en móvil la barra de enlaces se oculta y aparece el botón ☰, que abre un panel a pantalla con las mismas secciones —generadas del mismo NAV—. Bloquea el scroll del fondo mientras está abierto.</p>
-            <Receta titulo="CSS + JS · drawer con ☰" lang="css" code={recetaHamburguesa} />
+            <p class="pat__desc">Por debajo de 1024 px, la fila de enlaces desaparece y aparece el botón ☰, que abre un panel a pantalla completa con las mismas secciones —generadas del mismo NAV—. Un detalle que se olvida y se nota: mientras el panel está abierto, hay que bloquear el scroll del fondo.</p>
+            <Receta titulo="HTML + JS · drawer con ☰" lang="html" code={recetaHamburguesa} />
           </div>
         </article>
 
@@ -424,8 +478,8 @@ addEventListener('scroll', () => {
           </div>
           <div class="pat__info">
             <h3 class="pat__title">2 · Secciones en acordeón</h3>
-            <p class="pat__desc">Las entradas con hijos (los mega/dropdown del escritorio) se vuelven acordeón: un toque expande sus subsecciones; solo una abierta a la vez para no abrumar. Misma taxonomía, otra presentación.</p>
-            <Receta titulo="JS · acordeón del panel" lang="js" code={recetaAcordeon} />
+            <p class="pat__desc">Las entradas con hijos (los mega y dropdown del escritorio) se vuelven acordeón: un toque expande sus subsecciones, y solo una queda abierta a la vez para no abrumar. La transición de altura se resuelve con un truco de CSS moderno, sin medir píxeles.</p>
+            <Receta titulo="CSS · acordeón con grid 0fr → 1fr" lang="css" code={recetaAcordeon} />
           </div>
         </article>
 
@@ -450,8 +504,8 @@ addEventListener('scroll', () => {
           </div>
           <div class="pat__info">
             <h3 class="pat__title">3 · Barra inferior (zona del pulgar)</h3>
-            <p class="pat__desc">En apps y catálogos con pocos destinos clave, la navegación baja al borde inferior —lo más cómodo de alcanzar con una mano—, con 3 a 5 íconos, objetivos de 44 px y respeto al área segura del iPhone.</p>
-            <Receta titulo="CSS · bottom nav + safe-area" lang="css" code={recetaBottomNav} />
+            <p class="pat__desc">En apps y catálogos con pocos destinos clave, la navegación baja al borde inferior —lo más cómodo de alcanzar con una mano—, con entre tres y cinco íconos, objetivos de 44 px y respeto por el área segura del iPhone.</p>
+            <Receta titulo="CSS · bottom-nav + safe-area" lang="css" code={recetaBottomNav} />
           </div>
         </article>
 
@@ -471,8 +525,8 @@ addEventListener('scroll', () => {
           </div>
           <div class="pat__info">
             <h3 class="pat__title">4 · Se condensa al hacer scroll</h3>
-            <p class="pat__desc">Al bajar, el header encoge —menos alto, una sombra sutil— para ceder pantalla al contenido; al volver arriba, recupera su tamaño. Da aire en lecturas largas sin esconder del todo la navegación.</p>
-            <Receta titulo="JS + CSS · header condensado" lang="js" code={recetaCondensado} />
+            <p class="pat__desc">Al bajar, el header encoge —menos alto, una sombra sutil— para cederle pantalla al contenido; al volver arriba, recupera su tamaño. Da aire en lecturas largas sin esconder del todo la navegación.</p>
+            <Receta titulo="CSS · header condensado (+ toggle JS)" lang="css" code={recetaCondensado} />
           </div>
         </article>
       </div>
@@ -486,10 +540,10 @@ addEventListener('scroll', () => {
         layout="duo"
         eyebrow="Posición"
         title="¿Dónde se coloca?"
-        desc="Justo debajo del topbar y por encima del contenido, de borde a borde. Es el segundo bloque del sitio en el orden de lectura."
+        desc="En la segunda franja desde arriba: pegado bajo el topbar y por encima del contenido, de borde a borde. Es el segundo bloque del sitio en el orden de lectura."
         body={[
-          'Va pegado bajo el topbar: primero la barra utilitaria (contacto), luego el header (marca + navegación) y, debajo, el contenido de cada página. Ese orden no es casual —el visitante mira arriba a la izquierda buscando la marca y arriba a la derecha buscando el menú y la acción—.',
-          'En esta plantilla el header NO es fijo: se desplaza con el scroll (los paneles mega/dropdown viajan con él, anclados, en vez de quedar pegados al viewport). Es una decisión de diseño; arriba viste el patrón alterno —condensarse o quedarse fijo— para cuando un proyecto lo pida.',
+          'El orden del armado es deliberado. PageLayout apila el chrome siempre igual: primero el topbar (la barra utilitaria de contacto), debajo el header (marca y navegación), luego las migas de pan y, recién entonces, el contenido de cada página. Ese orden acompaña a cómo lee la gente: el ojo va arriba a la izquierda buscando la marca, y arriba a la derecha buscando el menú y la acción.',
+          'En esta plantilla el header no es fijo: se desplaza con el contenido al hacer scroll. Es una decisión a conciencia, y tiene un detalle técnico bonito detrás: los paneles mega y dropdown se posicionan respecto al header (position: absolute sobre un header position: relative), así que viajan anclados a él en lugar de quedar flotando pegados al viewport. Arriba viste el patrón alterno —condensarse o quedar fijo— para cuando un proyecto lo pida; y su altura, como todo, sale de un token: --header-height (64 px, 60 en pantallas menores).',
         ]}
       />
     </div>
@@ -502,25 +556,35 @@ addEventListener('scroll', () => {
         layout="duo"
         eyebrow="Implementación"
         title="Cómo está construido"
-        desc="Un componente que no hardcodea ningún enlace: itera NAV para generar los dos menús (escritorio y móvil) y sus paneles."
+        desc="Un componente que no guarda ningún enlace: recorre NAV para generar las tres vistas —escritorio, paneles y móvil— desde una sola fuente."
         body={[
-          'El header vive en Header.astro, pero no guarda su menú: lo genera iterando NAV en site.ts, la única fuente de verdad. El mismo array produce el menú de escritorio, los paneles desplegables y el menú móvil —añadir, quitar o reordenar una sección es editar NAV, y los tres se actualizan solos—.',
-          'Los paneles abren por hover Y por teclado (con un temporizador de gracia para que no se cierren al pasar el cursor), el menú móvil es un acordeón accesible, y el CTA se arma con waUrl(). Accesibilidad de fábrica: aria-haspopup/aria-expanded, foco gestionado y cierre con Escape. Estilos solo con tokens; ningún número de teléfono ni enlace escrito a mano.',
+          'El header vive en Header.astro, pero su menú no está dentro: lo genera iterando NAV, el array de site.ts que es la única fuente de verdad. El mismo recorrido produce la barra de escritorio, los paneles desplegables y el menú móvil. Añadir, quitar o reordenar una sección es editar ese array, y los tres se actualizan solos —sin que existan dos menús que mantener en sincronía—.',
+          'Y aquí conviene una distinción de arquitectura que vale para todo el sitio: la navegación es estructura, no contenido editorial. Por eso vive en un archivo de configuración tipado (TypeScript), donde un menú mal formado lo caza el compilador, y no en Markdown —que es para lo que sí es contenido: los artículos del blog (colección .mdx) o las fichas del catálogo—. Los hijos de cada panel, de hecho, salen de esa taxonomía, de modo que el menú nunca se desfasa de lo que el sitio realmente ofrece.',
         ]}
       />
 
+      <div class="recetas">
+        <Receta titulo="TypeScript · NAV, la fuente única del menú" lang="ts" code={recetaNav} />
+        <Receta titulo="Astro · un array (NAV) → todo el menú" lang="astro" code={recetaDataDriven} />
+      </div>
+
       <div class="prose">
         <p>
-          En concreto: el <strong>componente</strong> (<code>src/components/Header.astro</code>) pone el
-          diseño y el comportamiento; el <strong>contenido</strong> (<code>NAV</code> en
-          <code>src/config/site.ts</code>) pone las entradas del menú. El componente recorre
-          <code>NAV</code> y, según cada ítem tenga <code>panel: 'mega'</code>, <code>'dropdown'</code> o
-          ninguno, dibuja un panel ancho, una lista compacta o un enlace directo.
+          El componente recorre <code>NAV</code> y, según cada entrada tenga
+          <code>panel: 'mega'</code>, <code>'dropdown'</code> o ninguno, dibuja un panel ancho,
+          una lista compacta o un enlace directo. Un pequeño ayudante, <code>navId()</code>, genera
+          un <code>id</code> estable —sin acentos— para enlazar cada sección con su panel; e
+          <code>isActive()</code> compara la ruta actual (<code>Astro.url.pathname</code>) para
+          resaltar dónde estás parado.
         </p>
         <p>
-          El <strong>responsive</strong> es por colapso: en <code>&lt; 1024px</code> la barra de enlaces se
-          oculta y aparece el botón <code>☰</code>, que abre el menú móvil generado del MISMO
-          <code>NAV</code>. Así no hay dos menús que mantener: hay una fuente y dos presentaciones.
+          La interacción está pensada para el teclado tanto como para el cursor: los paneles abren al
+          enfocar y se cierran con un <strong>temporizador de gracia</strong> (unos 120 ms), para que
+          no desaparezcan si el puntero apenas los cruza; <code>Escape</code> los cierra y devuelve el
+          foco, y un <em>overlay</em> atenúa el fondo. En móvil, ese mismo <code>NAV</code> se vuelve
+          un acordeón accesible y se bloquea el scroll de la página. Nada de esto necesita un
+          framework: es un <code>&lt;script&gt;</code> del lado del cliente que Astro envía tal cual,
+          sin hidratar islas —HTML y JavaScript mínimo, que es la apuesta de Astro—.
         </p>
       </div>
     </div>
@@ -533,10 +597,10 @@ addEventListener('scroll', () => {
         layout="duo"
         eyebrow="Buenas prácticas"
         title="Qué hacer y qué evitar"
-        desc="La diferencia entre un header que guía y uno que confunde está en unos pocos hábitos."
+        desc="La diferencia entre un header que guía y uno que confunde cabe en un puñado de hábitos."
         body={[
-          'Ninguno de estos hábitos es capricho: salen de observar cómo usa la gente una cabecera. Un header que ayuda mantiene el menú claro, la marca enlazada y una sola acción; uno que estorba multiplica botones, esconde la navegación o mantiene dos menús desincronizados.',
-          'La ventaja es que se sostienen solos en cuanto respetas la fuente única: el menú sale de NAV, el CTA de waUrl(), y los estilos de los tokens. Abajo, lo que conviene y lo que conviene evitar, enfrentados.',
+          'Ninguno de estos hábitos es un capricho: salen de mirar cómo usa la gente una cabecera de verdad. Un header que ayuda mantiene el menú corto, la marca enlazada y una sola acción clara; uno que estorba multiplica botones, esconde la navegación en niveles o arrastra dos menús que terminan contradiciéndose.',
+          'La buena noticia es que se sostienen casi solos en cuanto respetas la fuente única: el menú nace de NAV, el CTA de waUrl() y los colores y espacios de los tokens. Abajo, enfrentados, lo que conviene y lo que conviene evitar.',
         ]}
       />
       <div class="dodont">
@@ -617,10 +681,14 @@ addEventListener('scroll', () => {
     padding: .05em .4em; color: var(--c-primary-dark);
   }
 
+  /* ── Recetas de la sección «Cómo se arma» (apiladas, ancho completo) ── */
+  .recetas { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
+
   /* ── Prose técnica ── */
   .prose { max-width: 75ch; margin-top: var(--sp-6); }
   .prose p { margin: 0 0 var(--sp-4); font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
   .prose strong { color: var(--c-ink); font-weight: var(--weight-semibold); }
+  .prose em { color: var(--c-ink-2); font-style: italic; }
 
   /* ── Sí / No ── */
   .dodont { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }

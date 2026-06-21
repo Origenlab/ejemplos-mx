@@ -21,11 +21,17 @@ import ContactForm from "@components/ContactForm.astro";
 import GuiaNota from "@components/GuiaNota.astro";
 import MarcoMovil from "@components/MarcoMovil.astro";
 import Receta from "@components/Receta.astro";
-import { SITE, KEYWORDS, NAV, SERVICES, WA_MESSAGES, SHOWCASE, waUrl } from "@config/site";
+import { SITE, KEYWORDS, NAV, SERVICES, WA_MESSAGES, SHOWCASE, MODULOS, waUrl } from "@config/site";
+import { MODULE_CARD_META } from "@lib/modules";
 import { buildKeywordTitle, buildKeywordDescription, metaAudit } from "@lib/seo";
 
 // ── WhatsApp: SIEMPRE vía waUrl() (regla D4, nunca número hardcodeado) ──
 const waLink = waUrl();
+
+// ── Módulos REALES del sitio (SSoT: MODULOS en site.ts). La vitrina «el sistema»
+//    de la home muestra los 'listo'; cada card enlaza a su página /modulos/<slug>.
+//    Misma fuente que el dropdown del header y el índice /modulos → coherencia. ──
+const modulosHome = MODULOS.filter((m) => m.estado === "listo");
 
 // ── Recetas de la sección «Responsive y móvil» — strings reales del sistema
 //    (extraídos de src/styles/mobile.css y tokens.css). Los pinta <Receta>. ──
@@ -445,48 +451,50 @@ const faqs: { question: string; answer: string }[] = [
     <div class="container">
       <SectionHeading
         layout="duo"
-        eyebrow="Catálogo"
-        title="El catálogo: agrupa tu oferta en categorías"
-        desc="Cada tarjeta arma una categoría como si fuera un producto: imagen, título, un texto breve y atajos a las subcategorías. Las cuatro de abajo te muestran, parte por parte, qué poner en cada una y cómo redactarla."
+        eyebrow="El sistema"
+        title={`Los módulos del sitio: ${modulosHome.length} piezas reutilizables`}
+        desc="Un sitio profesional no es una página suelta: es un puñado de piezas que se repiten y se combinan —topbar, header, hero, tarjetas, footer—. Aquí están las del sistema; entra a cualquiera para verla a fondo."
         body={[
-          "Aquí tu oferta deja de ser una lista larga y se vuelve un mapa: agrupas lo que vendes en pocas categorías que cualquiera entiende de un vistazo. Cada tarjeta funciona como una mini portada —una imagen real, un título con la palabra que la gente busca y una frase que adelanta qué hay dentro—, así el visitante pasa de «¿qué venden aquí?» a «esto es justo lo que necesito» en segundos. Es la diferencia entre una bodega amontonada y una tienda bien señalizada.",
-          "Para que funcione, ordena las categorías como las piensa tu cliente, no como las archivas tú: agrupa por lo que la gente busca, nombra cada una con su término real y mantén el mismo criterio en todo el sitio. Redacta cada tarjeta para una persona —un beneficio concreto, la palabra clave sin forzar y un motivo para confiar— y deja que los atajos a las subcategorías hagan de guía. Bien armado, todos ganan: el visitante encuentra antes y los buscadores entienden tu estructura y llegan a tus páginas internas.",
+          "Cada tarjeta es una pieza REAL de este sitio, no un ejemplo de relleno: su foto, su nombre, qué resuelve y los elementos que la componen. Es el MISMO card del catálogo —no inventamos un diseño aparte—, porque la coherencia entre piezas es justo lo que el sistema enseña.",
+          "Todo sale de una sola lista (MODULOS en site.ts): publicar un módulo lo suma a la vez al menú del header, a esta vitrina y al índice de /modulos. Entra a cualquiera y verás qué problema resuelve, de qué piezas se compone y cómo se construye.",
         ]}
       />
       <div class="showcase">
-        {SHOWCASE.map((cat, i) => (
-          <CategoryCard
-            label={cat.label}
-            href={cat.href}
-            image={cat.image}
-            imageAlt={cat.imageAlt}
-            badge={cat.badge}
-            blurb={cat.blurb}
-            subcategories={cat.subcategories}
-            ctaLabel={cat.ctaLabel}
-            index={i}
-          />
-        ))}
+        {modulosHome.map((m, i) => {
+          const meta = MODULE_CARD_META[m.slug];
+          return (
+            <CategoryCard
+              label={m.label}
+              href={m.href}
+              image={meta?.image}
+              imageAlt={`Imagen de ejemplo del módulo ${m.label}`}
+              badge="Listo"
+              blurb={m.desc}
+              subcategories={(meta?.chips ?? []).map((c) => ({ label: c, href: m.href }))}
+              ctaLabel="Ver módulo"
+              index={i}
+            />
+          );
+        })}
       </div>
-      <GuiaNota titulo="Componente CategoryCard + datos SHOWCASE" archivo="src/config/site.ts · src/components/CategoryCard.astro">
+      <GuiaNota titulo="Vitrina data-driven desde MODULOS (SSoT)" archivo="src/config/site.ts · src/lib/modules.ts · src/components/CategoryCard.astro">
         <p>
           Estas tarjetas (4 por fila en escritorio) se generan desde
-          <code>SHOWCASE</code> en <code>site.ts</code>: una sola lista define
-          imagen, título, texto, subcategorías y CTA de cada categoría. Agrega o
-          quita una tarjeta ahí y la vitrina se actualiza sola (SSoT).
+          <code>MODULOS</code> en <code>site.ts</code> —la misma lista que alimenta el
+          dropdown «Módulos» del header y el índice <code>/modulos</code>—. Publicar un
+          módulo (estado <code>'listo'</code>) lo suma aquí solo (SSoT).
         </p>
         <p>
-          Cada parte cumple una función: <code>imageAlt</code> describe la imagen
-          (también para quien no la ve), el título es un <code>&lt;h3&gt;</code>
-          (jerarquía H1→H2→H3), el texto une beneficio y palabra clave sin apilar, y
-          las <strong>subcategorías son enlaces internos</strong> con texto real que
-          llevan a las páginas hijas. En esta demo apuntan a <code>/productos/</code>;
-          en un sitio real, cada subcategoría lleva a su propia URL.
+          La foto y los «chips» de cada card viven en <code>MODULE_CARD_META</code>
+          (<code>src/lib/modules.ts</code>), reusado por esta home y por el índice de
+          módulos para que se vean idénticas. Cada card es un único enlace a su página
+          de detalle <code>/modulos/&lt;slug&gt;</code>.
         </p>
         <p>
-          Aquí, a modo de guía, las 4 tarjetas <strong>enseñan las partes</strong> de
-          una categoría (imagen, título, texto, enlaces). En tu sitio real,
-          reemplázalas por tus categorías de verdad.
+          Cada parte cumple su función: <code>imageAlt</code> describe la imagen, el
+          título es un <code>&lt;h3&gt;</code> (jerarquía H1→H2→H3), el texto une nombre
+          y utilidad, y los <strong>chips</strong> anticipan las piezas que componen el
+          módulo. Entra a cualquiera para verlo a fondo.
         </p>
       </GuiaNota>
 

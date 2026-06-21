@@ -17,9 +17,12 @@ import MarcoMovil from '@components/MarcoMovil.astro'
 import Receta from '@components/Receta.astro'
 import GuiaNota from '@components/GuiaNota.astro'
 import { MODULOS, waUrl, WA_MESSAGES } from '@config/site'
+import { MODULE_CARD_META as MOD_META } from '@lib/modules'
 
-const listos = MODULOS.filter((m) => m.estado === 'listo').length
-const total = MODULOS.length
+// Misma fuente y mismo filtro que la home (index.astro): solo los 'listo'. Así
+// /modulos muestra EXACTAMENTE los mismos módulos en sus cards y en su a-fondo.
+const modulosListos = MODULOS.filter((m) => m.estado === 'listo')
+const listos = modulosListos.length
 
 // ── Recetas de la sección «Responsive y móvil» — código real del sistema
 //    (src/styles/mobile.css · tokens.css). Las pinta <Receta>. ──
@@ -47,29 +50,11 @@ const recetaCard = `/* mobile.css · la card entera se toca cómodo en el teléf
   .ccard__sub { min-height: 40px; display: inline-flex; align-items: center; }
 }`
 
-// Presentación de cada card (foto demo + chips) — homologa el card del catálogo.
-// Las fotos son AVIF ya optimizadas que REUSAMOS (contenido DEMO, igual que los
-// «beneficios» del home). En un sitio real cada módulo llevaría su propia imagen.
-// chips = las piezas que componen cada módulo (valor didáctico, anticipan el detalle).
+// La presentación de cada card de módulo (foto + chips) es SSoT COMPARTIDO en
+// lib/modules.ts (MODULE_CARD_META, importado arriba como MOD_META) — reusado por
+// la home (vitrina «el sistema»). IMG se queda aquí porque POOL (galerías «a
+// fondo») también lo usa.
 const IMG = '/images'
-const MOD_META: Record<string, { image: string; chips: string[] }> = {
-  'topbar':              { image: `${IMG}/showcase/imagen-optimizada-avif-sitio-web.avif`,        chips: ['Contacto', 'Horario', 'WhatsApp'] },
-  'header':              { image: `${IMG}/productos/desarrollo-web-astro-profesional.avif`,        chips: ['Logotipo', 'Navegación', 'Menú móvil'] },
-  'breadcrumbs':         { image: `${IMG}/showcase/enlaces-internos-navegacion-web.avif`,          chips: ['Ruta', 'Jerarquía', 'Volver'] },
-  'hero':                { image: `${IMG}/showcase/jerarquia-titulos-seo-pagina-web.avif`,         chips: ['H1 único', 'Subtítulo', 'Llamada'] },
-  'section-menu':        { image: `${IMG}/servicios/implementacion-deploy-sitio-astro.avif`,       chips: ['Botones', 'Saltos', 'CTA'] },
-  'section-heading':     { image: `${IMG}/showcase/texto-venta-contenido-markdown.avif`,           chips: ['Eyebrow', 'Título', 'Descripción'] },
-  'category-card':       { image: `${IMG}/productos/componentes-plantilla-astro-markdown.avif`,    chips: ['Imagen + alt', 'Título H3', 'Chips + CTA'] },
-  'category-detail':     { image: `${IMG}/productos/sitio-web-rapido-astro.avif`,                  chips: ['Dos columnas', 'Galería', 'CTA'] },
-  'product-card':        { image: `${IMG}/productos/desarrollo-web-astro-profesional.avif`,        chips: ['Imagen 16:9 + badge', 'Título H3 + descripción', 'CTA inline + LCP'] },
-  'service-card':        { image: `${IMG}/servicios/consultoria-desarrollo-web-astro.avif`,        chips: ['Icono SVG · 56×56', 'Título H3 + descripción', 'CTA dual (ficha o WhatsApp)'] },
-  'review':              { image: `${IMG}/casos/caso-exito-proyecto-web-astro.avif`,               chips: ['Estrellas · 5/5', 'Cita + cliente + rol', 'Avatar con iniciales'] },
-  'faq':                 { image: `${IMG}/articulos/guia-plantilla-astro-contenido-markdown.avif`, chips: ['Pregunta · summary tappable', 'Respuesta · admite HTML', 'Schema FAQPage opcional'] },
-  'cta-banner':          { image: `${IMG}/servicios/soporte-mantenimiento-web-astro.avif`,         chips: ['Heading + desc + badge', 'btns[] tipados (wa/arrow/phone/quote)', '3 variantes: red · dark · light'] },
-  'contact-form':        { image: `${IMG}/articulos/novedades-sistema-produccion-web-astro.avif`,  chips: ['Form HTML5 nativo', 'Validación es-MX + honeypot', 'Envío a WhatsApp · waUrl()'] },
-  'footer':              { image: `${IMG}/zonas/cobertura-desarrollo-web-ciudad-de-mexico.avif`,   chips: ['CTA + NAP + 4 cols + legales', 'Data-driven desde site.ts', 'Schema Organization en lib/seo.ts'] },
-  'whatsapp-flotante':   { image: `${IMG}/showcase/imagen-optimizada-avif-sitio-web.avif`,         chips: ['Botón', 'Fijo', 'Mensaje'] },
-}
 
 // Menú de cierre (reemplaza al antiguo CTABanner): siguiente paso útil + el sitio.
 // Patrón canónico del home: «el menú reparte, el último botón (WhatsApp) convierte».
@@ -343,14 +328,14 @@ const AFONDO: Record<string, { body: string[]; points: string[] }> = {
         layout="duo"
         eyebrow="El índice"
         title="Todos los módulos del sitio"
-        desc={`Estos son los módulos de la serie. ${listos === 1 ? `El primero ya está documentado (${listos} de ${total})` : `${listos} de ${total} ya documentados`}; el resto se irá publicando con el mismo molde.`}
+        desc={`Los ${listos} módulos del sitio, cada uno como tarjeta: foto, nombre, qué hace y las piezas que lo componen. Entra a cualquiera para verlo a fondo.`}
         body={[
-          'Cada tarjeta es una pieza real del sitio: foto, etiqueta de estado, nombre, qué hace y los elementos que lo componen. Es el MISMO card del catálogo —no inventamos un diseño aparte—, porque la coherencia es justo lo que esta serie enseña.',
-          'Entra a cualquiera para verlo a fondo: qué problema resuelve, de qué piezas se compone, dónde encaja en el layout y cómo se construye. El primero (Topbar) ya marca el molde; el resto llega con la misma plantilla.',
+          'Cada tarjeta es una pieza real del sitio: foto, nombre, qué hace y los elementos que lo componen. Es el MISMO card del catálogo —no inventamos un diseño aparte—, porque la coherencia es justo lo que esta serie enseña.',
+          'Entra a cualquiera para verlo a fondo: qué problema resuelve, de qué piezas se compone, dónde encaja en el layout y cómo se construye.',
         ]}
       />
       <div class="showcase">
-        {MODULOS.map((m, i) => {
+        {modulosListos.map((m, i) => {
           const meta = MOD_META[m.slug]
           return (
             <CategoryCard
@@ -383,11 +368,11 @@ const AFONDO: Record<string, { body: string[]; points: string[] }> = {
         desc="El índice te dice qué es cada pieza; aquí la abrimos. Mismo formato para todas: qué resuelve, de qué partes se compone y en qué se fija al construirla."
         body={[
           'Es el mismo bloque «a fondo» del catálogo del home —información a la izquierda, galería a la derecha, idéntico para cada módulo—. Reusar el patrón es, otra vez, la lección: el sitio se arma con piezas que ya existen.',
-          'Empezamos por el Topbar, que marca el molde. Los demás módulos se irán sumando aquí con la misma estructura, a medida que se documentan.',
+          'Aquí está cada módulo abierto con la misma estructura: qué resuelve, de qué partes se compone y en qué se fija al construirlo. Los mismos módulos que ves arriba como tarjetas.',
         ]}
       />
       <div class="afondo">
-        {MODULOS.map((m, i) => (
+        {modulosListos.map((m, i) => (
           <CategoryDetail
             eyebrow="El módulo a fondo"
             title={m.label}
