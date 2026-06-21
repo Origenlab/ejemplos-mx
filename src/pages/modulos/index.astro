@@ -19,6 +19,7 @@ import GuiaNota from '@components/GuiaNota.astro'
 import { MODULOS, waUrl, WA_MESSAGES } from '@config/site'
 
 const listos = MODULOS.filter((m) => m.estado === 'listo').length
+const total = MODULOS.length
 
 // ── Recetas de la sección «Responsive y móvil» — código real del sistema
 //    (src/styles/mobile.css · tokens.css). Las pinta <Receta>. ──
@@ -58,7 +59,7 @@ const MOD_META: Record<string, { image: string; chips: string[] }> = {
   'hero':                { image: `${IMG}/showcase/jerarquia-titulos-seo-pagina-web.avif`,         chips: ['H1 único', 'Subtítulo', 'Llamada'] },
   'section-menu':        { image: `${IMG}/servicios/implementacion-deploy-sitio-astro.avif`,       chips: ['Botones', 'Saltos', 'CTA'] },
   'section-heading':     { image: `${IMG}/showcase/texto-venta-contenido-markdown.avif`,           chips: ['Eyebrow', 'Título', 'Descripción'] },
-  'cards-categoria':     { image: `${IMG}/productos/componentes-plantilla-astro-markdown.avif`,    chips: ['Foto', 'Título', 'Chips'] },
+  'category-card':       { image: `${IMG}/productos/componentes-plantilla-astro-markdown.avif`,    chips: ['Imagen + alt', 'Título H3', 'Chips + CTA'] },
   'categoria-a-fondo':   { image: `${IMG}/productos/sitio-web-rapido-astro.avif`,                  chips: ['Dos columnas', 'Galería', 'CTA'] },
   'cards-catalogo':      { image: `${IMG}/servicios/consultoria-desarrollo-web-astro.avif`,        chips: ['Producto', 'Servicio', 'Markdown'] },
   'resenas':             { image: `${IMG}/casos/caso-exito-proyecto-web-astro.avif`,               chips: ['Estrellas', 'Cita', 'Cliente'] },
@@ -177,7 +178,7 @@ const AFONDO: Record<string, { body: string[]; points: string[] }> = {
       'Un solo componente para todos los títulos: cero diseño duplicado',
     ],
   },
-  'cards-categoria': {
+  'category-card': {
     body: [
       'Son las tarjetas de la vitrina del catálogo: cada categoría presentada como un producto —foto real, etiqueta de gancho, título, texto de venta breve y atajos a las subcategorías—. Convierten una lista larga en un mapa que se entiende de un vistazo.',
       'Se generan desde una sola lista (SHOWCASE en site.ts): agregar o quitar una tarjeta actualiza la vitrina sin tocar la página. Cada parte cumple su función —el título es H3, la imagen lleva alt descriptivo, las subcategorías son enlaces internos reales—, así sirve a la persona y al SEO.',
@@ -329,7 +330,7 @@ const AFONDO: Record<string, { body: string[]; points: string[] }> = {
         layout="duo"
         eyebrow="El índice"
         title="Todos los módulos del sitio"
-        desc={`Estos son los módulos de la serie. ${listos === 1 ? 'El primero ya está documentado' : `${listos} ya documentados`}; el resto se irá publicando con el mismo molde.`}
+        desc={`Estos son los módulos de la serie. ${listos === 1 ? `El primero ya está documentado (${listos} de ${total})` : `${listos} de ${total} ya documentados`}; el resto se irá publicando con el mismo molde.`}
         body={[
           'Cada tarjeta es una pieza real del sitio: foto, etiqueta de estado, nombre, qué hace y los elementos que lo componen. Es el MISMO card del catálogo —no inventamos un diseño aparte—, porque la coherencia es justo lo que esta serie enseña.',
           'Entra a cualquiera para verlo a fondo: qué problema resuelve, de qué piezas se compone, dónde encaja en el layout y cómo se construye. El primero (Topbar) ya marca el molde; el resto llega con la misma plantilla.',

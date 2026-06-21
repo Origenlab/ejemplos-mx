@@ -240,7 +240,7 @@ export const MODULOS: readonly Modulo[] = [
   { slug: 'hero',                label: 'Hero',                    href: '/modulos/hero',                desc: 'La primera impresión: un H1 único con tu propuesta de valor.', estado: 'listo' },
   { slug: 'section-menu',        label: 'Menú de secciones',       href: '/modulos/section-menu',        desc: 'La franja de botones bajo el hero para saltar a cada sección.', estado: 'listo' },
   { slug: 'section-heading',     label: 'Encabezado de sección',   href: '/modulos/section-heading',     desc: 'El encabezado que abre cada bloque: eyebrow, título y descripción.', estado: 'listo' },
-  { slug: 'cards-categoria',     label: 'Cards de categoría',      href: '/modulos/cards-categoria',     desc: 'La vitrina del catálogo: cada categoría como una tarjeta con foto.', estado: 'proximo' },
+  { slug: 'category-card',       label: 'Tarjeta de categoría',    href: '/modulos/category-card',       desc: 'La vitrina del catálogo: cada categoría como una tarjeta con foto.', estado: 'listo' },
   { slug: 'categoria-a-fondo',   label: 'Categoría a fondo',       href: '/modulos/categoria-a-fondo',   desc: 'Dos columnas que amplían una categoría con texto y galería.', estado: 'proximo' },
   { slug: 'cards-catalogo',      label: 'Cards de catálogo',       href: '/modulos/cards-catalogo',      desc: 'Las fichas de producto y servicio, generadas desde Markdown.', estado: 'proximo' },
   { slug: 'resenas',             label: 'Reseñas',                 href: '/modulos/resenas',             desc: 'Prueba social: tarjetas con opiniones reales de clientes.', estado: 'proximo' },

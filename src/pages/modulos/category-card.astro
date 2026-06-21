@@ -1,0 +1,932 @@
+---
+// ============================================================================
+// /modulos/category-card — PÁGINA DEL MÓDULO «Tarjeta de categoría».
+// ----------------------------------------------------------------------------
+// Séptima de la serie /modulos/* (topbar · header · breadcrumbs · hero ·
+// section-menu · section-heading · category-card), MISMO molde (docs/MODULOS.md).
+// NOTA propia de la tarjeta de categoría: a diferencia del topbar/header (chrome
+// global) o del hero (presentación de la página), este módulo es una PIEZA DE
+// VITRINA que se repite N veces dentro de una rejilla. En la home se alimenta de
+// SHOWCASE (site.ts) para que «agregar una categoría a la vitrina = agregar un
+// objeto al array»; en /servicios, /cobertura y /blog se reusa con datos de
+// TAXONOMY o de una Content Collection. La regla canónica «un solo card para
+// todas las vitrinas» vive aquí: CategoryCard.astro es la tarjeta del catálogo,
+// del bloque «por qué elegirnos» y del propio índice de módulos —cero diseño
+// duplicado—.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+
+// Menú de cierre (mismo patrón que el resto de la serie): navegación + sitio.
+// «El menú reparte; el último botón —WhatsApp— convierte».
+const cierreItems = [
+  { label: 'Todos los módulos', href: '/modulos', sub: 'Índice de la serie' },
+  { label: 'Módulo Encabezado de sección', href: '/modulos/section-heading', sub: 'El rótulo que ordena' },
+  { label: 'Módulo Menú de secciones', href: '/modulos/section-menu', sub: 'La franja bajo el hero' },
+  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
+]
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), sub: 'Respuesta inmediata', external: true }
+
+// Las 4 piezas de la tarjeta — mapean con los pines del ejemplo en vivo. Cada
+// nombre coincide con una prop del componente real CategoryCard.astro, para que
+// el lector vincule diseño ↔ código sin saltos.
+const partes = [
+  {
+    n: 1,
+    nombre: 'Media (imagen + alt + badge)',
+    que: 'La foto de cabecera con su texto alternativo y, opcional, una etiqueta corta sobre la imagen (gancho: «Entrega 24 h», «Certificado»). Lleva width/height fijos (640×400, ratio 16:10) para reservar el hueco y evitar el salto de maquetación (CLS). Las cuatro primeras tarjetas cargan en eager; el resto, en lazy.',
+    dato: 'props image · imageAlt · badge · index',
+  },
+  {
+    n: 2,
+    nombre: 'Título (H3) enlazable',
+    que: 'El encabezado de la tarjeta, semánticamente H3 (un escalón debajo del H2 de la sección que la contiene). Es el ancla que el visitante y el buscador leen como nombre de la categoría. Es enlace de verdad —apunta al mismo href de la tarjeta— para que un clic en el título también navegue.',
+    dato: 'props label · href',
+  },
+  {
+    n: 3,
+    nombre: 'Blurb + chips de subcategorías',
+    que: 'El texto de venta (1–2 frases que unen beneficio + keyword + confianza, ~120–160 caracteres) y debajo los enlaces internos a subcategorías con anchor text real («Línea profesional», «Accesorios»). Los chips reparten autoridad a las páginas hijas y le dan al visitante el atajo exacto.',
+    dato: 'props blurb · subcategories[]',
+  },
+  {
+    n: 4,
+    nombre: 'CTA al fondo (alturas iguales)',
+    que: 'Un solo botón claro, anclado al fondo de la tarjeta con margin-top: auto. Eso garantiza que en un grid con tarjetas de distinta altura todos los CTAs queden a la misma línea horizontal —la vitrina se ve cuadrada—. Su texto por defecto es «Ver más»; cambia con ctaLabel.',
+    dato: 'prop ctaLabel · href',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Vitrina escaneable, no lista',
+    desc: 'En lugar de listar las categorías como bullets, las presenta como pequeñas portadas. Imagen + título + bajada + atajos a subcategorías + acción: el visitante decide a qué entrar sin leer línea por línea. Es la diferencia entre un menú de texto y un escaparate.',
+  },
+  {
+    titulo: 'SEO interno con anchor text real',
+    desc: 'Cada chip de subcategoría es un enlace interno con texto descriptivo («Cascos», «Botas»), no un genérico «ver más». Eso reparte autoridad a las páginas hijas y le da a Google la mejor pista del contenido de cada subpágina, sin esfuerzo extra del editor.',
+  },
+  {
+    titulo: 'Una tarjeta, varias vitrinas',
+    desc: 'El mismo componente alimenta SHOWCASE (home), TAXONOMY (servicios, cobertura), una Content Collection (blog) y hasta el bloque «por qué elegirnos». Cambiar la tipografía del título o el radio del botón se hace en un solo archivo, y el sitio entero responde.',
+  },
+]
+
+const sis = [
+  'Reusa CategoryCard en TODAS las vitrinas: catálogo, módulos, blog, «por qué elegirnos». Un solo componente, cero CSS duplicado.',
+  'Mantén la rejilla mobile-first: 1 → 2 → 4 (catálogo) o 1 → 2 → 3 (vitrinas más cortas), nunca al revés.',
+  'Escribe alt descriptivos con la keyword (no «imagen1.jpg»); declara width/height para reservar el hueco y evitar CLS.',
+  'Mantén las 4 primeras tarjetas con index < 4 para que el componente cargue su imagen en eager (LCP).',
+  'Usa los chips para enlazar a páginas hijas reales con anchor text descriptivo, no a la misma landing.',
+]
+const nos = [
+  'No metas dos CTAs en la misma tarjeta: un solo botón claro al fondo, sin competir con el título.',
+  'No uses un H2 dentro de la tarjeta: rompe la jerarquía (H1 hero → H2 sección → H3 tarjeta).',
+  'No olvides el imageAlt: dejarlo vacío rompe a11y y SEO de imagen; el componente cae a label como fallback, pero conviene escribirlo.',
+  'No mezcles tarjetas con y sin imagen en la misma rejilla sin criterio: pierdes el ritmo visual de alturas iguales.',
+  'No abuses del badge: 1–2 palabras como gancho; convertido en frase, deja de funcionar como sello.',
+]
+
+// Variantes de tarjeta de categoría (galería). Réplica en vivo abajo, mismo
+// orden. Las primeras son configuraciones REALES del componente actual (cambiar
+// las props image, badge, disabled); las últimas son EXTENSIONES que requieren
+// añadir CSS o una prop al componente.
+const disenos = [
+  {
+    nombre: 'Imagen + título + bajada (esta plantilla)',
+    tag: 'Catálogo · Vitrina',
+    desc: 'La canónica: foto a 16:10, título H3 enlazado, blurb de venta, chips de subcategorías y CTA al fondo. Es lo que alimenta la home (SHOWCASE) y se reusa en /modulos/, /servicios/, /cobertura/, /blog/. Configuración real: image + label + blurb + subcategories + ctaLabel.',
+  },
+  {
+    nombre: 'Con badge sobre la imagen',
+    tag: 'E-commerce · Promociones',
+    desc: 'Misma tarjeta, sumando el prop badge: una etiqueta corta sobre la foto (gancho de marketing) —«Envío 24 h», «Certificado», «-15 %»—. Va arriba a la izquierda, en color de marca. Configuración real: badge="…". Útil para diferenciar categorías destacadas sin romper el ritmo del grid.',
+  },
+  {
+    nombre: 'Sin imagen (texto + chevron)',
+    tag: 'Módulos · Roadmap · Listas',
+    desc: 'Cuando no hay foto disponible o conviene una vitrina más austera, se omite image. El badge cae inline al inicio del cuerpo, el título queda sin foto y la tarjeta se ancla en el texto + chips + CTA con su flecha. Configuración real: omitir image; usar badge="Próximamente" para inventario en construcción.',
+  },
+  {
+    nombre: 'Próximamente (deshabilitada)',
+    tag: 'Roadmap · Catálogo en construcción',
+    desc: 'Tarjeta inactiva: ni la imagen ni los chips son enlaces y el CTA muestra «Próximamente» sin link. El badge cambia a estilo sutil («Próximamente»). Útil para mostrar inventario futuro sin generar 404s. Configuración real: disabled={true}. Ya en producción en el roadmap de /modulos/.',
+  },
+  {
+    nombre: 'Horizontal (landscape)',
+    tag: 'Editorial · Posts del blog',
+    desc: 'Extensión propuesta: imagen a la izquierda (40 %) y cuerpo a la derecha (60 %), en lugar del stack vertical. Pensada para listados de blog donde una rejilla landscape se lee mejor que cuatro tarjetas verticales. Requiere una variante CSS (.ccard--landscape) y cambiar el aspect-ratio de la media a 4:3.',
+  },
+  {
+    nombre: 'Oscura sobre superficie',
+    tag: 'CTA banner · Sección destacada',
+    desc: 'Extensión propuesta: misma estructura pero con fondo oscuro y texto claro, para colocar la vitrina sobre una sección hero secundaria o un fondo de marca. Requiere añadir un prop dark al componente —similar al de SectionHeading— y derivar los colores del título, el blurb y el border desde la nueva variante.',
+  },
+]
+
+// ── Recetas de implementación — strings que pinta <Receta> ───────────────────
+// Las tres formas en que esta tarjeta se usa en el sitio: hard-coded (uso
+// puntual), data-driven desde TAXONOMY (servicios/cobertura) y data-driven
+// desde una Content Collection (blog).
+const recetaUso = `---
+// USO BÁSICO · pásale las 4 props clave y listo. El componente
+// se encarga de la jerarquía (H3), el lazy de la imagen y el
+// CTA anclado al fondo (alturas iguales en cualquier grid).
+import CategoryCard from '@components/CategoryCard.astro'
+---
+
+<div class="grid">
+  <CategoryCard
+    label="Cascos de seguridad"
+    href="/productos/cascos"
+    image="/images/showcase/cascos-seguridad-industrial.avif"
+    imageAlt="Cascos de seguridad industrial certificados, vista de catálogo"
+    badge="Certificados"
+    blurb="Cascos homologados para industria pesada, ligeros y con barboquejo ajustable. Stock para entrega 24 h en CDMX."
+    subcategories={[
+      { label: 'Industrial',     href: '/productos/cascos/industrial' },
+      { label: 'Construcción',   href: '/productos/cascos/construccion' },
+      { label: 'Accesorios',     href: '/productos/cascos/accesorios' },
+    ]}
+    ctaLabel="Ver catálogo"
+    index={0}
+  />
+  {/* …más tarjetas… */}
+</div>
+
+<style>
+  /* Rejilla mobile-first: 1 → 2 → 4 (catálogo) — el componente
+     no impone grid, lo aporta el padre, así sirve a cualquier
+     vitrina del sitio. */
+  .grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
+  @media (min-width: 640px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+</style>`
+
+const recetaTaxonomy = `---
+// DATA-DRIVEN DESDE TAXONOMY · cómo lo hace /servicios y /cobertura.
+// Una sola fuente (TAXONOMY en site.ts) alimenta el menú, el footer y
+// estas vitrinas: agregar un servicio o un estado se refleja en todos.
+import { SERVICES, COVERAGE_STATES } from '@config/site'
+import CategoryCard from '@components/CategoryCard.astro'
+
+// Para servicios: id → URL, label → título, desc → blurb.
+---
+
+<div class="grid">
+  {SERVICES.map((s, i) => (
+    <CategoryCard
+      label={s.label}
+      href={\`/servicios/\${s.id}\`}
+      blurb={s.desc}
+      index={i}
+      ctaLabel="Ver servicio"
+    />
+  ))}
+</div>
+
+{/* Mismo patrón para cobertura, con label y slug del estado. */}
+<div class="grid">
+  {COVERAGE_STATES.map((z, i) => (
+    <CategoryCard
+      label={z.label}
+      href={\`/cobertura/\${z.slug}\`}
+      badge={z.type === 'operativo' ? 'Operativo' : 'Comercial'}
+      blurb={\`Cobertura \${z.type} en \${z.label}.\`}
+      index={i}
+      ctaLabel="Ver cobertura"
+    />
+  ))}
+</div>`
+
+const recetaCollection = `---
+// DATA-DRIVEN DESDE UNA CONTENT COLLECTION · cómo lo hace /blog.
+// El blog vive en src/content/blog/*.md con un schema Zod (title,
+// description, image, …). getCollection() devuelve el array tipado
+// y la vitrina se arma sin tocar el componente.
+import { getCollection } from 'astro:content'
+import CategoryCard from '@components/CategoryCard.astro'
+
+const articulos = (await getCollection('blog'))
+  .filter((a) => !a.data.draft)
+  .sort((a, b) => +new Date(b.data.date) - +new Date(a.data.date))
+---
+
+<div class="grid">
+  {articulos.map((a, i) => (
+    <CategoryCard
+      label={a.data.title}
+      href={\`/blog/\${a.id}\`}
+      image={a.data.image}
+      imageAlt={a.data.imageAlt ?? a.data.title}
+      badge={a.data.category}
+      blurb={a.data.description}
+      subcategories={(a.data.tags ?? []).slice(0, 3).map((t: string) => ({
+        label: t,
+        href: \`/blog/tag/\${t}\`,
+      }))}
+      ctaLabel="Leer artículo"
+      index={i}
+    />
+  ))}
+</div>`
+
+// ── Recetas para los patrones móviles (apartado «Responsive y móvil») ─────────
+const recetaStack = `/* MÓVIL · STACK A ANCHO COMPLETO (lo que ya da el grid default)
+   El componente no impone grid; lo aporta el padre. Cuando el
+   padre declara una columna, cada tarjeta ocupa el 100 % del
+   ancho disponible. La card en sí ya es flex column con
+   height: 100 %, así que el CTA queda anclado al fondo. */
+
+.showcase {
+  display: grid;
+  grid-template-columns: 1fr;       /* una columna por defecto */
+  gap: var(--sp-5);
+}
+
+/* A partir de 640 px crece a 2 columnas, y a 1024 px a 4. Es la
+   regla mobile-first: el caso base (el teléfono) es el más simple. */
+@media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .showcase { grid-template-columns: repeat(4, 1fr); } }`
+
+const recetaGrid3 = `/* MÓVIL · GRID 1 → 2 → 3 (vitrinas más cortas)
+   Cuando la vitrina tiene 3 o 6 elementos (servicios, cobertura),
+   la rejilla de 4 columnas deja huecos. Bajarla a 3 columnas en
+   escritorio mantiene el ritmo cuadrado sin tarjetas sueltas.
+   Es la misma estructura, cambiando solo el segundo breakpoint. */
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;       /* móvil */
+  gap: var(--sp-5);
+}
+
+@media (min-width: 640px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+
+/* No es una extensión del componente: es una regla del padre.
+   La tarjeta se acomoda a la columna que reciba —100 px o 320 px—,
+   manteniendo el aspect-ratio 16:10 de la imagen. */`
+
+const recetaSnap = `/* MÓVIL · SCROLL HORIZONTAL CON SNAP (extensión opcional)
+   En vitrinas largas (8–12 tarjetas) apilarlas todas hace la
+   pantalla muy alta. Esta extensión convierte la rejilla en una
+   sola fila scrollable —tipo carrusel iOS— solo en móvil. Snap
+   para que cada tarjeta se alinee al soltar el dedo. */
+
+@media (max-width: 640px) {
+  .showcase {
+    display: flex;
+    overflow-x: auto;
+    gap: var(--sp-4);
+    padding-inline: var(--container-px);
+    margin-inline: calc(var(--container-px) * -1);  /* sangra el contenedor */
+
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;              /* inercia iOS */
+    scrollbar-width: none;                          /* Firefox */
+  }
+  .showcase::-webkit-scrollbar { display: none; }
+
+  /* Cada tarjeta ≈ 78 % del ancho: la siguiente asoma para invitar
+     a deslizar (affordance visual). */
+  .showcase > .ccard {
+    flex: 0 0 78%;
+    scroll-snap-align: start;
+  }
+}`
+
+const recetaDots = `/* MÓVIL · CARRUSEL CON DOTS (extensión opcional)
+   Variante del scroll-snap que añade indicadores debajo: «1 de 4».
+   Se generan con un IntersectionObserver mínimo (5 líneas de JS)
+   que marca el dot activo según la tarjeta visible en el viewport.
+   En esta plantilla NO se usa: se documenta como gancho para
+   landings donde el carrusel rinde más que el scroll mudo. */
+
+@media (max-width: 640px) {
+  .showcase { /* (mismo scroll-snap del patrón anterior) */ }
+
+  .showcase__dots {
+    display: flex; justify-content: center; gap: 8px;
+    margin-top: var(--sp-3);
+  }
+  .showcase__dots b {
+    width: 8px; height: 8px; border-radius: 99px;
+    background: var(--c-border);
+    transition: background var(--transition), width var(--transition);
+  }
+  .showcase__dots b[aria-current="true"] {
+    background: var(--c-primary); width: 20px;
+  }
+}
+
+/* JS mínimo (en el <script> de la página, no del componente):
+   const cards = document.querySelectorAll('.showcase > .ccard');
+   const dots  = document.querySelectorAll('.showcase__dots > b');
+   const io = new IntersectionObserver((entries) => {
+     entries.forEach((e) => {
+       if (!e.isIntersecting) return;
+       const i = [...cards].indexOf(e.target);
+       dots.forEach((d, j) => d.setAttribute('aria-current', j === i));
+     });
+   }, { threshold: 0.6 });
+   cards.forEach((c) => io.observe(c)); */`
+---
+
+<PageLayout
+  title="La Tarjeta de categoría — la vitrina que entra por los ojos"
+  description="Qué es la tarjeta de categoría, para qué sirve, qué lleva (imagen + alt, título H3, blurb, chips de subcategorías, CTA) y dónde va — más cómo se construye: un único componente CategoryCard reutilizado en TODAS las vitrinas del sitio (home, módulos, servicios, cobertura, blog), data-driven desde site.ts o desde una Content Collection."
+  pageType="page"
+  guia={false}
+  breadcrumbs={[{ label: 'Módulos', href: '/modulos' }, { label: 'Tarjeta de categoría' }]}
+>
+  <Hero
+    badge="Módulo del sitio · Tarjeta de categoría"
+    title="La Tarjeta de categoría:"
+    accent="la vitrina que vende"
+    subtitle="La tarjeta de la rejilla que presenta cada categoría como una mini portada: imagen real con alt descriptivo, badge opcional, título (H3), texto de venta breve, chips de subcategorías con anchor text real y un solo CTA al fondo —alturas iguales en cualquier grid—."
+    descRight={[
+      'Esta página no es una ficha técnica: es el módulo entero, abierto y explicado. Qué problema resuelve y por qué se ganó su lugar en cada vitrina del sitio, de qué piezas se compone, cómo se comporta en el teléfono, dónde encaja en el armado de la página y, al final, cómo está construido por dentro —del criterio de diseño a la línea de código—.',
+      'Con una particularidad que conviene marcar desde el principio: la tarjeta es UNA, las vitrinas son MUCHAS. El mismo componente alimenta la home (SHOWCASE), el roadmap de módulos, las landings de servicios y cobertura (TAXONOMY) y el listado del blog (Content Collection). Cambiar la tipografía del título o el radio del botón se hace en un solo archivo y se propaga al sitio entero.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Definición"
+        title="¿Qué es una tarjeta de categoría?"
+        desc="La pieza visual que presenta una categoría como si fuera un producto: imagen, badge, título (H3), texto de venta, chips de subcategorías y un solo CTA al fondo, dentro de un grid mobile-first."
+        body={[
+          'La tarjeta de categoría (o «category card») es el módulo que convierte una categoría —un grupo de productos, servicios o artículos— en una pieza visual con su propia portada. No es un bullet con foto: es un patrón estructurado —media + título + blurb + chips + CTA— que se repite N veces dentro de una rejilla. Visto de lejos parece un escaparate; visto de cerca, es lo que evita que el visitante mire una lista de texto y se vaya.',
+          'En este proyecto vive en un único componente, CategoryCard.astro, con una API pequeña (label, href, image, imageAlt, badge, blurb, subcategories, ctaLabel, index, disabled). Reusar un solo componente para todas las vitrinas significa que la home, el roadmap de módulos, las landings de servicios y cobertura y el listado del blog usan exactamente la misma tarjeta —cero diseño duplicado, cero CSS que mantener por sección—.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Función e importancia"
+        title="¿Para qué sirve?"
+        desc="Hace tres trabajos a la vez: convierte una lista de categorías en una vitrina escaneable, reparte autoridad interna con anchor text real y mantiene el ritmo visual del sitio sin pedir CSS por vitrina."
+        body={[
+          'Su función es transformar el catálogo en un mapa. Una lista de categorías (productos, servicios, cobertura, blog) en texto plano obliga a leer línea por línea para decidir. La misma información repartida en tarjetas con foto y chips se entiende de un vistazo: el visitante recorre las imágenes, lee los títulos, escanea los chips y decide a qué entrar. Es la diferencia entre un menú y un escaparate.',
+          'Y por eso pesa fuera de proporción a su tamaño. Para los buscadores, los chips de subcategorías son enlaces internos con anchor text descriptivo —reparten autoridad a las páginas hijas mejor que cualquier «ver más»—; para la accesibilidad, el H3 mantiene la jerarquía y el alt describe la imagen; para el equipo que mantiene el sitio, una sola tarjeta para todas las vitrinas significa que ajustar la tipografía o el radio del botón se hace en un archivo y se propaga sin sorpresas.',
+        ]}
+      />
+      <div class="bene">
+        {beneficios.map((b) => (
+          <article class="bene__card">
+            <h3 class="bene__title">{b.titulo}</h3>
+            <p class="bene__desc">{b.desc}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3) ¿QUÉ LLEVA? — anatomía con ejemplo en vivo ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Anatomía"
+        title="¿Qué lleva la tarjeta?"
+        desc="Cuatro piezas: el media con su alt (y badge opcional), el título H3 enlazable, el blurb con los chips de subcategorías y el CTA al fondo —anclado para mantener alturas iguales en el grid—."
+        body={[
+          'Cada pieza cumple un papel claro. El media (imagen + alt + badge) entra por los ojos y reserva el hueco con width/height fijos para evitar el CLS; el título H3 da la jerarquía semántica y es enlace real; el blurb une beneficio + keyword + confianza en 1–2 frases; los chips son enlaces a páginas hijas con anchor text descriptivo; y el CTA cierra al fondo de la tarjeta con margin-top: auto, así todas las tarjetas del grid acaban a la misma altura aunque su texto difiera.',
+          'Abajo, el ejemplo en vivo —réplica anotada a escala del componente—. Cada punto numerado se desglosa en su tarjeta: qué resuelve y de qué prop del componente sale. Y para que el mapeo sea inequívoco, los pines del espécimen apuntan a los mismos elementos del CategoryCard que aparece en la home: lo que ves arriba es exactamente lo que se documenta abajo.',
+        ]}
+      />
+
+      {/* Ejemplo en vivo: réplica anotada a escala del componente (estructura
+          idéntica al .ccard del componente real, con pines numerados). */}
+      <div class="ccx" role="img" aria-label="Ejemplo de tarjeta de categoría: media, título, blurb con chips y CTA al fondo">
+        <div class="ccx__media">
+          <span class="ccx__n ccx__n--abs">1</span>
+          <span class="ccx__img" aria-hidden="true"></span>
+          <span class="ccx__badge">Gancho</span>
+        </div>
+        <div class="ccx__body">
+          <p class="ccx__title">
+            <span class="ccx__n ccx__n--abs ccx__n--inline">2</span>
+            Título de la categoría
+          </p>
+          <p class="ccx__desc">Frase de 1–2 líneas que une beneficio, palabra clave y una señal de confianza, sin apilar términos.</p>
+          <ul class="ccx__chips" aria-label="Chips de subcategorías">
+            <li><span class="ccx__chip"><span class="ccx__n ccx__n--mid">3</span>Subcategoría A</span></li>
+            <li><span class="ccx__chip">Subcategoría B</span></li>
+            <li><span class="ccx__chip">Subcategoría C</span></li>
+          </ul>
+          <span class="ccx__cta">
+            <span class="ccx__n ccx__n--mid">4</span>
+            Ver más
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </span>
+        </div>
+      </div>
+
+      <div class="partes">
+        {partes.map((p) => (
+          <article class="parte">
+            <span class="parte__num">{p.n}</span>
+            <div class="parte__body">
+              <h3 class="parte__nombre">{p.nombre}</h3>
+              <p class="parte__que">{p.que}</p>
+              <p class="parte__dato"><span>Dato</span> <code>{p.dato}</code></p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3b) VARIANTES ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Variantes"
+        title="Otros diseños y aplicaciones"
+        desc="La de esta plantilla es la canónica (imagen + título + bajada), pero la tarjeta cambia de cara según lo que el grid necesita presentar: catálogo, promoción, módulo en construcción, listado editorial."
+        body={[
+          'No hay un único modelo: hay una misma idea —una pieza con media, título, blurb y CTA al fondo— que cada tipo de vitrina ajusta. Un catálogo con promociones añade badge sobre la imagen; un roadmap muestra módulos sin foto y los próximos como deshabilitados; un blog largo se beneficia de tarjetas horizontales; una sección destacada las quiere oscuras sobre fondo de marca.',
+          'Abajo, seis variantes —cuatro son configuraciones REALES del componente actual (cambiando solo las props image, badge y disabled), y dos son extensiones propuestas que requieren añadir CSS o una prop al componente—. Cada una con su réplica en vivo y el tipo de proyecto donde rinde mejor.',
+        ]}
+      />
+
+      <GaleriaDisenos ariaLabel="Variantes de tarjeta de categoría">
+        {/* 0 · Canónica */}
+        <DisenoCard {...disenos[0]}>
+          <div class="ccv" role="img" aria-label="Tarjeta canónica: imagen, título, bajada, chips y CTA">
+            <div class="ccv__media"><span class="ccv__img"></span></div>
+            <div class="ccv__body">
+              <span class="ccv__t">Título de la categoría</span>
+              <span class="ccv__d">Bajada breve que vende.</span>
+              <span class="ccv__chips"><i>Sub A</i><i>Sub B</i><i>Sub C</i></span>
+              <span class="ccv__cta">Ver más →</span>
+            </div>
+          </div>
+        </DisenoCard>
+
+        {/* 1 · Con badge */}
+        <DisenoCard {...disenos[1]}>
+          <div class="ccv" role="img" aria-label="Tarjeta con etiqueta de gancho sobre la imagen">
+            <div class="ccv__media"><span class="ccv__img"></span><span class="ccv__badge">Gancho</span></div>
+            <div class="ccv__body">
+              <span class="ccv__t">Categoría destacada</span>
+              <span class="ccv__d">Bajada con la oferta.</span>
+              <span class="ccv__chips"><i>Sub A</i><i>Sub B</i></span>
+              <span class="ccv__cta">Ver oferta →</span>
+            </div>
+          </div>
+        </DisenoCard>
+
+        {/* 2 · Sin imagen */}
+        <DisenoCard {...disenos[2]}>
+          <div class="ccv ccv--noimg" role="img" aria-label="Tarjeta sin imagen, texto + chips + CTA">
+            <div class="ccv__body">
+              <span class="ccv__badge ccv__badge--inline">Listo</span>
+              <span class="ccv__t">Solo texto</span>
+              <span class="ccv__d">Para listas austeras o piezas sin foto.</span>
+              <span class="ccv__chips"><i>Chip A</i><i>Chip B</i></span>
+              <span class="ccv__cta">Ver más →</span>
+            </div>
+          </div>
+        </DisenoCard>
+
+        {/* 3 · Próximamente (deshabilitada) */}
+        <DisenoCard {...disenos[3]}>
+          <div class="ccv ccv--noimg ccv--soon" role="img" aria-label="Tarjeta deshabilitada (Próximamente), sin enlaces">
+            <div class="ccv__body">
+              <span class="ccv__badge ccv__badge--inline ccv__badge--soon">Próximamente</span>
+              <span class="ccv__t">Módulo en construcción</span>
+              <span class="ccv__d">No enlaza para evitar 404s.</span>
+              <span class="ccv__cta ccv__cta--soon">Próximamente</span>
+            </div>
+          </div>
+        </DisenoCard>
+
+        {/* 4 · Horizontal */}
+        <DisenoCard {...disenos[4]}>
+          <div class="ccv ccv--land" role="img" aria-label="Tarjeta horizontal: imagen a la izquierda, cuerpo a la derecha">
+            <div class="ccv__media"><span class="ccv__img"></span></div>
+            <div class="ccv__body">
+              <span class="ccv__t">Tarjeta horizontal</span>
+              <span class="ccv__d">Para listados editoriales largos.</span>
+              <span class="ccv__cta">Leer artículo →</span>
+            </div>
+          </div>
+        </DisenoCard>
+
+        {/* 5 · Oscura */}
+        <DisenoCard {...disenos[5]}>
+          <div class="ccv ccv--dark" role="img" aria-label="Tarjeta oscura sobre superficie">
+            <div class="ccv__media"><span class="ccv__img"></span></div>
+            <div class="ccv__body">
+              <span class="ccv__t">Sobre fondo oscuro</span>
+              <span class="ccv__d">Para secciones destacadas.</span>
+              <span class="ccv__chips"><i>Sub A</i><i>Sub B</i></span>
+              <span class="ccv__cta">Ver más →</span>
+            </div>
+          </div>
+        </DisenoCard>
+      </GaleriaDisenos>
+
+      <GuiaNota titulo="Configuraciones reales vs extensiones propuestas" archivo="src/components/CategoryCard.astro">
+        <p>
+          Las variantes <strong>0–3</strong> son configuraciones <strong>reales</strong> del componente actual: se obtienen cambiando solo las props
+          <code>image</code>, <code>badge</code> y <code>disabled</code> —sin tocar el componente—. La variante <strong>3 (Próximamente)</strong> ya
+          está en producción en el roadmap de <code>/modulos/</code>. Las variantes <strong>4 (horizontal)</strong> y <strong>5 (oscura)</strong> son
+          <strong>extensiones propuestas</strong>: hoy la tarjeta no tiene modificador landscape ni prop <code>dark</code>. Implementarlas requeriría
+          añadir una variante CSS (<code>.ccard--landscape</code>) y/o un prop <code>dark</code> que derive los colores del título, el blurb y el border.
+          Se dejan documentadas por completitud, no se usan todavía.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 3c) RESPONSIVE Y MÓVIL ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="Cómo se comporta en el teléfono"
+        desc="La tarjeta no se encoge: cambia de modo según la rejilla que la contenga. Stack a ancho completo de fábrica; grid 1 → 2 → 3 para vitrinas cortas; scroll horizontal con snap o carrusel con dots para listas largas."
+        body={[
+          'La tarjeta en sí es agnóstica al grid: no impone columnas. Quien define la rejilla es el padre. La regla del proyecto es mobile-first: arrancar en una sola columna (cada tarjeta al 100 % del ancho, alturas iguales por el flex column + margin-top: auto del CTA) y crecer con min-width —2 columnas en tablet, 4 en escritorio para el catálogo, 3 para vitrinas más cortas (servicios, cobertura)—. Es lo más seguro, y lo que ya hace el sitio sin un molde aparte por sección.',
+          'A partir de ahí, hay dos patrones que conviene conocer como extensión opcional: scroll horizontal con snap (cuando la vitrina es muy larga y apilarla hace la pantalla demasiado alta) y carrusel con dots (la misma idea con indicador de posición). Las cuatro están abajo, cada una con su vista en el teléfono y una receta comentada lista para adaptar.',
+        ]}
+      />
+
+      <div class="pats">
+        {/* 1 · Stack (default del grid) */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Vitrina apilada en móvil: cada tarjeta a ancho completo">
+              <div class="ccm ccm--stack">
+                <div class="ccm__c"><i class="ccm__img"></i><b class="ccm__t"></b><span class="ccm__d"></span><span class="ccm__cta">Ver más</span></div>
+                <div class="ccm__c"><i class="ccm__img"></i><b class="ccm__t"></b><span class="ccm__d"></span><span class="ccm__cta">Ver más</span></div>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · Stack a ancho completo (default)</h3>
+            <p class="pat__desc">Es lo que ya da la rejilla por defecto. El padre declara <code>grid-template-columns: 1fr</code> en móvil y cada tarjeta ocupa el ancho. La card es <code>flex: column; height: 100%</code>, así que el CTA queda anclado al fondo. Cero esfuerzo: nada que tocar a nivel componente.</p>
+            <Receta titulo="CSS · grid mobile-first 1 → 2 → 4 (default)" lang="css" code={recetaStack} />
+          </div>
+        </article>
+
+        {/* 2 · Grid 1 → 2 → 3 */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Vitrina con rejilla 1 → 2 → 3 para listas más cortas">
+              <div class="ccm ccm--g23">
+                <div class="ccm__row"><div class="ccm__mini"></div><div class="ccm__mini"></div></div>
+                <div class="ccm__row"><div class="ccm__mini"></div><div class="ccm__mini"></div></div>
+                <span class="ccm__hint" aria-hidden="true">↕ 2 col en tablet · 3 col en escritorio</span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · Grid 1 → 2 → 3 (vitrinas cortas)</h3>
+            <p class="pat__desc">Cuando la vitrina tiene 3 o 6 elementos (<code>SERVICES</code>, <code>COVERAGE_STATES</code>), bajar el último breakpoint a <code>repeat(3, 1fr)</code> evita huecos en la última fila. No es una extensión del componente: es una decisión del padre, así la tarjeta se adapta al ancho que reciba.</p>
+            <Receta titulo="CSS · grid 1 → 2 → 3 para 3/6 tarjetas" lang="css" code={recetaGrid3} />
+          </div>
+        </article>
+
+        {/* 3 · Scroll horizontal */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Vitrina como una fila scrollable con snap en móvil">
+              <div class="ccm ccm--snap">
+                <div class="ccm__row ccm__row--snap">
+                  <div class="ccm__card"><i class="ccm__img"></i><b class="ccm__t"></b></div>
+                  <div class="ccm__card"><i class="ccm__img"></i><b class="ccm__t"></b></div>
+                  <div class="ccm__card ccm__card--peek"><i class="ccm__img"></i><b class="ccm__t"></b></div>
+                </div>
+                <span class="ccm__hint" aria-hidden="true">⇢ desliza para ver más</span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · Scroll horizontal con snap (extensión)</h3>
+            <p class="pat__desc">Para vitrinas largas (8–12 tarjetas) el stack alarga demasiado la pantalla. Convertir la rejilla en una fila scrollable con <code>scroll-snap-type: x mandatory</code> alinea cada tarjeta al soltar el dedo. La barra de scroll se oculta y la siguiente tarjeta asoma como affordance.</p>
+            <Receta titulo="CSS · fila scrollable + snap en ≤ 640 px" lang="css" code={recetaSnap} />
+          </div>
+        </article>
+
+        {/* 4 · Carrusel con dots */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Carrusel con indicadores de posición debajo">
+              <div class="ccm ccm--dots">
+                <div class="ccm__row ccm__row--snap">
+                  <div class="ccm__card"><i class="ccm__img"></i><b class="ccm__t"></b></div>
+                  <div class="ccm__card"><i class="ccm__img"></i><b class="ccm__t"></b></div>
+                </div>
+                <div class="ccm__dots" aria-hidden="true">
+                  <b data-active="true"></b><b></b><b></b><b></b>
+                </div>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">4 · Carrusel con dots (extensión)</h3>
+            <p class="pat__desc">Variante del scroll-snap que añade indicadores debajo: 1 de N. Se activan con un <code>IntersectionObserver</code> mínimo (≈ 5 líneas de JS, en la página, no en el componente). Útil en landings de marketing donde el dot da pista de cuánto queda por ver; en el resto del sitio, el scroll mudo basta.</p>
+            <Receta titulo="CSS · dots + JS mínimo (IntersectionObserver)" lang="css" code={recetaDots} />
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 4) ¿DÓNDE VA? ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Posición"
+        title="¿Dónde se coloca?"
+        desc="N veces por página, siempre dentro de un grid (.showcase o .grid) que vive en el .container del 90 %. Cada vitrina del sitio —catálogo, servicios, cobertura, blog, módulos— es una rejilla de estas tarjetas."
+        body={[
+          'A diferencia del hero (una vez por página) o del menú de secciones (una o dos), la tarjeta de categoría se repite tantas veces como la rejilla lo pida. En el catálogo de la home son 4 (SHOWCASE); en el roadmap de módulos, 15 (MODULOS); en cobertura, los estados que haya en TAXONOMY. La tarjeta es una unidad; el patrón de aparición es la rejilla.',
+          'Vive SIEMPRE dentro del .container central (90 % del ancho), nunca full-width. La rejilla padre define cuántas columnas a cada breakpoint: 1 → 2 → 4 para el catálogo (mucha oferta), 1 → 2 → 3 para vitrinas más cortas (servicios, cobertura). El componente respeta cualquiera de las dos: no impone columnas, solo se acomoda al ancho que reciba manteniendo el aspect-ratio 16:10 de su imagen.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 5) CÓMO SE ARMA ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Implementación"
+        title="Cómo está construido"
+        desc="Un único componente con API pequeña: label, href, image, imageAlt, badge, blurb, subcategories, ctaLabel, index, disabled. Devuelve un <article> con flex column + CTA anclado al fondo (alturas iguales) y un solo elemento con transición —el botón—."
+        body={[
+          'El componente vive en CategoryCard.astro y expone diez props a propósito: label (obligatorio, el H3), href (obligatorio, destino del título y del CTA), image + imageAlt (opcional, foto de cabecera con texto alternativo descriptivo), badge (etiqueta corta de gancho), blurb (1–2 frases de venta), subcategories[] (enlaces internos a páginas hijas con anchor text real), ctaLabel (texto del botón, default «Ver más»), index (posición en el grid: los 4 primeros cargan eager) y disabled (tarjeta sin enlace, p. ej. módulo «próximo»).',
+          'La regla de uso está cableada en los defaults: ctaLabel = «Ver más», index = 99 (lazy), disabled = false. Eso significa que pasando solo label y href ya se obtiene una tarjeta válida. Para una vitrina completa basta con el array de datos (SHOWCASE, TAXONOMY o una Content Collection) y el grid del padre. Cero JavaScript en el componente: HTML + CSS estático generado en build.',
+        ]}
+      />
+
+      <div class="recetas">
+        <Receta titulo="Astro · uso básico (rejilla hard-coded)" lang="astro" code={recetaUso} />
+        <Receta titulo="Astro · data-driven desde TAXONOMY (servicios/cobertura)" lang="astro" code={recetaTaxonomy} />
+        <Receta titulo="Astro · data-driven desde una Content Collection (blog)" lang="astro" code={recetaCollection} />
+      </div>
+
+      <div class="prose">
+        <p>
+          En concreto: el componente recibe las props, decide la etiqueta del media link
+          (<code>const MediaTag = disabled ? 'div' : 'a'</code>) y la de los chips
+          (<code>const ChipTag = disabled ? 'span' : 'a'</code>) para evitar 404s en tarjetas
+          inactivas. Emite un <code>&lt;article class="ccard"&gt;</code> con un media opcional
+          (imagen + overlay + badge), un <code>&lt;h3&gt;</code> con su enlace, el blurb, una
+          lista <code>&lt;ul&gt;</code> de chips con <code>aria-label</code> de subcategoría y
+          el CTA al fondo. La imagen lleva <code>width="640" height="400"</code> (ratio 16:10)
+          para reservar el hueco y evitar CLS, y <code>loading=eager</code> solo cuando
+          <code>index &lt; 4</code> (LCP friendly).
+        </p>
+        <p>
+          La accesibilidad es de fábrica: el contenedor es un <code>&lt;article&gt;</code>
+          semántico, el título es un <code>&lt;h3&gt;</code> real, los chips son una
+          <code>&lt;ul&gt;</code> con <code>aria-label</code> descriptivo, la flecha del CTA
+          lleva <code>aria-hidden="true"</code> y el overlay decorativo de la imagen también.
+          El foco se ve (<code>:focus-visible</code> con outline de color de marca) y, para
+          quienes prefieren menos animación (<code>prefers-reduced-motion</code>), la única
+          transición —la del botón— se desactiva. Los tokens del proyecto
+          (<code>--c-primary</code>, <code>--radius-lg</code>, <code>--sp-5</code>) son la
+          única fuente de estilo: cambiar el design system cambia todas las vitrinas.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 6) BUENAS PRÁCTICAS ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Buenas prácticas"
+        title="Qué hacer y qué evitar"
+        desc="La diferencia entre una vitrina que vende y una que se siente «hecha por bloques distintos» cabe en un puñado de hábitos —empezando por reusar CategoryCard en TODAS las rejillas del sitio—."
+        body={[
+          'Ninguno de estos hábitos es capricho: salen de la regla canónica del proyecto («una sola tarjeta para todas las vitrinas»). El sitio se siente coherente porque cada rejilla nace del mismo componente, con la misma tipografía, los mismos chips y el mismo botón. La única decisión real es la rejilla padre: 1 → 2 → 4 para el catálogo, 1 → 2 → 3 para vitrinas más cortas, y agnóstico en cuanto a la fuente de datos (SHOWCASE, TAXONOMY o Content Collection).',
+          'La buena noticia es que casi todo se sostiene solo cuando se respeta el componente: las alturas iguales las da el flex column + margin-top: auto del CTA, el LCP lo cuida el eager de las 4 primeras imágenes y la jerarquía H3 está cableada. Abajo, lo que conviene y lo que conviene evitar, enfrentados.',
+        ]}
+      />
+      <div class="dodont">
+        <article class="dd dd--si">
+          <h3 class="dd__title"><span class="dd__icon" aria-hidden="true">✓</span> Sí conviene</h3>
+          <ul class="dd__list">
+            {sis.map((s) => <li>{s}</li>)}
+          </ul>
+        </article>
+        <article class="dd dd--no">
+          <h3 class="dd__title"><span class="dd__icon" aria-hidden="true">✕</span> Mejor evita</h3>
+          <ul class="dd__list">
+            {nos.map((s) => <li>{s}</li>)}
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* Cierre */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+</PageLayout>
+
+<style>
+  /* Utilidades estructurales (tokens.css = fuente única; scoped por página). */
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* ── Beneficios ── */
+  .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .bene { grid-template-columns: repeat(3, 1fr); } }
+  .bene__card { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); }
+  .bene__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .bene__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Ejemplo en vivo de la tarjeta (réplica a escala del componente) ── */
+  .ccx {
+    display: flex; flex-direction: column;
+    max-width: 360px; margin: var(--sp-6) auto 0;
+    background: var(--c-white); border: 1px solid var(--c-border);
+    border-radius: var(--radius-lg); overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
+  }
+  .ccx__media { position: relative; aspect-ratio: 16 / 10; }
+  .ccx__img { position: absolute; inset: 0; background: linear-gradient(135deg, var(--c-primary-light, #f3eefe), var(--c-primary)); }
+  .ccx__badge {
+    position: absolute; top: var(--sp-3); left: var(--sp-3);
+    font-size: var(--text-xs); font-weight: var(--weight-bold);
+    text-transform: uppercase; letter-spacing: .04em; color: #fff;
+    background: var(--c-primary); padding: .25em .6em; border-radius: var(--radius-sm);
+  }
+  .ccx__body { display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-5); }
+  .ccx__title {
+    margin: 0; font-family: var(--font-heading);
+    font-size: var(--text-lg); font-weight: var(--weight-semibold);
+    line-height: var(--leading-snug); color: var(--c-ink); position: relative;
+  }
+  .ccx__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
+  .ccx__chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  .ccx__chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: var(--text-xs); font-weight: var(--weight-medium);
+    color: var(--c-ink-2); background: var(--c-surface);
+    border: 1px solid var(--c-border); border-radius: var(--radius-full);
+    padding: .3em .8em;
+  }
+  .ccx__cta {
+    margin-top: auto;
+    display: inline-flex; align-items: center; gap: var(--sp-2);
+    align-self: flex-start;
+    padding: .6em 1.1em;
+    font-family: var(--font-heading); font-weight: var(--weight-semibold);
+    font-size: var(--text-sm); color: #fff;
+    background: var(--c-primary); border-radius: var(--radius-md);
+  }
+  .ccx__n {
+    display: inline-grid; place-items: center; width: 18px; height: 18px;
+    border-radius: var(--radius-full); background: var(--c-primary); color: #fff;
+    font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: .6875rem;
+    flex-shrink: 0;
+  }
+  .ccx__n--mid { background: var(--c-muted); margin-right: 4px; }
+  .ccx__n--abs { position: absolute; top: -8px; left: -8px; z-index: 1; }
+  .ccx__n--inline { position: relative; top: auto; left: auto; margin-right: 6px; vertical-align: middle; }
+
+  /* ── Cards de las 4 partes ── */
+  .partes { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-5); }
+  @media (min-width: 600px) { .partes { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1000px) { .partes { grid-template-columns: repeat(4, 1fr); } }
+  .parte { display: flex; gap: var(--sp-3); align-items: start; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-4); }
+  .parte__num { flex-shrink: 0; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: var(--radius-full); background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: var(--text-sm); }
+  .parte__body { display: grid; gap: 4px; min-width: 0; }
+  .parte__nombre { margin: 0; font-family: var(--font-heading); font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .parte__que { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
+  .parte__dato { margin: 4px 0 0; display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--text-xs); color: var(--c-muted); }
+  .parte__dato span { text-transform: uppercase; letter-spacing: .06em; font-weight: var(--weight-semibold); }
+  .parte__dato code, .prose code, .pat__desc code {
+    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace; font-size: .85em;
+    background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+    padding: .05em .4em; color: var(--c-primary-dark);
+  }
+
+  /* ── Recetas de la sección «Cómo se arma» (apiladas, ancho completo) ── */
+  .recetas { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
+
+  /* ── Prose técnica ── */
+  .prose { max-width: 75ch; margin-top: var(--sp-6); }
+  .prose p { margin: 0 0 var(--sp-4); font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .prose strong { color: var(--c-ink); font-weight: var(--weight-semibold); }
+
+  /* ── Sí / No ── */
+  .dodont { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .dodont { grid-template-columns: 1fr 1fr; } }
+  .dd { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); }
+  .dd__title { margin: 0 0 var(--sp-3); display: flex; align-items: center; gap: var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .dd__icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-full); font-size: var(--text-sm); }
+  .dd--si .dd__icon { background: rgba(34,197,94,.14); color: #16a34a; }
+  .dd--no .dd__icon { background: rgba(239,68,68,.12); color: #dc2626; }
+  .dd__list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-2); }
+  .dd__list li { position: relative; padding-left: var(--sp-5); font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
+  .dd__list li::before { content: ''; position: absolute; left: 0; top: .55em; width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--c-muted); }
+
+  /* ── Mockups de variantes (dentro de <GaleriaDisenos>) ───────────────────── */
+  .ccv {
+    display: flex; flex-direction: column; width: 100%; min-height: 160px;
+    background: var(--c-white); border: 1px solid var(--c-border);
+    border-radius: var(--radius-sm); overflow: hidden; font-size: 11px; color: var(--c-ink);
+  }
+  .ccv__media { position: relative; aspect-ratio: 16 / 10; }
+  .ccv__img { position: absolute; inset: 0; background: linear-gradient(135deg, var(--c-primary-light, #f3eefe), var(--c-primary)); }
+  .ccv__badge {
+    position: absolute; top: 6px; left: 6px; font-size: 8px; font-weight: 700;
+    letter-spacing: .04em; text-transform: uppercase; color: #fff;
+    background: var(--c-primary); padding: 1px 6px; border-radius: 4px;
+  }
+  .ccv__badge--inline { position: static; align-self: flex-start; color: var(--c-primary); background: var(--c-surface); border: 1px solid var(--c-border); margin-bottom: 4px; }
+  .ccv__badge--soon { color: var(--c-muted); }
+  .ccv__body { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; flex-grow: 1; }
+  .ccv__t { font-family: var(--font-heading); font-weight: var(--weight-semibold); font-size: 12px; color: var(--c-ink); line-height: 1.2; }
+  .ccv__d { font-size: 10px; color: var(--c-muted); line-height: 1.35; }
+  .ccv__chips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+  .ccv__chips i { font-style: normal; font-size: 9px; color: var(--c-ink-2); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 99px; padding: 1px 6px; }
+  .ccv__cta {
+    margin-top: auto; align-self: flex-start;
+    font-size: 10px; font-weight: var(--weight-semibold); color: #fff;
+    background: var(--c-primary); padding: 4px 8px; border-radius: var(--radius-sm);
+  }
+  .ccv__cta--soon { background: var(--c-surface); color: var(--c-muted); border: 1px solid var(--c-border); }
+  /* Sin imagen */
+  .ccv--noimg { min-height: 110px; }
+  /* Próximamente */
+  .ccv--soon { opacity: .85; }
+  /* Horizontal */
+  .ccv--land { flex-direction: row; min-height: 92px; }
+  .ccv--land .ccv__media { width: 40%; aspect-ratio: auto; }
+  .ccv--land .ccv__body { flex: 1; }
+  /* Dark */
+  .ccv--dark { background: var(--c-ink); color: #fff; }
+  .ccv--dark .ccv__t { color: #fff; }
+  .ccv--dark .ccv__d { color: rgba(255,255,255,.72); }
+  .ccv--dark .ccv__chips i { color: rgba(255,255,255,.78); background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.15); }
+
+  /* ── Sección Responsive: teléfono | explicación + receta ─────────────────── */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Mockups MÓVIL (dentro de <MarcoMovil>) ──────────────────────────────── */
+  .ccm { padding: 10px; font-size: 11px; color: var(--c-ink); }
+  .ccm__c { display: flex; flex-direction: column; gap: 4px; padding: 8px; margin-bottom: 8px; background: var(--c-white); border: 1px solid var(--c-border); border-radius: 8px; }
+  .ccm__c:last-child { margin-bottom: 0; }
+  .ccm__img { display: block; height: 56px; border-radius: 5px; background: linear-gradient(135deg, var(--c-primary-light, #f3eefe), var(--c-primary)); }
+  .ccm__t { display: block; height: 9px; width: 65%; border-radius: 4px; background: var(--c-ink); opacity: .8; }
+  .ccm__d { display: block; height: 6px; width: 92%; border-radius: 3px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .ccm__cta { align-self: flex-start; font-size: 9px; font-weight: 700; color: #fff; background: var(--c-primary); padding: 3px 7px; border-radius: 4px; }
+  .ccm__hint { display: block; margin-top: 6px; font-size: 9px; color: var(--c-muted); text-align: center; }
+
+  /* 2 · Grid 1 → 2 → 3 (preview en móvil con 2 columnas) */
+  .ccm--g23 .ccm__row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; }
+  .ccm__mini { height: 48px; border-radius: 6px; background: var(--c-surface); border: 1px solid var(--c-border); }
+
+  /* 3 · Scroll snap */
+  .ccm--snap { padding: 8px 0 0; }
+  .ccm__row--snap { display: flex; gap: 6px; padding: 0 10px 6px; overflow-x: auto; scrollbar-width: none; }
+  .ccm__row--snap::-webkit-scrollbar { display: none; }
+  .ccm__card { flex: 0 0 96px; display: grid; gap: 3px; padding: 6px; background: var(--c-white); border: 1px solid var(--c-border); border-radius: 6px; }
+  .ccm__card .ccm__img { height: 40px; }
+  .ccm__card--peek { flex-basis: 36px; opacity: .55; }
+  .ccm--snap .ccm__hint { padding: 0 10px 8px; text-align: left; }
+
+  /* 4 · Dots */
+  .ccm--dots .ccm__row--snap { padding-bottom: 4px; }
+  .ccm__dots { display: flex; justify-content: center; gap: 6px; padding: 6px 10px 10px; }
+  .ccm__dots b { display: block; width: 6px; height: 6px; border-radius: 99px; background: var(--c-border); }
+  .ccm__dots b[data-active="true"] { background: var(--c-primary); width: 16px; }
+</style>
