@@ -154,7 +154,10 @@ const waLink = waUrl(`Hola, leí "${title}" en su blog y tengo una pregunta.`);
   .post__meta { color: var(--color-text-muted); font-size: var(--text-sm); margin-top: var(--space-3); }
   .post__hero img { width: 100%; height: auto; border-radius: var(--radius-lg); }
   .post__body { display: grid; grid-template-columns: 1fr; gap: var(--space-8); padding: var(--space-8) 0; }
-  .prose { max-width: var(--container-prose); }
+  /* min-width:0 → en el grid .post__body el track 1fr puede encoger por debajo del
+     min-content de un <pre>/línea larga; sin esto la columna crece y desborda en X
+     (mobile.css ya hace que <pre>/<table> scrolleen dentro de su caja). */
+  .prose { min-width: 0; max-width: var(--container-prose); }
   .post__sidebar { display: grid; gap: var(--space-5); align-content: start; }
   .post__widget { padding: var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-lg); }
   .post__widget--cta { background: var(--color-surface); }

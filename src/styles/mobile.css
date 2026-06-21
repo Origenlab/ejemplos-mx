@@ -130,3 +130,28 @@
   .hdr-inner { gap: .75rem !important; }
   .hdr-logo__word { font-size: 1.05rem !important; }
 }
+
+/* ── 10) DRAWER MÓVIL ABIERTO · BLOQUEO DE FONDO ────────────────────────────
+   Al abrir el menú (body.menu-open, lo pone el script del Header) se congela el
+   scroll del documento y se esconde el FAB de WhatsApp para que no flote sobre
+   el panel. El drawer trae su propio scroll interno (.mob-scroll) con
+   overscroll-behavior:contain → no hay «doble scroll» ni saltos del fondo. */
+body.menu-open { overflow: hidden; }
+body.menu-open .wa-float { display: none !important; }
+
+/* ── 11) GUARDA ANTI-DESBORDE · BLOQUES DE PATRÓN Y RECETAS DE CÓDIGO ────────
+   Los bloques .pat (demos de patrón) y .receta (code blocks) viven en grids 1fr.
+   Sus hijos heredan `min-width:auto` y se niegan a encoger por debajo del
+   min-content de una línea de código larga → el track 1fr crece y desborda en X
+   (causaba el scroll lateral en la home y en /modulos/*). `min-width:0` los deja
+   encoger para que el `overflow-x:auto` del <pre> haga su trabajo y el código
+   scrollee DENTRO de su caja, sin empujar la página. Guarda global, sin tocar
+   el desktop (min-width:0 es inocuo ahí). */
+.pats, .pat, .pat__demo, .pat__info, .receta { min-width: 0; }
+.receta pre { max-width: 100%; }
+
+/* Mismo principio para el cuerpo de artículos/fichas: las columnas de contenido
+   (prose) y las cajas dentro de grids no deben negarse a encoger por su
+   min-content (código, palabras o URLs largas). Red de seguridad global. */
+.prose, .post__body > *, .post__sidebar { min-width: 0; }
+.prose pre, .prose table { max-width: 100%; }

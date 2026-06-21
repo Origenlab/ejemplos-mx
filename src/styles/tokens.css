@@ -52,6 +52,10 @@
   --container-px: clamp(1rem, 4vw, 2rem);  /* Padding interior dentro del 90%. */
   --topbar-height: 36px;
   --header-height: 64px;
+  /* Alto del «stack» del chrome sticky (topbar + header). Se recalcula solo en
+     cada breakpoint porque depende de los dos tokens de arriba. Lo consumen el
+     drawer móvil (top), el scroll-padding de anclas y los offsets de sticky. */
+  --stack-height: calc(var(--topbar-height) + var(--header-height));
   /* Padding vertical estándar de sección (RelatedLinks/FAQAccordion). */
   --section-py: clamp(3rem, 6vw, 5rem);
 
@@ -94,7 +98,12 @@
    ============================================================================ */
 *, *::before, *::after { box-sizing: border-box; }
 
-html { -webkit-text-size-adjust: 100%; }
+html {
+  -webkit-text-size-adjust: 100%;
+  /* El chrome (topbar + header) es sticky: al saltar a un ancla, deja su altura
+     de aire arriba para que el título no quede tapado. */
+  scroll-padding-top: calc(var(--stack-height) + 0.75rem);
+}
 
 body {
   margin: 0;

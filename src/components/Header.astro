@@ -3,16 +3,22 @@
 // accesibles (timer de gracia, foco por teclado, acordeón móvil). ORIGEN del patrón
 // de interacción: PROYECTORED/src/components/global/Header.astro.
 //
+// CHROME STICKY: el Header se pega bajo el TopBar formando un stack coherente
+// (--stack-height). En producción (guia=false): topbar sticky(0) + header
+// sticky(--topbar-height). En modo guía: topbar estático + header sticky(0), así el
+// menú SIEMPRE está a mano sin dejar una barra suelta flotando (bug de scroll raro).
+//
 // FUENTE ÚNICA del menú = NAV en @config/site. Este componente NO hardcodea NINGÚN
 // ítem: itera NAV para generar (1) el menú de escritorio, (2) los paneles desplegables
 // y (3) el menú móvil. Para editar el menú, edita NAV en site.ts. Guía: docs/MENU.md.
-import { NAV, SITE, waUrl, WA_MESSAGES } from '@config/site'
+import { NAV, SITE, CONTACT, waUrl, telUrl, WA_MESSAGES } from '@config/site'
 
 interface Props {
   /** Modo guía: marcadores numerados sobre la barra + leyenda explicativa debajo. */
   guia?: boolean
 }
 const { guia = false } = Astro.props
+const schedule = CONTACT.schedule?.display as string | undefined
 
 // Puntos del header — fuente única de la leyenda guía (mismo patrón que el TopBar).
 const PUNTOS = [
@@ -54,9 +60,10 @@ const isActive = (href: string) =>
   href === '/' ? currentPath === '/' : currentPath === href || currentPath.startsWith(href)
 
 const WA_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`
+const PHONE_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8a19.79 19.79 0 01-3.07-8.67A2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.92v2z"/></svg>`
 ---
 
-<header class="site-header" role="banner">
+<header class:list={['site-header', { 'is-guia': guia }]} role="banner">
   <div class="hdr-inner">
 
     <a href="/" class="hdr-logo" aria-label={`${SITE.name} — Inicio`}>
@@ -107,9 +114,8 @@ const WA_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentCol
     </button>
   </div>
 
-  {/* MEGA PANELS — dentro del <header> (position:relative) → se posicionan con
-      absolute top:100% y VIAJAN con el header al hacer scroll (ya no fixed al
-      viewport). Los dropdown viven dentro de su <li> (ver arriba), también absolute. */}
+  {/* MEGA PANELS — dentro del <header> (position:relative→sticky) → se posicionan con
+      absolute top:100% y VIAJAN con el header. Los dropdown viven dentro de su <li>. */}
   {NAV.filter((item) => item.panel === 'mega').map((item) => (
     <div class="mega-panel" id={navId(item.label)} role="region" aria-label={item.label} aria-hidden="true">
       <div class="mega-panel__inner">
@@ -157,49 +163,80 @@ const WA_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentCol
 
 <div class="hdr-overlay" id="hdr-overlay" aria-hidden="true"></div>
 
-{/* MOBILE NAV — generado desde el MISMO NAV. Ítems con panel → acordeón; resto → enlace directo. */}
+{/* MOBILE NAV — generado desde el MISMO NAV. Ítems con panel → acordeón; resto → enlace directo.
+    El `top` real lo fija el script al abrir (= borde inferior del header sticky), así funciona
+    en ambos modos y a cualquier altura de scroll. */}
 <div class="hdr-mobile-nav" id="hdr-mobile-nav" aria-hidden="true">
-  <nav aria-label="Navegación móvil">
-    {NAV.map((item) => item.panel ? (
-      <div class="mob-item">
-        <button class="mob-item__trigger" aria-expanded="false"><span>{item.label}</span><svg class="mob-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>
-        <div class="mob-item__panel">
-          <a href={item.href} class="mob-item__all">{item.allLabel ?? 'Ver todo'}</a>
-          {(item.items ?? []).map((sub) => (<a href={sub.href} class="mob-item__link">{sub.label}</a>))}
+  <div class="mob-scroll">
+    <nav aria-label="Navegación móvil">
+      {NAV.map((item) => item.panel ? (
+        <div class="mob-item">
+          <button class="mob-item__trigger" aria-expanded="false"><span>{item.label}</span><svg class="mob-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>
+          <div class="mob-item__panel">
+            <div class="mob-item__panel-inner">
+              <a href={item.href} class="mob-item__all">{item.allLabel ?? 'Ver todo'}</a>
+              {(item.items ?? []).map((sub) => (<a href={sub.href} class="mob-item__link">{sub.label}</a>))}
+            </div>
+          </div>
         </div>
-      </div>
-    ) : (
-      <a href={item.href} class="mob-direct">{item.label}</a>
-    ))}
-    <a href={waUrl(WA_MESSAGES.cotizacion ?? WA_MESSAGES.default)} class="mob-cta" target="_blank" rel="noopener noreferrer">
-      <Fragment set:html={WA_SVG} /> Cotizar por WhatsApp
-    </a>
-  </nav>
+      ) : (
+        <a href={item.href} class="mob-direct">{item.label}</a>
+      ))}
+    </nav>
+  </div>
+
+  <div class="mob-foot">
+    <div class="mob-foot__cta">
+      <a href={waUrl(WA_MESSAGES.cotizacion ?? WA_MESSAGES.default)} class="mob-cta" target="_blank" rel="noopener noreferrer">
+        <Fragment set:html={WA_SVG} /> Cotizar
+      </a>
+      <a href={telUrl()} class="mob-call" aria-label={`Llamar al ${CONTACT.phone}`}>
+        <Fragment set:html={PHONE_SVG} /> Llamar
+      </a>
+    </div>
+    {schedule && <p class="mob-foot__meta"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg> {schedule}</p>}
+  </div>
 </div>
 
 <style>
-  /* Header NO-FIJO: se desplaza con el scroll (antes era sticky). position:relative
-     ancla los paneles absolute (mega/dropdown) para que viajen con el header. */
-  .site-header { position: relative; z-index: 500; background: var(--c-white, #fff); border-bottom: 1px solid var(--c-border, #e8e8e8); box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 8px rgba(0,0,0,.04); }
+  /* ── Header sticky ───────────────────────────────────────────────────────────
+     Producción: se pega a top:--topbar-height (bajo el topbar sticky) → stack.
+     Modo guía: el topbar es estático, así que el header se pega a top:0 (no deja
+     hueco). El menú queda siempre accesible sin barras sueltas flotando. */
+  .site-header {
+    position: sticky; top: var(--topbar-height); z-index: 500;
+    background: var(--c-white, #fff);
+    border-bottom: 1px solid var(--c-border, #e8e8e8);
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    transition: box-shadow .2s ease;
+  }
+  .site-header.is-guia { top: 0; }
+  /* Sombra más marcada al hacer scroll (la añade el script). */
+  .site-header.is-scrolled { box-shadow: 0 2px 10px rgba(0,0,0,.08), 0 10px 28px rgba(0,0,0,.05); }
+
   .hdr-inner { display: flex; align-items: center; gap: var(--sp-6, 1.5rem); height: var(--header-height, 80px); max-width: var(--container-max, 1400px); margin-inline: auto; padding-inline: var(--container-px, 1.5rem); }
+
+  /* ── Logotipo ── */
   .hdr-logo { display: inline-flex; align-items: center; gap: .55rem; flex-shrink: 0; text-decoration: none; }
-  .hdr-logo__mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-black, 800); font-size: 1.25rem; line-height: 1; box-shadow: 0 2px 8px rgba(var(--c-primary-rgb), .35); }
-  .hdr-logo__word { font-family: var(--font-heading); font-weight: var(--weight-black, 800); font-size: 1.35rem; letter-spacing: -.01em; color: var(--c-ink); line-height: 1; }
+  .hdr-logo__mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; background: linear-gradient(135deg, var(--c-primary), var(--c-primary-light)); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-black, 800); font-size: 1.25rem; line-height: 1; box-shadow: 0 4px 12px rgba(var(--c-primary-rgb), .35); }
+  .hdr-logo__word { font-family: var(--font-heading); font-weight: var(--weight-black, 800); font-size: 1.35rem; letter-spacing: -.02em; color: var(--c-ink); line-height: 1; }
   .hdr-logo__tld { color: var(--c-primary); }
 
+  /* ── Nav escritorio ── */
   .hdr-nav { margin-left: auto; }
-  .hdr-nav__list { display: flex; align-items: center; gap: 0; list-style: none; margin: 0; padding: 0; }
+  .hdr-nav__list { display: flex; align-items: center; gap: var(--sp-1, .25rem); list-style: none; margin: 0; padding: 0; }
   .hdr-nav__item { position: relative; }
-  .hdr-nav__link { position: relative; display: flex; align-items: center; gap: var(--sp-1, .3rem); padding: var(--sp-2, .5rem) var(--sp-3, .875rem); font-size: var(--text-sm, .875rem); font-weight: var(--weight-medium, 500); color: var(--c-ink-2, #374151); border-radius: var(--radius-md, 6px); white-space: nowrap; text-decoration: none; }
-  .hdr-nav__link:hover { color: #fff; background: var(--c-primary-light); }
+  .hdr-nav__link { position: relative; display: flex; align-items: center; gap: var(--sp-1, .3rem); padding: var(--sp-2, .5rem) var(--sp-3, .875rem); font-size: var(--text-sm, .875rem); font-weight: var(--weight-medium, 500); color: var(--c-ink-2, #374151); border-radius: var(--radius-md, 6px); white-space: nowrap; text-decoration: none; transition: color .15s ease, background .15s ease; }
+  .hdr-nav__link:hover { color: var(--c-primary); background: rgba(var(--c-primary-rgb), .08); }
   .hdr-nav__link:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; }
-  .hdr-nav__link--active { color: #fff; background: var(--c-primary-light); font-weight: var(--weight-semibold, 600); }
-  .hdr-nav__link--active::after { content: ''; position: absolute; left: .875rem; right: .875rem; bottom: -2px; height: 2px; background: var(--c-primary); border-radius: 2px 2px 0 0; }
-  .hdr-chevron { flex-shrink: 0; opacity: .55; }
+  .hdr-nav__link--active { color: var(--c-primary); background: rgba(var(--c-primary-rgb), .08); font-weight: var(--weight-semibold, 600); }
+  .hdr-nav__link--active::after { content: ''; position: absolute; left: 50%; transform: translateX(-50%); bottom: 1px; width: 18px; height: 2.5px; background: var(--c-primary); border-radius: 2px; }
+  .hdr-chevron { flex-shrink: 0; opacity: .55; transition: transform .2s ease; }
   .hdr-nav__item.is-open .hdr-chevron { transform: rotate(180deg); }
-  .hdr-nav__item.is-open .hdr-nav__link { color: #fff; background: var(--c-primary-light); }
+  .hdr-nav__item.is-open .hdr-nav__link { color: var(--c-primary); background: rgba(var(--c-primary-rgb), .08); }
 
-  .mega-panel { position: absolute; left: 0; right: 0; top: 100%; background: var(--c-white, #fff); border-top: 2px solid var(--c-primary); border-bottom: 1px solid var(--c-border); box-shadow: 0 8px 24px rgba(0,0,0,.1); z-index: 490; padding-block: 1.75rem; opacity: 0; transform: translateY(-6px); pointer-events: none; }
+  /* ── Mega panel ── */
+  .mega-panel { position: absolute; left: 0; right: 0; top: 100%; background: var(--c-white, #fff); border-top: 2px solid var(--c-primary); border-bottom: 1px solid var(--c-border); box-shadow: 0 14px 30px rgba(0,0,0,.12); z-index: 490; padding-block: 1.75rem; opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .16s ease, transform .16s ease; }
   .mega-panel.is-open { opacity: 1; transform: translateY(0); pointer-events: all; }
   .mega-panel__inner { max-width: var(--container-max, 1400px); margin-inline: auto; padding-inline: var(--container-px, 1.5rem); }
   .mega-panel__top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: .75rem; border-bottom: 1px solid var(--c-border); }
@@ -208,57 +245,72 @@ const WA_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentCol
   .mega-panel__all:hover { color: var(--c-primary-dark); }
   .mega-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem 1.5rem; align-items: start; list-style: none; margin: 0; padding: 0; }
   .mega-col { display: flex; flex-direction: column; }
-  .mega-col__title { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .5rem .625rem; font-size: .9375rem; font-weight: var(--weight-bold, 700); color: var(--c-ink); border-radius: var(--radius-md, 6px); text-decoration: none; border: 1px solid transparent; }
-  .mega-col__title:hover, .mega-col__title:focus-visible { background: var(--c-primary-light); color: #fff; outline: none; }
-  .mega-col__badge { font-size: .625rem; font-weight: var(--weight-bold, 700); color: var(--c-primary); background: var(--c-primary-light); border: 1px solid rgba(var(--c-primary-rgb, 196,30,36), .2); padding: .1rem .4rem; border-radius: var(--radius-full, 100px); flex-shrink: 0; }
-  .mega-sub { display: flex; flex-direction: column; margin-top: .25rem; padding-top: .25rem; border-top: 1px solid var(--c-border); list-style: none; padding-left: 0; }
-  .mega-sub__link { display: block; padding: .3125rem .625rem; font-size: .8125rem; color: var(--c-muted); border-radius: var(--radius-sm, 4px); text-decoration: none; line-height: 1.5; }
-  .mega-sub__link:hover, .mega-sub__link:focus-visible { background: var(--c-primary-light); color: #fff; outline: none; }
-  .mega-sub__link--ver-todos { font-weight: var(--weight-semibold, 600); color: var(--c-primary); margin-top: .25rem; }
+  .mega-col__title { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .6rem .7rem; font-size: .9375rem; font-weight: var(--weight-bold, 700); color: var(--c-ink); border-radius: var(--radius-md, 6px); text-decoration: none; border: 1px solid transparent; transition: color .15s ease, background .15s ease; }
+  .mega-col__title:hover, .mega-col__title:focus-visible { background: rgba(var(--c-primary-rgb), .08); color: var(--c-primary); outline: none; }
 
-  .drop-panel { position: absolute; top: calc(100% + 6px); left: 0; z-index: 490; background: var(--c-white, #fff); border: 1px solid var(--c-border); border-radius: var(--radius-lg, 10px); box-shadow: 0 12px 32px rgba(0,0,0,.14), 0 2px 8px rgba(0,0,0,.06); min-width: 260px; max-width: 340px; opacity: 0; transform: translateY(-6px); pointer-events: none; }
+  /* ── Dropdown compacto ── */
+  .drop-panel { position: absolute; top: calc(100% + 6px); left: 0; z-index: 490; background: var(--c-white, #fff); border: 1px solid var(--c-border); border-radius: var(--radius-lg, 10px); box-shadow: 0 14px 34px rgba(0,0,0,.14), 0 2px 8px rgba(0,0,0,.06); min-width: 260px; max-width: 340px; opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .16s ease, transform .16s ease; }
   #navp-servicios { min-width: 320px; max-width: 380px; }
   .drop-panel.is-open { opacity: 1; transform: translateY(0); pointer-events: all; }
   .drop-panel__inner { padding: .5rem .375rem; display: flex; flex-direction: column; }
   .drop-panel__header { display: block; padding: .5rem .75rem; font-size: var(--text-xs, .75rem); font-weight: var(--weight-bold, 700); color: var(--c-primary); text-decoration: none; border-bottom: 1px solid var(--c-border); margin-bottom: .25rem; text-transform: uppercase; letter-spacing: .06em; }
-  .drop-panel__link { display: flex; flex-direction: column; gap: .125rem; padding: .5rem .75rem; font-size: var(--text-sm, .875rem); color: var(--c-ink-2); border-radius: 5px; text-decoration: none; }
-  .drop-panel__link:hover, .drop-panel__link:focus-visible { background: var(--c-primary-light); color: #fff; outline: none; }
+  .drop-panel__link { display: flex; flex-direction: column; gap: .125rem; padding: .55rem .75rem; font-size: var(--text-sm, .875rem); color: var(--c-ink-2); border-radius: 7px; text-decoration: none; transition: color .15s ease, background .15s ease; }
+  .drop-panel__link:hover, .drop-panel__link:focus-visible { background: rgba(var(--c-primary-rgb), .08); color: var(--c-primary); outline: none; }
   .drop-panel__link-label { font-weight: var(--weight-semibold, 600); color: inherit; line-height: 1.3; }
   .drop-panel__link-desc { font-size: var(--text-xs, .75rem); color: var(--c-muted); line-height: 1.35; }
+  .drop-panel__link:hover .drop-panel__link-desc, .drop-panel__link:focus-visible .drop-panel__link-desc { color: var(--c-ink-2); }
 
-  .hdr-overlay { display: none; position: fixed; inset: 0; z-index: 480; background: rgba(0,0,0,.25); }
+  .hdr-overlay { display: none; position: fixed; inset: 0; z-index: 480; background: rgba(20,24,31,.28); backdrop-filter: blur(1px); }
   .hdr-overlay.is-visible { display: block; }
 
-  .hdr-cta { display: flex; align-items: center; gap: .4375rem; padding: .5625rem 1.25rem; background: var(--c-primary); color: #fff; font-size: var(--text-sm, .875rem); font-weight: var(--weight-semibold, 600); border-radius: var(--radius-md, 6px); white-space: nowrap; transition: background .15s, transform .15s; flex-shrink: 0; text-decoration: none; box-shadow: 0 2px 8px rgba(var(--c-primary-rgb, 196,30,36), .3); }
-  .hdr-cta:hover { background: var(--c-primary-dark); color: #fff; transform: translateY(-1px); }
+  /* ── CTA Cotizar ── */
+  .hdr-cta { display: flex; align-items: center; gap: .4375rem; padding: .6rem 1.3rem; background: var(--c-primary); color: #fff; font-size: var(--text-sm, .875rem); font-weight: var(--weight-semibold, 600); border-radius: var(--radius-md, 6px); white-space: nowrap; transition: background .15s, transform .15s, box-shadow .15s; flex-shrink: 0; text-decoration: none; box-shadow: 0 4px 12px rgba(var(--c-primary-rgb), .32); }
+  .hdr-cta:hover { background: var(--c-primary-dark); color: #fff; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(var(--c-primary-rgb), .4); }
   .hdr-cta:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 3px; }
 
-  .hdr-burger { display: none; flex-direction: column; justify-content: center; gap: 5px; padding: .5rem; margin-left: auto; cursor: pointer; border: 1px solid var(--c-border); background: none; border-radius: var(--radius-md, 6px); width: 44px; height: 44px; }
-  .hdr-burger span { display: block; width: 20px; height: 2px; background: var(--c-ink-2); border-radius: 2px; transition: transform .25s ease, opacity .25s ease; transform-origin: center; }
+  /* ── Burger ── */
+  .hdr-burger { display: none; flex-direction: column; justify-content: center; align-items: center; gap: 5px; padding: 0; margin-left: auto; cursor: pointer; border: 1px solid var(--c-border); background: var(--c-white); border-radius: var(--radius-md, 10px); width: 44px; height: 44px; transition: border-color .15s ease, background .15s ease; }
+  .hdr-burger:hover { border-color: var(--c-primary); }
+  .hdr-burger span { display: block; width: 20px; height: 2px; background: var(--c-ink-2); border-radius: 2px; transition: transform .25s ease, opacity .2s ease; transform-origin: center; }
   .hdr-burger:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; }
+  .hdr-burger[aria-expanded="true"] { border-color: var(--c-primary); }
+  .hdr-burger[aria-expanded="true"] span { background: var(--c-primary); }
   .hdr-burger[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
   .hdr-burger[aria-expanded="true"] span:nth-child(2) { opacity: 0; transform: scaleX(0); }
   .hdr-burger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-  .hdr-mobile-nav { position: fixed; top: calc(var(--topbar-height, 0px) + var(--header-height, 80px)); left: 0; right: 0; bottom: 0; background: var(--c-white, #fff); z-index: 490; overflow-y: auto; border-top: 2px solid var(--c-primary); opacity: 0; pointer-events: none; }
-  .hdr-mobile-nav[aria-hidden="false"] { opacity: 1; pointer-events: all; }
-  .mob-item { border-bottom: 1px solid var(--c-border); }
-  .mob-item__trigger { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; font-size: 1rem; font-weight: var(--weight-semibold, 600); color: var(--c-ink); background: none; border: none; cursor: pointer; text-align: left; }
-  .mob-item__trigger:hover, .mob-item__trigger[aria-expanded="true"] { color: var(--c-primary); }
-  .mob-item__trigger[aria-expanded="true"] .mob-chevron { transform: rotate(180deg); }
-  .mob-chevron { flex-shrink: 0; opacity: .6; }
-  .mob-item__panel { display: grid; grid-template-rows: 0fr; overflow: hidden; }
-  .mob-item__panel.is-open { grid-template-rows: 1fr; }
-  .mob-item__panel > * { min-height: 0; }
-  .mob-item__panel-inner { padding: .25rem 1.25rem 1rem; background: var(--c-surface, #fafafa); display: flex; flex-direction: column; gap: .125rem; }
-  .mob-item__all { display: block; padding: .5rem .75rem; font-size: .8125rem; font-weight: var(--weight-bold, 700); color: var(--c-primary); text-decoration: none; border-radius: 5px; margin-bottom: .25rem; }
-  .mob-item__link { display: block; padding: .4375rem .75rem; font-size: .9375rem; color: var(--c-ink-2); text-decoration: none; border-radius: 5px; }
-  .mob-item__link:hover { background: var(--c-primary-light); color: #fff; }
-  .mob-direct { display: block; padding: 1rem 1.25rem; font-size: 1rem; font-weight: var(--weight-semibold, 600); color: var(--c-ink); border-bottom: 1px solid var(--c-border); text-decoration: none; }
-  .mob-direct:hover { color: var(--c-primary); }
-  .mob-cta { display: flex; align-items: center; justify-content: center; gap: .5rem; margin: 1.5rem 1.25rem; padding: 1rem 1.5rem; background: var(--c-primary); color: #fff; font-size: 1rem; font-weight: var(--weight-bold, 700); border-radius: var(--radius-lg, 8px); text-decoration: none; }
-  .mob-cta:hover { background: var(--c-primary-dark); color: #fff; }
+  /* ── Drawer móvil ──────────────────────────────────────────────────────────── */
+  .hdr-mobile-nav { position: fixed; top: var(--stack-height); left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; background: var(--c-white, #fff); z-index: 490; border-top: 1px solid var(--c-border); opacity: 0; transform: translateY(-10px); pointer-events: none; transition: opacity .22s ease, transform .22s ease; }
+  .hdr-mobile-nav[aria-hidden="false"] { opacity: 1; transform: translateY(0); pointer-events: all; }
+  .mob-scroll { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: .25rem 0 .5rem; }
 
+  .mob-item { border-bottom: 1px solid var(--c-border); }
+  .mob-item__trigger { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: 1rem 1.25rem; min-height: 56px; font-family: var(--font-heading); font-size: 1.05rem; font-weight: var(--weight-semibold, 600); color: var(--c-ink); background: none; border: none; cursor: pointer; text-align: left; box-shadow: inset 0 0 0 var(--c-primary); transition: color .15s ease, background .15s ease, box-shadow .15s ease; }
+  .mob-item__trigger:hover { color: var(--c-primary); }
+  .mob-item__trigger[aria-expanded="true"] { color: var(--c-primary); background: rgba(var(--c-primary-rgb), .05); box-shadow: inset 3px 0 0 var(--c-primary); }
+  .mob-item__trigger[aria-expanded="true"] .mob-chevron { transform: rotate(180deg); }
+  .mob-chevron { flex-shrink: 0; opacity: .6; transition: transform .25s ease; }
+  /* Colapso por max-height (a 0 real, sin la rendija que deja `grid 0fr`). */
+  .mob-item__panel { overflow: hidden; max-height: 0; transition: max-height .3s ease; }
+  .mob-item__panel.is-open { max-height: 760px; }
+  .mob-item__panel-inner { padding: .35rem 1.25rem 1rem; background: var(--c-surface, #fafafa); display: flex; flex-direction: column; gap: .125rem; }
+  .mob-item__all { display: inline-flex; align-items: center; align-self: flex-start; padding: .45rem .7rem; font-size: .8125rem; font-weight: var(--weight-bold, 700); color: var(--c-primary); text-decoration: none; border-radius: 7px; margin-bottom: .25rem; text-transform: uppercase; letter-spacing: .04em; }
+  .mob-item__link { display: flex; align-items: center; min-height: 44px; padding: .5rem .7rem; font-size: .9875rem; color: var(--c-ink-2); text-decoration: none; border-radius: 7px; }
+  .mob-item__link:hover, .mob-item__link:focus-visible { background: rgba(var(--c-primary-rgb), .1); color: var(--c-primary); outline: none; }
+  .mob-direct { display: flex; align-items: center; min-height: 56px; padding: 1rem 1.25rem; font-family: var(--font-heading); font-size: 1.05rem; font-weight: var(--weight-semibold, 600); color: var(--c-ink); border-bottom: 1px solid var(--c-border); text-decoration: none; box-shadow: inset 0 0 0 var(--c-primary); transition: color .15s ease, background .15s ease, box-shadow .15s ease; }
+  .mob-direct:hover { color: var(--c-primary); background: rgba(var(--c-primary-rgb), .05); box-shadow: inset 3px 0 0 var(--c-primary); }
+
+  /* Pie del drawer: doble CTA + horario. Fijo (no scrollea con la lista). */
+  .mob-foot { flex: 0 0 auto; border-top: 1px solid var(--c-border); background: var(--c-white); padding: .9rem 1.25rem calc(.9rem + env(safe-area-inset-bottom, 0px)); display: grid; gap: .65rem; }
+  .mob-foot__cta { display: flex; gap: .6rem; }
+  .mob-cta, .mob-call { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: .45rem; min-height: 50px; border-radius: var(--radius-md, 10px); font-family: var(--font-heading); font-weight: var(--weight-bold, 700); font-size: .98rem; text-decoration: none; }
+  .mob-cta { background: var(--c-primary); color: #fff; box-shadow: 0 4px 12px rgba(var(--c-primary-rgb), .32); }
+  .mob-cta:hover { background: var(--c-primary-dark); color: #fff; }
+  .mob-call { background: transparent; color: var(--c-primary); border: 1.5px solid var(--c-primary); }
+  .mob-call:hover { background: rgba(var(--c-primary-rgb), .08); }
+  .mob-foot__meta { margin: 0; display: flex; align-items: center; justify-content: center; gap: .4rem; font-size: var(--text-sm); color: var(--c-muted); }
+
+  /* ── Breakpoint chrome → móvil ── */
   @media (max-width: 1024px) {
     .hdr-nav, .hdr-cta { display: none; }
     .hdr-burger { display: flex; }
@@ -266,7 +318,7 @@ const WA_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentCol
   @media (max-width: 480px) {
     .hdr-inner { gap: 1rem; }
     .hdr-logo__mark { width: 34px; height: 34px; font-size: 1.1rem; }
-    .hdr-logo__word { font-size: 1.15rem; }
+    .hdr-logo__word { font-size: 1.18rem; }
   }
 
   /* ── Marcadores (modo guía) — círculos numerados sobre la barra ── */
@@ -276,7 +328,6 @@ const WA_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentCol
     background: var(--c-primary); color: #fff;
     font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: .6875rem;
   }
-  /* El CTA es índigo: el marcador se invierte (blanco con número índigo) para que resalte. */
   .hdr-mark--cta { background: #fff; color: var(--c-primary); }
 
   /* ── Leyenda guía (igual que la del TopBar) — franja bajo el header ── */
@@ -315,18 +366,22 @@ const WA_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentCol
   @media (min-width: 600px)  { .hbg__list { grid-template-columns: repeat(2, 1fr); } }
   @media (min-width: 1000px) { .hbg__list { grid-template-columns: repeat(4, 1fr); } }
 
-  /* Hover: la descripción de los items del dropdown también legible sobre el morado. */
-  .drop-panel__link:hover .drop-panel__link-desc,
-  .drop-panel__link:focus-visible .drop-panel__link-desc { color: rgba(255,255,255,.85); }
+  /* Respeta usuarios con motion reducido. */
+  @media (prefers-reduced-motion: reduce) {
+    .hdr-mobile-nav, .mob-item__panel, .mega-panel, .drop-panel, .hdr-chevron, .mob-chevron, .site-header { transition: none; }
+  }
 </style>
 
 <script>
-  // Header — dropdowns con timer de gracia, foco por teclado, acordeón móvil.
+  // Header — dropdowns con timer de gracia, foco por teclado, acordeón móvil,
+  // sombra al hacer scroll y drawer con offset calculado (= borde inferior del header).
   (function () {
     const CLOSE_DELAY = 120
+    const header = document.querySelector<HTMLElement>('.site-header')
     const overlay = document.getElementById('hdr-overlay')
     const mobileNav = document.getElementById('hdr-mobile-nav')
     const burgerBtn = document.getElementById('hdr-burger-btn')
+
     type DropItem = { trigger: HTMLElement; link: HTMLElement; panel: HTMLElement; isMega: boolean; timer: ReturnType<typeof setTimeout> | null }
     const items: DropItem[] = []
     document.querySelectorAll<HTMLElement>('[data-dropdown]').forEach((trigger) => {
@@ -335,8 +390,7 @@ const WA_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentCol
       const link = trigger.querySelector<HTMLElement>('.hdr-nav__link')!
       items.push({ trigger, link, panel, isMega: panel.classList.contains('mega-panel'), timer: null })
     })
-    // Los paneles se posicionan por CSS (absolute, anclados al header/<li>) y viajan
-    // con el header al hacer scroll — ya NO se posicionan por JS.
+
     function openItem(item: DropItem) {
       if (item.timer) { clearTimeout(item.timer); item.timer = null }
       items.forEach(o => { if (o !== item) closeItemNow(o) })
@@ -377,18 +431,33 @@ const WA_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentCol
       if (e.key === 'Escape') { const opened = items.find(i => i.panel.classList.contains('is-open')); closeAll(); if (opened) opened.link.focus() }
     })
     document.querySelectorAll('.mega-panel a, .drop-panel a').forEach(a => a.addEventListener('click', () => setTimeout(closeAll, 50)))
-    function toggleMobileNav() {
-      const isOpen = mobileNav!.getAttribute('aria-hidden') === 'false'
-      mobileNav!.setAttribute('aria-hidden', isOpen ? 'true' : 'false')
-      burgerBtn!.setAttribute('aria-expanded', isOpen ? 'false' : 'true')
-      document.body.style.overflow = isOpen ? '' : 'hidden'
+
+    // Sombra del header al hacer scroll.
+    const onScroll = () => { header?.classList.toggle('is-scrolled', window.scrollY > 4) }
+    onScroll(); window.addEventListener('scroll', onScroll, { passive: true })
+
+    // ── Drawer móvil ──
+    function setMenu(open: boolean) {
+      if (!mobileNav || !burgerBtn) return
+      if (open) {
+        // El top del drawer = borde inferior real del header (funciona en ambos
+        // modos y a cualquier scroll). max(0,…) por si el header ya está en top.
+        const bottom = header ? Math.max(0, Math.round(header.getBoundingClientRect().bottom)) : 0
+        mobileNav.style.top = bottom + 'px'
+      }
+      mobileNav.setAttribute('aria-hidden', open ? 'false' : 'true')
+      burgerBtn.setAttribute('aria-expanded', open ? 'true' : 'false')
+      burgerBtn.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú')
+      document.body.classList.toggle('menu-open', open)
+      document.body.style.overflow = open ? 'hidden' : ''
     }
-    burgerBtn?.addEventListener('click', toggleMobileNav)
+    burgerBtn?.addEventListener('click', () => setMenu(mobileNav!.getAttribute('aria-hidden') !== 'false'))
+
     document.querySelectorAll<HTMLElement>('.mob-item__trigger').forEach(btn => {
       const panel = btn.closest<HTMLElement>('.mob-item')!.querySelector<HTMLElement>('.mob-item__panel')!
-      const inner = document.createElement('div'); inner.className = 'mob-item__panel-inner'
-      while (panel.firstChild) inner.appendChild(panel.firstChild)
-      panel.appendChild(inner)
+      // El wrapper .mob-item__panel-inner ya viene en el markup (así recibe los
+      // estilos scoped de Astro; si se crea por JS no haría match con min-height:0
+      // y el truco grid 0fr→1fr no colapsaría). Aquí solo se cablea el acordeón.
       btn.addEventListener('click', () => {
         const isOpen = btn.getAttribute('aria-expanded') === 'true'
         document.querySelectorAll<HTMLElement>('.mob-item__trigger').forEach(o => {
@@ -398,9 +467,7 @@ const WA_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentCol
         panel.classList.toggle('is-open', !isOpen)
       })
     })
-    mobileNav?.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
-      mobileNav.setAttribute('aria-hidden', 'true'); burgerBtn!.setAttribute('aria-expanded', 'false'); document.body.style.overflow = ''
-    }))
-    window.addEventListener('resize', () => { if (window.innerWidth <= 1024) { closeAll(); document.body.style.overflow = '' } })
+    mobileNav?.querySelectorAll('a').forEach(a => a.addEventListener('click', () => setMenu(false)))
+    window.addEventListener('resize', () => { if (window.innerWidth > 1024) { closeAll(); setMenu(false) } })
   })()
 </script>
