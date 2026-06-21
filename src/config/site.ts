@@ -242,6 +242,7 @@ export const MODULOS: readonly Modulo[] = [
   { slug: 'section-heading',     label: 'Encabezado de sección',   href: '/modulos/section-heading',     desc: 'El encabezado que abre cada bloque: eyebrow, título y descripción.', estado: 'listo' },
   { slug: 'category-card',       label: 'Tarjeta de categoría',    href: '/modulos/category-card',       desc: 'La vitrina del catálogo: cada categoría como una tarjeta con foto.', estado: 'listo' },
   { slug: 'category-detail',     label: 'Categoría a fondo',       href: '/modulos/category-detail',     desc: 'Dos columnas que amplían una categoría con texto y galería.', estado: 'listo' },
+  { slug: 'product-card',        label: 'Tarjeta de producto',     href: '/modulos/product-card',        desc: 'La ficha breve del catálogo: imagen, badge, título y CTA.', estado: 'listo' },
   { slug: 'cards-catalogo',      label: 'Cards de catálogo',       href: '/modulos/cards-catalogo',      desc: 'Las fichas de producto y servicio, generadas desde Markdown.', estado: 'proximo' },
   { slug: 'resenas',             label: 'Reseñas',                 href: '/modulos/resenas',             desc: 'Prueba social: tarjetas con opiniones reales de clientes.', estado: 'proximo' },
   { slug: 'faq',                 label: 'Preguntas frecuentes',    href: '/modulos/faq',                 desc: 'El acordeón de dudas comunes, con esquema FAQ para SEO.', estado: 'proximo' },

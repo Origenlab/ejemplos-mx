@@ -61,6 +61,7 @@ const MOD_META: Record<string, { image: string; chips: string[] }> = {
   'section-heading':     { image: `${IMG}/showcase/texto-venta-contenido-markdown.avif`,           chips: ['Eyebrow', 'Título', 'Descripción'] },
   'category-card':       { image: `${IMG}/productos/componentes-plantilla-astro-markdown.avif`,    chips: ['Imagen + alt', 'Título H3', 'Chips + CTA'] },
   'category-detail':     { image: `${IMG}/productos/sitio-web-rapido-astro.avif`,                  chips: ['Dos columnas', 'Galería', 'CTA'] },
+  'product-card':        { image: `${IMG}/productos/desarrollo-web-astro-profesional.avif`,        chips: ['Imagen 16:9 + badge', 'Título H3 + descripción', 'CTA inline + LCP'] },
   'cards-catalogo':      { image: `${IMG}/servicios/consultoria-desarrollo-web-astro.avif`,        chips: ['Producto', 'Servicio', 'Markdown'] },
   'resenas':             { image: `${IMG}/casos/caso-exito-proyecto-web-astro.avif`,               chips: ['Estrellas', 'Cita', 'Cliente'] },
   'faq':                 { image: `${IMG}/articulos/guia-plantilla-astro-contenido-markdown.avif`, chips: ['Pregunta', 'Respuesta', 'Schema'] },
@@ -200,6 +201,18 @@ const AFONDO: Record<string, { body: string[]; points: string[] }> = {
       'Galería de apoyo: una imagen grande y dos pequeñas',
       'Refuerza la categoría antes de entrar a su página',
       'Todos idénticos, sin zig-zag (regla dura del sitio)',
+    ],
+  },
+  'product-card': {
+    body: [
+      'Es la ficha breve del catálogo: cada producto presentado como una card uniforme con imagen 16:9, badge (norma o categoría), título H3, descripción corta y un CTA inline. Todo dentro de un único enlace que vuelve la card entera clic-en-cualquier-lado, así el visitante escanea y entra a la ficha de un solo gesto.',
+      'Vive en un componente con API pequeña (title, href, image?, badge?, description?, ctaLabel?, index?, priority?) y se alimenta desde getCollection(\'productos\') —una colección Markdown validada por Zod—. No emite Product JSON-LD: el schema vive centralizado en lib/seo.ts y solo lo invoca la ficha L4. El grid del padre emite ItemList vía directorySchema. Regla B3: un solo emisor de schema por página.',
+    ],
+    points: [
+      'Imagen 16:9 con width/height fijos (cero CLS) + badge opcional + título H3',
+      'Las 4 primeras cards cargan en eager, las demás en lazy (auto por index)',
+      'priority=true en la primera del grid → LCP cuidado (fetchpriority=high)',
+      'Cero schema en la card: ItemList lo emite el padre, Product solo la ficha L4',
     ],
   },
   'cards-catalogo': {
