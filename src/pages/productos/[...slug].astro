@@ -30,8 +30,8 @@ const { producto, related } = Astro.props;
 const { Content } = await render(producto);
 const d = producto.data;
 
-// faqs del esquema ({question,answer}) → forma que espera ProductLayout ({q,a}).
-const faqs = d.faqs?.map((f) => ({ q: f.question, a: f.answer }));
+// faqs del esquema → forma canónica {question, answer} (SSoT alineada con schema.org).
+const faqs = d.faqs;
 ---
 
 <ProductLayout

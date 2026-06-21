@@ -135,6 +135,14 @@ Cuatro patrones, cada uno con preview en teléfono + receta comentada (Nielsen N
 - **Componente nuevo → reiniciar `astro dev`** — el HMR no inyecta los estilos `scoped` de un componente recién creado; el build sí los incluye.
 - **El build de verificación va en la Mac** (`npm run build`) — el sandbox de Cowork falla por el mount FUSE (EPERM en `node_modules/.vite`). Verificación rápida de sintaxis: `@astrojs/compiler` `transform()` sobre cada `.astro`.
 - **Estilos solo con tokens** de `src/styles/tokens.css`; **datos por SSoT** en `src/config/site.ts`; enlaces de contacto con `telUrl()` / `waUrl()`.
+- **Casing del título Hero — «`<Artículo> <Sustantivo>:`» con el sustantivo capitalizado** — todos los L3 usan el mismo molde para el `title` del Hero: artículo (`La`/`El`/`Las`/`Los`) en mayúscula + sustantivo principal en mayúscula + resto en minúscula + dos puntos al cierre. El `accent` (debajo) va en sentence case sin punto.
+  - ✓ Bueno: `title="La Tarjeta de servicio:"` · `title="Las Migas de pan:"` · `title="El Encabezado de sección:"` · `title="Las Preguntas frecuentes:"`.
+  - ✕ Malo: `title="La tarjeta de servicio:"` (sustantivo en minúscula) · `title="La TARJETA DE SERVICIO:"` (todo en mayúsculas) · `title="La Tarjeta De Servicio:"` (preposiciones capitalizadas).
+  - El motivo: el Hero es la única posición donde el módulo recibe nombre propio en la página; la mezcla mayúscula-minúscula lo destaca del resto del párrafo sin caer en title case o grito. La regla la aplica `Hero.astro` solo por el ojo —no la valida—; queda como convención humana.
+
+### 6.1 Auditoría de metadatos
+
+Corre `npm run audit:meta` antes de cada commit a `main`. Falla si algún `<title>` excede 60 caracteres o alguna meta description excede 155. La implementación está en `scripts/audit-meta.mjs` y los límites son espejo de `META_TITLE_MAX` / `META_DESC_MAX` (y de `metaAuditBasic()`) en `src/lib/seo.ts` como SSoT. El script extrae estáticamente los atributos `title` y `description` del primer `<PageLayout>` de cada `.astro` de `src/pages/`; los valores dinámicos (`title={…}`) se marcan como `SKIP` y no aprueban ciegamente. Hoy NO se promueve a hook obligatorio del build (no se encadena con `astro build`) para no bloquear iteraciones rápidas en dev; sí se documenta como gate previo a `git push`.
 
 ---
 

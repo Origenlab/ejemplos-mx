@@ -47,7 +47,12 @@ const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotiz
 // el del ejemplo usa el mismo patrón que ProyectoRed/EVENTECH.
 const iconShield = `<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>`
 const iconRocket = `<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15 9 12a4 4 0 0 1 1.17-2.83l4.93-4.93a1 1 0 0 1 1.41 0l2.25 2.25a1 1 0 0 1 0 1.41l-4.93 4.93A4 4 0 0 1 12 15z"/><path d="m9 12 1.5-1.5"/></svg>`
-const iconWrench = `<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`
+const _iconWrench = `<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`
+// Nota: _iconWrench (con prefix _) lo declara el módulo para mantener la
+// SIMETRÍA del mapa de íconos por categoría que documenta recetaCollection
+// (consultoria/implementacion/soporte). Hoy esta página NO renderiza un mockup
+// de la categoría "soporte" en el ejemplo en vivo, así que TS lo marcaría como
+// unused; el prefix _ es la convención canónica que TS/ESLint respetan.
 
 // Las 4 piezas reales del componente (mapean con la API en ServiceCard.astro).
 // Cada `dato` cita exactamente la prop o el atributo HTML resultante, para que

@@ -40,7 +40,7 @@ export interface Props {
   specs?: { label: string; value: string }[];
   applications?: string[];
   certifications?: string[];
-  faqs?: { q: string; a: string }[];
+  faqs?: { question: string; answer: string }[];
   related?: { label: string; href: string; description?: string }[];
 }
 
@@ -86,7 +86,7 @@ const schemaData = {
     category,
     ...(price ? { price } : {}),
   },
-  ...(faqs.length ? { faqs: faqs.map((f) => ({ question: f.q, answer: f.a })) } : {}),
+  ...(faqs.length ? { faqs } : {}),
 };
 ---
 
@@ -159,7 +159,7 @@ const schemaData = {
       {faqs.length > 0 && (
         <section class="prod-section">
           <SectionHeading eyebrow="Dudas" title="Preguntas frecuentes" />
-          <FAQAccordion items={faqs.map((f) => ({ question: f.q, answer: f.a }))} />
+          <FAQAccordion items={faqs} />
         </section>
       )}
     </article>

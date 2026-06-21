@@ -296,6 +296,26 @@ export function metaAudit(keywords: readonly string[], title: string, descriptio
   };
 }
 
+/* ──────────────────────────────────────────────────────────────────────────
+ * metaAuditBasic — verificación mínima de longitudes (gate de SEO técnico).
+ * Pensado para el script `npm run audit:meta` y para validaciones en build.
+ * Reglas: title ≤60 (Google trunca a ~580px ≈ 60), description ≤155 (corte
+ * conservador por debajo del 160 nominal para dejar holgura entre clientes).
+ * Devuelve { ok, errors[] } — formato amigable para CLI.
+ * ────────────────────────────────────────────────────────────────────────── */
+export const META_TITLE_MAX = 60;
+export const META_DESC_MAX = 155;
+export function metaAuditBasic(input: { title?: string; description?: string }): { ok: boolean; errors: string[] } {
+  const errors: string[] = [];
+  const t = (input.title ?? '').trim();
+  const d = (input.description ?? '').trim();
+  if (!t) errors.push('Falta <title> (vacío).');
+  else if (t.length > META_TITLE_MAX) errors.push(`Title de ${t.length} chars: pasa de ${META_TITLE_MAX}.`);
+  if (!d) errors.push('Falta meta description (vacía).');
+  else if (d.length > META_DESC_MAX) errors.push(`Description de ${d.length} chars: pasa de ${META_DESC_MAX}.`);
+  return { ok: errors.length === 0, errors };
+}
+
 /* ════════════════════════════════════════════════════════════════════════════
  * 2) buildMeta() — datos para <head>  (consumido por SEOHead.astro)
  * ════════════════════════════════════════════════════════════════════════════ */

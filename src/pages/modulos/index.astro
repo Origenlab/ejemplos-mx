@@ -64,7 +64,7 @@ const MOD_META: Record<string, { image: string; chips: string[] }> = {
   'product-card':        { image: `${IMG}/productos/desarrollo-web-astro-profesional.avif`,        chips: ['Imagen 16:9 + badge', 'Título H3 + descripción', 'CTA inline + LCP'] },
   'service-card':        { image: `${IMG}/servicios/consultoria-desarrollo-web-astro.avif`,        chips: ['Icono SVG · 56×56', 'Título H3 + descripción', 'CTA dual (ficha o WhatsApp)'] },
   'resenas':             { image: `${IMG}/casos/caso-exito-proyecto-web-astro.avif`,               chips: ['Estrellas', 'Cita', 'Cliente'] },
-  'faq':                 { image: `${IMG}/articulos/guia-plantilla-astro-contenido-markdown.avif`, chips: ['Pregunta', 'Respuesta', 'Schema'] },
+  'faq':                 { image: `${IMG}/articulos/guia-plantilla-astro-contenido-markdown.avif`, chips: ['Pregunta · summary tappable', 'Respuesta · admite HTML', 'Schema FAQPage opcional'] },
   'cta-banner':          { image: `${IMG}/servicios/soporte-mantenimiento-web-astro.avif`,         chips: ['Gancho', 'Botón', 'Cierre'] },
   'formulario-contacto': { image: `${IMG}/articulos/novedades-sistema-produccion-web-astro.avif`,  chips: ['Campos', 'Validación', 'WhatsApp'] },
   'footer':              { image: `${IMG}/zonas/cobertura-desarrollo-web-ciudad-de-mexico.avif`,   chips: ['Marca', 'Enlaces', 'Legales'] },
@@ -304,7 +304,7 @@ const AFONDO: Record<string, { body: string[]; points: string[] }> = {
 
 <PageLayout
   title="Módulos del sitio — las piezas que lo arman"
-  description="Qué es un módulo y el índice de todos los módulos del sitio (topbar, header, hero, menú, footer). Cada uno con su página de detalle: qué es, para qué sirve y cómo se arma."
+  description="Qué es un módulo e índice de los módulos del sitio (topbar, header, hero, menú, footer). Cada uno con detalle: qué es, para qué y cómo se arma."
   pageType="page"
   breadcrumbs={[{ label: 'Módulos' }]}
   guia={false}

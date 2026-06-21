@@ -62,7 +62,7 @@ export interface Props {
   timeline?: { when: string; label: string; text: string }[];
   preCare?: string[];
   postCare?: string[];
-  faqs?: { q: string; a: string }[];
+  faqs?: { question: string; answer: string }[];
   comparison?: { aspect: string; a?: string; b?: string; us: string }[];
   modalities?: { name: string; kicker?: string; text: string; note?: string }[];
   clinicalCases?: { name: string; profile: string; plan?: string[]; target: string }[];
@@ -145,7 +145,7 @@ const schemaData = {
     serviceType: category,
     image,
   },
-  ...(faqs.length ? { faqs: faqs.map((f) => ({ question: f.q, answer: f.a })) } : {}),
+  ...(faqs.length ? { faqs } : {}),
 };
 ---
 
@@ -371,7 +371,7 @@ const schemaData = {
       {faqs.length > 0 && (
         <section id="preguntas" class="svc-section">
           <SectionHeading eyebrow="Dudas" title="Preguntas frecuentes" />
-          <FAQAccordion items={faqs.map((f) => ({ question: f.q, answer: f.a }))} />
+          <FAQAccordion items={faqs} />
         </section>
       )}
     </article>
