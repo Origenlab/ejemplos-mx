@@ -394,4 +394,48 @@ Nota: «14» = numeración cronológica de publicaciones; cuento 12 módulos ún
 
 ---
 
+## 9. Biblioteca de artículos (tesis + 24 módulos)
+
+La serie L3 se complementa con **una biblioteca de 25 artículos MDX en `src/content/articulos/`** que cubre cada módulo en dos ejes (técnico + estratégico) más una tesis maestra que enlaza el sistema completo. Es el ancla SEO del sitio: cada artículo cierra con cross-link al L3 correspondiente y a la tesis. Frontmatter validado contra `articulos` (Zod `.strict()`); todos los `.mdx` viven en `src/content/articulos/`.
+
+### Tesis maestra (ancla del sistema)
+
+| # | Slug | Título |
+|---|---|---|
+| 25 | `construir-sitio-astro-markdown-12-modulos-referencia` | Construir un sitio Astro+Markdown: 12 módulos |
+
+### Pares por módulo (24)
+
+| Módulo L3 | Artículo técnico | Artículo estratégico |
+|---|---|---|
+| `breadcrumbs` | `migas-de-pan-astro-guia-paso-a-paso` | `breadcrumbs-seo-jsonld-astro` |
+| `section-menu` | `menu-de-seccion-astro-anclas-cierre` | `section-menu-conversion-landing` |
+| `section-heading` | `section-heading-jerarquia-seo-astro` | `section-heading-layout-duo-simple-dark` |
+| `category-card` | `category-card-anatomia-data-driven-astro` | `grid-categorias-responsive-astro-tokens` |
+| `category-detail` | `category-detail-bloques-profundos-astro` | `category-card-vs-category-detail-decision` |
+| `product-card` | `product-card-catalogo-markdown-astro` | `schema-product-cards-emisor-unico` |
+| `service-card` | `service-card-cta-dual-whatsapp-ficha` | `catalogo-servicios-data-driven-iconos` |
+| `faq` | `faqaccordion-astro-details-faqpage` | `faq-rich-results-2026-por-que-importa` |
+| `review` | `reviews-schema-estrellas-aggregate-astro` | `por-que-no-auto-emitir-resenas-regla-b4` |
+| `footer` | `footer-multicolumna-data-driven-grid` | `footer-activo-seo-global-nap-organization` |
+| `contact-form` | `contact-form-wcag-honeypot-es-mx` | `form-cloudflare-pages-function-backend` |
+| `cta-banner` | `tracking-cta-data-attr-analytics-respeto` | `cta-honestos-copy-jerarquia-antidarkpatterns` |
+
+### Reglas duras de la biblioteca
+
+- **Frontmatter:** `title` ≤ 60, `description` 70–160, `seoTitle` ≤ 60, `seoDescription` ≤ 160. `category` del enum (`guias`/`novedades`/`general`). `heroImage` bajo `/images/articulos/`. Sin `faqs:` en frontmatter (van en cuerpo Markdown bajo `## Preguntas frecuentes`).
+- **Estructura:** intro hook · Contexto · Implementación paso a paso · Tabla comparativa · Patrones avanzados · Checklist · Preguntas frecuentes · Cierre + `## Sigue leyendo` con 3 links (L3 del módulo + par cruzado + tesis).
+- **MDX 3 safety:** dentro de inline backticks (` `…` `) MDX 3 evalúa `{…}` como expresión JSX. NUNCA poner `{`, `}`, `<TagDesconocido>` en inline code de prosa. Para mostrar código con braces o tags, usar fenced code blocks (```` ``` ````). Nested backticks PROHIBIDOS.
+- **Hrefs internos:** SIN trailing slash (`/blog/...`, no `/blog/.../`).
+- **Cross-link bidireccional:** cada par de artículos se enlaza mutuamente, y ambos enlazan al L3 + a la tesis.
+- **Deuda asumida:** las heroImages siguen el slug del artículo (`/images/articulos/<slug>.avif`) pero los assets están pendientes; se generan después con la receta AVIF (`q50`, 1280px).
+
+### Estado
+
+- 25/25 artículos publicados (24 modulares + tesis), 4 commits en `main`.
+- Build 125 páginas OK (`/blog/<slug>/`, `/blog/categoria/<cat>/`, `/blog/tag/<tag>/`).
+- `audit:meta` OK (los `.mdx` no son páginas Astro; el gate corre sobre `src/pages/`).
+
+---
+
 *Documento de trabajo. La copia equivalente vive en la memoria del agente; el vault de Obsidian (`MASTER WEB PRODUCTION SYSTEM`) es una carpeta aparte —si se quiere ahí, copiar este archivo o montar esa carpeta.*

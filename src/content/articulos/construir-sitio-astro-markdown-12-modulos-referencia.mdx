@@ -1,0 +1,172 @@
+---
+title: "Construir un sitio Astro+Markdown: 12 módulos"
+description: "Tesis técnica: cómo se construye un sitio profesional con Astro y Markdown encadenando 12 módulos como referencia industrial. Mapa, decisiones y enlaces."
+category: "general"
+heroImage: "/images/articulos/construir-sitio-astro-markdown-12-modulos-referencia.avif"
+pubDate: 2026-05-25
+author: "Ejemplos.mx"
+tags: ["astro", "markdown", "arquitectura", "tesis", "modulos"]
+featured: true
+seoTitle: "Sitio Astro+Markdown: tesis de 12 módulos"
+seoDescription: "Tesis técnica para construir un sitio profesional con Astro y Markdown: 12 módulos encadenados como referencia industrial. Mapa de los 25 artículos."
+---
+
+Un sitio profesional no se arma copiando un theme y rellenando huecos. Se arma como un sistema: doce piezas que se enganchan en un orden conocido, cada una con un trabajo claro, ninguna duplicando el trabajo de otra. Esta tesis presenta ese sistema —los doce módulos que sostienen un sitio Astro+Markdown listo para producción— y enlaza con los 24 artículos que cubren cada módulo en profundidad. Es el ancla de la biblioteca del sitio: si llegaste a un artículo individual, este es el mapa que te dice dónde encaja. Si entras por aquí, los enlaces te llevan al detalle. Está escrita para developers que ya pasaron la curva inicial de Astro y quieren entender por qué este sistema y no otro.
+
+## Contexto
+
+Astro 6 cambió las reglas. El framework optimiza para sitios estáticos, deja JavaScript opcional por componente (no por página) y trata el contenido como ciudadano de primera con Content Collections + Zod. Lo que antes era una decisión arquitectónica costosa —SSG vs SSR, headless CMS vs Markdown, validación de schema vs confianza en el editor— ahora es una elección de fricción mínima. La consecuencia es que un sitio profesional puede vivir entero en Markdown con `glob` loaders y compilarse a HTML estático que se sirve desde Cloudflare Pages sin servidor propio. Cero base de datos, cero panel admin, cero costo recurrente más allá del dominio.
+
+Lo que no cambió es el problema editorial. Un sitio de cliente necesita los mismos doce bloques: barra superior con datos de contacto, header con menú, hero con propuesta, migas de pan, menús internos, encabezados de sección, tarjetas de categoría y de producto/servicio, bloques a fondo, FAQ, reseñas, formularios de contacto, banners de cierre y un footer con NAP. Cada bloque tiene mil variantes en la web; este sistema fija una decisión por pieza, la documenta y la repite. La consistencia no es cosmética: es lo que permite que el próximo sitio se arme en dos semanas en vez de dos meses.
+
+El tercer eje es la regla de oro del repo: **un único emisor por entidad** (regla B3). El JSON-LD lo emite el layout, no los componentes. El BreadcrumbList, el Product, el FAQPage, el Organization viven cada uno en exactamente un lugar de la página. Esta regla, aplicada a doce módulos, produce páginas con schema válido sin duplicados y sin que ningún componente hijo tenga que enterarse de SEO. La explicación detallada vive en cada artículo de módulo; aquí se enuncia como el pegamento que hace que doce piezas independientes formen un sistema coherente.
+
+## El sistema de 12 módulos
+
+El flujo del visitante recorre los doce en un orden previsible. La barra superior fija la marca, el header navega, el hero presenta, las migas ubican, el menú de sección reparte, los headings articulan, las cards listan, los detalles educan, las FAQ resuelven, las reseñas legitiman, el footer cierra, los formularios y CTAs convierten. Cada módulo es independiente —se puede usar sin los otros— pero el ensamble completo es lo que produce una página que se siente armada.
+
+| # | Módulo | Trabajo | Página L3 |
+|---|---|---|---|
+| 1 | **Breadcrumbs** | Orientar y enlazar la jerarquía | [/modulos/breadcrumbs](/modulos/breadcrumbs) |
+| 2 | **Section menu** | Anclas internas + cierre data-driven | [/modulos/section-menu](/modulos/section-menu) |
+| 3 | **Section heading** | Articular secciones con jerarquía | [/modulos/section-heading](/modulos/section-heading) |
+| 4 | **Category card** | Vitrina escalable desde collection | [/modulos/category-card](/modulos/category-card) |
+| 5 | **Category detail** | Bloques a fondo info + galería | [/modulos/category-detail](/modulos/category-detail) |
+| 6 | **Product card** | Catálogo con frontmatter Markdown | [/modulos/product-card](/modulos/product-card) |
+| 7 | **Service card** | Servicios con CTA dual ficha/WhatsApp | [/modulos/service-card](/modulos/service-card) |
+| 8 | **FAQ** | Acordeón nativo + FAQPage schema | [/modulos/faq](/modulos/faq) |
+| 9 | **Review** | Reseñas honestas con schema gateado | [/modulos/review](/modulos/review) |
+| 10 | **Footer** | Activo SEO global + NAP + Organization | [/modulos/footer](/modulos/footer) |
+| 11 | **Contact form** | Form a11y WCAG + honeypot + serverless | [/modulos/contact-form](/modulos/contact-form) |
+| 12 | **CTA banner** | Cierre honesto con tracking respetuoso | [/modulos/cta-banner](/modulos/cta-banner) |
+
+## La biblioteca de 24 artículos
+
+Cada módulo tiene dos artículos: uno técnico-mecánico (cómo hacerlo) y uno estratégico-ético (cuándo, por qué y qué evitar). Veinticuatro artículos que se leen en cualquier orden y se cross-linkean entre sí. El orden recomendado es el del flujo del visitante —empezar por breadcrumbs y terminar por CTA banner—, pero cada par es autocontenido y se puede consumir como solución a un problema concreto.
+
+### Módulos de navegación (1–3)
+
+El primer bloque arma cómo se mueve el visitante dentro del sitio.
+
+- [Migas de pan en Astro: guía paso a paso](/blog/migas-de-pan-astro-guia-paso-a-paso)
+- [Breadcrumbs y SEO: BreadcrumbList JSON-LD en Astro](/blog/breadcrumbs-seo-jsonld-astro)
+- [Menú de sección en Astro: anclas y cierre](/blog/menu-de-seccion-astro-anclas-cierre)
+- [Del menú de sección a la conversión](/blog/section-menu-conversion-landing)
+- [Section headings: jerarquía visual y SEO Astro](/blog/section-heading-jerarquia-seo-astro)
+- [SectionHeading: layout duo, simple y dark](/blog/section-heading-layout-duo-simple-dark)
+
+### Módulos de catálogo (4–7)
+
+El segundo bloque arma cómo se presenta la oferta. El patrón es siempre el mismo: la collection Markdown declara los datos, el componente pinta una pieza, la página padre ensambla el grid.
+
+- [Category card: anatomía y data-driven en Astro](/blog/category-card-anatomia-data-driven-astro)
+- [Grid responsive de categorías en Astro](/blog/grid-categorias-responsive-astro-tokens)
+- [Detalle de categoría: bloques profundos en Astro](/blog/category-detail-bloques-profundos-astro)
+- [CategoryDetail vs CategoryCard: árbol de decisión](/blog/category-card-vs-category-detail-decision)
+- [Product card en Astro: catálogo desde Markdown](/blog/product-card-catalogo-markdown-astro)
+- [Schema Product en cards: regla del emisor único](/blog/schema-product-cards-emisor-unico)
+- [Service card con CTA dual: ficha vs WhatsApp](/blog/service-card-cta-dual-whatsapp-ficha)
+- [Catálogo de servicios data-driven en Astro](/blog/catalogo-servicios-data-driven-iconos)
+
+### Módulos de confianza (8–9)
+
+El tercer bloque trabaja la legitimidad de la oferta. Aquí es donde la disciplina ética del repo se vuelve decisión técnica: las FAQs sirven preguntas reales y las reseñas se gatean para no falsear schema.
+
+- [FAQAccordion en Astro: details nativo + FAQPage](/blog/faqaccordion-astro-details-faqpage)
+- [FAQ y rich results en 2026: por qué importa](/blog/faq-rich-results-2026-por-que-importa)
+- [Reviews en Astro: estrellas y aggregate honestos](/blog/reviews-schema-estrellas-aggregate-astro)
+- [Por qué nunca auto-emitir reseñas: regla B4](/blog/por-que-no-auto-emitir-resenas-regla-b4)
+
+### Módulos de cierre (10–12)
+
+El cuarto bloque cierra: footer global, formularios serverless y CTAs sin trampas. Es la parte que más se descuida en la web mexicana y la que más diferencia un sitio profesional del resto.
+
+- [Footer SEO global: NAP y schema Organization](/blog/footer-activo-seo-global-nap-organization)
+- [Footer multi-columna data-driven en Astro](/blog/footer-multicolumna-data-driven-grid)
+- [Contact form Astro: WCAG, honeypot y es-MX](/blog/contact-form-wcag-honeypot-es-mx)
+- [Form backend con Cloudflare Pages Functions](/blog/form-cloudflare-pages-function-backend)
+- [CTAs honestos: copy, jerarquía, anti dark-patterns](/blog/cta-honestos-copy-jerarquia-antidarkpatterns)
+- [Tracking de CTAs con data-cta-id, sin invasión](/blog/tracking-cta-data-attr-analytics-respeto)
+
+## Decisiones que atraviesan todo el sistema
+
+Cuatro decisiones técnicas se aplican a los doce módulos. Conviene tenerlas presentes al leer cualquier artículo, porque cada uno las da por supuestas.
+
+**Content Collections como única fuente de datos repetibles.** Todo lo que aparece más de una vez en el sitio —productos, servicios, artículos, zonas, casos— vive en `src/content/` con schema Zod estricto. La página padre lee con `getCollection()`, filtra drafts, ordena y mapea a su componente. Cero arrays hardcoded en `.astro`. La razón es operativa, no purista: agregar el sexto servicio cuesta un archivo Markdown, no una tarde de buscar y reemplazar. Los artículos de catálogo (4–7) explican el patrón en detalle.
+
+**Un único emisor por entidad de schema (regla B3).** El JSON-LD lo arma `buildSchema()` una vez por página en `<head>`, desde el layout. Los componentes hijos no emiten `<script type="application/ld+json">`. Esto evita warnings de Search Console por entidades duplicadas y mantiene la lógica de schema en un solo archivo (`src/lib/seo.ts`). Los artículos 2, 12, 15 y 19 cubren la regla aplicada a breadcrumbs, productos, FAQ y Organization.
+
+**Honestidad antes que rich results (regla B4).** El repo no auto-emite reseñas, no falsea AggregateRating y no marca como Service algo que no es un servicio. Cuando los datos no existen, el schema no se emite. La razón es de fondo: Google penaliza datos estructurados inventados y la confianza del visitante se daña más por una falsa reseña descubierta que por la ausencia de estrellas. Los artículos 17 y 18 desarrollan esta posición con casos.
+
+**Mobile-first con tokens y breakpoints fijos.** El responsive vive en `mobile.css` con breakpoints 1024/768/640/480/380. Los componentes nuevos se prueban primero en móvil real, no en el devtools. El container es fluido (90% → 100% en ≤768), los CTAs son full-width en pantallas chicas, los inputs llevan 16px para no zumbar en iOS. Los artículos de catálogo (8, 20) y formularios (21) cubren este sistema.
+
+## Cómo se enganchan los módulos en una página real
+
+Una página de servicio individual (`/servicios/instalacion`) usa nueve de los doce módulos en orden: breadcrumbs (`/servicios/instalacion`) → hero del servicio → section-menu interno (anclas a precios, FAQs, contacto) → section-heading articulando cada subsección → product-card o service-card relacionada → category-detail con bloques a fondo → FAQ específica del servicio → review si hay casos reales → CTA banner de cierre → footer. Cada pieza viene de una collection o de `site.ts`, ninguna se escribe a mano. El layout (`ServiceLayout.astro`) ensambla; los componentes pintan; el JSON-LD lo emite el layout una sola vez con Service+Offer+Breadcrumb.
+
+| Página tipo | Módulos que usa | Schema que emite |
+|---|---|---|
+| **Home** | breadcrumbs (oculto), hero, category-card grid, section-menu, FAQ, CTA, footer | WebSite + Organization (footer) |
+| **Catálogo (`/productos`)** | breadcrumbs, hero, section-heading, product-card grid, footer | CollectionPage + ItemList |
+| **Ficha producto (`/productos/<slug>`)** | breadcrumbs, hero, product card relacionadas, category-detail, FAQ, footer | Product + Offer + Breadcrumb |
+| **Catálogo servicios** | breadcrumbs, hero, section-heading, service-card grid, footer | CollectionPage + ItemList |
+| **Ficha servicio** | breadcrumbs, hero, section-menu interno, section-heading, category-detail, FAQ, review (si hay), CTA banner, footer | Service + Offer + Breadcrumb |
+| **Blog index (`/blog`)** | breadcrumbs, hero, section-heading, category-card grid (artículos), section-menu, footer | CollectionPage + Blog |
+| **Artículo (`/blog/<slug>`)** | breadcrumbs, post header, prose, related sidebar, CTA banner, footer | Article + Breadcrumb |
+| **Contacto** | breadcrumbs, hero, contact-form, FAQ, footer | ContactPage |
+
+## Patrones avanzados del sistema
+
+**Componentes agnósticos del módulo.** `GaleriaDisenos`, `DisenoCard`, `MarcoMovil` y `Receta` son componentes del kit que no saben nada de breadcrumbs ni de productos. Reciben slots y props neutrales, y se reusan en los doce módulos para mostrar variantes y patrones móviles. El día que se documenta un módulo nuevo, no se inventan componentes: se usan los del kit.
+
+**SSoT (single source of truth) en `site.ts`.** Los datos de marca, contacto, redes sociales, taxonomía de categorías y mensajes pre-cargados de WhatsApp viven en un solo archivo. El footer lee `SOCIAL`, el header lee `MENU`, los CTAs leen `WA_MESSAGES`. Cambiar el número de WhatsApp es una edición de una línea que se propaga a las 120 páginas en el siguiente build. Esto es lo que permite mantener un sitio sin volver a tocar componentes.
+
+**Helpers que derivan en vez de duplicar.** `siblingsModules('breadcrumbs')` devuelve el índice de la serie + 2 vecinos en estado `listo` + la home, derivado de `MODULOS`. `waUrl(WA_MESSAGES.cotizar)` arma el href de WhatsApp con encodeURIComponent y el número de marca. `buildSchema('product', data)` arma el JSON-LD desde el contrato de la página. Los componentes no concatenan strings; llaman al helper.
+
+**Audit gates en cada commit.** El repo corre `audit:meta` (longitudes title/description) y `astro check` (TS strict) antes de cada build. Los gates fallan barato (segundos), no en producción. Los doce módulos pasan estos gates como precondición para entrar a `main`.
+
+## Checklist para llegar a referencia industrial
+
+- [ ] Doce módulos publicados como L3 (`/modulos/<slug>`) con el mismo molde de 10 secciones.
+- [ ] Veinticuatro artículos de blog que cubren cada módulo en dos ejes (técnico + estratégico).
+- [ ] Un artículo tesis (este) que enlaza los 24 y sirve de mapa de entrada.
+- [ ] Content Collections con Zod `.strict()` para productos, servicios, artículos, zonas, casos.
+- [ ] Regla B3 aplicada: un único emisor de JSON-LD por entidad por página.
+- [ ] Regla B4 aplicada: cero reseñas auto-emitidas, cero schema fabricado.
+- [ ] Sistema mobile-first con `mobile.css` + breakpoints fijos 1024/768/640/480/380.
+- [ ] `audit:meta` y `astro check` como gates de build.
+- [ ] `siblingsModules()` y `waUrl()` como helpers canónicos.
+- [ ] Sitemap automático con `@astrojs/sitemap`.
+- [ ] Deploy en Cloudflare Pages con Node 22 y GitHub Actions.
+
+## Preguntas frecuentes
+
+### ¿Por qué doce módulos y no diez o quince?
+
+Porque doce cubre el sitio de negocio canónico —marca, navegación, catálogo, confianza, conversión— sin sobre-modelar. Diez deja afuera review y CTA banner, que son los que más cambian la conversión real. Quince obliga a inventar módulos que se usan en uno de cada cinco sitios (`media-gallery`, `pricing-table`, `comparison-table`) y diluyen la disciplina. Los doce son los que pasan el test "este módulo se usa en más del 80% de los sitios profesionales".
+
+### ¿Qué pasa si mi sitio no necesita reviews o contact form?
+
+No los uses. Cada módulo es independiente. El sitio mínimo viable son cuatro: header, hero, footer y al menos un módulo de contenido (category-card o product-card). Los otros ocho se agregan según el cliente. La biblioteca cubre los doce para no dejar al lector sin documentación cuando lo necesite, no para forzar el uso de todos.
+
+### ¿Cuánto pesa el sitio final en producción?
+
+Una home típica con los doce módulos pesa entre 80 y 150 KB de HTML+CSS+SVG, sin JavaScript de framework. Las imágenes mandan (suelen ser el 80% del peso de la página), y para eso vale la receta AVIF con `q50` y 1280px de ancho. Cloudflare Pages sirve el HTML estático en menos de 50 ms desde el edge mexicano. Los Web Vitals están sobrados sin tunear: LCP en 1.2 s, CLS en 0 si respetas `width/height` intrínsecos.
+
+### ¿Puedo usar este sistema con otro framework (Next, SvelteKit, Nuxt)?
+
+El sistema arquitectónico sí: data-driven desde Markdown, un único emisor de schema, mobile-first con tokens, helpers que derivan. Los componentes no, porque dependen de Astro 6 (slot semantics, `class:list`, `set:html`, integraciones específicas). Si vas a portar, conserva la disciplina y reescribe los componentes en la sintaxis del framework destino. La parte que más se traduce es el contrato de schema y la regla B3/B4.
+
+### ¿Cómo agrego el módulo trece, catorce, quince?
+
+El repo tiene un slot abierto para `whatsapp-flotante` (módulo 13) y la lista en `MODULOS` deja espacio para más. La receta es la del documento `docs/MODULOS.md`: crear el componente en `src/components/`, escribir la página L3 en `src/pages/modulos/<slug>.astro` con las diez secciones canónicas, agregarlo al array `MODULOS` con `estado: 'listo'`, y publicar dos artículos en `src/content/articulos/` siguiendo el patrón técnico + estratégico. Cuando el módulo trece esté listo, vuelve a esta tesis y actualízala —es el ancla del sistema, debe reflejar la realidad de la biblioteca.
+
+## Cierre
+
+Los doce módulos no son una opinión: son el resultado de auditar diez sitios profesionales y quedarse con los bloques que sí se repiten. Los veinticuatro artículos no son contenido para llenar el blog: son la documentación que permite que otro developer arme el mismo sistema en otro proyecto sin reinventar las decisiones. Si llegaste hasta aquí, el siguiente paso es leer el módulo que te interesa, leer los dos artículos que lo cubren, abrir el código del repo y empezar a construir. El sistema está completo y probado en producción; lo que falta es que lo uses.
+
+## Sigue leyendo
+
+- [Índice de la serie Módulos del sitio](/modulos)
+- [Cómo usar esta plantilla de Ejemplos.mx](/blog/como-usar-esta-plantilla)
+- [Blog completo: 25 artículos](/blog)
