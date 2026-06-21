@@ -1,0 +1,275 @@
+---
+title: "Category card: anatomía y data-driven en Astro"
+description: "Tarjetas de categoría que convierten: anatomía, variantes y enfoque data-driven con Content Collections de Astro para escalar sin tocar el JSX."
+category: "guias"
+heroImage: "/images/articulos/category-card-anatomia-data-driven-astro.avif"
+pubDate: 2026-03-28
+author: "Ejemplos.mx"
+tags: ["astro", "category-card", "content-collections", "ux", "catalogo"]
+seoTitle: "Category card: anatomía + data-driven"
+seoDescription: "CategoryCard en Astro: anatomía de imagen, badge, blurb y CTA; loader desde collections, props disabled/badge inline y ejemplos reutilizables."
+---
+
+La mayoría de las vitrinas en sitios industriales mexicanos terminan siendo cuatro
+listas de texto disfrazadas de tarjetas: imagen genérica, título, «ver más» y a
+otra cosa. El visitante recorre con la vista, no encuentra atajo y se va. La
+tarjeta de categoría —el patrón que aquí llamamos `CategoryCard`— resuelve ese
+problema convirtiendo cada grupo en una mini portada con anclajes reales para el
+buscador y para el dedo del usuario.
+
+Este artículo abre el componente que vive en `src/components/CategoryCard.astro`
+y muestra cómo el sitio entero —catálogo, módulos, servicios, cobertura y blog—
+se alimenta de un único archivo. El enfoque es data-driven: el componente no
+inventa contenido, lo recibe; los arrays vienen de `site.ts` o de una Content
+Collection con esquema Zod estricto, y el JSX no se toca para agregar una
+categoría más.
+
+## Contexto
+
+Una tarjeta de categoría no es una tarjeta de producto. La de producto vende una
+SKU; la de categoría vende la entrada a un grupo. La diferencia importa porque
+cambia la jerarquía semántica (H3 dentro de una sección H2, no H2 propio), la
+densidad informativa (1–2 frases de venta, no ficha técnica) y la
+responsabilidad SEO (repartir autoridad a las páginas hijas con anchor text
+descriptivo, no concentrarla).
+
+En este proyecto, la regla canónica es «un solo card para todas las vitrinas».
+La home la usa para `SHOWCASE`, la página `/modulos/` la reutiliza para el
+roadmap de 15 módulos, `/servicios/` y `/cobertura/` la conectan con `TAXONOMY`
+y el listado de `/blog/` la alimenta con `getCollection('articulos')`. Ese
+enfoque tiene tres consecuencias prácticas: cero CSS duplicado entre secciones,
+cero divergencia tipográfica entre vitrinas, y un único punto donde ajustar el
+radio del botón, el aspect-ratio de la imagen o el color del badge.
+
+La pieza tiene una API pequeña a propósito —diez props— y todos los defaults
+están pensados para que `<CategoryCard label="X" href="/x" />` ya sea válido sin
+configurar nada más. El resto del artículo desmonta cada pieza, muestra cómo se
+carga desde una colección y cubre los dos props que abrieron casos nuevos:
+`disabled` para roadmap y `badge` inline para tarjetas sin imagen.
+
+## Implementación paso a paso
+
+El componente se declara así. Lo importante: tipo `Sub` exportado, interface
+`Props` con campos opcionales, defaults declarados al desestructurar y dos
+helpers que cambian el tag según el estado.
+
+```astro
+---
+// src/components/CategoryCard.astro
+export type Sub = { label: string; href: string };
+interface Props {
+  label: string;
+  href: string;
+  image?: string;
+  imageAlt?: string;
+  badge?: string;
+  blurb?: string;
+  subcategories?: readonly Sub[];
+  ctaLabel?: string;
+  index?: number;
+  disabled?: boolean;
+}
+const {
+  label, href, image, imageAlt, badge, blurb,
+  subcategories = [], ctaLabel = "Ver más",
+  index = 99, disabled = false,
+} = Astro.props;
+const eager = index < 4;
+const MediaTag = disabled ? "div" : "a";
+const ChipTag = disabled ? "span" : "a";
+---
+```
+
+Dos detalles que parecen menores y no lo son. Primero, `index = 99` como default
+garantiza que cualquier tarjeta nueva nazca con `loading="lazy"`; solo las
+cuatro primeras del grid cruzan el umbral y se cargan en `eager` para no
+arruinar el LCP. Segundo, `MediaTag` y `ChipTag` cambian de `<a>` a `<div>` y
+`<span>` cuando `disabled` vale `true`: así una tarjeta de roadmap nunca emite
+un enlace roto al inventario que aún no existe.
+
+Para alimentar la tarjeta desde una colección, la fuente de verdad es el
+frontmatter del archivo `.mdx` o `.md`. Aquí el del propio artículo, validado
+por el schema Zod estricto de `articulos`:
+
+```yaml
+---
+title: "Category card: anatomía y data-driven en Astro"
+description: "Tarjetas de categoría que convierten: anatomía..."
+category: "guias"
+heroImage: "/images/articulos/category-card-anatomia-data-driven-astro.avif"
+pubDate: 2026-03-28
+author: "Ejemplos.mx"
+tags: ["astro", "category-card", "content-collections", "ux", "catalogo"]
+---
+```
+
+El loader hace el resto. `getCollection('articulos')` regresa cada entrada
+tipada, filtramos drafts, ordenamos por fecha y mapeamos al componente sin
+inventar campos. Si mañana el cliente agrega un artículo, el grid lo recoge
+solo:
+
+```astro
+---
+import { getCollection } from 'astro:content'
+import CategoryCard from '@components/CategoryCard.astro'
+
+const articulos = (await getCollection('articulos'))
+  .filter((a) => !a.data.draft)
+  .sort((a, b) => +b.data.pubDate - +a.data.pubDate)
+---
+
+<div class="grid">
+  {articulos.map((a, i) => (
+    <CategoryCard
+      label={a.data.title}
+      href={`/blog/${a.id}`}
+      image={a.data.heroImage}
+      imageAlt={a.data.title}
+      badge={a.data.category}
+      blurb={a.data.description}
+      subcategories={(a.data.tags ?? []).slice(0, 3).map((t) => ({
+        label: t,
+        href: `/blog/tag/${t}`,
+      }))}
+      ctaLabel="Leer artículo"
+      index={i}
+    />
+  ))}
+</div>
+```
+
+El mismo componente alimenta `TAXONOMY` cuando la fuente no es una colección
+sino el archivo `site.ts`. El cambio es trivial porque la tarjeta sigue siendo
+agnóstica a la fuente:
+
+```astro
+---
+import { SERVICES } from '@config/site'
+import CategoryCard from '@components/CategoryCard.astro'
+---
+
+<div class="grid">
+  {SERVICES.map((s, i) => (
+    <CategoryCard
+      label={s.label}
+      href={`/servicios/${s.id}`}
+      blurb={s.desc}
+      index={i}
+      ctaLabel="Ver servicio"
+    />
+  ))}
+</div>
+```
+
+## Tabla comparativa
+
+| Fuente de datos | Caso de uso | Ventaja principal | Gotcha |
+|---|---|---|---|
+| Array hard-coded en la página | Vitrina puntual (home con 4 categorías curadas) | Cero infraestructura, lectura lineal | Cada cambio toca el `.astro` |
+| `TAXONOMY` en `site.ts` | Servicios, cobertura, menú | Un solo lugar para menú + footer + grid | Solo tipos planos, no Markdown |
+| `getCollection('articulos')` | Blog, casos, recursos | Markdown rico + validación Zod | Requiere reiniciar dev al cambiar schema |
+| Reference Zod entre colecciones | Cross-sell artículo→producto | Tipado fuerte y vínculos verificados en build | Falla build si el slug no existe |
+
+## Patrones avanzados
+
+**Prop `disabled` para roadmap.** El roadmap de módulos tiene piezas listas y
+piezas en construcción. Renderizar las segundas con enlaces produce un montón
+de 404 que envenenan el SEO interno. El prop `disabled` resuelve esto en el
+componente: cambia el tag del media a `div`, el de los chips a `span` y
+sustituye el CTA por un cierre estático «Próximamente». El componente no
+necesita una variante CSS aparte —reutiliza el mismo HTML—, solo evita emitir
+`href`.
+
+```astro
+<CategoryCard
+  label="Footer"
+  href="/modulos/footer"
+  badge="Próximamente"
+  blurb="El pie del sitio: navegación, contacto y legal."
+  disabled={true}
+/>
+```
+
+**Badge inline para tarjetas sin imagen.** Cuando se omite `image`, el badge
+no tiene dónde flotar. El componente lo detecta y lo pinta dentro del cuerpo
+con la clase `ccard__badge--inline` (posición estática, alineado al inicio).
+Si además la tarjeta está deshabilitada, hereda `ccard__badge--soon`: fondo
+neutro y borde sutil, para que el «Próximamente» no compita con un badge real
+de marca. La línea clave del componente es:
+
+```astro
+{badge && !image && (
+  <span class:list={["ccard__badge", "ccard__badge--inline",
+    { "ccard__badge--soon": disabled }]}>{badge}</span>
+)}
+```
+
+**Slot vs prop: por qué `subcategories` es prop, no slot.** Resulta tentador
+exponer un `<slot name="subs">` para que cada vitrina decida qué pintar. Es
+peor idea de lo que parece: el componente perdería el control sobre la
+semántica (la `<ul>` con `aria-label` que la a11y necesita), el estilo de los
+chips dejaría de ser uniforme y cada página acabaría con su propio markup.
+La regla aquí es prop tipada (`readonly Sub[]`) para todo lo que se repita en
+estructura. Slots solo para casos donde el contenedor debe ser opaco al
+contenido —y este componente no es uno de esos—.
+
+**Cross-sell con `reference()` entre colecciones.** El schema de `articulos`
+declara `relatedProducts: z.array(reference('productos')).optional()`. Cuando
+una tarjeta de blog necesita enlazar al producto que ese artículo
+recomienda, el grid puede recibir tanto el artículo como su producto
+asociado, con verificación en build. Si el slug no existe, Astro rompe el
+build —preferimos eso al 404 silencioso en producción—.
+
+## Checklist
+
+- [ ] El frontmatter de cada entrada cumple el schema Zod sin campos extra (`.strict()` rechaza «hero_image», «img», «cover»).
+- [ ] `heroImage` arranca con `/images/` y apunta a un AVIF real, no a un placeholder.
+- [ ] Las 4 primeras tarjetas del grid reciben `index={i}` con `i < 4` para LCP.
+- [ ] Toda tarjeta sin enlace válido lleva `disabled={true}` (cero href provisionales).
+- [ ] Cada `subcategories[].href` es ruta interna sin `/` final (`trailingSlash: 'never'`).
+- [ ] El `blurb` cabe en 1–2 frases (120–160 caracteres) y no repite el `label`.
+- [ ] El `imageAlt` describe la escena con la keyword, no el nombre del archivo.
+- [ ] El grid padre es mobile-first (1 → 2 → 4 o 1 → 2 → 3); el componente no impone columnas.
+
+## Preguntas frecuentes
+
+**¿Por qué el componente no impone su propio grid?** Porque cada vitrina pide
+una rejilla distinta: 4 columnas para catálogo, 3 para servicios, 1 para
+listados editoriales largos. Hacer que `CategoryCard` impusiera grid obligaría
+a forkearlo por vitrina —exactamente lo que la regla canónica evita—. El
+contrato es claro: el padre da columnas, la tarjeta llena el ancho que reciba.
+
+**¿Cómo agrego una nueva categoría a la home?** Editas `SHOWCASE` en
+`src/config/site.ts`, agregas el objeto con `label`, `href`, `image`, `blurb` y
+`subcategories`, y reconstruyes. No tocas `CategoryCard.astro` ni el `.astro`
+de la home: el array es la fuente, el componente es el render.
+
+**¿Qué pasa si el `image` no existe?** La sección del media no se renderiza
+(el componente la envuelve en `{image && (…)}`). El badge cae al body con la
+clase inline, el título queda como ancla principal y la tarjeta se ve austera
+pero válida. Útil para roadmap, listas internas y casos donde la foto no
+aporta.
+
+**¿Por qué `category` es un enum cerrado en el schema?** Porque la experiencia
+del proyecto MESECI demostró que un `z.string()` libre genera variantes
+tipográficas («Guías» vs «Guias») que fragmentan el SEO y rompen los filtros
+internos. El enum cerrado falla el build cuando alguien introduce un valor
+nuevo, lo cual es la conducta deseada: la taxonomía debe ser una decisión
+explícita, no un campo libre.
+
+**¿Puedo usar `CategoryCard` para una tarjeta de producto individual?** Puedes,
+pero pierdes intención semántica. La de producto necesita precio, SKU, marca y
+schema `Product+Offer`; la de categoría es entrada a un grupo. Mejor un
+`ProductCard` aparte, alimentado con la colección `productos`, y dejar
+`CategoryCard` para vitrinas de agrupación.
+
+Una sola tarjeta para todas las vitrinas del sitio es el tipo de decisión que
+parece pequeña al diseñar y se siente enorme al mantener. Diez props bien
+elegidas, defaults sensatos y un loader desde Content Collections bastan para
+que agregar contenido sea editar un Markdown, no abrir el JSX.
+
+## Sigue leyendo
+
+- [Módulo Category card en vivo](/modulos/category-card)
+- [Grid responsive de categorías en Astro](/blog/grid-categorias-responsive-astro-tokens)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

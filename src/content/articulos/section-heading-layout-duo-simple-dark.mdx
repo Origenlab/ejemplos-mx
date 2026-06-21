@@ -1,0 +1,152 @@
+---
+title: "SectionHeading: layout duo, simple y dark"
+description: "Árbol de decisión para elegir entre layout duo, simple y dark en SectionHeading: cuándo se usa cada uno y por qué la consistencia importa."
+category: "guias"
+heroImage: "/images/articulos/section-heading-layout-duo-simple-dark.avif"
+pubDate: 2026-03-24
+author: "Ejemplos.mx"
+tags: ["astro", "section-heading", "layouts", "variantes", "diseno"]
+seoTitle: "SectionHeading: duo, simple y dark"
+seoDescription: "Las tres variantes de SectionHeading en Astro: cuándo usar duo (contenido), simple (catálogo) o dark (CTA), con reglas duras y ejemplos."
+---
+
+`SectionHeading` tiene un único trabajo —abrir un bloque con eyebrow + título + descripción— pero tres caras posibles: `duo`, `simple` y `dark`. La pregunta importante no es cómo programar cada variante (las tres caben en una prop), sino cuándo elegir una y por qué. Esta guía es el árbol de decisión que evita que el sitio se sienta "hecho por cinco diseñadores distintos".
+
+## Contexto
+
+La trampa de los componentes flexibles es la sobre-flexibilidad. Si el equipo de contenido puede elegir entre tres layouts cada vez que abre una sección, va a elegir el que "se vea mejor en este caso" —y dos meses después la home tiene un mix arbitrario de duos, simples y darks que rompe el ritmo del sitio—. La regla canónica de esta plantilla resuelve el problema desde la raíz: cada layout tiene un caso de uso único, no negociable.
+
+`duo` es el layout por defecto para títulos de contenido: dos columnas que ponen el título a la izquierda y un par de párrafos de body a la derecha. Es lo que ves abriendo cada sección de las páginas de módulo (`/modulos/topbar`, `/modulos/header`, etc.). Su valor está en que cuenta dos cosas a la vez —la promesa del bloque y el contexto técnico— sin un párrafo suelto colgando debajo del título.
+
+`simple` es el layout para rotular un catálogo: un bloque centrado o alineado a la izquierda, sin body. Solo se usa en dos páginas del sitio: el índice de productos (`/productos/index`) y el índice de módulos (`/modulos/index`). En ambos casos lo que viene debajo es un grid de cards, no contenido narrativo, así que un duo se vería forzado: no hay un "body técnico" que poner al lado del título.
+
+`dark` no es un layout propio sino un modificador que se aplica sobre `duo` o `simple`. Se usa exclusivamente para títulos sobre superficies oscuras —CTA banners, hero secundarios, secciones con fondo `#111`—. El componente cambia el color del título a blanco y baja la opacidad del body para mantener contraste WCAG AA. La trampa común es usar `dark` en una sección con fondo claro pensando "se ve elegante": el componente entonces emite texto blanco sobre blanco y la sección queda invisible.
+
+## Implementación paso a paso
+
+La firma del componente es la misma para las tres variantes. El cambio está en qué props se pasan, no en qué versión se llama:
+
+```astro
+---
+import SectionHeading from '@components/SectionHeading.astro'
+---
+
+<!-- DUO: titulo a la izquierda, body a la derecha (default del sitio) -->
+<SectionHeading
+  layout="duo"
+  eyebrow="Definicion"
+  title="¿Que es el modulo?"
+  desc="La frase de 1-2 lineas que amplia el titulo."
+  body={[
+    'Primer parrafo del body: el que y el por que.',
+    'Segundo parrafo: el como o la nota tecnica.',
+  ]}
+/>
+```
+
+La regla práctica del `duo`: ambos párrafos del `body` deben tener longitud parecida y registro parecido. Si el primero tiene 40 palabras y el segundo 12, el equilibrio visual se rompe y la columna derecha se ve "rota". Si el primero es narrativo y el segundo es una lista de bullets disfrazada de párrafo, el lector siente cambio de tono.
+
+```astro
+<!-- SIMPLE: rotulo de catalogo (solo /productos/index y /modulos/index) -->
+<SectionHeading
+  layout="simple"
+  align="center"
+  eyebrow="Catalogo"
+  title="Nuestros productos:"
+  titleAccent="todo lo que ofrecemos"
+  desc="Una linea de presentacion del catalogo, breve y descriptiva."
+/>
+```
+
+El `titleAccent` —la segunda línea resaltada en color de marca— está pensado para esta variante. Funciona porque el contexto es "anuncio de catálogo", donde resaltar la promesa con color tiene sentido editorial. En `duo`, el `titleAccent` también es válido técnicamente pero se desaconseja: el título largo en dos líneas compite con los dos párrafos del body y el bloque se sobrecarga visualmente.
+
+```astro
+<!-- DARK: duo (o simple) sobre superficie oscura (CTA banner) -->
+<section class="cta-dark" style="background:#111">
+  <div class="container">
+    <SectionHeading
+      layout="duo"
+      dark
+      eyebrow="¿Listo?"
+      title="Empieza tu proyecto"
+      desc="Pasa de la documentacion al sitio real en un fin de semana."
+      body={[
+        'Conversamos por WhatsApp para entender tu negocio.',
+        'En 48 h tienes una demo con tu marca y tu contenido.',
+      ]}
+    />
+  </div>
+</section>
+```
+
+El `dark` no aplica el fondo oscuro: solo cambia los colores del texto. El fondo lo pone la `<section>` contenedora. Esta separación es deliberada: el componente no decide qué color tiene la sección padre, solo se adapta al contexto que le declaras.
+
+La cuarta receta —que nadie escribe pero conviene tener presente— es la que NO se debe usar:
+
+```astro
+<!-- ANTI-PATRON: simple en una seccion de contenido -->
+<SectionHeading
+  layout="simple"
+  align="center"
+  eyebrow="Definicion"
+  title="¿Que es el modulo?"
+  desc="..."
+/>
+{/* Despues viene contenido narrativo, no un grid de cards */}
+```
+
+Esto rompe la regla canónica. Una sección de contenido debe abrir con `duo`. El `simple` queda reservado para los dos índices de catálogo.
+
+## Tabla comparativa
+
+| Caso de uso | Variante correcta | Por qué |
+| --- | --- | --- |
+| Sección de contenido en página de módulo | `duo` | Permite poner contexto técnico al lado del título sin sumar un párrafo bajo |
+| Sección "¿Qué es?" / "¿Para qué sirve?" en landing | `duo` | Igual: dos cosas al mismo tiempo (promesa + nota) en lugar de un muro vertical |
+| Índice de productos (`/productos/index`) | `simple` + `titleAccent` centrado | Lo que viene debajo es grid de cards; no hay body técnico que poner |
+| Índice de módulos (`/modulos/index`) | `simple` + `titleAccent` centrado | Mismo caso: rótulo de catálogo, no de contenido |
+| Sección dentro de artículo de blog (`.mdx`) | `duo` o `simple align="left"` | Editorial: el body en duo aporta contexto; simple-left si el artículo es muy denso |
+| CTA banner al final de una landing | `duo` + `dark` | Fondo oscuro para destacar la sección del cierre; el dark mantiene contraste AA |
+| Hero secundario (segunda sección destacada) | `duo` + `dark` | Mismo patrón visual que el CTA banner |
+| Sub-sección dentro de un `<h2>` ya abierto | `duo` + `as="h3"` | Mantiene el lenguaje visual y baja la jerarquía sin romper el árbol semántico |
+| Rótulo en página de servicio individual | `duo` | Cualquier sección de contenido va en duo, sin excepción |
+
+## Patrones avanzados
+
+**Árbol de decisión en tres preguntas.** Si vas a abrir una sección, contesta en este orden: (1) ¿La sección es un catálogo (grid de cards) o contenido narrativo? Si es catálogo, `simple`. Si es contenido, `duo`. (2) ¿El fondo de la sección padre es oscuro? Si sí, agrega `dark`. (3) ¿Es una sub-sección dentro de un `<h2>` ya abierto? Si sí, agrega `as="h3"` (sin cambiar el layout). Tres preguntas, una sola respuesta para cada `SectionHeading` del sitio. La consistencia se mantiene sola.
+
+**Regla dura: `simple` solo en /productos/index y /modulos/index.** Esta es la regla más importante de las tres variantes y la más fácil de romper. El layout `simple` es tentador porque "se ve más limpio" cuando una sección no tiene mucho que decir. La trampa es que ese "no tiene mucho que decir" suele ser falta de copy, no diseño correcto: si el bloque no merece dos párrafos de body, probablemente no merece una sección propia. La regla práctica: si te tienta usar `simple` en una sección que no es índice de catálogo, primero pregúntate si la sección debería existir.
+
+**Balance visual del duo con dos párrafos calibrados.** El layout `duo` tiene `grid-template-columns: 1fr 1fr` y `align-items: center` —dos columnas iguales centradas verticalmente—. Eso significa que la altura visual de cada columna debe ser parecida o el bloque se ve desequilibrado. La columna izquierda tiene tres piezas (eyebrow + título + desc); la derecha tiene los dos párrafos del body. Si el título es muy corto (una línea) y el body son dos párrafos largos, el centrado vertical deja la columna izquierda flotando arriba de un vacío. Solución: o el título crece (usa `titleAccent` con cuidado) o cada párrafo del body es más corto. La calibración no es opcional: es parte del diseño.
+
+**Dark contraste WCAG AA: 9:1 en título, 7:1 en body.** El modificador `dark` deja el título en `#fff` puro y baja el body a `rgba(255,255,255,.75)`. Sobre el fondo oscuro estándar del sitio (`#111`), eso da ratios de contraste de aproximadamente 19:1 para el título y 9.2:1 para el body —ambos muy por encima del 4.5:1 que pide WCAG AA—. La trampa es usar `dark` sobre un fondo gris claro (`#666`): ahí el blanco puro del título queda en 4.7:1 (apenas AA) y el body al 75 % cae en 3.5:1 (falla). La regla: `dark` solo sobre fondos `#000` a `#222`. Si el fondo está en medio tono, el `dark` no aplica y necesitas estilos custom.
+
+## Checklist
+
+- [ ] Cada sección de contenido del sitio abre con `layout="duo"`.
+- [ ] `layout="simple"` se usa SOLO en `/productos/index` y `/modulos/index`.
+- [ ] `titleAccent` se reserva para `simple` (rótulos de catálogo), no para `duo`.
+- [ ] `dark` se aplica solo sobre fondos oscuros (`#000` a `#222`), nunca sobre claros.
+- [ ] En `duo`, los dos párrafos del `body` tienen longitud y registro parecidos.
+- [ ] Sub-secciones dentro de un `<h2>` usan `as="h3"` (manteniendo el mismo layout).
+- [ ] Cero `<h2>` sueltos en `.astro`: todos los títulos pasan por `SectionHeading`.
+
+## Preguntas frecuentes
+
+**¿Puedo usar `duo` sin pasar `body`?** Técnicamente sí: el componente no rompe. Visualmente queda la columna izquierda sola y la derecha vacía, ocupando el 50 % del ancho con nada. Es feo y desperdicia espacio. Si no tienes body que poner, usa `simple` (siempre que el bloque sea un catálogo) o reformula el copy para llenar la columna derecha.
+
+**¿Puedo combinar `dark` con `simple`?** Sí, es válido técnicamente. Tendría sentido en un CTA banner muy escueto donde solo hay título y descripción sobre fondo oscuro, sin body al lado. En la práctica, los CTA banners del sitio van con `duo + dark` para tener espacio para una segunda voz (el "qué obtienes" al lado del "¿listo?"). El `simple + dark` queda como variante latente, no se usa en producción.
+
+**¿Por qué no hay una variante `light` para fondos muy claros?** Porque el default ya es para fondo claro: el título usa `var(--c-ink)` (negro o casi) y la descripción usa `var(--text-muted)` (gris medio), pensados para fondo blanco o casi blanco. El `dark` es el opuesto. Si quisieras una variante para fondos a color (azul de marca, rojo intenso), tendrías que extender el componente con una prop `theme="brand"` —no existe hoy y se desaconseja: rompe el contrato de "tres variantes, no más"—.
+
+**¿`as="h3"` afecta el tamaño del título visualmente?** No por defecto. El componente solo cambia la etiqueta HTML emitida (de `<h2>` a `<h3>`), no los estilos. El `.sech__title` sigue siendo el mismo CSS. Si quisieras que las sub-secciones se vieran más pequeñas, tendrías que añadir un selector `.sech .sech__title:where(h3) { font-size: ... }` en el componente. La decisión de mantener el mismo tamaño es deliberada: el lenguaje visual no cambia con la jerarquía, lo que cambia es la semántica.
+
+---
+
+Las tres variantes de `SectionHeading` cubren los tres roles que un encabezado puede tener en un sitio: contenido (duo), catálogo (simple) y cierre destacado (dark). La disciplina de respetar la asignación —no usar simple en una sección de contenido, no usar dark sobre fondo claro, no usar titleAccent en duo— es lo que mantiene el ritmo visual del sitio sin que nadie tenga que pensar en consistencia cada vez que abre un bloque.
+
+## Sigue leyendo
+
+- [Módulo Section heading en vivo](/modulos/section-heading)
+- [Section headings: jerarquía visual y SEO Astro](/blog/section-heading-jerarquia-seo-astro)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

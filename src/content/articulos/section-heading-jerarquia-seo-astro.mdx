@@ -1,0 +1,143 @@
+---
+title: "Section headings: jerarquía visual y SEO Astro"
+description: "Cómo diseñar section headings que enganchen sin romper la jerarquía H1-H6 ni la legibilidad para buscadores, con ejemplos de Astro y tokens CSS."
+category: "guias"
+heroImage: "/images/articulos/section-heading-jerarquia-seo-astro.avif"
+pubDate: 2026-03-22
+author: "Ejemplos.mx"
+tags: ["astro", "section-heading", "tipografia", "seo", "jerarquia"]
+seoTitle: "Section headings: jerarquía + SEO Astro"
+seoDescription: "Section headings en Astro: H1-H6 sin saltos, eyebrow vs título, accent semántico, body inline. Ejemplos reales para sitios profesionales."
+---
+
+Un sitio con encabezados desordenados se ve bonito en la PC del diseñador y mal en todos lados al mismo tiempo: el buscador no lo entiende, el lector de pantalla salta de H2 a H4 sin avisar y el visitante escanea el muro de párrafos sin pistas. El section heading es la pieza que vuelve esa página legible para personas y previsible para máquinas. Esta guía explica cómo se diseña uno que cumpla ambos contratos sin negociar uno por el otro.
+
+## Contexto
+
+La regla de oro para SEO técnico no cambió en los últimos diez años: un H1 por página y los siguientes niveles escalonados sin saltos, donde cada `<h2>` abre una sección del cuerpo y los `<h3>` cuelgan de su `<h2>` padre. La tentación de meter "otro H1 porque pesa más en la búsqueda" sigue circulando en foros, pero los crawlers modernos —Googlebot incluido— interpretan la jerarquía como árbol semántico: dos H1 hermanos confunden el modelo del documento y diluyen la señal de tema principal.
+
+El problema no es solo de SEO. La accesibilidad usa exactamente el mismo árbol. Un lector de pantalla como VoiceOver o NVDA permite navegar página por encabezados con una sola tecla; si saltas de H2 a H4 sin pasar por H3, la persona ciega percibe una sub-sección huérfana y no sabe a qué bloque pertenece. La regla "no saltes niveles" no es cosmética: es la diferencia entre una página navegable y una que solo se puede leer en orden lineal.
+
+A esto se suma una capa visual. El section heading no es solo un `<h2>` a secas: es un patrón compuesto por eyebrow (rótulo corto en mayúsculas), título (la promesa del bloque) y descripción (1-2 frases que amplían). El eyebrow no debe ser un heading HTML —no aporta nivel jerárquico, es metadata visual— y el accent (segunda línea de color) tampoco debe romper el título en dos elementos semánticos. La trampa común es marcar el eyebrow como `<h3>` "para que se vea más importante": rompe la jerarquía y mete una sub-sección fantasma en el árbol del documento.
+
+## Implementación paso a paso
+
+El componente `SectionHeading.astro` de esta plantilla resuelve estas tres trampas a la vez. Vale la pena leerlo antes de copiar nada: la regla canónica está cableada en los defaults, no en la documentación.
+
+```astro
+---
+// src/components/SectionHeading.astro
+export interface Props {
+  id?: string
+  eyebrow?: string
+  /** Primera linea del titulo (obligatoria). */
+  title: string
+  /** Segunda linea, resaltada con color de acento. */
+  titleAccent?: string
+  desc?: string
+  layout?: 'simple' | 'duo'
+  align?: 'center' | 'left'
+  body?: string[]
+  dark?: boolean
+  /** Etiqueta semantica del encabezado de bloque. */
+  as?: 'h2' | 'h3'
+}
+const { id, eyebrow, title, titleAccent, desc, layout = 'simple',
+        align = 'center', body = [], dark = false, as = 'h2' } = Astro.props
+const Tag = as
+---
+```
+
+La prop `as` con default `'h2'` es la primera línea de defensa: a menos que se pase `as="h3"` explícitamente, cada `SectionHeading` emite un `<h2>`. Imposible meter sin querer un segundo H1 (no existe `as="h1"` en el tipo) o saltar de H2 a H4 (los únicos valores válidos son `h2` y `h3`). La jerarquía está cableada en el tipo de TypeScript.
+
+El segundo punto es cómo se construye el título cuando hay acento. La tentación es partir la frase en dos elementos —un `<h2>` para la primera línea y un `<p>` o `<span>` para la segunda—. El componente resuelve diferente:
+
+```astro
+<Tag class="sech__title" id={id}>
+  {title}{titleAccent && <><br /><span class="sech__accent">{titleAccent}</span></>}
+</Tag>
+```
+
+Un solo `<h2>` con un `<br>` y un `<span>` dentro. El buscador lee el texto completo como un solo heading; los lectores de pantalla anuncian la frase entera sin interrupciones; el CSS aplica el color de marca al `.sech__accent` sin pedir un elemento semántico extra. El accent es decoración visual sobre un heading único, no un heading partido en dos.
+
+El tercer punto, el eyebrow, sigue la misma disciplina:
+
+```astro
+{eyebrow && <p class="sech__eyebrow"><span class="sech__eyebrow-bar" aria-hidden="true"></span>{eyebrow}</p>}
+```
+
+Un `<p>` —no un heading— con una barra de acento marcada como `aria-hidden="true"` para que los lectores de pantalla no la anuncien como "decoración". El eyebrow es texto plano marcado como párrafo, estilizado como rótulo en mayúsculas via CSS:
+
+```css
+.sech__eyebrow {
+  font-size: var(--text-xs, .8125rem);
+  font-weight: var(--weight-bold, 700);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--color-red, var(--c-primary, #C41E24));
+}
+```
+
+`text-transform: uppercase` deja el contenido del DOM en minúsculas y solo lo pinta en mayúsculas: los buscadores ven la palabra escrita normalmente (mejor para indexación), el copywriter escribe sin gritar y el visitante percibe el rótulo en ALL CAPS. Tres ganancias por una propiedad CSS.
+
+## Tabla comparativa
+
+| Decisión semántica | Patrón correcto | Anti-patrón frecuente |
+| --- | --- | --- |
+| H1 por página | Uno solo, en el hero | Un H1 por sección "para reforzar SEO" |
+| Eyebrow del section heading | `<p>` con `text-transform: uppercase` | `<h3>` o `<h4>` "para que pese más" |
+| Título con acento de color | Un `<h2>` con `<span>` interno | Dos elementos (`<h2>` + `<p>`) hermanos |
+| Sub-sección dentro de H2 | `<h3>` via prop `as="h3"` | `<h4>` o `<div class="titulo">` |
+| Barra de acento decorativa | `aria-hidden="true"` | Sin atributo (la lee VoiceOver) |
+| Mayúsculas del eyebrow | CSS `text-transform` | Escrita en mayúsculas en el MDX |
+| Descripción del bloque | `<p>` debajo del título | Otro `<h2>` "porque también es importante" |
+| Anchor para deep-link | Prop `id` que se aplica al heading | `<a name>` antes del heading |
+
+## Patrones avanzados
+
+**Accent como destacado semántico, no como dos H2.** El error más común con la segunda línea resaltada es marcarla como un encabezado separado para que el color "se vea". El componente la mantiene dentro del mismo `<h2>`, así que tanto el texto plano del SEO como el flujo del lector de pantalla la perciben como una única promesa. La regla práctica: si retiras todos los estilos CSS, el HTML debe seguir contando una historia legible —un solo encabezado con una frase completa, no dos fragmentos colgando—. Si el contenido se rompe sin CSS, el HTML está mal escrito.
+
+**Eyebrow ALL CAPS por CSS, no por copia.** Escribir "DEFINICIÓN" en el MDX provoca tres efectos perversos: los buscadores que normalizan mayúsculas para indexar pierden la palabra clave, los lectores de pantalla algunos las deletrean letra por letra ("D-E-F-I-N-I-C-I-Ó-N") y el copywriter siente que está gritando. Escribir "Definición" en el MDX y dejar que `text-transform: uppercase` haga el trabajo visual evita los tres. Es la misma razón por la que los logos en minúsculas escriben "ejemplos.mx" y no "EJEMPLOS.MX" en el `alt` de la imagen.
+
+**Balance visual del duo + ancho de medida en la descripción.** El layout `duo` enfrenta dos columnas: título a la izquierda, body a la derecha. La descripción del título tiene un `max-width: 60ch` en `simple` y `max-width: none` en `duo` —porque en duo el ancho ya lo da el grid, no la propia descripción—. Si en duo dejas el `60ch`, la columna izquierda queda con un párrafo flaco al lado de un grid generoso a la derecha y el balance se rompe. La regla está en el CSS scoped:
+
+```css
+.sech--duo .sech__desc { max-width: none; }
+```
+
+Es un detalle de tres palabras que decide si la página se siente cuidada o rota.
+
+**Dark variant con contraste AA en el body, no solo en el título.** Pasar `dark` cambia el color del `.sech__title` a `#fff` (contraste excelente sobre fondo negro), pero el `.sech__desc` y el `.sech__body-p` bajan a `rgba(255,255,255,.75)`. Ese 75 % de opacidad sobre fondo `#111` da un contraste de 9.2:1 —muy por encima del 4.5:1 exigido por WCAG AA para texto normal—. Si quisieras bajar más la opacidad para "que el cuerpo se sienta secundario", revisa en una herramienta de contraste antes de empujar a producción: a 50 % de opacidad el ratio cae a 5.1:1 (todavía AA), pero a 35 % cae a 3.4:1 (falla incluso para texto grande).
+
+## Checklist
+
+- [ ] Un solo `<h1>` por página, ubicado en el hero.
+- [ ] Todos los títulos de sección usan `SectionHeading` (cero `<h2>` sueltos en `.astro`).
+- [ ] El eyebrow es un `<p>` con `text-transform: uppercase` por CSS, no escrito en mayúsculas.
+- [ ] El `titleAccent` se renderiza dentro del mismo `<h2>`, no como elemento hermano.
+- [ ] La barra decorativa del eyebrow lleva `aria-hidden="true"`.
+- [ ] Las sub-secciones usan `as="h3"` (no se inventan `<h4>` saltando un nivel).
+- [ ] En `layout="duo"` la descripción no lleva `max-width` en `ch` (lo controla el grid).
+- [ ] En `dark`, el contraste de texto sobre fondo cumple ≥ 4.5:1 (verificado).
+
+## Preguntas frecuentes
+
+**¿Por qué no usar `<h1>` en cada sección si Google "ahora soporta varios H1"?** Soportar no es premiar. Google parsea sin reventar una página con varios H1, pero el modelo de documento sigue siendo un árbol con un tema principal. Dos H1 hermanos compiten por esa señal y bajan la claridad del tópico. La regla "un H1 por página" sigue siendo el consenso entre SEO técnico y accesibilidad, y el costo de cumplirla es cero.
+
+**¿El eyebrow afecta el SEO si tiene palabras clave?** Sí, pero como texto plano dentro de un `<p>` —no como heading—. Los buscadores lo indexan como cualquier párrafo: aporta contexto léxico al bloque sin competir con el `<h2>`. La práctica de meter palabras clave repetidas en el eyebrow es contraproducente: si "Definición · Plomería en Polanco · Servicios" aparece arriba de cada sección, el sitio se ve spam y el lector de pantalla anuncia tres rótulos antes del título.
+
+**¿Cómo decido entre `as="h2"` y `as="h3"`?** Pregunta de árbol: si el bloque está al primer nivel del cuerpo (debajo del hero `<h1>`), va `h2`. Si está dentro de una sección que ya abrió con un `h2`, sus sub-bloques van `h3`. Más allá de `h3` —`h4`, `h5`— casi nunca es necesario: si tu documento exige cinco niveles de profundidad, probablemente la página debería partirse en dos URLs.
+
+**¿Puedo poner un anchor (`#mi-seccion`) en el título?** Sí, vía la prop `id`: el componente la aplica directamente al `<h2>` (`<Tag class="sech__title" id={id}>`). Esto habilita deep-linking (`#mi-seccion` desde una tabla de contenidos) y evita el anti-patrón de meter un `<a name="...">` vacío arriba del heading, que ensucia el DOM.
+
+**¿El `<br>` dentro del título no es semánticamente sucio?** En este caso no. El `<br>` se usa porque la frase es una sola promesa visualmente partida en dos líneas: el HTML5 admite `<br>` cuando el salto es parte del contenido (poesía, direcciones, títulos de doble línea). Lo que sería sucio es usar `<br><br>` para simular un párrafo, o partir un párrafo largo en varios `<br>` en vez de usar `<p>`.
+
+---
+
+El section heading bien construido es una pieza pequeña que decide cosas grandes: si la página rankea por el tema que esperabas, si una persona ciega la puede recorrer en treinta segundos, si el visitante se queda a leer o cierra la pestaña. La buena noticia es que el patrón cabe en un solo componente y se obedece con dos disciplinas: nunca saltar niveles de heading y nunca convertir decoración visual en estructura semántica.
+
+## Sigue leyendo
+
+- [Módulo Section heading en vivo](/modulos/section-heading)
+- [SectionHeading: layout duo, simple y dark](/blog/section-heading-layout-duo-simple-dark)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

@@ -1,0 +1,156 @@
+---
+title: "Migas de pan en Astro: guía paso a paso"
+description: "Cómo implementar migas de pan en Astro para fortalecer la navegación, evitar duplicar JSON-LD y mantener la jerarquía coherente en cada página."
+category: "guias"
+heroImage: "/images/articulos/migas-de-pan-astro-guia-paso-a-paso.avif"
+pubDate: 2026-03-10
+author: "Ejemplos.mx"
+tags: ["astro", "breadcrumbs", "navegacion", "seo", "ux"]
+seoTitle: "Migas de pan en Astro paso a paso"
+seoDescription: "Guía técnica para construir migas de pan en Astro: anatomía, microdata, BreadcrumbList JSON-LD sin duplicados y patrones avanzados de a11y."
+---
+
+Las migas de pan parecen un componente trivial hasta que aparecen tres versiones distintas en el mismo sitio, una duplica el `BreadcrumbList` en el JSON-LD y otra olvida el `aria-current` que necesita el lector de pantalla. Esta guía arma el componente en Astro de principio a fin, con la anatomía de los cuatro eslabones, el contrato de la prop `breadcrumbs` por página y el reparto exacto entre microdata visible y JSON-LD central. Es para desarrolladores que construyen sitios con Content Collections y quieren un componente que orienta al visitante, se valida en Search Console y nunca duplica schema.
+
+## Contexto
+
+El visitante de una página interna llega de buscador o de un enlace lateral, y la primera pregunta que se hace sin formularla es «¿dónde estoy parado dentro del sitio?». Una sola línea bajo el header con `Inicio › Servicios › Diseño de logotipo` responde esa pregunta en menos de un segundo. Sin ella, la única forma de ubicarse es abrir el menú, leer todas las categorías y deducir cuál contiene la página actual. La fricción que parece pequeña en un sitio de cinco páginas se vuelve abandono en un catálogo de cincuenta.
+
+Las migas hacen dos trabajos al mismo tiempo. El primero es navegación visible: cada eslabón superior es un enlace de verdad, así el visitante salta a la categoría o a la home sin recurrir al botón «atrás» del navegador, que en escritorio rompe scroll y en móvil a veces ni siquiera está. El segundo es estructura para el buscador: el `BreadcrumbList` de schema.org le dice a Google la posición de la página dentro de la jerarquía. Cuando se cumplen los requisitos, ese rastro aparece bajo el título en los resultados en lugar de la URL cruda, que se lee fatal en `dominio.com/servicios/categoria-x/sub-categoria-y/pagina-actual`.
+
+El error más caro al implementarlas viene de no decidir quién emite el JSON-LD. Si el componente visual lo emite y el layout también, terminas con dos `BreadcrumbList` en el `<head>` y Google ignora ambos. La regla dura del proyecto (B3) cierra el debate: el componente solo emite microdata HTML (`itemtype`, `itemprop`); el JSON-LD lo arma `buildSchema()` en `lib/seo.ts`, una sola vez por página, leyendo la misma prop `breadcrumbs` que recibe el componente. Una fuente, dos consumidores.
+
+## Implementación paso a paso
+
+El componente vive en `src/components/Breadcrumbs.astro` y recibe una lista mínima: cada eslabón lleva `label` y, salvo el último, `href`. La página declara su rastro en la prop `breadcrumbs` del `PageLayout`, y este lo entrega tanto al componente visual como a `buildSchema()`. La página nunca toca microdata ni JSON-LD a mano.
+
+```astro
+---
+// src/pages/servicios/diseno-de-logotipo.astro
+// Cada página declara SU rastro UNA sola vez en la prop breadcrumbs.
+// El componente antepone «Inicio» en el visual y buildSchema arma el JSON-LD.
+import PageLayout from '@layouts/PageLayout.astro'
+---
+
+<PageLayout
+  title="Diseño de logotipo — Servicios"
+  description="…"
+  pageType="service"
+  breadcrumbs={[
+    { label: 'Servicios', href: '/servicios' },
+    { label: 'Diseño de logotipo' },        // sin href = página actual
+  ]}
+>
+  {/* …contenido de la página… */}
+</PageLayout>
+```
+
+Dentro del componente la lógica es muy chica. Acepta `items` y, si el primero no es la raíz, antepone `Inicio` automáticamente, así la página nunca repite la home. Esto vive en `src/components/Breadcrumbs.astro:34-35`:
+
+```astro
+---
+// Si la página ya incluyó la raíz, no se duplica.
+const trail: BreadcrumbItem[] =
+  items[0]?.href === '/' ? items : [{ label: 'Inicio', href: '/' }, ...items]
+---
+```
+
+El render real (sin modo guía) emite un `<ol>` con `itemscope itemtype="https://schema.org/BreadcrumbList"`. Cada `<li>` es un `ListItem` con su `position` por `<meta>`, y el último eslabón —sin `href`— se marca con `aria-current="page"` para que los lectores de pantalla lo anuncien como destino actual. El separador es un SVG con `aria-hidden="true"`; no es enlace ni se lee. Esto está en `Breadcrumbs.astro:97-111`:
+
+```html
+<nav aria-label="Migas de pan">
+  <ol itemscope itemtype="https://schema.org/BreadcrumbList">
+
+    <li itemprop="itemListElement" itemscope
+        itemtype="https://schema.org/ListItem">
+      <a href="/" itemprop="item"><span itemprop="name">Inicio</span></a>
+      <meta itemprop="position" content="1" />
+    </li>
+
+    <svg aria-hidden="true" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+
+    <li itemprop="itemListElement" itemscope
+        itemtype="https://schema.org/ListItem">
+      <span aria-current="page" itemprop="name">Diseño de logotipo</span>
+      <meta itemprop="position" content="2" />
+    </li>
+
+  </ol>
+</nav>
+```
+
+El detalle que se escapa es el `<meta itemprop="position">`: schema.org requiere que cada `ListItem` declare su posición numérica empezando en 1. Sin eso, el `BreadcrumbList` se valida con advertencias y Google a veces no lo procesa. Va dentro del `<li>`, no fuera, y va con `String(index + 1)` porque el atributo `content` solo acepta string.
+
+La barra visible se carga sola dentro del `PageLayout`. No hay que importar `Breadcrumbs.astro` en cada página: el layout lo monta justo debajo del header, antes del hero, en cuanto detecta la prop `breadcrumbs`. La página solo declara la ruta.
+
+## Tabla comparativa
+
+| Variante visual | Cuándo usarla | Trade-off |
+|---|---|---|
+| Texto con separador (›) | Sitio de negocio, servicios, blog | La más segura, universal, ojo entrenado; no aporta peso táctil |
+| Icono home en la raíz | E-commerce con catálogo grande | Compacta la línea, refuerza «volver al inicio»; pierde la palabra «Inicio» |
+| Cápsulas (pills) | SaaS, paneles operativos | Blanco táctil grande, jerarquía como información; agrega ruido visual |
+| Atrás + actual (móvil) | Detalle de producto en móvil | Mantiene camino de vuelta en una línea; pierde el rastro completo |
+| Colapsadas con «…» | Catálogo profundo, wiki | Cabe en una línea con cinco niveles; un toque extra para ver intermedios |
+| Truncado con tooltip | Documentación, CMS | Títulos largos sin multilínea; el tooltip no es accesible en touch |
+
+La decisión por contexto importa más que el aspecto. Un sitio de servicios con tres niveles de profundidad nunca necesita colapsar nada; un wiki con seis niveles colapsa siempre. La trampa es elegir la variante por estética: si te suena bonito poner pills en un sitio de despacho legal, en seis meses las migas pesarán más visualmente que el menú principal.
+
+## Patrones avanzados
+
+**Microdata visible coexistiendo con JSON-LD central.** El componente lleva `itemtype/itemprop` en el HTML porque cuesta cero y suma una segunda señal estructurada para los rastreadores que no parsean JSON-LD (algunos motores antiguos, scrapers de redes sociales). El JSON-LD vive aparte, en el `<head>`, emitido por `buildSchema()`. Las dos representaciones leen exactamente la misma prop `breadcrumbs`, así que no se desincronizan. Si modificas la jerarquía en un lugar, cambia en los dos al mismo tiempo. La regla práctica: una sola fuente de datos (la prop), varios formatos de salida.
+
+**Accesibilidad real, no de checklist.** El `aria-label="Migas de pan"` en el `<nav>` deja que los lectores de pantalla anuncien el landmark; sin él, el `<nav>` se confunde con el menú principal. El `aria-current="page"` en el último eslabón le dice al lector «esta es la página actual», y el separador SVG con `aria-hidden="true"` evita que el lector deletree `chevron right` entre cada palabra. Si añades hover effects, asegúrate de que el `:focus-visible` del enlace sea igual de claro que el `:hover`: la navegación por teclado debe ver el mismo highlight que el cursor.
+
+**Scroll horizontal en móvil sin partir la línea.** En pantallas chicas, una ruta de tres o cuatro niveles se parte en dos renglones y empuja el hero hacia abajo. La solución sin sacrificar el rastro completo es `flex-wrap: nowrap` + `overflow-x: auto` + ocultar la barra de scroll:
+
+```astro
+<style>
+  .breadcrumb__list {
+    display: flex;
+    flex-wrap: nowrap;                      /* no multilínea */
+    overflow-x: auto;
+    scrollbar-width: none;                  /* Firefox */
+    -webkit-overflow-scrolling: touch;      /* inercia iOS */
+  }
+  .breadcrumb__list::-webkit-scrollbar { display: none; }
+</style>
+```
+
+El resultado se siente como una app: la ruta se desliza con el dedo, sin línea gris, y la página actual queda visible al final del scroll para que el visitante sepa dónde está. La alternativa popular —ocultar las migas en móvil con `display: none`— pierde el rastro y suele empeorar el SEO porque Google rastrea el HTML completo.
+
+## Checklist de implementación
+
+- [ ] Declarar la prop `breadcrumbs` en cada `PageLayout` de página interna (no en la home)
+- [ ] Confirmar que el último eslabón va sin `href` y se renderiza con `aria-current="page"`
+- [ ] Verificar que `Breadcrumbs.astro` NO emite ningún `<script type="application/ld+json">`
+- [ ] Confirmar que `buildSchema()` emite el `BreadcrumbList` una sola vez por página
+- [ ] Probar la barra con tecla Tab: cada eslabón debe tener foco visible y el separador debe saltarse
+- [ ] Validar dos URLs en el [Test de resultados enriquecidos](https://search.google.com/test/rich-results) sin advertencias
+- [ ] Revisar en móvil real (no DevTools): la ruta debe scrollear horizontalmente sin multilínea
+- [ ] Confirmar etiquetas cortas: «Servicios» no «Nuestros servicios profesionales para empresas»
+
+## Preguntas frecuentes
+
+### ¿Debo poner migas de pan en la home?
+No. En la home el visitante ya está en la raíz: las migas serían una línea que dice solo `Inicio` y eso es ruido. La regla del componente lo refleja: las páginas que no declaran la prop `breadcrumbs` no pintan la barra.
+
+### ¿Y si mi página tiene varios padres lógicos (un producto en dos categorías)?
+Elige una sola jerarquía canónica por URL. Si el producto vive en `/productos/audio/auriculares-x`, las migas siguen esa ruta; el otro acceso (por marca, por uso) se resuelve con enlaces internos en el cuerpo, no con un segundo `BreadcrumbList`. Google solo admite una jerarquía por página.
+
+### ¿Puedo omitir el JSON-LD si ya tengo microdata visible?
+Puedes, pero pierdes el rich result. Los datos estructurados de Google priorizan JSON-LD para `BreadcrumbList`; la microdata visible te da una segunda señal y refuerza la semántica del HTML, pero por sí sola rara vez dispara el rastro bajo el título en los resultados.
+
+### ¿Las migas reemplazan al menú principal?
+No. El menú es navegación lateral (categorías hermanas, secciones del sitio); las migas son navegación jerárquica (ancestros de esta página). Un visitante en `Servicios › Diseño de logotipo` usa las migas para volver a `Servicios`, y el menú para saltar a `Productos`. Si las confundes, terminas con dos componentes que dicen lo mismo.
+
+### ¿Tengo que actualizar las migas cuando renombro una categoría?
+Si tu rastro nace de la URL o de una taxonomía central, no: el cambio se propaga solo. Si las hardcodeaste en cada página (anti-patrón D3), sí, y vas a olvidar alguna. La plantilla las declara por página, pero las etiquetas suelen venir de la misma fuente que el menú, así que un solo cambio en `site.ts` repinta todas.
+
+Las migas bien hechas son una de esas piezas que el visitante deja de ver porque siempre están ahí, en su sitio, sin estorbar. Un componente de cincuenta líneas que ahorra clicks, mejora el rich result y se valida sin advertencias en Search Console. El truco no está en el código —es trivial— sino en la disciplina de no emitir el JSON-LD dos veces y en mantener una sola fuente para ambos consumidores.
+
+## Sigue leyendo
+
+- [Módulo Migas de pan en vivo](/modulos/breadcrumbs)
+- [Breadcrumbs y SEO: BreadcrumbList JSON-LD en Astro](/blog/breadcrumbs-seo-jsonld-astro)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

@@ -1,0 +1,183 @@
+---
+title: "Menú de sección en Astro: anclas y cierre"
+description: "Diseñando un menú de sección efectivo: anclas internas, cierre de página y enfoque data-driven con Astro para guiar al visitante al siguiente paso."
+category: "guias"
+heroImage: "/images/articulos/menu-de-seccion-astro-anclas-cierre.avif"
+pubDate: 2026-03-16
+author: "Ejemplos.mx"
+tags: ["astro", "section-menu", "navegacion", "ux", "anclas"]
+seoTitle: "Menú de sección en Astro: anclas + cierre"
+seoDescription: "Cómo construir un SectionMenu en Astro con anclas internas, items data-driven y un patrón de cierre que aumenta la profundidad de sesión."
+---
+
+El menú de sección es la franja de botones grandes que va pegada al hero y, bien armada, hace dos trabajos al mismo tiempo: reparte tráfico a las secciones clave y deja el CTA de conversión a un clic del primer pantallazo. Esta guía es la mecánica del componente: cómo se arma el `MenuItem`, qué cambia entre un `href` externo (`/productos`) y uno interno (`#faq`), cómo etiquetar el `<nav>` con `ariaLabel` y cómo reusar la misma pieza al final de la página para cerrarla sin que parezca un footer. Está pensada para quien implementa el componente por primera vez y quiere entender cada prop antes de tocarla.
+
+## Contexto
+
+El patrón viene de los catálogos profesionales: el visitante entra, lee la promesa del hero y, sin tener que volver al menú del header, encuentra los destinos clave a la altura del ojo. En `src/components/SectionMenu.astro` esa franja se materializa con tres props: `items` (la lista de botones), `cta` (el botón de conversión, opcional) y `ariaLabel` (la etiqueta accesible del `<nav>`). Nada más. El responsive lo resuelve el propio componente —apila en móvil, una fila en escritorio— y el CTA se distingue automáticamente cuando llega la prop.
+
+La regla canónica del proyecto se lee aquí en voz alta: **el hero presenta, la franja convierte**. Por eso el último botón nunca es una sección más; es la acción, en color de marca. Y por eso el componente no acepta un wa.me tecleado a mano: el href del CTA siempre se arma con `waUrl(WA_MESSAGES.cotizar)` desde `src/config/site.ts` (regla D4). Lo que esta guía añade es lo siguiente: la misma pieza, con datos distintos, también sirve para **cerrar** una página y empujar al visitante hacia otras rutas internas (fichas, contacto, casos) antes de que llegue al footer.
+
+La diferencia entre arriba y abajo es solo de datos. Arriba (bajo el hero), los `items` vienen de `NAV` —la misma fuente que alimenta el Header— y el CTA es `cotizar`. Abajo (al cierre), los `items` se arman a mano con destinos de interlinking y el CTA puede cambiar a `contacto`. El componente, el JSX y el CSS son idénticos. Esto importa: una sola pieza mantenida, dos lugares siempre consistentes.
+
+## Implementación paso a paso
+
+El tipo `MenuItem` define la forma exacta de cada botón. Está exportado desde el propio componente, así que se importa con seguridad de tipos en cualquier página:
+
+```ts
+// Tipos reales exportados desde src/components/SectionMenu.astro
+export type MenuItem = {
+  label: string;        // texto visible del botón
+  href: string;         // ruta interna, ancla (#id) o URL externa
+  sub?: string;         // micro-descripción opcional bajo la etiqueta
+  icon?: string;        // glifo o emoji opcional a la izquierda
+};
+
+export type MenuCta = {
+  label: string;
+  href: string;
+  sub?: string;
+  external?: boolean;   // si true, agrega target="_blank" rel="noopener"
+};
+```
+
+Tres notas sobre estos tipos. Primero: `href` es un string libre porque acepta tres formas distintas (`/productos`, `#faq`, `https://...`). Segundo: `sub` no es decoración: con dos o tres palabras matiza el destino sin obligar a entrar («Catálogo del sitio», «Lo que ofreces»). Tercero: `external` solo aplica al CTA, no a los items —los enlaces a otras páginas del sitio nunca abren en pestaña nueva—.
+
+El uso básico desde una página es directo. Se importa el componente, se arma `items` con destinos absolutos y se pasa un `cta` armado con `waUrl()`:
+
+```astro
+---
+import SectionMenu from '@components/SectionMenu.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+
+const items = [
+  { label: 'Productos', href: '/productos', sub: 'Catálogo del sitio' },
+  { label: 'Servicios', href: '/servicios', sub: 'Lo que ofreces' },
+  { label: 'Cobertura', href: '/cobertura', sub: 'Zonas que atiendes' },
+  { label: 'Blog',      href: '/blog',      sub: 'Guías y artículos' },
+]
+
+const cta = {
+  label: 'Cotizar por WhatsApp',
+  href: waUrl(WA_MESSAGES.cotizar),   // D4: nunca wa.me tecleado a mano
+  sub: 'Respuesta inmediata',
+  external: true,
+}
+---
+
+<SectionMenu items={items} cta={cta} ariaLabel="Secciones del sitio" />
+```
+
+Para landings de una sola página, los `href` se convierten en anclas a secciones de la misma URL (`#catalogo`, `#faq`). La franja deja de ser un atajo a otras páginas y se vuelve un índice navegable de la página actual. El CSS necesario va en un bloque global —para que `html { scroll-behavior: smooth }` afecte a toda la página— y compensa el header sticky con `scroll-margin-top` en cada destino:
+
+```astro
+---
+const indice = [
+  { label: 'Catálogo',  href: '#catalogo',  sub: 'Lo que ofrecemos' },
+  { label: 'Servicios', href: '#servicios', sub: 'Cómo lo hacemos' },
+  { label: 'Reseñas',   href: '#resenas',   sub: 'Lo que dicen' },
+  { label: 'FAQ',       href: '#faq',       sub: 'Dudas comunes' },
+]
+---
+
+<SectionMenu items={indice} cta={cta} ariaLabel="Índice de la página" />
+
+<style is:global>
+  html { scroll-behavior: smooth; }
+  :target { scroll-margin-top: var(--header-height, 64px); }
+</style>
+```
+
+Para el patrón de cierre, el componente es el mismo pero los datos cambian. Se usa al final de la página, con destinos que el header no toca, y conviene cambiar `ariaLabel` para que los lectores de pantalla no anuncien dos veces «Secciones del sitio»:
+
+```astro
+---
+import SectionMenu from '@components/SectionMenu.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+
+const cierre = [
+  { label: 'Casos',    href: '/casos',    sub: 'Lo que hemos hecho' },
+  { label: 'Fichas',   href: '/blog',     sub: 'Guías detalladas' },
+  { label: 'Contacto', href: '/contacto', sub: 'Cómo escribirnos' },
+  { label: 'Inicio',   href: '/',         sub: 'Volver al principio' },
+]
+
+const contactoCta = {
+  label: 'Escríbenos por WhatsApp',
+  href: waUrl(WA_MESSAGES.contacto),
+  sub: 'Respondemos hoy',
+  external: true,
+}
+---
+
+<SectionMenu items={cierre} cta={contactoCta} ariaLabel="Sigue explorando" />
+```
+
+## Tabla comparativa
+
+Las tres formas de `href` que acepta un `MenuItem`, con sus diferencias prácticas:
+
+| Tipo de href           | Ejemplo                       | Cuándo usarlo                                                  |
+| ---------------------- | ----------------------------- | -------------------------------------------------------------- |
+| Ruta interna absoluta  | `/productos`                  | Sitios multipágina; reparto de tráfico desde el hero o cierre. |
+| Ancla a sección        | `#faq`                        | Landings de una sola página; índice persistente del contenido. |
+| URL externa            | `https://wa.me/...`           | Solo en el CTA; siempre con `external: true`.                  |
+| Ruta interna con hash  | `/productos#nuevos`           | Llevar a una sección concreta de otra página.                  |
+
+Los hrefs internos van **sin barra final**. La configuración del sitio usa `trailingSlash: 'never'`, así que `/productos/` produce 404 en desarrollo. Es un error fácil de cometer al copiar de otras plantillas; revisar `href` antes de hacer commit ahorra una vuelta de QA.
+
+## Patrones avanzados
+
+**Scroll-margin-top para header sticky.** Cuando el header se queda fijo arriba, las anclas saltan a la posición exacta del `id`, pero el header tapa los primeros pixeles del destino. La solución no es un offset en JavaScript: es CSS puro. La propiedad `scroll-margin-top` se aplica al elemento de destino (no al ancla), y le dice al navegador «al saltar hacia mí, deja este margen arriba». Combinada con `scroll-behavior: smooth`, da una transición que respeta el header y se ve nativa:
+
+```css
+/* Global: aplica a todos los destinos de ancla del sitio. */
+html { scroll-behavior: smooth; }
+
+/* :target es el elemento al que apunta el hash actual. */
+:target { scroll-margin-top: var(--header-height, 64px); }
+
+/* Si el usuario prefiere menos movimiento, salto instantáneo. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+```
+
+**Prefetch del destino más probable.** Astro tiene prefetch nativo. Si la franja tiene un botón que sabes que es el más clicado (por analytics o por intención del negocio), márcalo con `data-astro-prefetch` y el navegador descargará la página destino mientras el visitante lee el hero. Cuando hace clic, la transición es instantánea. Esto se hace dentro del propio componente o, sin tocarlo, envolviendo el `<SectionMenu>` con un script que añada el atributo al `<a>` del primer botón. La opción menos intrusiva es la primera variante: aceptar un prop opcional `prefetch?: boolean` en `MenuItem`.
+
+**`ariaLabel` por instancia, no global.** El componente acepta `ariaLabel` y por defecto es `"Secciones del sitio"`. Si la página usa la franja dos veces —una bajo el hero, otra al cierre—, los dos `<nav>` competirían por el mismo nombre accesible. Cámbialos: el de arriba se queda con el default, el de abajo recibe `ariaLabel="Sigue explorando"`. Los lectores de pantalla diferencian, y los enlaces internos navegables por teclado quedan separados como dos landmarks distintos.
+
+## Checklist de implementación
+
+- [ ] El `cta` se arma con `waUrl(WA_MESSAGES.cotizar)`, nunca con un `wa.me` tecleado.
+- [ ] Los `href` internos van sin barra final (`/productos`, no `/productos/`).
+- [ ] La franja tiene entre 4 y 6 botones; si supera 6, se rediseña la jerarquía del menú.
+- [ ] Cada `MenuItem` tiene `label` corto (1–2 palabras) y `sub` de 2–4 palabras.
+- [ ] Si la página usa el componente dos veces, cada `<nav>` recibe un `ariaLabel` distinto.
+- [ ] Para landings, hay un `:target { scroll-margin-top }` global que compensa el header sticky.
+- [ ] El último botón siempre es el CTA, en color de marca, con `external: true` si es WhatsApp.
+
+## Preguntas frecuentes
+
+### ¿Puedo poner dos CTAs al final de la franja?
+No con el componente actual. Acepta un solo `cta` opcional. Si necesitas dos acciones (por ejemplo, «Cotizar» y «Ver demo»), o las pones como dos items más en `items` (perdiendo el destacado) o extiendes el componente para aceptar `ctaSecundario` o un array. La primera opción es la pragmática; la segunda, la limpia.
+
+### ¿Funcionan las anclas si tengo header sticky?
+Sí, pero el salto deja el destino tapado por el header. La solución es `scroll-margin-top` en el elemento destino (o en `:target` de forma global), igualando la altura del header. Con eso, el ancla salta y deja al destino visible debajo del header. No necesitas JavaScript.
+
+### ¿Por qué `external: true` solo aplica al CTA?
+Porque los items son rutas internas del sitio y abrir pestañas nuevas para navegación interna rompe la expectativa del visitante (botón Atrás deja de funcionar, pierde contexto). El CTA es la excepción legítima: WhatsApp Web abre en otra app o pestaña, y el `target="_blank"` lo respeta sin perder la página de origen.
+
+### ¿Sirve este menú como reemplazo del header en móvil?
+No. La franja es un módulo de navegación complementario, no un sustituto del header. El header es el mapa global (siempre presente); la franja es un atajo a los destinos clave desde la página actual. Reemplazar uno por el otro confunde al visitante: el header se espera arriba, la franja se espera bajo el hero.
+
+### ¿Cuál es la diferencia con un breadcrumb o un footer?
+El breadcrumb dice **dónde estás**; la franja dice **a dónde puedes ir** (con un atajo a la conversión). El footer es el cierre informativo del sitio (legal, redes, columnas de enlaces); la franja de cierre es el último empujón a una acción concreta antes de que el visitante llegue al footer. Son tres piezas con trabajos distintos, y conviven sin solaparse.
+
+Si necesitas convertir el cierre en una acción real (no solo un repartidor de tráfico), el siguiente paso es la estrategia: jerarquía del CTA, copywriting de items y cómo medir si la franja convierte o solo decora. Eso lo cubre [Del menú de sección a la conversión](/blog/section-menu-conversion-landing).
+
+## Sigue leyendo
+
+- [Módulo Menú de sección en vivo](/modulos/section-menu)
+- [Del menú de sección a la conversión](/blog/section-menu-conversion-landing)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

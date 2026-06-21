@@ -1,0 +1,149 @@
+---
+title: "Breadcrumbs y SEO: BreadcrumbList JSON-LD en Astro"
+description: "Por qué tu sitio Astro necesita un BreadcrumbList JSON-LD bien construido, dónde emitirlo y los errores que provocan que Google ignore tu jerarquía."
+category: "guias"
+heroImage: "/images/articulos/breadcrumbs-seo-jsonld-astro.avif"
+pubDate: 2026-03-12
+author: "Ejemplos.mx"
+tags: ["astro", "breadcrumbs", "seo", "jsonld", "schema"]
+seoTitle: "Breadcrumbs SEO: JSON-LD en Astro"
+seoDescription: "BreadcrumbList JSON-LD en Astro: cuándo se ven en SERP, regla del único emisor, errores comunes y validación con Search Console."
+---
+
+El `BreadcrumbList` de schema.org es uno de los rich results que más cambia la apariencia de un sitio en Google: bajo el título del resultado aparece la jerarquía del sitio (`ejemplos.mx › servicios › diseño de logotipo`) en lugar de la URL cruda. Cuesta cincuenta líneas implementarlo, lo soporta cualquier sitio Astro, y aun así medio internet lo emite mal: doble bloque en el `<head>`, posiciones que arrancan en 0, URLs relativas en lugar de absolutas. Esta guía explica por qué Google ignora un `BreadcrumbList` malformado, dónde emitirlo en un proyecto Astro y cómo validarlo. Es para desarrolladores que ya tienen el componente visual y quieren cerrar el lado SEO sin disparar advertencias en Search Console.
+
+Si vienes de [Migas de pan en Astro paso a paso](/blog/migas-de-pan-astro-guia-paso-a-paso) ya tienes el componente listo; aquí enfocamos el lado SEO: cuándo y dónde emitir el JSON-LD, qué errores impiden que Google lo procese, y por qué la microdata visible no sustituye al `BreadcrumbList`.
+
+## Contexto
+
+Hay dos razones por las que el `BreadcrumbList` JSON-LD vale la pena, y solo una se discute en los blogs. La que se discute es el rich result: cuando Google procesa el schema sin advertencias, reemplaza la URL bajo el título por la jerarquía con separadores, lo que mejora el CTR de manera medible en catálogos profundos y blogs con secciones. La que no se discute, y que importa igual, es que el `BreadcrumbList` le da al rastreador una pista explícita sobre la posición jerárquica de la página: refuerza la URL, el `<title>` y los `<h1>`, y ayuda al sitemap interno que Google construye para tu dominio.
+
+El error de base es pensar que la microdata visible (los `itemtype`/`itemprop` que pintas en el HTML del componente) reemplaza al JSON-LD. No. Para `BreadcrumbList`, Google prioriza JSON-LD; la microdata se considera una señal secundaria. Si solo emites microdata, el rich result rara vez aparece. Si solo emites JSON-LD, funciona pero pierdes la segunda señal estructurada en el HTML. Lo correcto es las dos cosas, alimentadas por la misma fuente de datos.
+
+El segundo error, y este sí rompe en producción, es duplicar el `BreadcrumbList`. Ocurre cuando el componente Astro emite su propio `<script type="application/ld+json">` y el layout también. Google ve dos `BreadcrumbList` en la misma URL, no sabe cuál es el bueno, y suele ignorar los dos. La regla dura del proyecto (B3) lo previene de fábrica: el componente NO emite script; el JSON-LD lo arma `buildSchema()` en `lib/seo.ts`, una sola vez por página. Una fuente, un emisor.
+
+## Implementación paso a paso
+
+La fuente de datos es siempre la misma: la prop `breadcrumbs` que cada `PageLayout` recibe. Esa lista llega al componente visual (que pinta la barra con microdata) y a `buildSchema()` (que arma el JSON-LD). La función que transforma la lista al formato schema.org vive en `lib/seo.ts`:
+
+```ts
+// lib/seo.ts — BreadcrumbList centralizado, emitido UNA sola vez (regla B3).
+// El componente Breadcrumbs.astro NO emite su propio script para evitar
+// el doble BreadcrumbList (anti-patrón).
+export function breadcrumbSchema(items: { name: string; path: string }[]) {
+  return {
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((c, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,                                  // empieza en 1, NO en 0
+      name: c.name,
+      item: c.path ? new URL(c.path, SITE.url).toString() : undefined,
+    })),
+  };
+}
+
+// En buildSchema():
+if (data.breadcrumbs?.length) {
+  out.push({ '@context': CTX, ...breadcrumbSchema(data.breadcrumbs) });
+}
+```
+
+Hay tres decisiones críticas en esas pocas líneas. La primera es `position: i + 1`: schema.org exige que `position` empiece en 1, no en 0, y debe ser numérico (no string). El error de off-by-one se valida sin advertencias en algunos parsers pero Google sí lo penaliza. La segunda es `new URL(c.path, SITE.url).toString()`: el `item` debe ser URL absoluta. Una ruta relativa como `/servicios` se valida en el JSON pero Google la descarta. La tercera es `item: c.path ? ... : undefined`: el último eslabón (la página actual) suele ir sin `item`, porque es la página donde estás; Google lo acepta y entiende el contexto, y ahorra una URL repetida.
+
+El JSON resultante se ve así en el `<head>` de la página de servicio:
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Inicio",
+      "item": "https://ejemplos.mx/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Servicios",
+      "item": "https://ejemplos.mx/servicios"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Diseño de logotipo"
+    }
+  ]
+}
+```
+
+Tres detalles que pasan desapercibidos. Uno: el primer `ListItem` (Inicio) lo añade el helper de `PageLayout`, no la página; la página declara solo su rastro desde el primer nivel. Dos: la URL nunca lleva trailing slash final salvo en la home (regla del proyecto `trailingSlash: 'never'`); un sitio que mezcla `/servicios` y `/servicios/` en JSON-LD y en `<a href>` se penaliza solo. Tres: el último `ListItem` no tiene `item`; algunos validadores piden uno, pero Google lo acepta sin él y deja claro que es el destino actual.
+
+Para verificar que solo hay un `BreadcrumbList` por URL, en el navegador (DevTools › Elements › buscar `application/ld+json`) o desde terminal:
+
+```bash
+# Cuenta cuántos BreadcrumbList aparecen en una URL ya construida.
+curl -s https://ejemplos.mx/servicios/diseno-de-logotipo \
+  | grep -o '"@type":"BreadcrumbList"' \
+  | wc -l
+# Debe imprimir 1. Si imprime 2, tienes el bug del doble emisor.
+```
+
+## Tabla comparativa
+
+| Aspecto | Microdata visible (HTML) | JSON-LD (script en `<head>`) |
+|---|---|---|
+| Quién la emite | `Breadcrumbs.astro` (componente visual) | `buildSchema()` en `lib/seo.ts` (centralizado) |
+| Cuántas veces por página | Una (en el `<body>` debajo del header) | Una (en el `<head>`, regla B3) |
+| Prioridad para Google | Secundaria | Primaria para `BreadcrumbList` |
+| Visible para el usuario | Sí (es la barra de migas) | No (vive en `<head>`) |
+| Validable en Rich Results Test | Sí | Sí, con detalle mayor |
+| Bloquea el rich result si falla | No | Sí (advertencias = sin rastro en SERP) |
+| Necesita URLs absolutas | No (los `<a href>` son relativos) | Sí (`item` debe ser URL completa) |
+
+La conclusión práctica: si tu presupuesto de tiempo solo alcanza para una, emite el JSON-LD. Si alcanza para las dos —y debería, porque el componente ya pinta la microdata de gratis— mantén ambas alimentadas por la misma prop. Lo que nunca puedes hacer es duplicar el JSON-LD: un solo emisor, una sola vez.
+
+## Patrones avanzados
+
+**La regla del único emisor (B3) como contrato del proyecto.** En un equipo de tres personas el bug del doble `BreadcrumbList` aparece dos veces por año. Una compañera mete un componente nuevo que copia trozo del viejo y agrega su `<script>`. Otra integra un layout heredado de un proyecto pasado que también emite schema. La defensa no es la disciplina, es el contrato: `Breadcrumbs.astro` nunca emite `<script type="application/ld+json">` y el comentario en la cabecera del archivo lo dice explícito. Cuando alguien intenta agregar uno, el code review lo bloquea citando la regla. Lo mismo aplica a `Organization`, `WebSite`, `LocalBusiness`: cada tipo de schema tiene un emisor único, y `buildSchema()` es ese emisor para `BreadcrumbList`.
+
+**Cuándo NO emitir `BreadcrumbList`, aunque puedas.** La home no lo lleva: una jerarquía de un eslabón (solo Inicio) no aporta nada al rich result y Google la descarta. Las páginas de error (404, 500) tampoco: no representan una posición jerárquica real. Las páginas de utilidad (búsqueda, login) suelen omitirlo también. La regla práctica: si la página tiene al menos un ancestro intermedio (un `Inicio › Sección › Página`), emite; si no, omite. Esto se controla en `PageLayout`: si `breadcrumbs` está vacío o `undefined`, ni el componente ni `buildSchema()` se activan.
+
+**Validación recurrente, no solo al lanzar.** El [Test de resultados enriquecidos](https://search.google.com/test/rich-results) valida una URL a la vez; útil para spot-checks. La cobertura completa la da Search Console en `Mejoras › Migas de navegación`, donde aparecen las URLs con `BreadcrumbList` válido, con advertencias y con errores. Vale la pena entrar cada mes después de cualquier refactor del componente o de `buildSchema()`. Los errores típicos que detecta: `position` faltante en algún `ListItem`, `item` con URL relativa, `name` vacío. Si una URL aparece con dos `BreadcrumbList` válidos, Search Console no marca error explícito pero el rich result deja de salir; el `curl | grep -o | wc -l` de arriba lo detecta antes.
+
+## Checklist de implementación
+
+- [ ] Confirmar que `Breadcrumbs.astro` NO contiene `<script type="application/ld+json">` (búsqueda literal en el archivo)
+- [ ] Verificar que `buildSchema()` emite el `BreadcrumbList` solo cuando `data.breadcrumbs?.length > 0`
+- [ ] Probar que `position` arranca en 1 y es numérico (no string) en el JSON de salida
+- [ ] Confirmar que `item` es URL absoluta (`https://dominio.com/...`) y no relativa
+- [ ] Validar al menos tres URLs distintas (servicio, producto, artículo de blog) en el Test de resultados enriquecidos sin advertencias
+- [ ] Ejecutar `curl ... | grep -o '"@type":"BreadcrumbList"' | wc -l` y confirmar que devuelve 1 por URL
+- [ ] Revisar Search Console › Mejoras › Migas de navegación una semana después del despliegue
+- [ ] Documentar la regla B3 en el README del componente para que el próximo desarrollador no rompa el contrato
+
+## Preguntas frecuentes
+
+### ¿Por qué Google ignora mi `BreadcrumbList` aunque se valida sin errores?
+La causa más común es el doble emisor: dos `BreadcrumbList` en la misma URL. Los validadores los aceptan por separado, pero Google ve la página completa y descarta ambos porque no sabe cuál usar. Cuenta los bloques con `curl | grep | wc -l`; debe dar 1.
+
+### ¿Tengo que emitir `item` para el último `ListItem` (la página actual)?
+No. Google acepta el último `ListItem` sin `item`; entiende que es la página donde estás. Algunos validadores muestran un warning informativo, pero el rich result se procesa igual. Omitirlo deja el JSON más limpio y evita una URL duplicada.
+
+### ¿Funciona el `BreadcrumbList` en sitios pequeños de tres o cuatro páginas?
+Funciona, pero el rich result rara vez aparece: Google prioriza el rastro cuando la jerarquía aporta contexto (catálogo, blog con categorías, documentación). En un sitio plano de cuatro páginas, emitirlo no daña, pero el SERP probablemente seguirá mostrando la URL.
+
+### ¿Puedo usar `name` con emojis o caracteres especiales?
+Sí, pero conviene no abusar. Schema.org acepta cualquier string Unicode en `name`, y Google lo procesa, pero en el rich result los emojis se renderizan distinto en cada navegador y dispositivo. Para `BreadcrumbList`, usa texto plano que coincida con el `<title>` y el menú de navegación.
+
+### ¿Y si mi sitio es un SPA o tiene rutas dinámicas?
+Astro genera HTML estático por defecto, así que el JSON-LD se emite en build-time y Google lo ve igual que cualquier URL estática. Si trabajas con SSR o islands hidratados, asegúrate de que el `<script type="application/ld+json">` esté en el HTML inicial del servidor, no inyectado por cliente: Googlebot no siempre ejecuta JavaScript a tiempo para procesar schema añadido post-load.
+
+El `BreadcrumbList` JSON-LD no es magia, es disciplina: una fuente de datos, un emisor único, validación recurrente. Cuando esos tres pilares aguantan, el rich result aparece en SERP, el CTR mejora en catálogos profundos y Search Console se mantiene en verde sin sorpresas. La trampa nunca está en el código del schema —cabe en quince líneas— sino en el contrato del proyecto: que el componente visual jamás duplique lo que el layout ya emite.
+
+## Sigue leyendo
+
+- [Módulo Migas de pan en vivo](/modulos/breadcrumbs)
+- [Migas de pan en Astro: guía paso a paso](/blog/migas-de-pan-astro-guia-paso-a-paso)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

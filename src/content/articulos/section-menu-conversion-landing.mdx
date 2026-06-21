@@ -1,0 +1,151 @@
+---
+title: "Del menú de sección a la conversión"
+description: "Patrones de cierre para artículos y landings con SectionMenu: cómo convertir el final de la página en el inicio de una acción del visitante."
+category: "guias"
+heroImage: "/images/articulos/section-menu-conversion-landing.avif"
+pubDate: 2026-03-18
+author: "Ejemplos.mx"
+tags: ["astro", "section-menu", "conversion", "landing", "cta"]
+seoTitle: "Section menu: del final a la conversión"
+seoDescription: "Cierre de página con SectionMenu en Astro: del scroll que se va al click intencional. Patrones, jerarquía y métricas que importan."
+---
+
+La mayoría de las páginas pierden al visitante en el último 20% del scroll. No porque el contenido falle, sino porque el cierre suele ser silencioso: termina el cuerpo, aparece el footer y el visitante cierra la pestaña. Esta guía es la estrategia para que ese cierre haga trabajo: cómo usar el `SectionMenu` como pieza de conversión, no como decoración; cómo decidir entre un CTA único o múltiple; qué copywriting funciona en `label` y `sub`; y cómo medir si la franja convierte de verdad con `data-` attributes. No cubre la mecánica del componente —para eso, empieza por [Menú de sección en Astro: anclas y cierre](/blog/menu-de-seccion-astro-anclas-cierre)—; cubre las decisiones que la rodean.
+
+## Contexto
+
+La regla canónica del proyecto —«el hero presenta, la franja convierte»— se aplica literal al `SectionMenu` que vive bajo el hero. Pero hay una segunda lectura, menos comentada y más útil: la misma franja, puesta al final de la página, convierte el cierre en una segunda oportunidad de conversión. Es la lógica del «último empujón»: cuando el visitante terminó de leer y está a un scroll de irse, la franja le ofrece una acción concreta antes que el footer le ofrezca solo información.
+
+El cierre tradicional es un párrafo de despedida más un footer. El cierre con `SectionMenu` es un repartidor intencional: tres o cuatro destinos relevantes para quien terminó esta página (no para quien acaba de entrar al sitio) y un CTA destacado al final. Los destinos del cierre **no son los mismos que los del hero**. Arriba apuntas a las secciones grandes (Productos, Servicios, Cobertura, Blog) porque el visitante todavía explora; abajo apuntas a destinos de fricción menor (Casos, Fichas, Contacto, Inicio) porque el visitante ya decidió si te interesa o no.
+
+Esta diferencia importa para el negocio. Una franja de hero bien armada sube el reparto a secciones internas; una franja de cierre bien armada sube el porcentaje de sesiones que terminan en una acción —un clic al CTA, un mensaje, una segunda página vista—. Son métricas distintas y se miden distinto. La parte que no se mide rara vez se mejora; por eso esta guía termina con cómo instrumentar la franja con atributos `data-` para distinguir cada origen sin meter JavaScript pesado.
+
+## Implementación paso a paso
+
+El patrón base del cierre cambia los `items`, el `cta` y el `ariaLabel` respecto al de hero. La intención es repartir hacia páginas que el header ya enseñó —no repetirlas, sino subirles el peso al final—:
+
+```astro
+---
+import SectionMenu from '@components/SectionMenu.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+
+const cierre = [
+  { label: 'Servicios',  href: '/servicios', sub: 'Lo que ofrecemos' },
+  { label: 'Casos',      href: '/casos',     sub: 'Lo que hemos hecho' },
+  { label: 'Contacto',   href: '/contacto',  sub: 'Cómo escribirnos' },
+]
+
+const cta = {
+  label: 'Escríbenos por WhatsApp',
+  href: waUrl(WA_MESSAGES.contacto),
+  sub: 'Respondemos hoy',
+  external: true,
+}
+---
+
+<SectionMenu items={cierre} cta={cta} ariaLabel="Sigue explorando" />
+```
+
+Tres detalles intencionales en ese ejemplo. Primero: solo tres `items`, no cuatro. Al cierre, menos opciones convierte mejor —el visitante ya leyó, no quiere un nuevo menú—. Segundo: `WA_MESSAGES.contacto`, no `WA_MESSAGES.cotizar`. El mensaje precargado refleja la intención de quien escribe desde el final de un artículo, no desde el primer pantallazo. Tercero: el copy del `sub` cambia de «Lo que ofreces» (frase de hero) a «Lo que ofrecemos» (frase de cierre, voz de marca, más cercana).
+
+Para instrumentar la franja y medir qué `item` recibe los clics, se puede envolver el componente y añadir atributos `data-` con un pequeño script. La opción más limpia, sin tocar el componente, es delegar el evento al `<nav>` desde un script de página:
+
+```astro
+<SectionMenu
+  items={cierre}
+  cta={cta}
+  ariaLabel="Sigue explorando"
+/>
+
+<script>
+  // Instrumentación: delega click en el <nav> del cierre y manda un evento
+  // ligero. Sin librerías; cualquier endpoint o gtag/plausible funciona.
+  const nav = document.querySelector('nav[aria-label="Sigue explorando"]');
+  nav?.addEventListener('click', (e) => {
+    const link = (e.target as HTMLElement).closest('a');
+    if (!link) return;
+
+    const label = link.querySelector('.secbtn__label')?.textContent?.trim() ?? '';
+    const isCta = link.classList.contains('secbtn--cta');
+
+    // Ejemplo con la global de tu herramienta de analytics:
+    (window as any).plausible?.('SectionMenu click', {
+      props: { ubicacion: 'cierre', label, tipo: isCta ? 'cta' : 'item' },
+    });
+  });
+</script>
+```
+
+El mismo enfoque sirve para la franja del hero —cambiando `aria-label`—. Así se obtiene una métrica por ubicación (hero vs cierre) y por tipo (item vs cta) sin renombrar nada en el componente. La diferencia entre ambas franjas, medida durante un mes, suele ser reveladora: muchos sitios descubren que el cierre tiene más CTR al CTA que el hero, justamente porque el visitante de cierre ya está convencido.
+
+Para sitios sin analytics o con CSP estricta, los atributos `data-` en HTML son la alternativa zero-JS. Se añaden envolviendo cada item antes de pasarlos al componente, en una versión extendida del tipo:
+
+```ts
+// Extensión local del MenuItem para añadir tracking sin tocar el componente.
+// Los data-* viajan al <a> si el componente los acepta como rest props,
+// o se inyectan vía script delegado como en el ejemplo anterior.
+type TrackedItem = MenuItem & { 'data-track'?: string };
+
+const cierre: TrackedItem[] = [
+  { label: 'Servicios', href: '/servicios', sub: 'Lo que ofrecemos', 'data-track': 'cierre:servicios' },
+  { label: 'Casos',     href: '/casos',     sub: 'Lo que hemos hecho', 'data-track': 'cierre:casos' },
+  { label: 'Contacto',  href: '/contacto',  sub: 'Cómo escribirnos',   'data-track': 'cierre:contacto' },
+];
+```
+
+## Tabla comparativa
+
+Diferencias prácticas entre la franja de hero y la franja de cierre, con las decisiones que cada una pide:
+
+| Decisión        | Franja de hero                        | Franja de cierre                            |
+| --------------- | ------------------------------------- | ------------------------------------------- |
+| Cantidad de items | 4–5 (panorama del sitio)            | 2–3 (destinos relevantes para quien terminó) |
+| Origen de items | `NAV` (misma fuente que el header)    | Lista a mano según la página de origen     |
+| CTA principal   | `cotizar` (intención de explorar)     | `contacto` (intención de cerrar)            |
+| Tono del `sub`  | Descriptivo («Catálogo del sitio»)    | Cercano («Lo que hemos hecho»)              |
+| Métrica clave   | CTR a secciones internas              | CTR al CTA + segunda página por sesión      |
+| `ariaLabel`     | «Secciones del sitio» (default)       | «Sigue explorando» (evita colisión)         |
+
+## Patrones avanzados
+
+**CTA único vs CTA múltiple.** La regla canónica del proyecto pide un solo CTA al final de la franja, en color de marca. Funciona porque la decisión está pre-resuelta: hay una sola acción primaria. Pero hay landings donde tiene sentido ofrecer dos —típicamente «Probar gratis» (alta fricción) y «Ver demo» (baja fricción)—. El componente actual no acepta dos CTAs; la salida pragmática es promover el secundario como un `item` más del array (sin el color de marca, con un `sub` que aclare la naturaleza no comercial). La salida limpia es extender el componente con `ctaSecundario?: MenuCta` y un estilo `secbtn--cta-ghost` (transparente, borde, mismo color que el principal). La extensión es de 10 líneas; la decisión es de producto.
+
+**Copywriting de `label` y `sub`.** El `label` es la promesa (1–2 palabras, verbo implícito); el `sub` es el contexto (2–4 palabras, voz de marca). La trampa común es repetir el `label` en el `sub` («Servicios · Servicios disponibles»). Lo que funciona es el patrón «sustantivo · qué encuentra»: «Productos · Catálogo del sitio», «Servicios · Lo que ofrecemos», «Casos · Lo que hemos hecho». En el CTA, el `label` es la acción («Cotizar por WhatsApp») y el `sub` reduce fricción («Respuesta inmediata», «Respondemos hoy»). Si el `sub` dice algo que el visitante ya asume («Haz clic aquí»), sobra.
+
+**Medir, no estimar.** La franja de cierre suele tener un CTR al CTA entre 1.5x y 3x mayor que la del hero, pero ese rango varía por sector. Sin instrumentación, la decisión de mantener o quitar la franja se basa en intuición —y la intuición rara vez gana contra los datos—. Lo mínimo viable es un evento por clic con tres propiedades: ubicación (`hero`/`cierre`), tipo (`item`/`cta`) y label. Con eso, en una semana, se sabe qué item del cierre se gana el espacio y cuál solo decora. Los que no convierten se quitan o se reemplazan; los que convierten se priorizan visualmente (orden, posición antes del CTA).
+
+## Checklist de implementación
+
+- [ ] La franja de cierre tiene 2–3 items, no 4 (menos opciones, más conversión al final).
+- [ ] El CTA del cierre usa `WA_MESSAGES.contacto`, no `cotizar` (la intención es distinta).
+- [ ] `ariaLabel` es distinto al de la franja de hero («Sigue explorando» vs default).
+- [ ] El `sub` de cada item habla en voz de marca («Lo que ofrecemos», no «Lo que ofreces»).
+- [ ] Hay un único CTA primario; si necesitas dos acciones, decides si extiendes el componente o promueves la secundaria a item.
+- [ ] La franja está instrumentada (eventos de analytics o `data-track`) para medir CTR por ubicación.
+- [ ] Después de una semana de datos, los items que no convierten se reemplazan o se quitan.
+- [ ] El orden de los items pone el destino con mayor CTR justo antes del CTA.
+
+## Preguntas frecuentes
+
+### ¿Cuántas franjas debería tener una página?
+Como máximo dos: una bajo el hero y una al cierre. Tres compite con el header y vuelve el sitio repetitivo. En artículos de blog y fichas internas, suele bastar con la del cierre —el hero del artículo no necesita una franja de navegación, necesita seguir leyendo—.
+
+### ¿El CTA del cierre debe ser el mismo del hero?
+No necesariamente. La franja de hero suele cerrar con `cotizar` (intención exploratoria); la franja de cierre cierra con `contacto` (intención resolutiva). Si tu negocio tiene una sola acción posible (por ejemplo, agendar una llamada), entonces sí: ambos CTAs apuntan al mismo destino, pero el mensaje precargado puede variar.
+
+### ¿Cómo decido qué destinos van en el cierre?
+Tres preguntas: ¿qué páginas refuerzan la confianza de quien terminó de leer? (Casos, reseñas). ¿Qué páginas reducen la fricción del siguiente paso? (Contacto, precios). ¿Qué páginas mantienen al visitante en el sitio cuando aún no está listo para escribir? (Blog, FAQ). Tres destinos máximo. Si dudás entre cuatro candidatos, mide cuál se gana el cuarto puesto con datos.
+
+### ¿Vale la pena el sticky del cierre?
+Solo en landings muy largas (3000+ palabras o varias secciones con scroll). En artículos típicos, el sticky del cierre estorba: bloquea contenido y compite con el footer. En landings de venta, donde el scroll es deliberado y la decisión se forma en el camino, el sticky bajo el header puede subir el CTR del CTA notablemente —pero ahí ya no es franja de cierre, es franja de hero pegada—.
+
+### ¿Y si mi sitio no tiene WhatsApp?
+El CTA acepta cualquier URL. Cambia `waUrl(...)` por la ruta de tu formulario (`/contacto#form`), tu calendario (Calendly, Cal.com) o el número de teléfono (`tel:+52...`). El patrón sigue siendo el mismo: un solo botón al final, en color de marca, con `external: true` solo si abre fuera del sitio.
+
+El cierre que convierte no es decoración: es la última pieza de copywriting de la página, con el peso visual de un botón grande y la métrica de un CTA. Tratarlo así —medirlo, iterarlo, recortarlo cuando no funciona— es lo que separa un sitio que reparte tráfico de uno que cierra acciones.
+
+## Sigue leyendo
+
+- [Módulo Menú de sección en vivo](/modulos/section-menu)
+- [Menú de sección en Astro: anclas y cierre](/blog/menu-de-seccion-astro-anclas-cierre)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

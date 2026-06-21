@@ -1,0 +1,234 @@
+---
+title: "Grid responsive de categorías en Astro"
+description: "Del mobile-first al desktop con Astro y tokens.css: cómo armar un grid de CategoryCard que sobrevive a 380px, 768px y 1024px sin reflujos."
+category: "guias"
+heroImage: "/images/articulos/grid-categorias-responsive-astro-tokens.avif"
+pubDate: 2026-03-30
+author: "Ejemplos.mx"
+tags: ["astro", "category-card", "responsive", "css-grid", "tokens"]
+seoTitle: "Grid de categorías responsive con Astro"
+seoDescription: "Grid de CategoryCard responsive con tokens.css: breakpoints reales 1024/768/640/480/380, container fluido y prevención de CLS."
+---
+
+Un grid de tarjetas en escritorio se ve bien casi sin esfuerzo: cuatro columnas,
+gap razonable, hover decoroso. El problema empieza al rotar el iPhone SE: la
+imagen brinca al cargar, los chips se desbordan, el CTA se sale del viewport.
+Este artículo arma un grid de `CategoryCard` que sobrevive a los cinco
+breakpoints reales del proyecto —1024, 768, 640, 480 y 380 px— sin caer en
+trampas comunes como el `min-height` inventado o el `width: 100vw` que ignora
+los safe-area iOS.
+
+El enfoque es mobile-first puro y se apoya en dos pilares: el grid lo gobierna
+el padre, no la tarjeta; y todos los valores que parecen mágicos (gap,
+container, alturas) vienen de variables CSS declaradas en `src/styles/tokens.css`.
+Cambiar el espaciado de todo el sitio se hace en un archivo.
+
+## Contexto
+
+`CategoryCard.astro` es deliberadamente agnóstico al grid. Su HTML raíz es un
+`<article>` con `display: flex; flex-direction: column; height: 100%` para que
+el CTA quede anclado al fondo —ese es el truco que mantiene todas las tarjetas
+de una fila alineadas al pie aunque el blurb difiera en longitud—. El resto es
+responsabilidad del contenedor padre, que decide cuántas columnas hay a cada
+breakpoint.
+
+Hay cinco breakpoints en el proyecto, no tres. La trampa del «mobile, tablet,
+desktop» olvida los teléfonos pequeños (380 px, iPhone SE) y los pequeños/
+medianos (480 px). El sitio se diseña empezando por 380 y crece desde ahí. La
+otra regla dura: el `--container-max` pasa de 90 % a 100 % en pantallas ≤768 px
+y el gutter se duplica con `--container-px` para evitar que las tarjetas se
+peguen al borde del cristal.
+
+La prevención de CLS no es opcional. Cada `<img>` declara `width="640"
+height="400"` (ratio 16:10) para que el navegador reserve el hueco antes de
+descargar el archivo. Sin esos atributos, el grid colapsa al pintar la imagen y
+arruina el LCP medido por PageSpeed. El componente ya los lleva; tu trabajo es
+no romperlos al envolverlo en un padre con padding incoherente.
+
+## Implementación paso a paso
+
+El grid mobile-first canónico para el catálogo. Tres breakpoints suficientes
+para vitrinas largas (≥8 elementos), con gap y container desde tokens:
+
+```css
+/* Catálogo: 1 → 2 → 4 columnas */
+.showcase {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-5);
+}
+
+@media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .showcase { grid-template-columns: repeat(4, 1fr); } }
+```
+
+Para vitrinas más cortas (3 o 6 elementos: servicios, cobertura), la rejilla de
+4 deja una fila incompleta que se ve descuidada. Bajar el último breakpoint a 3
+columnas mantiene el ritmo cuadrado:
+
+```css
+/* Vitrinas cortas: 1 → 2 → 3 columnas */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-5);
+}
+
+@media (min-width: 640px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+```
+
+El frontmatter de cada item en una colección lleva la imagen con su ruta
+absoluta. El schema Zod fuerza el formato `/images/...` y rechaza cualquier
+otro:
+
+```yaml
+---
+title: "Cascos de seguridad industrial"
+description: "Cascos homologados para industria pesada, ligeros y con barboquejo ajustable. Stock para entrega 24 h en CDMX."
+category: "equipos"
+image: "/images/productos/cascos-seguridad-industrial.avif"
+order: 1
+---
+```
+
+El componente recibe esa imagen junto con `index`, que decide el modo de carga.
+Las cuatro primeras tarjetas del grid reciben `i < 4` y por lo tanto
+`loading="eager"`; el resto cae en `loading="lazy"`:
+
+```astro
+---
+import { getCollection } from 'astro:content'
+import CategoryCard from '@components/CategoryCard.astro'
+
+const productos = (await getCollection('productos'))
+  .filter((p) => !p.data.draft)
+  .sort((a, b) => a.data.order - b.data.order)
+---
+
+<section class="container">
+  <div class="showcase">
+    {productos.map((p, i) => (
+      <CategoryCard
+        label={p.data.title}
+        href={`/productos/${p.id}`}
+        image={p.data.image}
+        imageAlt={p.data.title}
+        blurb={p.data.description}
+        ctaLabel="Ver catálogo"
+        index={i}
+      />
+    ))}
+  </div>
+</section>
+
+<style>
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
+  @media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .showcase { grid-template-columns: repeat(4, 1fr); } }
+</style>
+```
+
+## Tabla comparativa
+
+| Breakpoint | Ancho objetivo | Container | Columnas (catálogo) | Decisión clave |
+|---|---|---|---|---|
+| 380 px | iPhone SE, Android chico | 100 %, gutter doble | 1 | Validar que el CTA no se corte |
+| 480 px | Phablet básico | 100 %, gutter doble | 1 | Sigue stack vertical; aún no entra 2.ª col |
+| 640 px | Tablet vertical | 100 %, gutter normal | 2 | Primera transición a multi-columna |
+| 768 px | Tablet horizontal / laptop chica | 90 %, gutter normal | 2 | Container cambia de 100 % a 90 % |
+| 1024 px | Desktop | 90 %, gutter normal | 4 | Último salto; vitrina al máximo |
+
+## Patrones avanzados
+
+**Breakpoints reales del proyecto.** Los cinco breakpoints —380, 480, 640, 768,
+1024— no son arbitrarios. 380 cubre iPhone SE y Android chico (el peor caso
+real del público mexicano industrial); 480 cubre phablets; 640 abre la
+transición a 2 columnas; 768 cambia el container de 100 % a 90 % porque ahí ya
+hay tablet horizontal con espacio para márgenes; 1024 abre las 4 columnas del
+catálogo. Saltarse cualquiera de los dos primeros se nota cuando un cliente
+manda un screenshot de un dispositivo «raro» que en realidad es el suyo.
+
+**`--container-px` fluido para evitar bordes pegados.** El error clásico es
+declarar `padding-inline: 16px` fijo. En 1024 px se ve elegante; en 380 px las
+tarjetas tocan los bordes del cristal. El token `--container-px` se redefine
+por breakpoint: más generoso en móvil (donde el dedo necesita zona de toque) y
+estable en desktop. La regla de oro: en pantallas ≤768, el container ocupa el
+100 % y el padding interno hace el trabajo del margen.
+
+**`aspect-ratio` para reservar el hueco de la imagen.** El componente declara
+`aspect-ratio: 16 / 10` en `.ccard__media` y `width="640" height="400"` en el
+`<img>`. Eso significa que el navegador conoce las proporciones antes de
+descargar el archivo y reserva el espacio exacto, evitando el reflujo que
+caracteriza a los sitios mal optimizados. PageSpeed lo mide como CLS; el
+visitante lo percibe como «este sitio se siente sólido».
+
+**Lazy loading inteligente con `index`.** El componente decide entre `eager` y
+`lazy` con `const eager = index < 4`. La regla del padre es pasar `index={i}`
+del map, no inventarlo: las cuatro primeras tarjetas son el LCP del fold; las
+demás esperan al scroll. Pasar `index={0}` a todas mata el LCP; pasar
+`index={99}` a las primeras hace que se vea una vitrina en blanco mientras
+cargan.
+
+**Prevención de CLS al cambiar de columnas.** Cada salto de columnas modifica
+el ancho disponible de cada tarjeta. Si la imagen no respeta `aspect-ratio`,
+ese cambio reflowa todo el grid hacia abajo —los textos saltan, los chips
+brincan—. La combinación `width + height` intrínsecos + `aspect-ratio` en el
+contenedor garantiza que el grid solo se rearme horizontalmente, sin
+desplazamientos verticales que distraigan al ojo.
+
+## Checklist
+
+- [ ] El grid padre arranca en 1 columna (`grid-template-columns: 1fr`) sin condiciones.
+- [ ] Los breakpoints suben con `min-width` (mobile-first), nunca con `max-width`.
+- [ ] `gap` usa un token (`var(--sp-5)`), no un valor en px duro.
+- [ ] El `.container` aplica `max-width: var(--container-max)` y `padding-inline: var(--container-px)`.
+- [ ] Las cuatro primeras tarjetas reciben `index={i}` con `i < 4` para LCP.
+- [ ] Cada `<img>` lleva `width` y `height` intrínsecos (el componente ya lo hace; no lo envuelvas en un wrapper que los borre).
+- [ ] La imagen es AVIF optimizado a 1280 px, no JPG sin compresión.
+- [ ] Probaste en 380 px reales o en DevTools con el viewport exacto (no en una ventana de Chrome de 1200 px arrastrada hasta 380).
+
+## Preguntas frecuentes
+
+**¿Por qué mobile-first y no desktop-first?** Porque los `min-width` se acumulan
+en una sola dirección (el caso base es el teléfono) y no necesitas anular
+reglas. Con `max-width` cada breakpoint pelea contra el anterior y termina
+plagado de `!important`. El componente y los tokens están escritos para que el
+caso base —móvil— sea el más simple, y el desktop crezca desde ahí.
+
+**¿Puedo poner 5 columnas en pantallas grandes?** Sí, agregando un breakpoint
+nuevo (por ejemplo `@media (min-width: 1440px)`), pero antes piensa si las
+tarjetas siguen viéndose grandes o si pierden masa visual. La rejilla 1→2→4 da
+360 px de ancho por tarjeta en 1440; pasar a 5 las baja a 280 y la foto pierde
+fuerza. Mejor mantener 4 y subir el `max-width` del container si quieres
+aprovechar el espacio.
+
+**¿Cómo evito que la última fila quede con una sola tarjeta huérfana?**
+Eligiendo el grid según el número de elementos: 1→2→4 para 4, 8, 12…; 1→2→3
+para 3, 6, 9, 12. Si la cantidad es variable (una colección que crece), 1→2→3
+es más tolerante porque tolera múltiplos de 3 y 6, ambos comunes en blogs.
+
+**¿Necesito un wrapper extra para el container?** No. El `<section>` lleva la
+clase `.container` y dentro va directamente el `.showcase`. Anidar
+`<div class="wrapper"><div class="container">…</div></div>` agrega DOM inútil y
+suele meter padding duplicado que rompe el cálculo de columnas en breakpoints
+intermedios. La regla: un solo nivel de container por sección.
+
+**¿Por qué la imagen pesa tanto cuando uso JPG?** Porque AVIF no es opcional.
+La diferencia entre un JPG a 80 kB y un AVIF a 25 kB en una vitrina de 12
+tarjetas son 660 kB ahorrados —diez segundos en una conexión 3G real—. La
+receta del proyecto es ImageMagick a 1280 px de ancho y calidad 50; el grano
+es invisible en tarjetas de 360 px de ancho final.
+
+Un grid responsive no es magia: son cinco breakpoints elegidos a propósito, un
+container fluido que sabe cuándo soltar el 90 % y volverse 100 %, y una
+imagen que declara su tamaño antes de cargar. Con eso y el componente
+`CategoryCard` agnóstico al grid, una vitrina se ve igual de sólida en un SE
+viejo que en un MacBook Pro 16.
+
+## Sigue leyendo
+
+- [Módulo Category card en vivo](/modulos/category-card)
+- [Category card: anatomía y data-driven en Astro](/blog/category-card-anatomia-data-driven-astro)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)
