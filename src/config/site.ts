@@ -246,8 +246,8 @@ export const MODULOS: readonly Modulo[] = [
   { slug: 'service-card',        label: 'Tarjeta de servicio',     href: '/modulos/service-card',        desc: 'La ficha breve del catálogo de servicios: ícono o foto + CTA dual (ficha o WhatsApp).', estado: 'listo' },
   { slug: 'review',              label: 'Reseñas',                 href: '/modulos/review',              desc: 'Prueba social: tarjetas con opiniones reales de clientes.', estado: 'listo' },
   { slug: 'faq',                 label: 'Preguntas frecuentes',    href: '/modulos/faq',                 desc: 'El acordeón de dudas comunes, con esquema FAQ para SEO.', estado: 'listo' },
-  { slug: 'cta-banner',          label: 'CTA banner',              href: '/modulos/cta-banner',          desc: 'La franja de llamada a la acción que cierra cada página.', estado: 'proximo' },
-  { slug: 'formulario-contacto', label: 'Formulario de contacto',  href: '/modulos/formulario-contacto', desc: 'El formulario que convierte a WhatsApp sin fricción.', estado: 'proximo' },
+  { slug: 'cta-banner',          label: 'CTA banner',              href: '/modulos/cta-banner',          desc: 'La franja de llamada a la acción que cierra cada página.', estado: 'listo' },
+  { slug: 'contact-form',        label: 'Formulario de contacto',  href: '/modulos/contact-form',        desc: 'El formulario que convierte a WhatsApp sin fricción.', estado: 'listo' },
   { slug: 'footer',              label: 'Footer',                  href: '/modulos/footer',              desc: 'El pie del sitio: cierre, enlaces, legales y contacto.', estado: 'listo' },
   { slug: 'whatsapp-flotante',   label: 'WhatsApp flotante',       href: '/modulos/whatsapp-flotante',   desc: 'El botón de WhatsApp siempre visible, fijo en una esquina.', estado: 'proximo' },
 ];

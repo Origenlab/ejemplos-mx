@@ -20,7 +20,7 @@ La serie vive en una jerarquía de tres niveles. Es la misma lógica de profundi
 | **L2 — Módulos** | `/modulos` | `src/pages/modulos/index.astro` | El índice de la serie: explica qué es un módulo y lista todos (roadmap). | Inicio › Módulos |
 | **L3 — Módulo** | `/modulos/<slug>` | `src/pages/modulos/<slug>.astro` | La página de detalle de UNA pieza, a fondo. | Inicio › Módulos › <Módulo> |
 
-A la fecha (2026-06-20) hay **trece** L3 publicados —`topbar`, `header`, `hero`, `breadcrumbs`, `section-menu`, `section-heading`, `category-card`, `category-detail`, `product-card`, `service-card`, `faq`, `review`, `footer`— con el mismo molde de 10 secciones. El L2 y el dropdown «Módulos» del Header se alimentan del array **`MODULOS`** en `src/config/site.ts` (SSoT): los de `estado: 'listo'` enlazan; los `'proximo'` se muestran como roadmap, sin enlace.
+A la fecha (2026-06-20) la serie está **completa con quince L3 publicados** —`topbar`, `header`, `breadcrumbs`, `hero`, `section-menu`, `section-heading`, `category-card`, `category-detail`, `product-card`, `service-card`, `faq`, `review`, `footer`, `contact-form`, `cta-banner`— con el mismo molde de 10 secciones; queda solo `whatsapp-flotante` como `proximo` en `MODULOS`. El L2 y el dropdown «Módulos» del Header se alimentan del array **`MODULOS`** en `src/config/site.ts` (SSoT): los de `estado: 'listo'` enlazan; los `'proximo'` se muestran como roadmap, sin enlace.
 
 **Convención de slug (regla dura)** — los slugs viven en **inglés y singular** (`section-menu`, `section-heading`, `category-card`, `category-detail`), aunque el `label` visible al usuario sea en español (`Menú de secciones`, `Encabezado de sección`, `Tarjeta de categoría`, `Categoría a fondo`). Slug = clave técnica + ruta; label = etiqueta humana en menús, breadcrumbs y headings. Nunca se mezclan.
 
@@ -108,6 +108,7 @@ Hay módulos que pueden acompañar JSON-LD propio (FAQ, reseñas, productos, ser
 | `emitReviews(reviews)` (interno) | Gateado por `SITE.allowSelfReviews` | Mismo shape que `reviewSchema()` | Usado dentro de `productSchema`/`serviceSchema`. Devuelve `{}` si el gate está apagado o si no hay reseñas válidas. |
 | `organizationSchema()` (alias de `orgSchema()`) | Puro | `{ '@type': 'Organization', '@id': '...', name, url, logo, contactPoint, sameAs? }` | Lo invoca `buildSchema` SIEMPRE (en todo `pageType`) como parte del `@graph` base. El componente `Footer.astro` **NO** lo emite. Renombrado a `organizationSchema` por coherencia con `localBusinessSchema` / `faqSchema` / `reviewSchema`; el nombre antiguo `orgSchema` sigue funcionando. |
 | `localBusinessSchema({ areaServed? })` | Puro | `{ '@type': 'LocalBusiness'|..., '@id': '...', name, address, geo, openingHours, ... }` | Lo invoca `buildSchema` SOLO si `SITE.business` está definido. Lleva el mismo NAP que `organizationSchema` (consistencia, ver §6.2). |
+| `contactPointSchema({ telephone?, email?, contactType, areaServed?, availableLanguage? })` | Puro | `{ '@type': 'ContactPoint', contactType, telephone?, email?, areaServed?, availableLanguage? }` | Disponible para subgrafos standalone donde `organizationSchema` NO se emite. NO se enchufa por default (el `contactPoint` del `Organization` base ya cubre el caso común). Regla B3 — no añadirlo si la página ya emite `Organization` vía `buildSchema`. |
 
 Ejemplo canónico de uso de `reviewSchema()` (componer un nodo a mano):
 
@@ -205,40 +206,120 @@ La SSoT canónica vive en `src/config/site.ts`, en tres bloques relacionados:
 
 **Decisión documentada (footer-pro-redesign):** `SITE.organization.sameAs = []` (vacío a propósito), aunque `SOCIAL` tenga 5 perfiles DEMO. La política: el footer puede MOSTRAR perfiles visualmente, pero el schema solo declara perfiles VERIFICADOS (con dueño confirmado). Para activar `sameAs`, copiar manualmente las URLs verificadas de `SOCIAL` al array.
 
+### 6.3 Accesibilidad de formularios (checklist canónico)
+
+Los formularios son el módulo con MÁS superficie de accesibilidad rota del sitio: un `<label>` mal asociado, un `aria-invalid` ausente, un input a 14 px que dispara el zoom de iOS — todo eso degrada la conversión y rompe WCAG 2.2. Este checklist es el contrato mínimo para cualquier formulario nuevo (consumido por `ContactForm.astro` y aplicable a `/contacto`, futuro newsletter del footer, formularios de servicio).
+
+| # | Regla | Verificación | Referencia |
+|---|---|---|---|
+| 1 | **Label asociado por `for`/`id`** — cada `<input>`, `<select>`, `<textarea>` lleva un `<label for="<id>">` con el `id` exacto del control. Nada de `placeholder` como label. | `for === id` en cada par; `<label>` visible (no `display:none`). | WCAG 2.2 SC 1.3.1 · 3.3.2 |
+| 2 | **Errores con `aria-describedby` + `aria-invalid`** — al fallar la validación, el campo lleva `aria-invalid="true"` y un `<span id="<id>-err" role="alert">` referenciado por `aria-describedby="<id>-err"`. El mensaje es específico («El correo necesita @») no genérico («Campo inválido»). | `aria-invalid` cambia con la validación; lector de pantalla lee el error tras el label. | WCAG 2.2 SC 3.3.1 · 3.3.3 |
+| 3 | **`fieldset`/`legend` para grupos** — radios y checkboxes relacionados van dentro de un `<fieldset>` con `<legend>` descriptivo (p. ej. «¿Cómo prefieres que te contactemos?»). Inputs sueltos no necesitan fieldset. | El lector de pantalla anuncia el `<legend>` al entrar al primer radio. | WCAG 2.2 SC 1.3.1 · 3.3.2 |
+| 4 | **Focus management post-submit** — al enviar OK: mover foco al mensaje de éxito (`role="status"`, `tabindex="-1"`, `.focus()`). Al fallar: mover foco al primer campo con error. NUNCA dejar el foco en el botón ya deshabilitado. | Inspector del navegador: `document.activeElement` tras submit. | WCAG 2.2 SC 2.4.3 · 3.3.1 |
+| 5 | **Touch target ≥ 44×44 px** — botones, checkboxes, radios y enlaces dentro del form llevan superficie de toque mínima de 44 px (Apple HIG · WCAG 2.2 SC 2.5.5). Para inputs altos basta con el padding del label. | Inspector: `getBoundingClientRect()` del control. | WCAG 2.2 SC 2.5.5 (AA enhanced) |
+| 6 | **Contraste WCAG AA** — `text:bg ≥ 4.5:1` en cuerpo, `≥ 3:1` en placeholder y en `:focus`/`:error`/`:disabled`. El borde de `:focus` lleva además un `outline` de 2 px (no solo cambio de color). | Lighthouse Accessibility ≥ 95; verificación manual del foco. | WCAG 2.2 SC 1.4.3 · 1.4.11 · 2.4.7 |
+| 7 | **`<input type>` semántico + `inputmode` + `autocomplete`** — `type="email"` + `inputmode="email"` + `autocomplete="email"`; `type="tel"` + `inputmode="tel"` + `autocomplete="tel-national"` (es-MX); `enterkeyhint="next"` para campos intermedios y `"send"` para el último. | Móvil: teclado correcto al enfocar cada campo. | WCAG 2.2 SC 1.3.5 (Autocomplete) |
+| 8 | **`font-size ≥ 16 px` en inputs (iOS no-zoom)** — Safari iOS dispara zoom al enfocar un input con `font-size < 16 px`. Quirúrgico: usa `16px` literal (no `1rem` si el rem cambia). | iPhone real: enfocar el campo no zoomea. | Apple WebKit (no es WCAG pero rompe UX) |
+
+**Aplicación obligatoria:** cualquier formulario nuevo en el sitio (no solo `ContactForm`) cumple las 8 reglas. La página `/modulos/contact-form` documenta caso por caso con réplica en vivo. La auditoría manual va en cada PR que toque un `<form>`; no hay gate automático todavía (TODO: integrar `axe-core` o `pa11y` al CI).
+
+**Anti-spam / privacidad (alineadas con LFPDPPP MX + GDPR):** independiente del checklist a11y, todo formulario público lleva (1) honeypot (`<input name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px">`), (2) checkbox de consentimiento al envío con enlace a `/privacidad`, (3) validación server-side autoritativa (no confiar en la del cliente), (4) en backend real: Cloudflare Turnstile (sustituto moderno de reCAPTCHA, sin tracking) + rate-limit por IP/edge, (5) cero PII en URL/GET. Detalle en `/modulos/contact-form` §3 y §6.
+
+### 6.4 Anti dark-patterns en CTAs
+
+El CTA banner es el módulo más vulnerable a dark-patterns del sistema: la franja final donde el sitio pide la conversión. La tentación de inflar urgencia, fabricar escasez o castigar al visitante que no convierte es alta — y rinde a corto plazo. Pero quema marca a mediano y, en MX+EU, puede tipificar publicidad engañosa (LFPC art. 32-bis · Directive 2005/29/EC · GDPR art. 5(1)(a) — fairness). El sistema rechaza estos patrones POR DISEÑO. Las cuatro reglas duras:
+
+| # | Regla | Verificación | Por qué |
+|---|---|---|---|
+| 1 | **NO contadores falsos de urgencia.** Si el timer se reinicia al recargar, si la fecha de cierre no existe en un campo verificable (frontmatter de la entry, end_date en un endpoint), si el «termina en 02:34:18» no apunta a un evento real — es manipulación. La urgencia legítima se comunica con plazo y data REAL (no animación). | El timer debe leer `expiresAt: ISODate` de la entry o de un endpoint cacheable. Sin SSoT verificable, sin timer. | LFPC MX art. 32-bis · UCPD 2005/29/EC · Manual NN/g «Deceptive Patterns» (2022) |
+| 2 | **NO fabriques escasez.** «¡Solo quedan 2!», «X personas viendo ahora», «Stock limitado» — sin un campo de stock REAL en el catálogo, son texto decorativo manipulador. La escasez REAL se declara con número que viene de la BD (frontmatter `stock: 2` o endpoint `/api/stock/<sku>`), nunca como copy estático. | La cifra debe venir de una fuente derivable. Sin SSoT, sin escasez. | Misma jurisprudencia que (1) + Baymard Institute «E-Commerce Dark Patterns» |
+| 3 | **NO confirmshaming en el botón secundario.** El ghost da escape al visitante indeciso; NO lo humilla. Copy neutro y honesto: «Ver catálogo», «Seguir leyendo», «Volver al inicio». Prohibido: «No gracias, prefiero perder dinero», «No, no me importa mi salud», «Cerrar y perder esta oferta». | Lectura del label. Si el botón secundario implica que «rechazar es estúpido», es confirmshaming. | NN/g «Confirmshaming» · r/assholedesign reference catalog |
+| 4 | **Honestidad del copy del botón.** El label del botón es lo que pasa al hacer clic, sin sorpresa. «Descargar gratis» abre un download de PDF, no un formulario de 8 campos. «Hablar con un asesor» abre WhatsApp con un humano del otro lado, no un autoresponder. «Cotizar por WhatsApp» abre wa.me con mensaje pre-armado. Si el clic hace algo distinto al verbo del botón, mientes — es dark-pattern por definición. | Tester revisa: «hice clic en X y pasó Y; ¿coinciden?». Si no, reescribir el label. | Nielsen Heuristic 4 (Consistency) · CXL «Persuasive Copy 2025» |
+
+**Aplicación obligatoria:** cualquier CTA nuevo en el sitio (no solo en CTABanner — también botones de hero secundario, dentro de fichas, en SectionMenu) cumple las 4 reglas. La página `/modulos/cta-banner` §6 documenta caso por caso con ejemplos de cada error real visto en sitios mexicanos. La auditoría es manual en cada PR que agregue un CTA; el sistema NO permite extensión del CTABanner para soportar timer/scarcity sin un campo SSoT verificable (la prop `urgencyBadge` de la variante 5 exige `expiresAt: ISODate` obligatorio en la definición del tipo).
+
+**Diferencia con la urgencia legítima.** No es prohibir comunicar plazos — es prohibir inventarlos. «Cohorte de julio · cupo final, cierra el 30 de junio» (variante 5 del CTABanner, con `expiresAt: '2026-06-30T23:59:00-06:00'`) es legítimo si la cohorte realmente cierra ese día. «¡Solo hoy!» que aparece todos los días NO lo es. La diferencia operativa: la urgencia legítima tiene un campo de fecha en la SSoT y un comportamiento real cuando expira (el banner desaparece o cambia copy); la fabricada no.
+
 ---
 
-## 7. Cómo añadir el próximo módulo (header, hero, menú, footer)
+## 7. Cómo añadir el próximo módulo (solo queda `whatsapp-flotante`)
 
-1. Crear `src/pages/modulos/<slug>.astro` copiando la estructura de `topbar.astro` (las 10 secciones del §2).
+1. Crear `src/pages/modulos/<slug>.astro` copiando la estructura del último L3 publicado (típicamente el más pulido — hoy `cta-banner.astro` o `contact-form.astro`).
 2. En el frontmatter: `breadcrumbs={[{ label: 'Módulos', href: '/modulos' }, { label: '<Módulo>' }]}`, `pageType="page"`, `guia={false}`, Hero **sin** `ctas`.
-3. Llenar el contenido del módulo (qué es, para qué, anatomía con ejemplo en vivo, etc.).
-4. **Variantes**: definir el array `disenos` + montar `<GaleriaDisenos>` con una `<DisenoCard>` por variante; dibujar los mockups (clases nuevas en la página).
+3. Llenar el contenido del módulo (qué es, para qué, anatomía con ejemplo en vivo, etc.). Si el módulo emite o consume schema, respetar regla B3 (un único emisor por página).
+4. **Variantes**: definir el array `disenos` + montar `<GaleriaDisenos>` con una `<DisenoCard>` por variante; dibujar los mockups (clases nuevas en la página, prefijo único por módulo — ej. `.ctv` para cta-banner, `.fv` para footer).
 5. **Responsive**: definir las `receta*` (strings) + montar los patrones con `<MarcoMovil>` y `<Receta>`; dibujar los mockups móviles (clases `.<x>m` en la página).
-6. En `src/config/site.ts`, marcar el módulo como `estado: 'listo'` en `MODULOS` (para que L2 y el dropdown lo enlacen).
-7. Reiniciar `astro dev`, revisar en `localhost:4325/modulos/<slug>`, y correr `npm run build` en la Mac antes de desplegar.
+6. En `src/config/site.ts`, marcar el módulo como `estado: 'listo'` en `MODULOS` (para que L2 y el dropdown lo enlacen). En `src/pages/modulos/index.astro`, agregar la entrada en `MOD_META[slug]` con chips ANATÓMICOS (props/zonas reales del componente, no genéricas) y `AFONDO[slug]` con `body` (2 párrafos profesionales) + `points` (4 chips técnicos).
+7. Si el cierre debe usar `siblingsModules('<slug>')` (sí, siempre): importar de `@lib/modules`. NUNCA hardcodear el cierre.
+8. Correr `npm run audit:meta` en local (target: 25 OK +1 por cada nuevo L3 + 7 SKIP + 0 FAIL).
+9. Reiniciar `astro dev`, revisar en `localhost:4325/modulos/<slug>`, y correr `npm run build` en la Mac antes de desplegar.
 
 ---
 
-## 8. Estado y roadmap
+## 8. Estado y roadmap — Serie completa 12/12
 
-**Hecho (al 2026-06-20):**
-- L1 `/` (home), L2 `/modulos` (índice data-driven desde `MODULOS`).
-- L3 **completos** (10 secciones + galería de 6 variantes + 4 patrones móviles con 3 recetas, `estado: 'listo'` en `MODULOS`):
-  - `/modulos/topbar` · `/modulos/header` · `/modulos/hero` (primera ola)
-  - `/modulos/breadcrumbs` (`7280cb9`) · `/modulos/section-menu` (`9a37e10`) · `/modulos/section-heading` (`7a69533`) · `/modulos/category-card` (`6d7f4b2`) · `/modulos/category-detail` (`eae415c`) (segunda ola, slug inglés singular)
-  - `/modulos/product-card` · `/modulos/service-card` · `/modulos/faq` (`692fec2`) · `/modulos/review` (tercera ola — cards de catálogo, FAQ con schema y reseñas con `reviewSchema()` puro en `lib/seo.ts`)
-  - `/modulos/footer` (cuarta ola — estándar elevado: activo SEO global, NAP consistency, `organizationSchema()` como alias canónico de `orgSchema`, hoja de impresión, eat-your-own-dog-food)
-- Kit reutilizable: `GaleriaDisenos`, `DisenoCard`, `MarcoMovil`, `Receta`, `GuiaNota`.
-- Helper SSoT del cierre: `siblingsModules('<slug>')` en `src/lib/modules.ts`. Consumido por **toda la segunda, tercera y cuarta ola**; las 3 L3 de la primera ola (`topbar`, `header`, `hero`) aún hardcodean el cierre y deben migrarse cuando se toquen.
-- Helpers de schema reutilizables (ver §3.5): `faqSchema()`, `reviewSchema()` (puros) + `emitReviews()` (interno, gateado por `SITE.allowSelfReviews`) + `organizationSchema()` (alias canónico de `orgSchema()`, emitido desde `buildSchema()` en TODA página). Regla B4 — anti self-serving reviews. Regla NAP — §6.2.
-- Migas de pan corregidas a ruta completa (componente antepone «Inicio»).
-- Gate **`npm run audit:meta`** activo (límites: title ≤60, description ≤155, espejo de `META_TITLE_MAX`/`META_DESC_MAX` en `lib/seo.ts`). Documentado en §6.1.
+**Cierre del flujo (2026-06-20):** la serie «Módulos del sitio» queda **completa con 12 L3 listos** + L1 home + L2 índice. Cada L3 sigue el molde de 10 secciones del §2 (Hero sin CTAs + duo titles + anatomía + 6 variantes + 4 patrones móviles + 3 recetas + sí/no + cierre con `siblingsModules`), pasa el gate `audit:meta` (25 OK · 7 SKIP · 0 FAIL) y no hardcodea NAP ni número de WhatsApp.
 
-**Pendiente:**
-- Publicar los L3 que faltan con el mismo molde (slug inglés singular): `cta-banner`, `formulario-contacto`, `whatsapp-flotante`.
-- Migrar `topbar.astro`, `header.astro`, `hero.astro` a `siblingsModules('<slug>')` cuando se toquen (hoy hardcodean el cierre).
-- Resolver deuda P1 NAP: campos duplicados entre `CONTACT.{street,city,...}` y `SITE.business.address.*` (§6.2). Decisión de Frank pendiente.
-- Por cada nuevo L3: correr `npm run audit:meta` antes del commit + `npm run build` en la Mac (valida también el resaltado Shiki de `<Code>`) antes de desplegar.
+### 8.1 Los 12 L3 listos (con commit hash de creación)
+
+| # | L3 | Hash | Aporte específico al sistema |
+|---|---|---|---|
+| 1 | `/modulos/topbar` | `8289c86` | Primer L3 — marca el molde de 10 secciones. |
+| 2 | `/modulos/header` | `4da549d` | Navegación data-driven desde NAV; mega/dropdown. |
+| 3 | `/modulos/hero` | `3609e0a` | Casing del título («El Foo:» con sustantivo cap) + descRight 2 párrafos. Regla: hero sin CTAs. |
+| 4 | `/modulos/breadcrumbs` | `7280cb9` | Migas auto desde la ruta; «Inicio» lo antepone el componente. |
+| 5 | `/modulos/section-menu` | `9a37e10` | Cierre full-width data-driven; «el menú reparte, el último botón convierte». |
+| 6 | `/modulos/section-heading` | `7a69533` | Layout="duo": izq título · der 2 párrafos. Único componente para TODOS los títulos. |
+| 7 | `/modulos/category-card` | `6d7f4b2` | Vitrina del catálogo data-driven desde SHOWCASE. |
+| 8 | `/modulos/category-detail` | `eae415c` | Categoría a fondo (info izq · galería der). Regla: SIN zig-zag. |
+| 9 | `/modulos/product-card` | `75dfffd` | Card 16:9 + badge + LCP (`priority` + `index`). Cero schema en card. |
+| 10 | `/modulos/service-card` | `bec7e8b` | CTA dual (ficha L4 vs WhatsApp con `waUrl`). Modo ícono o foto. |
+| 11 | `/modulos/faq` | `692fec2` | Acordeón nativo `<details>` + `faqSchema()` puro en lib/seo.ts. |
+| 12 | `/modulos/review` | `d787649` | `reviewSchema()` puro + `emitReviews()` gateado por `SITE.allowSelfReviews`. Regla B4. |
+| 13 | `/modulos/footer` | `74b1055` | `organizationSchema()` (alias canónico de `orgSchema`); NAP consistency; eat-your-own-dog-food. |
+| 14 | `/modulos/contact-form` | _(in-flight)_ | WCAG 2.2 + checklist §6.3 + helper `contactPointSchema()` + anti-spam canónico. |
+| 15 | `/modulos/cta-banner` | _(este commit)_ | Cierre del flujo. 3 presets canónicos. Anti dark-patterns §6.4. |
+
+Nota: «14» = numeración cronológica de publicaciones; cuento 12 módulos únicos en la serie + los 2 dúos que dieron por separado (FAQ+Review en la tercera ola; Footer+contact-form en la cuarta). El L2 `MODULOS` también marca `whatsapp-flotante` como `proximo` — no forma parte del cierre de los 12.
+
+### 8.2 Helpers agregados a `src/lib/seo.ts` durante el flujo
+
+- **`faqSchema(items)`** (puro) — FAQPage para `/modulos/faq` y fichas con FAQ inline.
+- **`reviewSchema({ items, aggregate? })`** (puro) — bloque listo para mergear en Product/Service. Sin gate (el llamador decide).
+- **`emitReviews(reviews)`** (interno, gateado por `SITE.allowSelfReviews`) — usado dentro de `productSchema`/`serviceSchema` para anti self-serving.
+- **`organizationSchema()`** (alias canónico de `orgSchema()`) — emitido por `buildSchema()` en TODA página. Renombrado por coherencia con `localBusinessSchema` / `faqSchema` / `reviewSchema`.
+- **`contactPointSchema({ telephone?, email?, contactType, areaServed?, availableLanguage? })`** (puro) — para subgrafos standalone donde `Organization` NO se emite. Regla B3 — no usar si la página ya emite Organization.
+
+### 8.3 Reglas duras subidas durante el flujo (referencia rápida)
+
+- **B3 — Emisor único de schemas por página.** El `Organization` lo emite `buildSchema()` desde BaseLayout, una vez. Footer, ContactForm y CTABanner NO emiten JSON-LD propio. Documentado en §3.5 + §6.
+- **B4 — Anti self-serving reviews.** `SITE.allowSelfReviews=false` por default. Solo se activa con reseñas reales y verificables (GBP, Trustpilot). `emitReviews()` está gateado; `reviewSchema()` puro no (el llamador decide). Documentado en §3.5.
+- **Casing del título Hero** — «`<Artículo> <Sustantivo>:`» con artículo y sustantivo capitalizados (ej.: `La Tarjeta de servicio:`). Documentado en §6.
+- **Gate `audit:meta`** — `npm run audit:meta` antes de cada commit a main; falla si title >60 o description >155. SSoT del límite: `META_TITLE_MAX` / `META_DESC_MAX` en `lib/seo.ts`. Documentado en §6.1.
+- **NAP SSoT (deuda P1 abierta)** — el NAP debe coincidir letra por letra entre Topbar, Footer y JSON-LD `Organization`/`LocalBusiness`. La SSoT es `CONTACT` + `SITE.organization` + `SITE.business`. Documentado en §6.2. **DEUDA P1:** los campos `street/city/state/postalCode/geo` están duplicados textualmente entre `CONTACT.*` y `SITE.business.address.*` — requiere decisión de Frank (consolidar uno como derivado del otro).
+- **A11y de formularios (§6.3)** — 8 reglas WCAG 2.2 SC obligatorias para cualquier `<form>` nuevo (label asociado, aria-describedby/invalid, fieldset/legend, focus management, touch target 44, contraste AA, type+inputmode+autocomplete, font-size 16 anti-zoom iOS).
+- **Anti dark-patterns en CTAs (§6.4)** — 4 reglas duras para cualquier CTA nuevo: NO contadores falsos, NO escasez fabricada, NO confirmshaming, honestidad del label.
+- **Slug inglés singular** — todos los slugs de la serie en inglés y singular (`section-menu`, `section-heading`, `category-card`, `category-detail`); label visible en español. Documentado en §1.
+- **`trailingSlash: 'never'`** — hrefs internos SIN slash final (regla del sitio). Documentado fuera de esta serie pero aplicable a todos los L3.
+- **`siblingsModules('<slug>')`** — cierre de toda L3 derivado de `MODULOS` (SSoT). Hoy lo usan TODAS las L3 de la segunda, tercera, cuarta y quinta ola; la primera ola (topbar, header, hero) aún hardcodea el cierre.
+
+### 8.4 Próximos pasos del template (deudas abiertas, ordenadas por prioridad)
+
+**P1 — alto impacto técnico o de marca:**
+- [ ] **NAP SSoT** — consolidar `SITE.business.address.*` como derivado computado de `CONTACT.*` (o documentar explícitamente que ambos se editan a la par). Requiere decisión de Frank. (§6.2)
+- [ ] **Migrar primera ola a `siblingsModules`** — `topbar.astro`, `header.astro`, `hero.astro` aún hardcodean el cierre. Cuando se toquen para otra cosa, migrar.
+- [ ] **Publicar `whatsapp-flotante` como L3** — único `proximo` que queda en `MODULOS`. Cierra el alcance original del «chrome del sitio».
+
+**P2 — mejoras de calidad sin bloqueante:**
+- [ ] **Presets extendidos de CTA** — agregar `PRESET_NEWSLETTER` (form inline en banda CTA del footer) y `PRESET_BLOQUEO_CAMPAÑA` (con `urgencyBadge: { text, expiresAt }` verificable). Documentado pero no implementado.
+- [ ] **Gate automático A11y forms** — integrar `axe-core` o `pa11y` al CI para validar §6.3 sin auditoría manual.
+- [ ] **Gate automático `astro check`** — hoy `build` es `astro check && astro build` pero no se corre como pre-commit. Considerar Husky.
+- [ ] **Audit P2 cross-cutting** — ver el resultado del paso F del flujo de cierre (este commit) para 1-3 mejoras de polish fino.
+
+**P3 — extensiones del kit:**
+- [ ] Extender `MarcoMovil` con prop `device?: 'iphone' | 'android' | 'tablet'` para variar el bisel.
+- [ ] Considerar `<DemoEnVivo>` como wrapper canónico del patrón eat-your-own-dog-food (hoy cada L3 lo hace ad-hoc).
+- [ ] Documentar el componente `GuiaNota` que ya se usa en todos los L3 (no estaba en el kit oficial).
 
 ---
 

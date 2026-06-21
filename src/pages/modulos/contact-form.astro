@@ -1,0 +1,1038 @@
+---
+// ============================================================================
+// /modulos/contact-form — PÁGINA DEL MÓDULO «Formulario de contacto».
+// ----------------------------------------------------------------------------
+// Onceavo L3 «listo» de la serie /modulos/* (topbar · header · breadcrumbs ·
+// hero · section-menu · section-heading · category-card · category-detail ·
+// product-card · service-card · review · faq · footer · contact-form), MISMO
+// molde (docs/MODULOS.md §2). Particularidades del módulo formulario:
+//
+//   1) ACCESIBILIDAD ES EL TRABAJO PRINCIPAL. No es un módulo de SEO ni de
+//      schema (regla B3: el ContactPoint vive en organizationSchema, no se
+//      duplica desde aquí). El formulario carga el contrato WCAG 2.2 SC
+//      1.3.1 / 1.3.5 / 1.4.3 / 2.4.3 / 2.4.7 / 2.5.5 / 3.3.1 / 3.3.2 / 3.3.3.
+//      Checklist canónico: docs/MODULOS.md §6.3.
+//
+//   2) NO EMITE SCHEMA. Cero JSON-LD desde el componente. Si la página padre
+//      quiere declarar el canal de contacto, lo cubre Organization (vía
+//      buildSchema + organizationSchema.contactPoint con CONTACT.phoneRaw +
+//      CONTACT.email). El helper `contactPointSchema()` está disponible en
+//      lib/seo.ts para subgrafos standalone (caso raro).
+//
+//   3) ANTI-SPAM CANÓNICO. Honeypot oculto + checkbox de consentimiento +
+//      validación server-side autoritativa. Cuando hay backend real:
+//      Cloudflare Turnstile (no reCAPTCHA, sin tracking) + rate-limit al edge.
+//
+// AUDITORÍA DEL COMPONENTE REAL (ContactForm.astro, commit actual):
+//   - Props: heading?, note?, asuntos?. Cero props de validación, cero
+//     props de honeypot, cero props de consentimiento.
+//   - Campos: nombre (required), asunto (select), mensaje (textarea required).
+//   - Backend: cero (handler de submit en cliente abre wa.me con waUrl()-like).
+//   - A11y: labels OK, focus visible OK, prefers-reduced-motion OK.
+//   - DEUDA P1 detectada (ver §6 de esta página): NO tiene honeypot, NO tiene
+//     checkbox de consentimiento LFPDPPP, NO tiene type=email/tel, NO tiene
+//     inputmode/autocomplete/enterkeyhint. Aspiracional vs real documentado
+//     campo por campo en cada sección. Las recetas muestran el upgrade.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import ContactForm from '@components/ContactForm.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+import { siblingsModules } from '@lib/modules'
+
+// Menú de cierre — derivado de MODULOS (SSoT) con siblingsModules: índice de
+// la serie + dos vecinos en estado 'listo' + home. Requiere que site.ts tenga
+// la entrada contact-form en estado 'listo' (se hace en este commit).
+const cierreItems = siblingsModules('contact-form')
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), sub: 'Respuesta inmediata', external: true }
+
+// ── Anatomía: las 6 PIEZAS reales (+aspiracionales) del formulario ───────────
+// Cada `dato` cita la SSoT exacta o la prop. Donde la pieza NO está en el
+// componente actual, se marca explícito como (DEUDA · receta abajo).
+const piezas = [
+  {
+    n: 1,
+    nombre: 'Encabezado — título + subtítulo del bloque',
+    que: 'Da contexto antes del primer campo. Título corto («Escríbenos», «¿Tienes una duda?»), subtítulo de UNA frase que explica qué pasa al enviar («Se abrirá WhatsApp con tu mensaje listo»). Es la diferencia entre un formulario que parece exigir y uno que parece invitar.',
+    dato: 'props heading? · subtítulo hardcodeado en el componente actual',
+  },
+  {
+    n: 2,
+    nombre: 'Campo de nombre — label asociado + autocomplete',
+    que: 'Un solo input de nombre completo (NO dos campos separados nombre/apellido: rinde menos en LATAM). label asociado por for/id, autocomplete="name", required, enterkeyhint="next" para que el teclado móvil muestre «Siguiente». Touch target del control: padding del label + altura del input dan ~48 px de superficie tappable.',
+    dato: '<label for="cf-nombre"> · <input id="cf-nombre" name="nombre" autocomplete="name" required>',
+  },
+  {
+    n: 3,
+    nombre: 'Campo de contacto — email o teléfono (DEUDA P1)',
+    que: 'El componente actual NO tiene este campo: el visitante manda su nombre + asunto + mensaje, y el WhatsApp identifica al remitente por su propio número. Si la página vive aparte de WhatsApp (recibe el mensaje por correo o backend), el patrón canónico es UN campo email (type="email" + inputmode="email" + autocomplete="email") o, mejor en MX, type="tel" + inputmode="tel" + autocomplete="tel-national". Receta en §5.',
+    dato: 'DEUDA P1 · receta en §5 · type/inputmode/autocomplete canónicos',
+  },
+  {
+    n: 4,
+    nombre: 'Mensaje — textarea con minlength + describedby',
+    que: 'El cuerpo libre. textarea con rows="4", required, minlength="20" (evita «hola» suelto que sube la fricción del primer reply). aria-describedby apunta a una pista visible («Cuéntanos qué necesitas: producto, plazo, presupuesto orientativo»). El font-size de 16 px del componente evita el zoom de iOS al enfocar.',
+    dato: '<textarea id="cf-mensaje" name="mensaje" rows="4" required minlength="20"> · aria-describedby',
+  },
+  {
+    n: 5,
+    nombre: 'Honeypot + consentimiento LFPDPPP (DEUDA P1)',
+    que: 'DEUDA del componente actual: NO trae honeypot (input oculto que solo los bots rellenan → se descarta el envío si llega lleno) NI checkbox de consentimiento al envío con enlace a /privacidad (requisito de la Ley Federal de Protección de Datos Personales en Posesión de los Particulares, art. 16). En backend real se suma Cloudflare Turnstile (sustituto moderno de reCAPTCHA, sin tracking) + rate-limit por IP en el edge. Recetas en §5 (uso canónico) y §6 (deuda).',
+    dato: '<input name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px"> · <input type="checkbox" name="consent" required>',
+  },
+  {
+    n: 6,
+    nombre: 'Botón de envío — CTA con foco visible',
+    que: 'Verde WhatsApp (#25D366) consistente con el botón flotante de toda la plantilla, ícono SVG inline, full-width en el componente actual. focus-visible con outline de 2 px (no solo cambio de color), transición desactivada bajo prefers-reduced-motion. Type submit nativo: el form se puede mandar con Enter desde el último campo (enterkeyhint="send").',
+    dato: '<button class="cform__submit" type="submit"> · :focus-visible · @media (prefers-reduced-motion: reduce)',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Conversión sin fricción: el contacto a un toque, no a tres',
+    desc: 'El formulario actual no manda correos ni golpea un backend que falla — arma el mensaje y abre WhatsApp con el texto pre-cargado. Para el visitante: cero campos extra, cero ventanas de «gracias, revisaremos en 48 horas», cero bandeja de spam donde se pierde la respuesta. Para el negocio: el lead llega al canal donde ya responde. Si el sitio crece y necesita backend (correo, CRM, ticketing), el handler se reemplaza por POST a una Cloudflare Pages Function sin tocar el markup.',
+  },
+  {
+    titulo: 'Accesibilidad de fábrica: WCAG 2.2 sin JS adicional',
+    desc: 'Cada campo va con label asociado por for/id, foco visible con outline (no solo color), inputs a 16 px (anti-zoom iOS), botón ≥48 px (Apple HIG · WCAG SC 2.5.5), transiciones que respetan prefers-reduced-motion. Lo que falta del checklist canónico —aria-describedby para pistas, aria-invalid + role="alert" para errores, focus management post-submit— se documenta y se receta en §5; el componente actual cubre las reglas base, las recetas habilitan las AA enhanced.',
+  },
+  {
+    titulo: 'Privacidad y anti-spam por diseño, no como parche',
+    desc: 'El patrón canónico (en cuanto hay backend) incluye honeypot oculto, checkbox de consentimiento LFPDPPP con enlace a /privacidad antes del submit, validación server-side autoritativa, Cloudflare Turnstile en lugar de reCAPTCHA (sin tracking de Google), rate-limit por IP en el edge, cero PII en URL/GET. Hoy el componente vive sin honeypot ni consentimiento (DEUDA P1 documentada en §6) — la página explica las dos brechas con los snippets exactos para cerrarlas.',
+  },
+]
+
+const sis = [
+  'Asocia cada control a su label con for/id literal. Si el diseño requiere ocultar el label visualmente, usa una clase .sr-only (clip + position:absolute) en lugar de aria-label: los aria-* se traducen peor entre lectores de pantalla y dejan al control sin etiqueta visible cuando aria falla.',
+  'Usa el type semántico que corresponde al dato: type="email" para correo, type="tel" para teléfono, type="url" para sitio web. Cada uno activa el teclado correcto en móvil y suma una capa de validación nativa del navegador. Acompáñalos siempre con inputmode (email/tel/url) y autocomplete (email/tel-national/url): móviles autocompletan datos guardados sin que escribas.',
+  'Pon 16 px (literal, no 1rem si el root cambia) en el font-size de inputs/textareas. Safari iOS zoomea al enfocar cualquier campo con font-size < 16 px, y el zoom desencaja el layout y rompe la posición del scroll —el visitante sale del formulario por accidente—. El componente actual ya lo cumple.',
+  'Maneja el foco después del submit: si hubo error, mueve el foco al primer campo con aria-invalid="true"; si fue éxito, mueve el foco al mensaje de éxito (role="status" + tabindex="-1" + .focus()). Lo natural para un usuario de teclado o lector de pantalla; sin esto, el foco queda en el botón ya deshabilitado y la persona no sabe qué pasó.',
+  'Incluye honeypot (campo oculto que solo los bots rellenan) en cuanto el envío llegue a un backend o a un correo. Es 4 líneas de HTML + 1 check server-side; corta el 90% del spam sin pedirle al humano que resuelva un captcha. Cuando el honeypot no basta, agrega Cloudflare Turnstile (no reCAPTCHA: Turnstile no perfila al usuario ni envía datos a Google).',
+  'Marca el consentimiento de privacidad como required y enlaza a /privacidad ANTES del botón submit (LFPDPPP art. 16 en MX, GDPR art. 6 en EU). El checkbox debe estar desmarcado por default (consentimiento pre-marcado = no es consentimiento). El texto del label: «He leído y acepto el [aviso de privacidad]» con el enlace incrustado.',
+]
+const nos = [
+  'NO uses placeholder como label («Tu nombre» dentro del input). El placeholder se borra al escribir → el usuario pierde la referencia, los lectores de pantalla lo ignoran o lo leen como label confundiendo el campo, y el contraste de los placeholders suele estar fuera de AA. Label visible + placeholder de ejemplo opcional: nunca uno reemplaza al otro.',
+  'NO valides solo en cliente. La validación HTML5 (required, pattern, type, minlength) es UX: ayuda al humano a corregir antes de enviar, pero la puede saltar cualquiera deshabilitando JS o haciendo POST a mano. La validación AUTORITATIVA va en el server: si el backend recibe un email malformado, falla en el server, no confía en lo que llegó.',
+  'NO uses reCAPTCHA v2/v3 si el sitio se publica en 2026 o después. Google reCAPTCHA carga ~600 KB de JS, traza al usuario en todo el sitio (no solo en el form) y rompe la promesa de privacidad de la página. Cloudflare Turnstile hace el mismo trabajo (anti-bot) sin tracking, en ~30 KB, y ya viene en el plan free de Cloudflare Pages —el mismo hosting de este sitio—.',
+  'NO mandes PII (email, teléfono, nombre) por URL ni en GET. El método del form es POST, siempre. Los logs de Cloudflare/CDN guardan las URLs, y un GET con datos personales filtra PII a esos logs (y al historial del navegador, y al Referer header de la próxima página). POST entra en el body, no en la URL.',
+  'NO emitas JSON-LD propio desde el formulario. El ContactPoint de la entidad ya vive en Organization (vía buildSchema → organizationSchema.contactPoint, con CONTACT.phoneRaw + CONTACT.email). Duplicarlo desde el form = dos ContactPoint en el grafo, Google se confunde, regla B3 rota. Si necesitas declarar un canal extra (línea técnica, ventas internacionales), usa contactPointSchema() de lib/seo.ts en un subgrafo standalone, no en la página del form.',
+  'NO escondas el aviso de privacidad detrás de «al enviar aceptas…» en la nota bajo el botón. Si el visitante no marcó un checkbox explícito, NO consintió. La nota es informativa; el consentimiento es interaction. La diferencia es legal: ante una queja del IFAI/INAI o del DPA europeo, la prueba es el checkbox marcado + timestamp, no la frase decorativa.',
+]
+
+// ── 6 VARIANTES (REAL/EXTENSIÓN) ─────────────────────────────────────────────
+// La galería pinta una réplica CSS de cada layout con clases .cfv (contact-form
+// variant) + modificador. Las primeras son configuraciones REALES (combinan
+// props existentes con datos de site.ts); las últimas son EXTENSIÓN
+// (requieren agregar campos, una prop o reordenar el layout del componente).
+const disenos = [
+  {
+    nombre: 'Canónica — 3 campos → WhatsApp (REAL hoy)',
+    tag: 'Negocio local · Servicios · MVP · Páginas de contacto · Cierre de landing',
+    desc: 'La cara natural del componente actual: nombre + asunto (select) + mensaje (textarea) + botón verde WhatsApp. Cero backend, cero correo, cero captcha. El submit handler arma un texto con los tres campos y abre wa.me con el número de CONTACT.whatsapp encodeado. Aplica a la mayoría de los sitios mexicanos de servicios donde el lead llega por WhatsApp y el resto del flujo lo gestiona el negocio en su CRM/agenda.',
+  },
+  {
+    nombre: 'Canónica + email + consentimiento (REAL con props pequeñas)',
+    tag: 'Servicios B2B · Cotizaciones formales · Sitios con backup en correo',
+    desc: 'REAL con upgrade mínimo: agregar un input type="email" + inputmode/autocomplete antes del mensaje, y un checkbox de consentimiento LFPDPPP con enlace a /privacidad antes del submit. El handler de WhatsApp puede incluir el correo en el texto que arma. NO requiere backend; suma trazabilidad para el negocio (queda registro del correo en su chat de WhatsApp) y cumplimiento privacidad por diseño.',
+  },
+  {
+    nombre: 'Multi-step (3 pasos · EXTENSIÓN)',
+    tag: 'Formularios largos · Cotizaciones complejas · Onboarding · Lead gen',
+    desc: 'EXTENSIÓN: el componente actual es single-step (3 campos visibles). Para flujos largos (10+ campos: producto, presupuesto, plazos, archivos) se reparte en 3 pasos con barra de progreso (Paso 1 de 3) y navegación previa/siguiente. Requiere prop steps?: { title, fields }[] y un poco de JS de gestión de estado. Sube la conversión de formularios largos al partir la fatiga visual; baja la del corto (no usar para 3 campos).',
+  },
+  {
+    nombre: 'Compacta inline — solo email + mensaje (REAL parcial)',
+    tag: 'Sidebar · Footer · Pre-footer · Newsletter expandido · Hero secundario',
+    desc: 'EXTENSIÓN sobre el componente actual: una versión con solo 2 campos (email + mensaje) o 3 inputs en una fila (nombre + email + botón) para incrustar en sidebar, footer o pre-footer sin ocupar todo el ancho. Requiere prop layout?: \'stack\' | \'inline\' o un componente hermano CompactForm. Tradeoff: menos friction, menos contexto (sin asunto el negocio entra a la conversación con menos información).',
+  },
+  {
+    nombre: 'Con archivo adjunto (EXTENSIÓN)',
+    tag: 'Diseño · Imprenta · Auditoría · Cotizaciones con plano · Reclutamiento',
+    desc: 'EXTENSIÓN: el componente actual no acepta archivos. Para servicios donde el lead necesita mandar un plano, una foto del defecto, un brief o un CV, agregar input type="file" multiple accept="image/*,application/pdf" + límite de 10 MB validado en cliente y server. Como el handler actual abre WhatsApp (que no recibe archivos por URL), esta variante requiere backend real (Cloudflare R2 bucket + Pages Function que sube el archivo y avisa al negocio).',
+  },
+  {
+    nombre: 'Sticky CTA + bottom-sheet en móvil (EXTENSIÓN)',
+    tag: 'Landing pages · Funnel agresivo · Mobile-first · Campaña paga',
+    desc: 'EXTENSIÓN: en móvil, el form vive plegado en un botón fijo en la zona del pulgar («Hablar con un asesor») y se abre como bottom-sheet (modal anclado al borde inferior) al tap. En escritorio se renderiza normal en su sección. Patrón de landings de campaña paga donde la conversión móvil es la métrica única. Requiere un componente hermano BottomSheetForm o una prop variant=\'bottom-sheet\' + JS de estado.',
+  },
+]
+
+// ── 4 patrones móviles — strings que pinta <Receta>. Código aplicable al
+//    componente real o overrides limpios sin tocar el componente. ──
+const recetaStackMov = `/* MÓVIL · STACK A UNA COLUMNA (default del componente)
+   El componente ya es mobile-first: cada campo apila al 100% del
+   ancho del contenedor, el botón es full-width, los inputs van a
+   16 px (anti-zoom iOS). Cero media queries propias: la cascada de
+   tokens del sitio (--container-max al 100% en ≤768) hace que el
+   form coma todo el ancho útil del viewport.
+
+   Si la página padre tiene padding horizontal (la mayoría sí), el
+   form respeta ese gutter y no necesita reglas extra. */
+
+.cform {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  /* width: 100% por default del flex column */
+}
+
+.cform input,
+.cform textarea,
+.cform select {
+  width: 100%;
+  font-size: 16px;       /* ⚠️ literal: 1rem rompe si el root cambia */
+  padding: .7em .9em;    /* ~48 px de altura tappable */
+}
+
+.cform__submit {
+  width: 100%;
+  padding: .85em 1.2em;  /* ≥48 px de alto (WCAG SC 2.5.5) */
+}`
+
+const recetaTeclado = `/* MÓVIL · TIPOS DE TECLADO + AUTOCOMPLETE + ENTERKEYHINT
+   Cada input le dice al teclado del teléfono qué mostrar y qué
+   acción ofrecer al Enter. La diferencia entre un teclado QWERTY
+   abierto en el campo de teléfono y uno numérico con .@-+ visible
+   son 2 segundos por campo —en 4 campos, 8 segundos de ahorro y
+   menos errores de tipeo—.
+
+   AUTOCOMPLETE: deja que el navegador autocomplete con datos
+   guardados (perfil Google/Apple, llaveros). Es una capa de UX
+   gratuita que NUNCA debe deshabilitarse con autocomplete="off"
+   salvo en campos sensibles (passwords, OTPs). */
+
+<input
+  type="text"
+  name="nombre"
+  autocomplete="name"
+  enterkeyhint="next"    /* Enter = «Siguiente» en el teclado móvil */
+  required
+/>
+
+<input
+  type="email"
+  name="email"
+  inputmode="email"      /* teclado con @ y . visibles */
+  autocomplete="email"
+  enterkeyhint="next"
+  required
+/>
+
+<input
+  type="tel"
+  name="telefono"
+  inputmode="tel"        /* teclado numérico con + - ( ) */
+  autocomplete="tel-national"  /* MX: nacional, no E.164 */
+  enterkeyhint="next"
+/>
+
+<textarea
+  name="mensaje"
+  enterkeyhint="send"    /* Enter = «Enviar» en el último campo */
+  required
+></textarea>`
+
+const recetaConsent = `/* TODOS los formularios · CONSENTIMIENTO LFPDPPP / GDPR
+   El checkbox de consentimiento es REQUISITO legal en MX (LFPDPPP
+   art. 16) y EU (GDPR art. 6). Va ANTES del botón submit, marcado
+   como required, desmarcado por default (consentimiento pre-marcado
+   = NO es consentimiento), y enlaza al aviso de privacidad.
+
+   La nota «al enviar aceptas…» bajo el botón NO sustituye al
+   checkbox: ante una queja del INAI o del DPA europeo, la prueba
+   es el checkbox marcado + timestamp del submit, no la frase
+   decorativa. */
+
+<div class="cform__field cform__field--check">
+  <label class="cform__check">
+    <input
+      type="checkbox"
+      name="consent"
+      required
+      aria-describedby="consent-desc"
+    />
+    <span>
+      He leído y acepto el
+      <a href="/privacidad">aviso de privacidad</a>.
+    </span>
+  </label>
+  <p id="consent-desc" class="cform__hint">
+    Tus datos solo se usan para responder esta solicitud.
+    Política de retención: 90 días, o hasta que pidas borrado.
+  </p>
+</div>`
+
+const recetaTouch = `/* MÓVIL · TOUCH TARGET ≥ 44×44 PX (WCAG SC 2.5.5)
+   El umbral viene de Apple HIG (44 pt) y WCAG 2.2 AA enhanced
+   (44 CSS px). Para inputs altos basta con el padding del label
+   (~48 px); para botones, padding vertical + min-height; para
+   checkboxes y radios, agregar un wrapper tappable que extienda
+   el área de toque más allá del cuadrito de 16 px nativo. */
+
+@media (max-width: 1024px) {
+  /* Botón con altura mínima y padding generoso. */
+  .cform__submit {
+    min-height: 48px;
+    padding: .9em 1.2em;
+  }
+
+  /* Checkbox + label como área tappable extendida. */
+  .cform__check {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-3);
+    min-height: 44px;
+    padding: var(--sp-3) 0;       /* área extra arriba/abajo */
+    cursor: pointer;
+  }
+  .cform__check input[type="checkbox"] {
+    width: 20px; height: 20px;     /* cuadrito + área del label = 44+ */
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  /* Realce táctil al tap, sin animación. */
+  a, button, [role="button"], label {
+    -webkit-tap-highlight-color: rgba(91, 61, 245, .15);
+  }
+}`
+
+// ── 3 RECETAS DEL «CÓMO ESTÁ CONSTRUIDO» ─────────────────────────────────────
+// (A) uso básico HTML5 nativo sin JS · (B) con honeypot + validación es-MX ·
+// (C) integración con Cloudflare Pages Function (POST real + Turnstile).
+const recetaUso = `---
+// USO BÁSICO · HTML5 nativo, sin JavaScript de validación.
+// El componente actual ya pinta este shape. La página padre solo
+// lo importa y lo monta. Cero schema, cero backend; el handler
+// del componente arma el texto y abre wa.me con CONTACT.whatsapp.
+import ContactForm from '@components/ContactForm.astro'
+
+// Las props son OPCIONALES — todas tienen default sensato.
+//   heading?  → título del bloque (default «¿No está tu duda? Escríbenos»)
+//   note?     → nota bajo el botón (default «Respuesta inmediata · Sin compromiso»)
+//   asuntos?  → opciones del <select> (default 4 asuntos genéricos)
+---
+
+<section class="section section--surface">
+  <div class="container">
+    <ContactForm
+      heading="¿Tienes una duda? Escríbenos"
+      asuntos={['Quiero una cotización', 'Soporte técnico', 'Una pregunta general']}
+    />
+  </div>
+</section>
+
+{/* Comportamiento: al submit el componente verifica checkValidity()
+    nativo, arma un mensaje con nombre + asunto + mensaje, encodea con
+    encodeURIComponent y abre wa.me/<CONTACT.whatsapp>?text=… en ventana
+    nueva. NO manda correo, NO golpea backend, NO emite schema. */}`
+
+const recetaHoneypot = `---
+// CON HONEYPOT + VALIDACIÓN es-MX · upgrade del componente actual
+// para sitios con backend real (cuando el form NO va a WhatsApp).
+//
+// EL HONEYPOT: un input oculto al humano (position:absolute,
+// left:-9999px) que SOLO los bots rellenan (los crawlers rellenan
+// todo lo que ven). Si llega con valor → 90% probable bot → se
+// descarta sin avisar al humano. Cero captcha, cero fricción
+// para el visitante real. 4 líneas de HTML + 1 check server.
+//
+// VALIDACIÓN es-MX: pattern para teléfono nacional (10 dígitos),
+// type=email + nativo + check de TLD válido en server.
+---
+
+<form method="POST" action="/api/contacto" class="cform">
+
+  <!-- HONEYPOT · oculto al humano, visible al bot -->
+  <input
+    type="text"
+    name="website"
+    tabindex="-1"
+    autocomplete="off"
+    aria-hidden="true"
+    style="position:absolute; left:-9999px; opacity:0; pointer-events:none;"
+  />
+
+  <div class="cform__field">
+    <label for="cf-nombre">Nombre completo</label>
+    <input
+      id="cf-nombre" name="nombre" type="text"
+      autocomplete="name" enterkeyhint="next"
+      required minlength="2" maxlength="80"
+      aria-describedby="nombre-err"
+    />
+    <span id="nombre-err" class="cform__err" role="alert"></span>
+  </div>
+
+  <div class="cform__field">
+    <label for="cf-tel">Teléfono (10 dígitos)</label>
+    <input
+      id="cf-tel" name="telefono" type="tel"
+      inputmode="tel" autocomplete="tel-national"
+      enterkeyhint="next"
+      required pattern="[0-9]{10}" maxlength="10"
+      aria-describedby="tel-err"
+    />
+    <span id="tel-err" class="cform__err" role="alert"></span>
+  </div>
+
+  <div class="cform__field">
+    <label for="cf-msg">¿Cómo podemos ayudarte?</label>
+    <textarea
+      id="cf-msg" name="mensaje" rows="5"
+      enterkeyhint="send"
+      required minlength="20" maxlength="2000"
+      aria-describedby="msg-help msg-err"
+    ></textarea>
+    <p id="msg-help" class="cform__hint">Cuéntanos qué necesitas: producto, plazo, presupuesto.</p>
+    <span id="msg-err" class="cform__err" role="alert"></span>
+  </div>
+
+  <!-- CONSENTIMIENTO · requisito LFPDPPP art. 16 -->
+  <label class="cform__check">
+    <input type="checkbox" name="consent" required />
+    <span>He leído y acepto el <a href="/privacidad">aviso de privacidad</a>.</span>
+  </label>
+
+  <button type="submit" class="cform__submit">Enviar mensaje</button>
+
+  <div role="status" aria-live="polite" class="cform__status"></div>
+</form>`
+
+const recetaPagesFn = `// CLOUDFLARE PAGES FUNCTION · POST real con honeypot + Turnstile + rate-limit
+// Archivo: functions/api/contacto.ts (sigue la convención Pages Functions).
+//
+// FLUJO COMPLETO (edge, sin servidor que mantener):
+//   1. Lee el body POST.
+//   2. Verifica honeypot: si el campo 'website' viene con valor → bot.
+//   3. Verifica Cloudflare Turnstile (sustituto moderno de reCAPTCHA, sin tracking).
+//   4. Valida shape server-side (NO confíes en el client).
+//   5. Rate-limit por IP (10 envíos / hora) usando Cloudflare KV.
+//   6. Envía a Brevo / Resend / MailChannels (free en Cloudflare Workers).
+//   7. Devuelve { ok: true } o { ok: false, error }.
+
+export const onRequestPost: PagesFunction<{
+  TURNSTILE_SECRET: string;
+  RATE_LIMIT: KVNamespace;
+  RESEND_KEY: string;
+}> = async ({ request, env }) => {
+  const data = await request.formData();
+
+  // 1. HONEYPOT — si trae valor, es bot. Respondemos 200 OK falso (que el
+  //    bot crea que tuvo éxito y no reintente con otro vector).
+  if (String(data.get('website') || '').trim() !== '') {
+    return Response.json({ ok: true });
+  }
+
+  // 2. TURNSTILE — verificación server-side del token del widget.
+  const token = String(data.get('cf-turnstile-response') || '');
+  const ip = request.headers.get('CF-Connecting-IP') ?? '';
+  const verify = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ secret: env.TURNSTILE_SECRET, response: token, remoteip: ip }),
+  }).then((r) => r.json() as Promise<{ success: boolean }>);
+  if (!verify.success) {
+    return Response.json({ ok: false, error: 'captcha' }, { status: 400 });
+  }
+
+  // 3. VALIDACIÓN SERVER · autoritativa (cliente solo es UX).
+  const nombre = String(data.get('nombre') || '').trim();
+  const email = String(data.get('email') || '').trim();
+  const mensaje = String(data.get('mensaje') || '').trim();
+  const consent = data.get('consent') === 'on' || data.get('consent') === 'true';
+  if (!consent) return Response.json({ ok: false, error: 'consent' }, { status: 400 });
+  if (nombre.length < 2 || nombre.length > 80) return Response.json({ ok: false, error: 'nombre' }, { status: 400 });
+  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return Response.json({ ok: false, error: 'email' }, { status: 400 });
+  if (mensaje.length < 20 || mensaje.length > 2000) return Response.json({ ok: false, error: 'mensaje' }, { status: 400 });
+
+  // 4. RATE-LIMIT · 10 envíos / hora / IP usando Cloudflare KV.
+  const key = \`rl:\${ip}\`;
+  const count = Number((await env.RATE_LIMIT.get(key)) || '0');
+  if (count >= 10) return Response.json({ ok: false, error: 'rate-limit' }, { status: 429 });
+  await env.RATE_LIMIT.put(key, String(count + 1), { expirationTtl: 3600 });
+
+  // 5. ENVÍO · Resend (o Brevo, MailChannels, etc.).
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { authorization: \`Bearer \${env.RESEND_KEY}\`, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      from: 'no-reply@ejemplos.mx',
+      to: 'hola@ejemplos.mx',
+      subject: \`Nuevo contacto: \${nombre}\`,
+      text: \`Nombre: \${nombre}\\nCorreo: \${email}\\n\\n\${mensaje}\`,
+    }),
+  });
+
+  return Response.json({ ok: true });
+};`
+---
+
+<PageLayout
+  title="Formulario de contacto: WCAG 2.2, anti-spam y WhatsApp"
+  description="Módulo ContactForm: accesibilidad WCAG 2.2, honeypot canónico, Turnstile, consentimiento LFPDPPP. Envío directo a WhatsApp con waUrl()."
+  pageType="page"
+  guia={false}
+  breadcrumbs={[{ label: 'Módulos', href: '/modulos' }, { label: 'Formulario de contacto' }]}
+>
+  <Hero
+    badge="Módulo del sitio · Formulario de contacto"
+    title="El Formulario de contacto:"
+    accent="el lead a un toque, accesible y sin spam"
+    subtitle="El componente que recoge al visitante listo para hablar: tres campos accesibles (WCAG 2.2), envío directo a WhatsApp con waUrl() y CONTACT.whatsapp de site.ts, cero backend en la plantilla y patrón canónico anti-spam (honeypot + consentimiento LFPDPPP + Cloudflare Turnstile + rate-limit al edge) cuando el sitio crece a backend real."
+    descRight={[
+      'Esta página no es una ficha técnica: es el módulo entero, abierto y explicado. Qué problema resuelve y por qué un formulario público es la pieza con MÁS superficie de accesibilidad rota del sitio (un label mal asociado, un input a 14 px que dispara el zoom de iOS, un foco que se pierde tras el submit), de qué seis piezas se compone (encabezado, nombre, contacto, mensaje, honeypot+consentimiento, botón), cómo se comporta en el teléfono (stack mobile-first, teclados semánticos, touch target 44 px, consentimiento tappable) y, al final, cómo se construye —del HTML5 nativo a la Cloudflare Pages Function con Turnstile—.',
+      'Con tres particularidades que separan al formulario del resto de los módulos. Primera: no emite JSON-LD propio (regla B3) —el ContactPoint vive en Organization y se emite UNA vez desde buildSchema en BaseLayout; el helper contactPointSchema() está en lib/seo.ts para subgrafos standalone—. Segunda: el componente actual funciona sin backend (handler que abre WhatsApp con waUrl()) pero le faltan piezas P1 documentadas honestamente en cada sección: honeypot, checkbox de consentimiento LFPDPPP, type=email/tel + inputmode + autocomplete. Las recetas muestran el upgrade exacto. Tercera: la accesibilidad NO es opcional —el checklist canónico vive en docs/MODULOS.md §6.3 y se aplica a todo formulario nuevo del sitio, no solo a este—.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Definición"
+        title="¿Qué es el módulo Formulario de contacto?"
+        desc="El componente accesible que recoge nombre + asunto + mensaje y, al enviar, abre WhatsApp con el texto pre-cargado usando CONTACT.whatsapp (SSoT). Cero backend, cero correo, cero captcha. Cuando el sitio crece a backend real, el handler se reemplaza por POST a una Cloudflare Pages Function sin tocar el markup; el contrato de accesibilidad (WCAG 2.2) y anti-spam (honeypot + consentimiento LFPDPPP + Turnstile) NO depende del backend."
+        body={[
+          'El formulario de contacto (ContactForm.astro) es el módulo que convierte la intención («quiero hablar con ellos») en una conversación real, con la menor fricción posible. En esta plantilla, esa conversación es WhatsApp: el componente arma un mensaje con los campos completados, encodea con encodeURIComponent y abre wa.me/<CONTACT.whatsapp>?text=… en ventana nueva. El visitante envía el mensaje desde su propio WhatsApp; el negocio responde desde el suyo. Cero correos perdidos en spam, cero respuesta automática «en 48 horas», cero formularios que el usuario abandona porque pidió 11 campos.',
+          'La API actual del componente es deliberadamente mínima: tres props opcionales (heading, note, asuntos) y tres campos visibles (nombre, asunto, mensaje). El número de WhatsApp se lee de site.ts (CONTACT.whatsapp) vía data-attribute; el handler de submit hace el encodeURIComponent y abre wa.me. Cero schema, cero hardcoding del número (regla D4), cero JavaScript de validación pesada (HTML5 nativo: required + minlength). Lo que esta página documenta —y lo que las recetas de §5 cubren— es cómo escalar este componente para sitios con backend real, sin romper la accesibilidad ni el patrón anti-spam canónico.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Función e importancia"
+        title="¿Para qué sirve?"
+        desc="Hace tres trabajos a la vez, todos críticos: convierte la intención del visitante en una conversación real (con la menor fricción posible), cumple WCAG 2.2 sin pedir JavaScript adicional, y deja al sitio listo para escalar a backend real con un upgrade limpio (honeypot + Turnstile + consentimiento LFPDPPP) cuando llegue el momento."
+        body={[
+          'Su función primaria es comercial: el formulario es el cuello de botella donde la mayoría de los sitios pierde leads —placeholders en lugar de labels, inputs a 14 px que zoomean iOS, validaciones genéricas que no dicen qué corregir, captchas que toman 30 segundos resolver, formularios de 10 campos para pedir un presupuesto—. El componente actual elimina TODAS esas fricciones: 3 campos, labels asociados, inputs a 16 px, validación HTML5 nativa, cero captcha, envío directo a WhatsApp. Para el visitante: 30 segundos del primer tap al primer mensaje enviado. Para el negocio: el lead llega al canal donde ya responde, sin bandejas que vigilar.',
+          'Su función secundaria es de accesibilidad: el formulario es el módulo con MÁS superficie WCAG del sitio (cada input es 6 reglas: label, contraste, foco, touch target, error, focus management). Cumplirlas no es opcional ni es solo para usuarios con discapacidad —son las mismas reglas que mejoran la experiencia en un teléfono al sol, en una conexión 3G, con guantes invierno, o para alguien que escribe en su segunda lengua—. El componente actual cubre las reglas base; el checklist canónico de docs/MODULOS.md §6.3 más las recetas de §5 cubren el AA enhanced. Y la terciaria es de seguridad: el patrón canónico anti-spam (honeypot + consentimiento LFPDPPP + Turnstile + rate-limit) corta el 99% del spam sin pedirle al humano que resuelva un captcha, y deja al sitio listo para escalar a backend real cuando crezca.',
+        ]}
+      />
+      <div class="bene">
+        {beneficios.map((b) => (
+          <article class="bene__card">
+            <h3 class="bene__title">{b.titulo}</h3>
+            <p class="bene__desc">{b.desc}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3) ¿QUÉ LLEVA? — Anatomía con las 6 piezas + ejemplo en vivo ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Anatomía"
+        title="¿Qué lleva por dentro?"
+        desc="Seis piezas en orden estricto: encabezado, nombre, contacto (DEUDA P1), mensaje, honeypot + consentimiento (DEUDA P1), botón. Cada ficha cita exactamente la prop o el atributo HTML real del componente, y marca explícito lo que es DEUDA del componente actual con su receta de upgrade en §5."
+        body={[
+          'No todas las piezas existen hoy en el componente. La auditoría honesta: el ContactForm actual cubre las piezas 1, 2, 4 y 6 (encabezado, nombre, mensaje, botón) y trae un select de asunto entre nombre y mensaje. Las piezas 3 (campo de contacto extra: email o teléfono) y 5 (honeypot + consentimiento LFPDPPP) son DEUDA P1 del componente —se documentan aquí con la receta exacta para añadirlas—. Sin esas dos, el componente vive bien para el caso WhatsApp (el visitante manda nombre + mensaje, el negocio lo identifica por su propio número y le responde por WhatsApp); con esas dos, escala a sitios con backend real y cumplimiento de privacidad por diseño.',
+          'Las fichas de abajo desglosan cada pieza: qué hace, de qué prop o atributo HTML sale, y dónde está la receta para cerrar la deuda cuando aplica. La sección termina con un ejemplo en vivo del componente real (sección 7 «En vivo» abajo), no con un mockup. Es eat-your-own-dog-food: si el componente se rompe, el ejemplo se rompe a la vista de la persona que lee esta guía.',
+        ]}
+      />
+      <ol class="piezas">
+        {piezas.map((p) => (
+          <li class="pieza">
+            <span class="pieza__n" aria-hidden="true">{p.n}</span>
+            <div class="pieza__body">
+              <h3 class="pieza__nombre">{p.nombre}</h3>
+              <p class="pieza__que">{p.que}</p>
+              <p class="pieza__dato"><span class="pieza__dato-label">SSoT:</span> <code>{p.dato}</code></p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  {/* ── 4) VARIANTES — GaleriaDisenos + DisenoCard ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Otros diseños y aplicaciones"
+        title="Variantes del Formulario"
+        desc="Seis configuraciones: dos salen del componente actual con props/datos existentes (REAL) y cuatro son EXTENSIÓN (requieren agregar campos, una prop o un componente hermano). Cada réplica pinta el layout en miniatura con clases .cfv (contact-form variant) y deja claro qué se reordena o agrega."
+        body={[
+          'El formulario admite variantes sin perder identidad: cambia el número de campos (3 canónicos vs 5 con email/consentimiento vs 2 inline), la disposición (single-step vs multi-step), el canal de envío (WhatsApp vs correo vs WhatsApp+correo) y el contexto de inserción (sección dedicada vs inline en sidebar vs bottom-sheet móvil). El componente actual cubre la canónica WhatsApp; las EXTENSIÓN documentan cómo escalarlo sin romper la arquitectura de accesibilidad ni el patrón anti-spam.',
+          'Cada variante tiene su contexto de aplicación: el negocio local quiere la canónica de 3 campos, el servicio B2B quiere consentimiento + email, el formulario largo quiere multi-step, el sidebar/footer quiere la inline compacta, el servicio creativo quiere archivo adjunto, la landing de campaña quiere bottom-sheet móvil. Reusar el mismo componente (o componer un hermano) con configuraciones distintas es la lección —el formulario NO es seis componentes, es uno con seis caras—.',
+        ]}
+      />
+
+      <GaleriaDisenos ariaLabel="Seis variantes del módulo Formulario de contacto">
+        {/* 0 · Canónica 3 campos (REAL hoy) */}
+        <DisenoCard {...disenos[0]}>
+          <div class="cfv cfv--canon">
+            <div class="cfv__head"><b>¿Tienes una duda?</b><span class="cfv__sub"></span></div>
+            <div class="cfv__field"><span class="cfv__label">Nombre</span><span class="cfv__input"></span></div>
+            <div class="cfv__field"><span class="cfv__label">Asunto</span><span class="cfv__input cfv__input--sel">Quiero una cotización <i>▾</i></span></div>
+            <div class="cfv__field"><span class="cfv__label">Mensaje</span><span class="cfv__ta"></span></div>
+            <span class="cfv__btn cfv__btn--wa">Enviar por WhatsApp</span>
+          </div>
+        </DisenoCard>
+        {/* 1 · Con email + consentimiento (REAL con upgrade mínimo) */}
+        <DisenoCard {...disenos[1]}>
+          <div class="cfv cfv--email">
+            <div class="cfv__field"><span class="cfv__label">Nombre</span><span class="cfv__input"></span></div>
+            <div class="cfv__field"><span class="cfv__label">Correo</span><span class="cfv__input"></span></div>
+            <div class="cfv__field"><span class="cfv__label">Mensaje</span><span class="cfv__ta"></span></div>
+            <div class="cfv__check"><i class="cfv__box"></i><span>Acepto el <u>aviso de privacidad</u></span></div>
+            <span class="cfv__btn cfv__btn--wa">Enviar por WhatsApp</span>
+          </div>
+        </DisenoCard>
+        {/* 2 · Multi-step (EXTENSIÓN) */}
+        <DisenoCard {...disenos[2]}>
+          <div class="cfv cfv--steps">
+            <div class="cfv__steps">
+              <span class="cfv__step cfv__step--on">1</span>
+              <i class="cfv__line cfv__line--on"></i>
+              <span class="cfv__step cfv__step--on">2</span>
+              <i class="cfv__line"></i>
+              <span class="cfv__step">3</span>
+            </div>
+            <span class="cfv__steplabel">Paso 2 de 3 · Detalles del proyecto</span>
+            <div class="cfv__field"><span class="cfv__label">Presupuesto orientativo</span><span class="cfv__input cfv__input--sel">$$ ($30k–$80k) <i>▾</i></span></div>
+            <div class="cfv__field"><span class="cfv__label">Plazo deseado</span><span class="cfv__input"></span></div>
+            <div class="cfv__row">
+              <span class="cfv__btn cfv__btn--gh">← Atrás</span>
+              <span class="cfv__btn cfv__btn--wa">Siguiente →</span>
+            </div>
+          </div>
+        </DisenoCard>
+        {/* 3 · Compacta inline (EXTENSIÓN) */}
+        <DisenoCard {...disenos[3]}>
+          <div class="cfv cfv--inline">
+            <div class="cfv__inline">
+              <span class="cfv__input"></span>
+              <span class="cfv__input"></span>
+              <span class="cfv__btn cfv__btn--wa">→</span>
+            </div>
+            <span class="cfv__sublabel">Solo email · cotización express</span>
+          </div>
+        </DisenoCard>
+        {/* 4 · Con archivo (EXTENSIÓN) */}
+        <DisenoCard {...disenos[4]}>
+          <div class="cfv cfv--file">
+            <div class="cfv__field"><span class="cfv__label">Nombre</span><span class="cfv__input"></span></div>
+            <div class="cfv__field"><span class="cfv__label">Correo</span><span class="cfv__input"></span></div>
+            <div class="cfv__file">
+              <i class="cfv__clip" aria-hidden="true">📎</i>
+              <span>brief-proyecto.pdf · 2.4 MB</span>
+              <i class="cfv__remove" aria-hidden="true">×</i>
+            </div>
+            <div class="cfv__dropzone">+ Adjuntar otro (max 10 MB)</div>
+            <div class="cfv__field"><span class="cfv__label">Mensaje</span><span class="cfv__ta cfv__ta--sm"></span></div>
+            <span class="cfv__btn cfv__btn--wa">Enviar</span>
+          </div>
+        </DisenoCard>
+        {/* 5 · Sticky CTA + bottom-sheet (EXTENSIÓN) */}
+        <DisenoCard {...disenos[5]}>
+          <div class="cfv cfv--sheet">
+            <div class="cfv__sheet">
+              <span class="cfv__handle"></span>
+              <b class="cfv__sheethead">Hablemos</b>
+              <div class="cfv__field"><span class="cfv__label">Nombre</span><span class="cfv__input"></span></div>
+              <div class="cfv__field"><span class="cfv__label">Mensaje</span><span class="cfv__ta cfv__ta--sm"></span></div>
+              <span class="cfv__btn cfv__btn--wa">Enviar</span>
+            </div>
+            <div class="cfv__sticky">
+              <i class="cfv__wa" aria-hidden="true">●</i>
+              <span>Hablar con un asesor</span>
+            </div>
+          </div>
+        </DisenoCard>
+      </GaleriaDisenos>
+
+      <GuiaNota titulo="REAL vs EXTENSIÓN · 2 variantes hoy, 4 requieren upgrade del componente" archivo="src/components/ContactForm.astro">
+        <p>
+          Las variantes <strong>0–1</strong> son configuraciones <strong>REALES</strong> del componente actual:
+          la <em>0 (canónica)</em> es lo que pinta hoy <code>&lt;ContactForm /&gt;</code> sin props; la <em>1
+          (con email + consentimiento)</em> se logra agregando 2 campos al frontmatter de la página padre y
+          envolviendo el componente con un <code>&lt;form&gt;</code> propio (o mejor: extendiendo el componente
+          con props <code>extraFields</code> y <code>consent</code>).
+        </p>
+        <p>
+          Las variantes <strong>2 (multi-step)</strong>, <strong>3 (compacta inline)</strong>, <strong>4
+          (con archivo)</strong> y <strong>5 (sticky bottom-sheet)</strong> son <strong>EXTENSIONES</strong>:
+          requieren agregar props (<code>steps</code>, <code>layout</code>, <code>fileUpload</code>,
+          <code>variant=\'bottom-sheet\'</code>) y, en el caso de <em>archivo</em>, backend real (Cloudflare R2
+          bucket + Pages Function que sube el archivo y avisa al negocio).
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 5) RESPONSIVE Y MÓVIL — 4 patrones con MarcoMovil + Receta ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="El formulario, en el teléfono"
+        desc="Cuatro patrones reales: stack mobile-first (default del componente, cero media queries propias), teclados semánticos con inputmode + autocomplete + enterkeyhint, consentimiento LFPDPPP tappable con área extendida, y touch target ≥44 px en botón y checkbox. Todo HTML5 nativo + CSS puro."
+        body={[
+          'El formulario es más sensible al móvil que la mayoría de los módulos: cada campo es una superficie de error potencial (teclado equivocado, zoom de iOS, dedo gordo, autocomplete fallido). El patrón canónico es mobile-first puro: el componente nace en stack a una columna con inputs full-width a 16 px (anti-zoom iOS) y botón ≥48 px; la cascada de tokens del sitio (--container-max al 100% en ≤768) hace el resto. Cero media queries propias del componente para el layout.',
+          'A eso se suman tres detalles que pocos formularios cubren: teclados semánticos (cada type/inputmode/autocomplete activa el teclado correcto y autocompleta datos guardados — diferencia 8 segundos en un form de 4 campos), consentimiento LFPDPPP con área tappable extendida (el cuadrito de 16 px nativo NO cumple los 44 px de WCAG SC 2.5.5; el wrapper del label sí), y touch target generoso en botones y checkboxes (Apple HIG 44 pt = WCAG 2.2 AA enhanced 44 CSS px).',
+        ]}
+      />
+
+      <div class="pats">
+        {/* 1 · Stack mobile-first (default del componente) */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Stack a una columna en el teléfono: inputs full-width a 16 px, botón full-width ≥48 px">
+              <div class="cfm cfm--stack">
+                <div class="cfm__head"><b>¿Tienes una duda?</b></div>
+                <div class="cfm__field"><b>Nombre</b><i></i></div>
+                <div class="cfm__field"><b>Asunto</b><i></i></div>
+                <div class="cfm__field"><b>Mensaje</b><i class="cfm__ta"></i></div>
+                <span class="cfm__btn">Enviar por WhatsApp</span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · Stack mobile-first (default del componente)</h3>
+            <p class="pat__desc">El componente ya nace mobile-first: cada campo apila al 100% del ancho del contenedor, inputs a <code>font-size: 16px</code> literal (anti-zoom iOS), botón full-width con <code>min-height: 48px</code>. Cero media queries propias: la cascada de tokens del sitio (<code>--container-max</code> al 100% en ≤768) hace el resto.</p>
+            <Receta titulo="CSS · stack mobile-first del componente actual" lang="css" code={recetaStackMov} />
+          </div>
+        </article>
+
+        {/* 2 · Teclados semánticos */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Teclado numérico al enfocar el campo de teléfono, teclado email con @ al enfocar correo">
+              <div class="cfm cfm--keyb">
+                <div class="cfm__field cfm__field--focus"><b>Correo</b><i>tu@correo.mx</i></div>
+                <div class="cfm__kb">
+                  <span class="cfm__kbrow">q w e r t y u i o p</span>
+                  <span class="cfm__kbrow">a s d f g h j k l</span>
+                  <span class="cfm__kbrow">z x c v b n m</span>
+                  <span class="cfm__kbrow cfm__kbrow--special"><i>@</i><i>.</i><i>espacio</i><i>.mx</i><b class="cfm__kbsend">Sig</b></span>
+                </div>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · Teclados semánticos (type + inputmode + autocomplete + enterkeyhint)</h3>
+            <p class="pat__desc">Cada input le dice al teclado del teléfono qué mostrar y qué acción ofrecer al Enter. <code>type="email"</code> + <code>inputmode="email"</code> abre teclado con <strong>@</strong> y <strong>.</strong> visibles; <code>type="tel"</code> + <code>inputmode="tel"</code> abre el numérico. <code>autocomplete</code> deja que el navegador autorrellene con datos guardados. <code>enterkeyhint="next"</code> / <code>"send"</code> cambia el label del Enter. 8 segundos de ahorro en un form de 4 campos, menos errores de tipeo.</p>
+            <Receta titulo="HTML · teclados, autocomplete y enterkeyhint" lang="html" code={recetaTeclado} />
+          </div>
+        </article>
+
+        {/* 3 · Consentimiento tappable */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Checkbox de consentimiento con área tappable extendida que cubre el label completo">
+              <div class="cfm cfm--consent">
+                <div class="cfm__field"><b>Mensaje</b><i class="cfm__ta"></i></div>
+                <label class="cfm__check">
+                  <i class="cfm__box"></i>
+                  <span>He leído y acepto el <u>aviso de privacidad</u>.</span>
+                </label>
+                <span class="cfm__hint">Tus datos solo se usan para responder esta solicitud.</span>
+                <span class="cfm__btn">Enviar</span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · Consentimiento LFPDPPP tappable (área extendida + required)</h3>
+            <p class="pat__desc">El checkbox de consentimiento va ANTES del submit, marcado como <code>required</code>, desmarcado por default (consentimiento pre-marcado = NO es consentimiento) y enlaza al aviso de privacidad. El cuadrito de 16 px nativo NO cumple los 44 px de WCAG SC 2.5.5; el <code>&lt;label&gt;</code> wrapper sí, con <code>min-height: 44px</code> + <code>padding</code> + <code>cursor: pointer</code>. La nota bajo el botón es INFORMATIVA, no sustituye al checkbox.</p>
+            <Receta titulo="HTML · consentimiento LFPDPPP con área tappable" lang="html" code={recetaConsent} />
+          </div>
+        </article>
+
+        {/* 4 · Touch target ≥44 px */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Botón de submit con altura mínima de 48 px y checkbox con área tappable de 44 px">
+              <div class="cfm cfm--touch">
+                <div class="cfm__field"><b>Mensaje</b><i class="cfm__ta"></i></div>
+                <label class="cfm__check cfm__check--ruler">
+                  <i class="cfm__box"></i>
+                  <span>Acepto el aviso</span>
+                  <i class="cfm__rule" aria-hidden="true">44px</i>
+                </label>
+                <span class="cfm__btn cfm__btn--ruler">
+                  Enviar
+                  <i class="cfm__rule cfm__rule--btn" aria-hidden="true">48px</i>
+                </span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">4 · Touch target ≥44×44 px (WCAG SC 2.5.5 · Apple HIG)</h3>
+            <p class="pat__desc">El umbral viene de Apple HIG (44 pt) y WCAG 2.2 AA enhanced (44 CSS px). Para inputs altos basta con el padding del label (~48 px); para botones, <code>min-height: 48px</code> + padding generoso; para checkboxes y radios, agregar un <code>&lt;label&gt;</code> wrapper tappable con <code>min-height: 44px</code> que extienda el área de toque más allá del cuadrito de 16 px nativo. Además: <code>-webkit-tap-highlight-color</code> sutil para feedback al tap.</p>
+            <Receta titulo="CSS · touch target 44+ px en botones y checkboxes" lang="css" code={recetaTouch} />
+          </div>
+        </article>
+      </div>
+
+      <GuiaNota titulo="El responsive es del componente + cascada de tokens, no hojas propias" archivo="src/components/ContactForm.astro · src/styles/tokens.css · src/styles/mobile.css">
+        <p>
+          Todo el responsive del formulario vive en <code>&lt;style&gt;</code> scoped del componente — ningún
+          breakpoint depende de <code>mobile.css</code> para el LAYOUT del form (sí lo aprovecha para el
+          ancho del container y el touch global). Es por diseño: el formulario es lo bastante autocontenido
+          como para mover su responsive consigo mismo.
+        </p>
+        <p>
+          Las recetas 2 (teclados) y 3 (consentimiento) son <strong>HTML</strong>, no CSS — viven en el
+          markup del componente (o en su upgrade). Las recetas 1 (stack) y 4 (touch) son <strong>CSS</strong>
+          en el componente o en <code>mobile.css</code>.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 6) ¿DÓNDE VA? — y la regla anti-schema ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Posición en el layout"
+        title="¿Dónde va en la página?"
+        desc="Al cierre de páginas de venta (después de las objeciones resueltas por FAQ, antes del footer), en columna junto al FAQ para el patrón del home (FAQ a la izquierda + ContactForm a la derecha), o en una página dedicada /contacto que reúne los canales. NUNCA al inicio: el formulario es la última pieza, no la primera."
+        body={[
+          'A diferencia del Hero (uno por página al inicio) o el Topbar (visible en todas), el formulario aparece UNA vez por página, al cierre, después de que el visitante consumió el contenido y antes del footer. Esa posición no es casual: el formulario recoge al visitante que ya decidió hablar. Si lo pones arriba, robas atención al hero y pides compromiso antes de dar valor; abajo, atrapa a quien está convencido. La excepción son las páginas dedicadas (/contacto): allí el formulario puede ir cerca del top, pero acompañado de los otros canales (WhatsApp directo, teléfono, correo) para respetar la preferencia del visitante.',
+          'Lo que NO hace el formulario, por diseño: NO emite JSON-LD propio. El ContactPoint de la entidad vive en Organization (vía buildSchema + organizationSchema.contactPoint con CONTACT.phoneRaw + CONTACT.email + areaServed=\'MX\' + availableLanguage=[\'es-MX\', \'Spanish\']) y se emite UNA vez por página desde BaseLayout. Duplicarlo desde el form = dos ContactPoint en el grafo, Google se confunde, regla B3 rota. Para subgrafos standalone donde Organization NO se emite (caso muy raro), el helper contactPointSchema() está en lib/seo.ts. Cross-link al módulo Footer para entender cómo ContactPoint se emite UNA sola vez desde Organization → /modulos/footer §7.',
+        ]}
+      />
+      <GuiaNota titulo="DEUDA P1 del componente actual · honeypot, consentimiento, email/tel · cómo cerrarla" archivo="src/components/ContactForm.astro">
+        <p>
+          <strong>Auditoría del componente real:</strong> el <code>ContactForm.astro</code> de esta plantilla
+          NO trae honeypot, NO trae checkbox de consentimiento LFPDPPP, NO usa <code>type="email"</code> /
+          <code>type="tel"</code> / <code>inputmode</code> / <code>autocomplete</code>. Funciona perfecto
+          para el caso WhatsApp (3 campos → wa.me) pero deja brechas que cierran tres ediciones pequeñas:
+        </p>
+        <ol>
+          <li><strong>Honeypot.</strong> 4 líneas de HTML al inicio del form: <code>{`<input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px">`}</code>. En el handler actual (que abre WhatsApp), agregar <code>if (form.querySelector('[name=website]')?.value) return;</code> antes de armar el mensaje.</li>
+          <li><strong>Consentimiento LFPDPPP.</strong> 1 checkbox <code>required</code> antes del submit con enlace a <code>/privacidad</code>. Receta exacta en §5 (patrón 3 + receta «consent»).</li>
+          <li><strong>type/inputmode/autocomplete.</strong> Cuando se agregue un campo de email o teléfono (variante 1 de la galería), respetar los pares canónicos: <code>type="email" + inputmode="email" + autocomplete="email"</code> · <code>type="tel" + inputmode="tel" + autocomplete="tel-national"</code>.</li>
+        </ol>
+        <p>
+          <strong>Mientras tanto:</strong> el componente sigue siendo funcional, accesible (cumple WCAG 2.2
+          base) y honesto sobre lo que hace (abre WhatsApp, no manda correos). La página de contacto del
+          sitio (<code>/contacto</code>) muestra los 3 canales directos sin formulario — patrón intermedio
+          recomendado mientras se cierra la deuda.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 7) CÓMO ESTÁ CONSTRUIDO — 3 recetas ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Capa técnica"
+        title="Cómo está construido"
+        desc="El componente vive en src/components/ContactForm.astro y lee CONTACT.whatsapp de site.ts (SSoT). Tres recetas cubren el espectro de uso: HTML5 nativo sin JS (lo que pinta el componente hoy), upgrade con honeypot + validación es-MX + consentimiento, e integración con Cloudflare Pages Function (POST real + Turnstile + rate-limit + envío vía Resend/Brevo)."
+        body={[
+          'La arquitectura es estricta: el componente no decide datos (el número viene de CONTACT.whatsapp), no emite schema (vive en Organization), no hardcodea ni el número ni los mensajes (waUrl() + WA_MESSAGES). Esa separación de responsabilidades mantiene al formulario simple en la plantilla y escalable a sitios reales con backend, sin reescribir el markup.',
+          'Las tres recetas son el camino completo: la receta A muestra el uso HTML5 nativo (lo que ya funciona hoy), la B añade honeypot + validación es-MX + consentimiento (sin backend todavía), y la C documenta la integración con Cloudflare Pages Function — el camino para sitios con backend real (envío por correo, CRM, ticketing) sin perder los principios de accesibilidad y anti-spam canónico.',
+        ]}
+      />
+      <div class="recetas">
+        <Receta titulo="A · Uso básico HTML5 nativo (lo que pinta el componente actual)" lang="astro" code={recetaUso} />
+        <Receta titulo="B · Con honeypot + validación es-MX + consentimiento LFPDPPP" lang="astro" code={recetaHoneypot} />
+        <Receta titulo="C · Cloudflare Pages Function · POST + Turnstile + rate-limit" lang="ts" code={recetaPagesFn} />
+      </div>
+    </div>
+  </section>
+
+  {/* ── 8) BUENAS PRÁCTICAS (sí/no) ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Buenas prácticas"
+        title="Qué hacer y qué evitar"
+        desc="Seis hábitos que mantienen al formulario accesible (WCAG 2.2), seguro (anti-spam canónico) y privacy-by-design (LFPDPPP/GDPR); seis errores que lo degradan a placeholder-as-label, validación-solo-cliente, reCAPTCHA-2026, PII-en-URL, schema-duplicado y consentimiento-decorativo."
+        body={[
+          'La diferencia entre un formulario que convierte y uno que pierde leads cabe en hábitos disciplinarios: label asociado por for/id (no placeholder), type semántico + inputmode + autocomplete (no input genérico), 16 px literal en inputs (no 1rem si el root cambia), focus management post-submit (no foco en botón deshabilitado), honeypot + Turnstile (no reCAPTCHA), consentimiento checkbox (no nota decorativa). Cada regla viene del checklist canónico §6.3 y de docs/VALIDACION-BUENAS-PRACTICAS.md (P1).',
+          'Los sí son hábitos de a11y + privacy + UX; los no son tentaciones rápidas que salen caras (en accesibilidad, en spam, en cumplimiento legal, en confianza del visitante). Léelos juntos —cada par sí/no apunta al mismo problema desde dos ángulos—.',
+        ]}
+      />
+      <div class="bp">
+        <div class="bp__col bp__col--si">
+          <h3 class="bp__title bp__title--si">Sí</h3>
+          <ul class="bp__list">{sis.map((t) => <li>{t}</li>)}</ul>
+        </div>
+        <div class="bp__col bp__col--no">
+          <h3 class="bp__title bp__title--no">No</h3>
+          <ul class="bp__list">{nos.map((t) => <li>{t}</li>)}</ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 9) EAT YOUR OWN DOG FOOD — el componente real ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="En vivo"
+        title="El componente, en su uso real"
+        desc="Las galerías de variantes son mockups a escala; este bloque NO. Aquí se renderiza un ContactForm REAL con sus props default, el mismo que pinta /contacto, idéntico al que pintará cualquier página que lo importe. Si el componente se rompe, este bloque se rompe a la vista."
+        body={[
+          'La regla del sitio es estricta —el componente vive en src/components/ContactForm.astro y se monta sin réplicas anotadas—. Este bloque cierra la página con el componente real, con CONTACT.whatsapp de site.ts. La página padre NO toca el handler de submit: al enviar el form aquí, se abrirá WhatsApp con tu mensaje al número DEMO de la plantilla (525500000000). Documentación que se documenta a sí misma.',
+          'Notas honestas: este componente NO tiene honeypot ni checkbox de consentimiento todavía (DEUDA P1 documentada en §6). Si quieres ver el patrón canónico completo, mira las recetas de §7 (B y C). Pero el componente actual ES funcional, accesible (WCAG 2.2 base) y suficiente para sitios de servicios donde el lead llega por WhatsApp.',
+        ]}
+      />
+      <div class="vivo">
+        <ContactForm heading="¿Tienes una duda? Escríbenos" />
+      </div>
+    </div>
+  </section>
+
+  {/* Cierre */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+</PageLayout>
+
+<style>
+  /* Estructura (tokens.css = fuente única; scoped por página) */
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* ── Anatomía (piezas) ── */
+  .piezas { display: grid; gap: var(--sp-5); margin: var(--sp-6) 0 0; padding: 0; list-style: none; }
+  .pieza { display: grid; grid-template-columns: 48px 1fr; gap: var(--sp-4); align-items: start; padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .pieza__n { display: grid; place-items: center; width: 48px; height: 48px; border-radius: var(--radius-md); background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-black); font-size: 1.25rem; }
+  .pieza__nombre { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pieza__que { margin: 0 0 var(--sp-3); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pieza__dato { margin: 0; font-size: var(--text-xs); color: var(--c-ink-2); }
+  .pieza__dato-label { font-weight: var(--weight-bold); color: var(--c-primary-dark); text-transform: uppercase; letter-spacing: .06em; margin-right: .35em; }
+  .pieza__dato code { font-family: ui-monospace, Menlo, monospace; font-size: .95em; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .1em .4em; color: var(--c-primary-dark); word-break: break-word; }
+
+  /* ── Beneficios ── */
+  .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .bene { grid-template-columns: repeat(3, 1fr); } }
+  .bene__card { padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .bene__title { margin: 0 0 var(--sp-3); font-family: var(--font-heading); font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--c-ink); line-height: var(--leading-snug); }
+  .bene__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Recetas ── */
+  .recetas { display: grid; gap: var(--sp-5); margin-top: var(--sp-6); }
+
+  /* ── Buenas prácticas ── */
+  .bp { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 900px) { .bp { grid-template-columns: 1fr 1fr; } }
+  .bp__col { padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .bp__title { margin: 0 0 var(--sp-4); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-bold); }
+  .bp__title--si { color: #16a34a; }
+  .bp__title--no { color: #dc2626; }
+  .bp__list { margin: 0; padding-left: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-3); }
+  .bp__list li { font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── En vivo ── */
+  .vivo { max-width: 640px; margin: var(--sp-6) auto 0; }
+
+  /* ── Patrones móviles (.pats / .pat / mockups .cfm) ── */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pat__desc code { font-family: ui-monospace, Menlo, monospace; font-size: .85em; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
+
+  /* Mockup móvil del formulario (.cfm = contact-form móvil) */
+  .cfm { display: flex; flex-direction: column; gap: 6px; padding: 10px 8px; background: var(--c-white); min-height: 100%; font-size: 9px; color: var(--c-ink); }
+  .cfm__head b { display: block; font-family: var(--font-heading); font-weight: 700; font-size: 10px; color: var(--c-ink); margin-bottom: 4px; }
+  .cfm__field { display: flex; flex-direction: column; gap: 3px; padding: 4px 0; }
+  .cfm__field b { font-size: 8px; font-weight: 700; color: var(--c-ink); }
+  .cfm__field i { display: block; height: 18px; border-radius: 4px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .cfm__field i.cfm__ta { height: 34px; }
+  .cfm__field--focus i { border-color: var(--c-primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-primary) 18%, transparent); display: flex; align-items: center; padding: 0 6px; color: var(--c-ink-2); font-style: normal; font-size: 8px; background: var(--c-white); }
+  .cfm__btn { display: grid; place-items: center; height: 28px; margin-top: 4px; padding: 0 10px; border-radius: 5px; background: #25d366; color: #04210f; font-weight: 700; font-size: 9px; }
+
+  /* Patrón 2 · teclado */
+  .cfm--keyb .cfm__kb { display: flex; flex-direction: column; gap: 3px; padding: 6px 4px; margin-top: 6px; background: #c4c8cd; border-top: 1px solid rgba(0,0,0,.2); }
+  .cfm__kbrow { display: flex; gap: 2px; justify-content: center; font-family: ui-monospace, Menlo, monospace; font-size: 7px; color: #1a1a1a; }
+  .cfm__kbrow i { display: inline-grid; place-items: center; padding: 3px 5px; min-width: 14px; border-radius: 3px; background: #fff; font-style: normal; font-weight: 600; }
+  .cfm__kbrow--special i { background: #b0b4b9; }
+  .cfm__kbsend { display: inline-grid; place-items: center; padding: 3px 7px; border-radius: 3px; background: var(--c-primary); color: #fff; font-weight: 700; }
+
+  /* Patrón 3 · consentimiento */
+  .cfm--consent .cfm__check { display: flex; gap: 6px; align-items: flex-start; padding: 6px 0; min-height: 28px; cursor: pointer; }
+  .cfm__check i.cfm__box { display: inline-block; width: 12px; height: 12px; border-radius: 2px; background: var(--c-white); border: 1.5px solid var(--c-border); flex-shrink: 0; margin-top: 1px; }
+  .cfm__check span { font-size: 8px; line-height: 1.3; color: var(--c-ink-2); }
+  .cfm__check u { color: var(--c-primary); text-decoration: underline; }
+  .cfm__hint { display: block; font-size: 7px; color: var(--c-muted); padding-left: 18px; margin-bottom: 4px; }
+
+  /* Patrón 4 · touch */
+  .cfm__check--ruler { position: relative; border: 1px dashed color-mix(in srgb, var(--c-primary) 50%, transparent); border-radius: 4px; padding: 6px; }
+  .cfm__rule { position: absolute; right: 4px; top: 4px; font-style: normal; font-size: 6px; font-weight: 700; color: #fff; background: var(--c-primary); border-radius: 3px; padding: 1px 3px; letter-spacing: .04em; }
+  .cfm__btn--ruler { position: relative; }
+  .cfm__rule--btn { background: #04210f; color: #25d366; }
+
+  /* ── Mockups galería variantes (.cfv = contact-form variant, escritorio) ── */
+  .cfv { display: flex; flex-direction: column; gap: 5px; padding: 8px; background: var(--c-white); min-height: 100%; font-size: 9px; color: var(--c-ink); border-radius: 6px; border: 1px solid var(--c-border); }
+  .cfv__head { display: flex; flex-direction: column; gap: 3px; margin-bottom: 4px; }
+  .cfv__head b { font-family: var(--font-heading); font-weight: 700; font-size: 10px; color: var(--c-ink); }
+  .cfv__sub { display: block; height: 4px; width: 70%; background: var(--c-surface); border-radius: 2px; }
+  .cfv__field { display: flex; flex-direction: column; gap: 2px; }
+  .cfv__label { font-size: 7px; font-weight: 700; color: var(--c-ink); }
+  .cfv__input { display: flex; align-items: center; height: 14px; border-radius: 3px; background: var(--c-surface); border: 1px solid var(--c-border); padding: 0 4px; font-size: 7px; color: var(--c-muted); }
+  .cfv__input--sel { justify-content: space-between; }
+  .cfv__input--sel i { font-style: normal; color: var(--c-ink-2); }
+  .cfv__ta { display: block; height: 30px; border-radius: 3px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .cfv__ta--sm { height: 18px; }
+  .cfv__check { display: flex; gap: 4px; align-items: flex-start; padding: 3px 0; }
+  .cfv__box { display: inline-block; width: 9px; height: 9px; border-radius: 1.5px; background: var(--c-white); border: 1.5px solid var(--c-border); flex-shrink: 0; margin-top: 1px; }
+  .cfv__check span { font-size: 7px; line-height: 1.3; color: var(--c-ink-2); }
+  .cfv__check u { color: var(--c-primary); text-decoration: underline; }
+  .cfv__btn { display: grid; place-items: center; height: 22px; padding: 0 10px; border-radius: 4px; font-weight: 700; font-size: 8px; }
+  .cfv__btn--wa { background: #25d366; color: #04210f; }
+  .cfv__btn--gh { background: transparent; color: var(--c-ink); border: 1px solid var(--c-border); }
+  .cfv__row { display: flex; gap: 4px; margin-top: 4px; }
+  .cfv__row .cfv__btn { flex: 1; }
+  .cfv__sublabel { font-size: 7px; color: var(--c-muted); margin-top: 4px; text-align: center; }
+
+  /* Variante 2 · multi-step */
+  .cfv--steps .cfv__steps { display: flex; align-items: center; gap: 2px; margin-bottom: 4px; }
+  .cfv__step { display: grid; place-items: center; width: 18px; height: 18px; border-radius: var(--radius-full); background: var(--c-surface); border: 1px solid var(--c-border); font-weight: 700; font-size: 8px; color: var(--c-muted); }
+  .cfv__step--on { background: var(--c-primary); border-color: var(--c-primary); color: #fff; }
+  .cfv__line { flex: 1; display: block; height: 2px; background: var(--c-border); border-radius: 1px; }
+  .cfv__line--on { background: var(--c-primary); }
+  .cfv__steplabel { display: block; font-size: 7px; color: var(--c-ink-2); margin-bottom: 4px; font-weight: 600; }
+
+  /* Variante 3 · inline */
+  .cfv--inline .cfv__inline { display: flex; gap: 4px; align-items: center; padding: 6px; background: var(--c-surface); border-radius: 4px; }
+  .cfv--inline .cfv__inline .cfv__input { flex: 1; }
+  .cfv--inline .cfv__inline .cfv__btn { padding: 0 8px; height: 18px; }
+
+  /* Variante 4 · file */
+  .cfv--file .cfv__file { display: flex; align-items: center; gap: 4px; padding: 5px; background: color-mix(in srgb, var(--c-primary) 8%, var(--c-white)); border: 1px solid color-mix(in srgb, var(--c-primary) 30%, transparent); border-radius: 3px; font-size: 7px; color: var(--c-ink); }
+  .cfv__clip { font-style: normal; font-size: 9px; }
+  .cfv__file span { flex: 1; }
+  .cfv__remove { font-style: normal; cursor: pointer; color: var(--c-muted); font-weight: 700; }
+  .cfv__dropzone { padding: 5px; border: 1.5px dashed var(--c-border); border-radius: 3px; text-align: center; font-size: 7px; color: var(--c-muted); }
+
+  /* Variante 5 · bottom-sheet */
+  .cfv--sheet { padding: 0; background: linear-gradient(180deg, transparent 0%, transparent 30%, rgba(0,0,0,.05) 100%); border: 0; }
+  .cfv__sheet { padding: 8px; background: var(--c-white); border-radius: 6px 6px 0 0; border: 1px solid var(--c-border); margin: 8px 4px 0; display: flex; flex-direction: column; gap: 4px; }
+  .cfv__handle { display: block; width: 28px; height: 3px; border-radius: 2px; background: var(--c-border); margin: 0 auto 4px; }
+  .cfv__sheethead { font-family: var(--font-heading); font-weight: 700; font-size: 10px; color: var(--c-ink); }
+  .cfv__sticky { display: flex; gap: 5px; align-items: center; justify-content: center; margin: 6px 8px 4px; padding: 6px 10px; background: #25d366; color: #04210f; border-radius: 99px; font-weight: 700; font-size: 9px; box-shadow: 0 2px 8px rgba(37, 211, 102, .3); }
+  .cfv__wa { font-size: 6px; font-style: normal; color: #04210f; }
+
+  /* Bloque «en vivo» — el componente real va aquí, sin clases adicionales */
+</style>

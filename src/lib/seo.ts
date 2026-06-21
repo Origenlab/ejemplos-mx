@@ -511,6 +511,89 @@ export function localBusinessSchema(overrides?: { areaServed?: string[] }) {
   };
 }
 
+/* ──────────────────────────────────────────────────────────────────────────
+ * contactPointSchema() — builder PURO de un nodo ContactPoint standalone.
+ * ----------------------------------------------------------------------------
+ * Espejo de `faqSchema()` / `reviewSchema()`: función pura, sin side effects,
+ * sin gate, sin acceso a SITE.* — recibe los datos por argumento y devuelve
+ * el nodo `{ '@type': 'ContactPoint', ... }` listo para componer.
+ *
+ * CUÁNDO USARLO (caso de uso real):
+ *   - En páginas de soporte/contacto SECCIONALES donde Organization NO se
+ *     emite (por ejemplo, una micro-landing aislada que arma su propio @graph
+ *     mínimo sin pasar por buildSchema). El ContactPoint del @graph base
+ *     (vía organizationSchema → contactPoint) cubre la mayoría de los casos;
+ *     este helper es para los pocos donde quieres declarar un canal extra
+ *     (línea técnica, ventas internacionales) sin tocar SITE.organization.
+ *
+ * REGLA DURA B3 — un único emisor por página. Si la página usa buildSchema()
+ * (lo hace BaseLayout en todo el sitio), Organization ya trae contactPoint
+ * con CONTACT.phoneRaw + CONTACT.email + areaServed='MX'. NO añadas un
+ * contactPointSchema() suelto en la misma página: la entidad ya tiene un
+ * ContactPoint y duplicarlo provoca ruido en el grafo. Este helper queda
+ * disponible para subgrafos standalone o para una migración futura a
+ * múltiples contactPoint[] en Organization.
+ *
+ * REGLA DURA NAP (§6.2 docs/MODULOS.md) — los datos que pases aquí DEBEN
+ * coincidir letra por letra con CONTACT.* / SITE.organization. Lo natural
+ * es alimentarlo desde la SSoT: `contactPointSchema({ telephone: CONTACT.phoneRaw, ... })`,
+ * NUNCA con strings hardcodeados de la página.
+ *
+ * SHAPE (schema.org/ContactPoint, conformante):
+ *   telephone        → string en E.164 con `+` (espejo de CONTACT.phoneRaw).
+ *   email            → string RFC 5322.
+ *   contactType      → uno de los oficiales: 'customer service' | 'technical support' |
+ *                      'sales' | 'billing support' | 'reservations' | ...
+ *   areaServed       → ISO-3166-1 alpha-2 ('MX') o array de regiones.
+ *   availableLanguage→ array de códigos/nombres ('es-MX', 'Spanish', 'English').
+ *
+ * USO TÍPICO (NO enchufado por default — disponible para emisores nuevos):
+ *
+ *   import { contactPointSchema } from '@lib/seo'
+ *   import { CONTACT } from '@config/site'
+ *
+ *   const node = contactPointSchema({
+ *     telephone: CONTACT.phoneRaw,            // '+525500000000'
+ *     email: CONTACT.email,                   // 'hola@ejemplos.mx'
+ *     contactType: 'customer service',
+ *     areaServed: 'MX',
+ *     availableLanguage: ['es-MX', 'Spanish'],
+ *   })
+ *   // node = {
+ *   //   '@type': 'ContactPoint',
+ *   //   telephone: '+525500000000',
+ *   //   email: 'hola@ejemplos.mx',
+ *   //   contactType: 'customer service',
+ *   //   areaServed: 'MX',
+ *   //   availableLanguage: ['es-MX', 'Spanish'],
+ *   // }
+ * ────────────────────────────────────────────────────────────────────────── */
+export type ContactPointInput = {
+  telephone?: string;
+  email?: string;
+  contactType: string;
+  areaServed?: string | readonly string[];
+  availableLanguage?: string | readonly string[];
+};
+
+export function contactPointSchema(input: ContactPointInput): Record<string, unknown> {
+  const out: Record<string, unknown> = {
+    '@type': 'ContactPoint',
+    contactType: input.contactType,
+  };
+  if (input.telephone) out.telephone = input.telephone;
+  if (input.email) out.email = input.email;
+  if (input.areaServed !== undefined) {
+    out.areaServed = Array.isArray(input.areaServed) ? [...input.areaServed] : input.areaServed;
+  }
+  if (input.availableLanguage !== undefined) {
+    out.availableLanguage = Array.isArray(input.availableLanguage)
+      ? [...input.availableLanguage]
+      : input.availableLanguage;
+  }
+  return out;
+}
+
 /* ════════════════════════════════════════════════════════════════════════════
  * 4) NODOS POR TIPO DE PÁGINA  (origen: PODIUMEX + EVENTECH, fusionados)
  * ════════════════════════════════════════════════════════════════════════════ */

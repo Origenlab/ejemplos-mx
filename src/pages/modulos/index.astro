@@ -65,8 +65,8 @@ const MOD_META: Record<string, { image: string; chips: string[] }> = {
   'service-card':        { image: `${IMG}/servicios/consultoria-desarrollo-web-astro.avif`,        chips: ['Icono SVG · 56×56', 'Título H3 + descripción', 'CTA dual (ficha o WhatsApp)'] },
   'review':              { image: `${IMG}/casos/caso-exito-proyecto-web-astro.avif`,               chips: ['Estrellas · 5/5', 'Cita + cliente + rol', 'Avatar con iniciales'] },
   'faq':                 { image: `${IMG}/articulos/guia-plantilla-astro-contenido-markdown.avif`, chips: ['Pregunta · summary tappable', 'Respuesta · admite HTML', 'Schema FAQPage opcional'] },
-  'cta-banner':          { image: `${IMG}/servicios/soporte-mantenimiento-web-astro.avif`,         chips: ['Gancho', 'Botón', 'Cierre'] },
-  'formulario-contacto': { image: `${IMG}/articulos/novedades-sistema-produccion-web-astro.avif`,  chips: ['Campos', 'Validación', 'WhatsApp'] },
+  'cta-banner':          { image: `${IMG}/servicios/soporte-mantenimiento-web-astro.avif`,         chips: ['Heading + desc + badge', 'btns[] tipados (wa/arrow/phone/quote)', '3 variantes: red · dark · light'] },
+  'contact-form':        { image: `${IMG}/articulos/novedades-sistema-produccion-web-astro.avif`,  chips: ['Form HTML5 nativo', 'Validación es-MX + honeypot', 'Envío a WhatsApp · waUrl()'] },
   'footer':              { image: `${IMG}/zonas/cobertura-desarrollo-web-ciudad-de-mexico.avif`,   chips: ['CTA + NAP + 4 cols + legales', 'Data-driven desde site.ts', 'Schema Organization en lib/seo.ts'] },
   'whatsapp-flotante':   { image: `${IMG}/showcase/imagen-optimizada-avif-sitio-web.avif`,         chips: ['Botón', 'Fijo', 'Mensaje'] },
 }
@@ -253,26 +253,26 @@ const AFONDO: Record<string, { body: string[]; points: string[] }> = {
   },
   'cta-banner': {
     body: [
-      'Es la franja de llamada a la acción que cierra cada página: una línea breve y un botón que no deja dudas sobre el siguiente paso. Cada página debe terminar pidiendo algo —contactar, cotizar, ver el catálogo—; el CTA banner es ese cierre, repetido con intención.',
-      'El enlace no se escribe a mano: cuando lleva a WhatsApp se arma con waUrl() y un mensaje pre-armado por intención (WA_MESSAGES). Variantes de fondo y alineación lo adaptan a cualquier página, manteniendo el mismo lenguaje visual en todo el sitio.',
+      'El CTA banner es la franja de cierre que convierte: un heading breve, una descripción de una línea y uno o dos botones tipados que no dejan dudas sobre el siguiente paso. Cada página termina pidiendo algo —cotizar por WhatsApp, ver el catálogo, ir a contacto— y el banner es ese cierre, repetido con intención y la misma forma visual en todo el sitio.',
+      'El componente vive en CTABanner.astro con tres variantes (red · dark · light) y un array de presets en cta-presets.ts (PRESET_GENERAL para home/landing, PRESET_CATEGORIA para fichas, PRESET_CONTACTO para cierres claros). Los botones son tipados (icon: wa | arrow | phone | catalog | info | quote, primary, external) y los enlaces a WhatsApp se arman con waUrl(WA_MESSAGES.cotizacion). Cero hardcoding del número (regla D4): la SSoT es CONTACT.whatsapp de site.ts.',
     ],
     points: [
-      'Cierre con una sola acción clara, al final de cada página',
-      'Frase breve y un botón sin ambigüedad',
-      'Enlaces a WhatsApp con waUrl() y mensaje por intención',
-      'Variantes de fondo y centrado, mismo lenguaje visual',
+      'Heading + descripción + badge de confianza + btns[] tipados con íconos SVG inline',
+      'Tres variantes de fondo: red (sólido) · dark (gradiente) · light (gris claro con bordes)',
+      '3 presets canónicos en cta-presets.ts (general · categoría · contacto) — cero copy repetido',
+      'WhatsApp con waUrl(WA_MESSAGES.x); foco visible AA; mobile-first full-width al ≤560',
     ],
   },
-  'formulario-contacto': {
+  'contact-form': {
     body: [
-      'Es el formulario que recoge al visitante listo para hablar. En esta plantilla no manda correos: arma un mensaje y abre WhatsApp con el texto pre-cargado —respuesta inmediata, sin fricción ni bandejas que revisar—, que es como la gente prefiere contactar hoy.',
-      'Pocos campos, los justos, con validación clara para no frustrar. Como el resto, el número y los mensajes salen de site.ts (CONTACT, WA_MESSAGES): se definen una vez y se reutilizan. Menos fricción para el visitante, menos mantenimiento para ti.',
+      'Es el formulario que recoge al visitante listo para hablar. En esta plantilla NO manda correos ni golpea un backend: arma un mensaje y abre WhatsApp con el texto pre-cargado —respuesta inmediata, sin fricción ni bandejas que revisar—. Tres campos accesibles (nombre, asunto, mensaje), labels asociados por for/id, inputs a 16 px para no disparar el zoom de iOS y botón en verde WhatsApp consistente con el flotante.',
+      'Su SSoT es CONTACT.whatsapp en site.ts: el componente lo lee como data-attribute y waUrl() lo formatea. NUNCA hardcodea un número (regla D4). El componente vive aislado (cero schema, cero estilos globales) y se incrusta donde se necesite, casi siempre al cierre de páginas como /contacto, o en columna junto al FAQ. Para sitios con backend real, el patrón es reemplazar el handler de submit por POST a una Cloudflare Pages Function con honeypot + Turnstile + rate-limit en el edge.',
     ],
     points: [
-      'Convierte a WhatsApp con el mensaje pre-armado, sin correo',
-      'Pocos campos y validación clara: cero fricción',
-      'Número y textos desde site.ts (CONTACT · WA_MESSAGES)',
-      'Respuesta inmediata, sin bandejas que vigilar',
+      'Convierte a WhatsApp con el mensaje pre-armado, sin correo ni backend',
+      'Tres campos (nombre · asunto · mensaje) con labels asociados y validación HTML5',
+      'Inputs a 16 px (anti-zoom iOS) + autocomplete + área táctil cómoda en el botón',
+      'Número y mensajes desde site.ts (CONTACT.whatsapp · WA_MESSAGES) vía waUrl()',
     ],
   },
   'footer': {
