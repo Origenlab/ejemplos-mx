@@ -1,0 +1,378 @@
+---
+// ============================================================================
+// /niveles/ — PÁGINA ÍNDICE de los niveles del sitio.
+// ----------------------------------------------------------------------------
+// Serie hermana de /modulos/. Si Módulos documenta las PIEZAS (componentes),
+// Niveles documenta los TIPOS DE PÁGINA por su profundidad en la jerarquía:
+// L1 raíz → L2 índice de sección → L3 detalle → L4 sub-detalle. Presenta el
+// concepto de «nivel» y lista los 4, cada uno enlazando a su ficha
+// (/niveles/<slug>). Data-driven desde NIVELES (site.ts, SSoT) — la misma
+// fuente del dropdown «Niveles» del Header.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import CategoryCard from '@components/CategoryCard.astro'
+import CategoryDetail from '@components/CategoryDetail.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import { NIVELES, waUrl, WA_MESSAGES } from '@config/site'
+import { NIVEL_CARD_META as NIV_META } from '@lib/niveles'
+
+const nivelesListos = NIVELES.filter((n) => n.estado === 'listo')
+const listos = nivelesListos.length
+
+// ── Recetas de la sección «Responsive y móvil» — código real del sistema ──
+const recetaGrid = `/* La vitrina de niveles es mobile-first: 1 → 2 → 4 por fila.
+   Arranca en UNA columna y CRECE con min-width (nunca al revés). */
+.showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
+@media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .showcase { grid-template-columns: repeat(4, 1fr); } }`
+
+const recetaMigas = `/* Las migas de pan reflejan el nivel: cuanto más profundo, más larga la ruta.
+   En móvil se colapsan para no desbordar (solo el último salto + «volver»). */
+.crumbs { display: flex; flex-wrap: wrap; gap: .35rem; font-size: var(--text-xs); }
+@media (max-width: 560px) {
+  /* deja visible solo el ancestro inmediato + la página actual */
+  .crumbs > :not(:nth-last-child(-n+2)) { display: none; }
+}`
+
+const recetaCard = `/* mobile.css · la card de nivel se toca cómodo en el teléfono. */
+@media (max-width: 1024px) {
+  a, button, [role="button"], label {
+    -webkit-tap-highlight-color: rgba(91, 61, 245, .15);  /* feedback al tap */
+  }
+}
+@media (max-width: 768px) {
+  .ccard__sub { min-height: 40px; display: inline-flex; align-items: center; }
+}`
+
+// Galería demo (AVIF reutilizado del pool del sitio) para los bloques «a fondo».
+const IMG = '/images'
+const POOL = [
+  `${IMG}/showcase/imagen-optimizada-avif-sitio-web.avif`,
+  `${IMG}/showcase/jerarquia-titulos-seo-pagina-web.avif`,
+  `${IMG}/showcase/texto-venta-contenido-markdown.avif`,
+  `${IMG}/showcase/enlaces-internos-navegacion-web.avif`,
+  `${IMG}/productos/desarrollo-web-astro-profesional.avif`,
+  `${IMG}/productos/componentes-plantilla-astro-markdown.avif`,
+  `${IMG}/productos/sitio-web-rapido-astro.avif`,
+  `${IMG}/servicios/consultoria-desarrollo-web-astro.avif`,
+]
+
+// Menú de cierre: «el menú reparte, el último botón (WhatsApp) convierte».
+const cierreItems = [
+  { label: 'Nivel L1 · Inicio', href: '/niveles/l1-inicio', sub: 'El primero, a fondo' },
+  { label: 'Todos los módulos', href: '/modulos', sub: 'La serie hermana' },
+  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
+  { label: 'Productos', href: '/productos', sub: 'Un L2 del sitio' },
+]
+const cierreCta = {
+  label: 'Cotizar por WhatsApp',
+  href: waUrl(WA_MESSAGES.cotizar),
+  sub: 'Respuesta inmediata',
+  external: true,
+}
+
+// «El nivel a fondo» — UN bloque CategoryDetail por nivel (info izq · galería der,
+// SIN zig-zag). Data-driven: el copy vive en AFONDO (por slug).
+const AFONDO: Record<string, { body: string[]; points: string[] }> = {
+  'l1-inicio': {
+    body: [
+      'El nivel 1 es la portada: la única página raíz del sitio, en /. Es lo primero que ve quien llega por la marca o por una campaña, y hace dos trabajos a la vez —presentar el negocio en segundos y repartir el tráfico hacia las secciones—. No es un catálogo ni una ficha: es el mapa de bienvenida que decide a dónde va cada visitante.',
+      'Su anatomía en esta plantilla: hero con un H1 único, una franja de atajos (SectionMenu), la vitrina de categorías (CategoryCard), bloques «a fondo» (CategoryDetail), prueba social, preguntas frecuentes y un cierre de conversión. No lleva migas de pan —es el origen de la jerarquía, no tiene padre—. Vive en src/pages/index.astro.',
+    ],
+    points: [
+      'Una sola por sitio: la raíz en / (no se repite ni se anida)',
+      'Doble trabajo: presentar el negocio y repartir hacia las secciones',
+      'Sin migas de pan: es el origen de la jerarquía, no tiene padre',
+      'Anatomía: hero → atajos → vitrina → a fondo → reseñas → FAQ → cierre',
+    ],
+  },
+  'l2-indice': {
+    body: [
+      'El nivel 2 es el índice de una sección: la página que explica de qué va una rama del sitio y lista sus hijos. /modulos, /productos, /servicios y /blog son todos L2. Su trabajo es orientar —decir «esto es lo que hay aquí»— y mandar al visitante a la ficha correcta sin que tenga que adivinar.',
+      'Lleva migas de un nivel (Inicio › Sección) y casi siempre una rejilla de tarjetas (CategoryCard, ProductCard) generada desde una sola fuente de datos. La regla del sitio: el índice NO inventa diseño por sección —reusa la misma vitrina— para que productos, servicios y módulos se vean y se naveguen igual.',
+    ],
+    points: [
+      'Lista los hijos de una rama: /modulos, /productos, /servicios, /blog',
+      'Migas de un nivel: Inicio › Sección',
+      'Rejilla de cards data-driven desde una sola lista (SSoT)',
+      'Mismo molde de vitrina para todas las secciones: cero diseño duplicado',
+    ],
+  },
+  'l3-ficha': {
+    body: [
+      'El nivel 3 es la ficha: UNA entidad explicada a fondo. /modulos/topbar, /productos/equipo-base, /servicios/consultoria y cada artículo del blog son L3. Aquí el visitante ya eligió qué le interesa; la página entrega todo lo que necesita para decidir —qué es, para qué sirve, cómo es por dentro y el siguiente paso—.',
+      'Es justo el tipo de página que estás leyendo. Lleva migas de dos niveles (Inicio › Sección › Item) y, en esta plantilla, sigue un molde fijo de 10 secciones (el de la serie Módulos): hero sin CTAs, títulos duo, anatomía con ejemplo en vivo, variantes, responsive, sí/no y cierre. Reusar el molde es lo que mantiene todas las fichas coherentes.',
+    ],
+    points: [
+      'Una entidad a fondo: un módulo, un producto, un servicio, un artículo',
+      'Migas de dos niveles: Inicio › Sección › Item',
+      'Molde fijo de 10 secciones (lo define la serie Módulos)',
+      'El visitante ya eligió: la ficha entrega todo para decidir',
+    ],
+  },
+  'l4-variante': {
+    body: [
+      'El nivel 4 es el más profundo: la sub-ficha o variante que aparece cuando una entidad se subdivide. Un producto con variantes (color, talla, modelo), una categoría con sub-categorías, una ficha de servicio con paquetes. No todos los sitios lo necesitan —este parte mayormente en L3—, pero un catálogo grande sí: es la hoja del árbol, donde se cierra la conversión.',
+      'Hereda el molde del L3 pero con foco en la decisión final: galería ampliada, especificaciones y un CTA fuerte (no exploratorio). Lleva migas de tres niveles (Inicio › Sección › Categoría › Item). La regla: solo se baja a L4 cuando hay suficiente contenido que diferencie las hojas —si no, dos clics para llegar a lo mismo solo añaden fricción—.',
+    ],
+    points: [
+      'El más profundo: variante o sub-ficha de una entidad L3',
+      'Solo cuando hace falta: catálogos grandes, no sitios simples',
+      'Migas de tres niveles: Inicio › Sección › Categoría › Item',
+      'Foco en la conversión final: galería, specs, CTA fuerte',
+    ],
+  },
+}
+---
+
+<PageLayout
+  title="Niveles del sitio — los 4 tipos de página por profundidad"
+  description="Qué es un nivel e índice de los 4 niveles de un sitio: L1 inicio, L2 índice de sección, L3 detalle, L4 sub-detalle. Cada uno con su ficha a fondo."
+  pageType="page"
+  breadcrumbs={[{ label: 'Niveles' }]}
+  guia={false}
+>
+  <Hero
+    badge="Guía del sitio · Niveles"
+    title="Los niveles:"
+    accent="la profundidad del sitio"
+    subtitle="Un sitio no es un montón de páginas sueltas: es un árbol de cuatro niveles de profundidad —inicio, índice de sección, detalle y sub-detalle—. Cada nivel tiene un trabajo distinto. Aquí están los cuatro, cada uno con su página a fondo."
+    descRight={[
+      'Esta página es el mapa de la jerarquía del sitio. Mientras la serie Módulos documenta las piezas con las que se arma cada página, Niveles documenta los tipos de página por su lugar en el árbol: cuál es la raíz, cuál lista, cuál detalla y cuál cierra. Saber en qué nivel estás define qué contenido va, qué migas de pan llevas y a dónde envías al visitante.',
+      'Y todo descansa en el mismo principio que el resto del sistema: una jerarquía clara y una sola fuente de verdad. La profundidad de una página determina sus migas, su plantilla y su rol en el SEO —de la raíz a la hoja—; nombrarla por su nivel evita inventar estructuras nuevas en cada sección.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES UN NIVEL? ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Concepto"
+        title="¿Qué es un nivel?"
+        desc="La profundidad de una página en el árbol del sitio, contada desde la raíz: L1 inicio, L2 índice de sección, L3 detalle, L4 sub-detalle. El nivel define el rol de la página, sus migas de pan y su plantilla."
+        body={[
+          'Un nivel es la distancia de una página a la raíz. La home es L1; una sección que lista (productos, servicios, módulos) es L2; la ficha de una entidad concreta es L3; y la sub-ficha de algo que se subdivide es L4. No es una etiqueta decorativa: el nivel determina qué contenido lleva la página, cuántas migas de pan muestra y qué plantilla usa.',
+          'Pensar el sitio por niveles —y no como pantallas inconexas— es lo que mantiene la navegación predecible. El visitante siempre sabe dónde está (las migas lo dicen), el buscador entiende la jerarquía, y quien edita no inventa una estructura nueva por sección: cada página entra en uno de cuatro moldes conocidos.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 2) EL ÍNDICE — los 4 niveles ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="El índice"
+        title="Los 4 niveles del sitio"
+        desc={`Los ${listos} niveles, cada uno como tarjeta: foto, nombre, qué hace y las ideas clave que lo definen. Entra a cualquiera para verlo a fondo.`}
+        body={[
+          'Cada tarjeta es un tipo de página real del sitio: foto, nombre, qué rol cumple y las ideas que lo distinguen. Es el MISMO card del catálogo —no inventamos un diseño aparte—, porque la coherencia es justo lo que esta serie enseña.',
+          'Entra a cualquiera para verlo a fondo: qué problema resuelve, de qué partes se compone, qué migas de pan lleva y cómo se construye en esta plantilla.',
+        ]}
+      />
+      <div class="showcase">
+        {nivelesListos.map((n, i) => {
+          const meta = NIV_META[n.slug]
+          return (
+            <CategoryCard
+              label={n.label}
+              href={n.href}
+              image={meta?.image}
+              imageAlt={`Imagen de ejemplo del nivel ${n.label}`}
+              badge={n.estado === 'listo' ? 'Listo' : 'Próximamente'}
+              blurb={n.desc}
+              subcategories={(meta?.chips ?? []).map((c) => ({ label: c, href: n.href }))}
+              ctaLabel="Ver nivel"
+              disabled={n.estado !== 'listo'}
+              index={i}
+            />
+          )
+        })}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3) CADA NIVEL, POR DENTRO — bloques «a fondo» (CategoryDetail) ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Por dentro"
+        title="Cada nivel, por dentro"
+        desc="El índice te dice qué es cada nivel; aquí lo abrimos. Mismo formato para todos: qué rol cumple, qué migas de pan lleva y de qué partes se compone."
+        body={[
+          'Es el mismo bloque «a fondo» del catálogo del home —información a la izquierda, galería a la derecha, idéntico para cada nivel—. Reusar el patrón es, otra vez, la lección: el sitio se arma con piezas que ya existen.',
+          'Aquí está cada nivel abierto con la misma estructura: qué resuelve, qué profundidad de migas lleva y de qué partes se compone. Los mismos niveles que ves arriba como tarjetas.',
+        ]}
+      />
+      <div class="afondo">
+        {nivelesListos.map((n, i) => (
+          <CategoryDetail
+            eyebrow="El nivel a fondo"
+            title={n.label}
+            body={AFONDO[n.slug].body}
+            points={AFONDO[n.slug].points}
+            cta={n.estado === 'listo' ? { label: `Ver el nivel ${n.label}`, href: n.href } : undefined}
+            gallery={{
+              main: { src: NIV_META[n.slug].image, alt: `Vista de ejemplo del nivel ${n.label}` },
+              thumbs: [
+                { src: POOL[(i + 1) % POOL.length], alt: `Detalle del nivel ${n.label}` },
+                { src: POOL[(i + 2) % POOL.length], alt: `Otro detalle del nivel ${n.label}` },
+              ],
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 4) RESPONSIVE Y MÓVIL — cómo se adapta la vitrina y las migas ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="Los niveles, en el teléfono"
+        desc="La rejilla de niveles no «se encoge»: se reordena. Y las migas de pan, que crecen con la profundidad, se colapsan en móvil para no desbordar. De cuatro por fila a una columna, con cards que se tocan cómodo."
+        body={[
+          'La misma vitrina del catálogo (.showcase) está pensada mobile-first: nace en una columna y va sumando columnas conforme hay ancho —2 en tablet, 4 en escritorio—. Nunca al revés: así el caso base (el teléfono) es el más simple y robusto, y el escritorio solo añade.',
+          'El detalle propio de esta serie son las migas de pan: cuanto más profundo el nivel, más larga la ruta (L4 lleva tres saltos). En móvil eso desborda, así que se colapsan dejando solo el ancestro inmediato y la página actual. Cada patrón, abajo, con su vista en el teléfono y su receta.',
+        ]}
+      />
+
+      <div class="pats">
+        {/* 1 · Rejilla 4 → 2 → 1 */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="La vitrina de 4 niveles baja a una sola columna en el teléfono">
+              <div class="vm-head"><span class="vm-logo">E</span><span class="vm-sp"></span><span class="vm-burg" aria-hidden="true">≡</span></div>
+              <div class="vm-stack">
+                <span class="vm-mini"><i class="vm-mini__img"></i><b class="vm-mini__t"></b><span class="vm-mini__chips"><i></i><i></i></span></span>
+                <span class="vm-mini"><i class="vm-mini__img"></i><b class="vm-mini__t"></b><span class="vm-mini__chips"><i></i><i></i></span></span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · De cuatro por fila a una columna</h3>
+            <p class="pat__desc">La vitrina es <strong>mobile-first</strong>: declara una columna y crece con <code>min-width</code> (2 en tablet, 4 en escritorio). Es el mismo <code>.showcase</code> del catálogo —no se duplica diseño— y baja a una columna sin tocar la card.</p>
+            <Receta titulo="CSS · rejilla mobile-first" lang="css" code={recetaGrid} />
+          </div>
+        </article>
+
+        {/* 2 · Migas que se colapsan */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Las migas de pan se colapsan en móvil para no desbordar">
+              <div class="vm-head"><span class="vm-logo">E</span><span class="vm-sp"></span></div>
+              <div class="vm-one">
+                <span class="vm-crumbs"><i class="vm-cr">…</i><i class="vm-cr">Productos</i><i class="vm-cr vm-cr--now">Casco</i></span>
+                <span class="vm-card"><i class="vm-card__img"></i><b class="vm-card__t"></b><b class="vm-card__d"></b></span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · Migas que se colapsan con la profundidad</h3>
+            <p class="pat__desc">Una ficha L4 lleva tres saltos (<code>Inicio › Sección › Categoría › Item</code>): en una pantalla angosta eso desborda. La regla: en móvil deja visible solo el <strong>ancestro inmediato</strong> y la página actual, el resto se pliega en un «…». El visitante conserva el «volver» sin perder espacio.</p>
+            <Receta titulo="CSS · migas colapsables" lang="css" code={recetaMigas} />
+          </div>
+        </article>
+
+        {/* 3 · Card táctil */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Card de nivel con chips y botón cómodos de tocar, de al menos 44 px">
+              <div class="vm-head"><span class="vm-logo">E</span><span class="vm-sp"></span></div>
+              <div class="vm-one">
+                <span class="vm-card">
+                  <i class="vm-card__img"></i>
+                  <b class="vm-card__t"></b>
+                  <span class="vm-chips"><i class="vm-chip">Raíz</i><i class="vm-chip">Presenta</i><i class="vm-chip">Reparte</i></span>
+                  <span class="vm-cta">Ver nivel<i class="vm-ruler">44px</i></span>
+                </span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · Cards cómodas de tocar</h3>
+            <p class="pat__desc">En el teléfono se toca con el dedo, no con un cursor: los chips de cada nivel y el botón «Ver nivel» crecen al área táctil de 44 px, y todo elemento tocable lleva un realce de toque suave para confirmar el tap.</p>
+            <Receta titulo="mobile.css · card táctil" lang="css" code={recetaCard} />
+          </div>
+        </article>
+      </div>
+
+      <GuiaNota titulo="La jerarquía vive en el sistema" archivo="src/pages/niveles/index.astro · src/components/Breadcrumbs.astro · src/styles/mobile.css">
+        <p>
+          La rejilla <code>.showcase</code> se declara <strong>mobile-first</strong> en esta
+          página (1 → 2 → 4 por fila), idéntica a la del catálogo. Las migas de pan
+          (<code>Breadcrumbs</code>) reflejan la profundidad del nivel y se colapsan en
+          móvil; el toque cómodo y el ancho al 100% los aporta <code>src/styles/mobile.css</code>,
+          la hoja central del sitio.
+        </p>
+        <p>
+          Resultado: una jerarquía que se ve y se navega igual en escritorio y en teléfono,
+          sin diseñar dos veces ni mantener media queries por componente.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* Cierre: menú de navegación full-width. */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+</PageLayout>
+
+<style>
+  /* Estructura (tokens.css = fuente única; scoped por página). */
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* ── Grid de niveles: MISMA vitrina que el catálogo (1 → 2 → 4 por fila) ── */
+  .showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .showcase { grid-template-columns: repeat(4, 1fr); } }
+
+  /* ── Pila «a fondo» (CategoryDetail) — separación uniforme, SIN zig-zag ── */
+  .afondo { display: grid; gap: clamp(2.5rem, 6vw, 5rem); margin-top: var(--sp-6); }
+
+  /* ── Sección «Responsive y móvil»: teléfono | explicación + receta ── */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pat__desc code { font-family: ui-monospace, Menlo, monospace; font-size: .85em; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
+
+  /* Mockups de la vitrina con prefijo .vm (vitrina mockup), scoped a esta página. */
+  .vm-head { display: flex; align-items: center; gap: 7px; padding: 8px 11px; background: var(--c-white); border-bottom: 1px solid var(--c-border); }
+  .vm-logo { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-black); font-size: 12px; }
+  .vm-sp { margin-left: auto; }
+  .vm-burg { font-size: 16px; color: var(--c-ink-2); }
+
+  .vm-stack { display: grid; gap: 10px; padding: 12px; }
+  .vm-one { padding: 12px; }
+  .vm-mini, .vm-card { display: grid; gap: 6px; padding: 8px; border-radius: 9px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .vm-mini__img, .vm-card__img { position: relative; display: block; border-radius: 6px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .vm-mini__img { height: 38px; }
+  .vm-card__img { height: 92px; }
+  .vm-mini__t, .vm-card__t { height: 9px; width: 70%; border-radius: 4px; background: var(--c-ink); opacity: .8; }
+  .vm-card__d { height: 7px; width: 92%; border-radius: 4px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .vm-mini__chips { display: flex; gap: 4px; }
+  .vm-mini__chips i { width: 26px; height: 9px; border-radius: 99px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .vm-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .vm-chip { font-style: normal; font-size: 9px; color: var(--c-ink-2); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 99px; padding: 3px 7px; }
+  .vm-cta { position: relative; display: grid; place-items: center; min-height: 30px; margin-top: 2px; border-radius: 7px; background: var(--c-primary); color: #fff; font-size: 11px; font-weight: 700; }
+  .vm-ruler { position: absolute; right: 8px; font-style: normal; font-size: 8px; font-weight: 700; color: #fff; background: rgba(255,255,255,.22); border-radius: 4px; padding: 1px 4px; }
+
+  /* Migas de pan mockup (colapsables) */
+  .vm-crumbs { display: flex; align-items: center; gap: 4px; margin-bottom: 8px; }
+  .vm-cr { font-style: normal; font-size: 8px; color: var(--c-ink-2); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 4px; padding: 2px 5px; }
+  .vm-cr--now { color: #fff; background: var(--c-primary); border-color: var(--c-primary); }
+</style>

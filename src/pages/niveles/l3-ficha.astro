@@ -1,0 +1,750 @@
+---
+// ============================================================================
+// /niveles/l3-ficha — FICHA DEL NIVEL «L3 · Detalle».
+// ----------------------------------------------------------------------------
+// TERCERA ficha L3 de la serie /niveles/*. MISMO molde de 10 secciones
+// (docs/MODULOS.md §2). META: documenta el nivel 3 —la ficha de detalle— que ES
+// el molde de 10 secciones de la serie Módulos. Ejemplos reales: /modulos/topbar,
+// /productos/equipo-base, /servicios/consultoria, cada artículo del blog.
+// Migas de dos niveles (Inicio › Sección › Item). Cierre con siblingsNiveles('l3-ficha').
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import FAQAccordion from '@components/FAQAccordion.astro'
+import RelatedLinks from '@components/RelatedLinks.astro'
+import { waUrl, WA_MESSAGES } from '@config/site'
+import { siblingsNiveles } from '@lib/niveles'
+
+const cierreItems = siblingsNiveles('l3-ficha')
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), sub: 'Respuesta inmediata', external: true }
+
+// El molde canónico de 10 secciones de un L3 (docs/MODULOS.md §2). Esta misma
+// página lo cumple — por eso es el ejemplo en vivo.
+const molde = [
+  'Hero — presenta la entidad (badge + título + subtítulo + descRight). Sin CTAs.',
+  '¿Qué es? — definición (SectionHeading layout="duo").',
+  '¿Para qué sirve? — función e importancia + tarjetas de beneficios.',
+  '¿Qué lleva? — anatomía con un ejemplo en vivo y las piezas numeradas.',
+  'Variantes — galería de variantes reales (GaleriaDisenos + DisenoCard).',
+  'Responsive y móvil — patrones + recetas comentadas (MarcoMovil + Receta).',
+  '¿Dónde va? — posición en el layout / la jerarquía.',
+  'Cómo está construido — capa técnica: componente, SSoT, helpers, schema.',
+  'Qué hacer y qué evitar — buenas prácticas en dos columnas (sí / no).',
+  'Cierre — SectionMenu full-width (siblings + home). El menú reparte, el último botón convierte.',
+]
+
+// ── Anatomía: las 6 PIEZAS estructurales de una ficha L3 ──
+const piezas = [
+  {
+    n: 1,
+    nombre: 'Hero con migas de dos niveles — presenta la entidad',
+    que: 'La apertura de la ficha: un h1 con el nombre propio de la entidad (el módulo, el producto, el servicio, el artículo) y, encima, las migas de pan de DOS niveles (Inicio › Sección › Item). A diferencia del L1 (sin migas) y del L2 (un nivel), la ficha lleva el rastro completo: el visitante llegó hasta lo más específico y necesita saber cómo volver a la sección o al inicio.',
+    dato: 'breadcrumbs={[{ label: "Sección", href: "/seccion" }, { label: "Item" }]} · h1 = nombre propio',
+  },
+  {
+    n: 2,
+    nombre: 'Cuerpo a fondo (secciones h2) — qué es, para qué, cómo',
+    que: 'El núcleo de la ficha: el contenido que agota el tema, dividido en secciones con h2 (qué es, para qué sirve, cómo funciona, características). Aquí el visitante ya eligió, así que la ficha entrega TODO lo que necesita para decidir, sin remitir a otra página. La jerarquía se mantiene: un h1 (el nombre), h2 por sección, h3 por sub-bloque.',
+    dato: 'SectionHeading layout="duo" por bloque · jerarquía h1 → h2 → h3 · medida legible ~65ch',
+  },
+  {
+    n: 3,
+    nombre: 'Ejemplo / galería / prueba — demuestra, no solo describe',
+    que: 'La parte que enseña en vivo: un ejemplo funcionando (en una guía de módulo), una galería de fotos (en un producto), el proceso paso a paso (en un servicio) o capturas/datos (en un caso). Demostrar pesa más que afirmar; es lo que convierte una ficha informativa en una persuasiva.',
+    dato: 'GaleriaDisenos + DisenoCard (variantes) · galería de producto · ejemplo en vivo del componente',
+  },
+  {
+    n: 4,
+    nombre: 'Schema específico — el emisor de esta hoja',
+    que: 'La ficha es el ÚNICO lugar donde vive el schema específico de la entidad: Product en una ficha de producto, Service en una de servicio, Article/TechArticle en un artículo o guía, LocalBusiness en una zona. Es la hoja del grafo: el índice L2 emitió la lista (ItemList), la ficha L3 emite el detalle. Un solo emisor por página (regla B3).',
+    dato: 'lib/seo.ts → productSchema() / serviceSchema() / articleSchema() · UN emisor por página (B3)',
+  },
+  {
+    n: 5,
+    nombre: 'Buenas prácticas / FAQ — resuelve la última duda',
+    que: 'Antes del cierre, la ficha despeja objeciones: una FAQ (FAQAccordion + faqSchema), una sección de «qué hacer y qué evitar», o specs comparadas. Es el último empujón antes de la conversión —responde lo que el visitante no preguntó en voz alta— y aporta contenido de cola larga para SEO.',
+    dato: 'FAQAccordion.astro + faqSchema() · bloque sí/no · tabla de especificaciones',
+  },
+  {
+    n: 6,
+    nombre: 'Cierre (siblings / CTA) — el siguiente paso',
+    que: 'El final de la ficha: un SectionMenu que reparte hacia fichas hermanas + la home (derivado de la SSoT con un helper como siblingsModules/siblingsNiveles), o un CTABanner que pide la conversión. La regla: el cierre NO se hardcodea —se deriva de la lista de la sección— para no romper enlaces cuando cambia el contenido.',
+    dato: 'SectionMenu + siblings<Serie>("slug") · o CTABanner (PRESET_CATEGORIA) · waUrl()',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Convierte el interés en decisión — el visitante ya eligió',
+    desc: 'La ficha es donde se decide. A diferencia de la home (que presenta) o del índice (que reparte), el visitante que llega a un L3 ya eligió qué le interesa: este módulo, este producto, este servicio. La ficha no tiene que venderle la sección —tiene que darle todo lo que necesita para decir «sí»: qué es, para qué sirve, cómo funciona, qué lo diferencia y cuál es el siguiente paso—. Por eso agota el tema en su propia página, sin remitir a otra: cada clic extra para entender es una fuga de conversión.',
+  },
+  {
+    titulo: 'Rankea por términos específicos — el long-tail',
+    desc: 'Mientras el índice L2 rankea por términos amplios («cascos de seguridad»), la ficha L3 rankea por los específicos y de intención alta («casco de seguridad dieléctrico clase E marca X precio»). Son los términos de cola larga: menos volumen, pero muchísima más intención de compra. La ficha es donde el contenido profundo (specs, FAQ, casos) captura esas búsquedas. Por eso una ficha pobre desperdicia el tráfico mejor calificado del sitio.',
+  },
+  {
+    titulo: 'Es la hoja de contenido — donde vive el schema específico',
+    desc: 'La ficha es el nodo hoja del grafo de datos estructurados: el único lugar donde se emite Product, Service o Article con todos sus campos (precio, disponibilidad, autor, fecha, rating). El índice emitió la lista (ItemList); la ficha emite el detalle. Un solo emisor por página (regla B3): la ficha NO duplica el Organization (eso vive en BaseLayout) ni emite ItemList (eso es del índice). Cada nivel emite lo suyo, y el grafo del sitio queda limpio y bien jerarquizado.',
+  },
+]
+
+const sis = [
+  'Lleva migas de pan de dos niveles (Inicio › Sección › Item). La ficha es lo más profundo del flujo común: el visitante necesita el rastro completo para volver a la sección o al inicio. El componente Breadcrumbs antepone «Inicio»; la página declara la sección (con href) y la entidad actual (sin href). Es la diferencia con el L2 (un nivel) y el L1 (ninguno).',
+  'Agota el tema en la propia ficha: el visitante ya eligió, dale todo. Qué es, para qué, cómo funciona, qué lo diferencia, FAQ y el siguiente paso —sin remitir a otra página para entender lo básico—. Cada clic extra para comprender es una fuga. La ficha es la última parada antes de la decisión; que no le falte nada.',
+  'Usa un h1 con el nombre propio de la entidad y su keyword específica. El h1 de la ficha es el término de cola larga por el que rankea: el nombre del producto/servicio/módulo + su calificador. Las secciones del cuerpo son h2; los sub-bloques, h3. Un solo h1 por página, con el nombre concreto, no el de la sección.',
+  'Emite el schema específico (Product/Service/Article) una sola vez, desde la ficha. La ficha es la hoja del grafo: el único lugar del Product/Service/Article con todos sus campos. El emisor es central (lib/seo.ts vía buildSchema); la ficha NO duplica Organization ni emite ItemList. Un emisor por página (regla B3).',
+  'Demuestra, no solo describas: ejemplo en vivo, galería, proceso o datos. Una ficha que enseña (el componente funcionando, las fotos del producto, el paso a paso del servicio, los números del caso) convierte más que una que solo afirma. La prueba visual o funcional es el corazón persuasivo del L3.',
+  'Deriva el cierre de la SSoT de la sección, no lo hardcodees. El SectionMenu de cierre (fichas hermanas + home) se arma con un helper sobre la lista de la sección (siblingsModules/siblingsNiveles), que salta las entradas no publicadas. Hardcodear cuatro enlaces garantiza 404s el día que cambie el contenido.',
+  'Cierra con UN siguiente paso claro: reparto (SectionMenu) o conversión (CTABanner). Una guía cierra repartiendo hacia fichas hermanas (el visitante explora); una ficha comercial cierra pidiendo la conversión (cotizar/comprar). Elige según la intención de la página —pero cierra siempre con una acción, no en seco—.',
+]
+const nos = [
+  'NO omitas las migas en una ficha. Es la página más profunda del flujo: sin migas, el visitante queda sin «dónde estoy» ni «cómo vuelvo» y depende del botón atrás. Las migas de dos niveles (Inicio › Sección › Item) son obligatorias en todo L3. Solo el L1 va sin ellas; el L2 lleva uno; el L3, dos.',
+  'NO conviertas la ficha en un teaser que remite a otra página. Si la ficha dice «contáctanos para más información» en lugar de dar la información, pierde su trabajo: el visitante ya eligió y quiere decidir aquí. Remitir a otra página para lo básico es fricción que mata la conversión del tráfico mejor calificado.',
+  'NO repitas el h1 de la sección en la ficha. El h1 de la ficha es el nombre de la ENTIDAD (este producto), no el de la sección (Productos) —ese ya es el h1 del índice L2—. Repetir el término amplio desperdicia la oportunidad de rankear por el específico y confunde la jerarquía del sitio.',
+  'NO dupliques schema en la ficha (Organization, o un ItemList que es del índice). La ficha emite SU schema específico (Product/Service/Article) y nada más. El Organization lo emite BaseLayout una vez; el ItemList es del índice L2. Meter Organization a mano o un ItemList en la ficha ensucia el grafo y los validadores marcan error (regla B3).',
+  'NO entierres el siguiente paso ni cierres en seco. Una ficha que termina sin CTA ni navegación deja al visitante en un callejón: leyó todo y no sabe qué sigue. Cierra con un SectionMenu (reparto) o un CTABanner (conversión) según la intención —pero nunca con el último párrafo a secas—.',
+  'NO hardcodees los enlaces del cierre. Cuatro enlaces escritos a mano se rompen cuando una ficha hermana cambia de slug o se despublica. El cierre se deriva de la lista de la sección con un helper (siblingsModules/siblingsNiveles) que solo enlaza lo publicado. Es el patrón que evita 404s automáticamente.',
+  'NO descuides la legibilidad del cuerpo largo. Una ficha es texto a fondo: líneas de 120 caracteres, font de 14 px o párrafos-muro la vuelven ilegible en móvil. Medida de ~65 caracteres, font ≥16 px (anti-zoom iOS), subtítulos h2/h3 que dan respiro. El contenido profundo solo convierte si se puede leer.',
+]
+
+// ── FAQ — preguntas frecuentes del nivel (voz v2; emitSchema → FAQPage único, regla B3) ──
+const faqs = [
+  {
+    question: '¿De cuántos niveles son las migas de una ficha?',
+    answer: 'De <strong>dos</strong> (Inicio › Sección › Item). La ficha es lo más profundo del flujo común, así que necesita el rastro completo para que el visitante suba a la sección o al inicio. El componente Breadcrumbs antepone «Inicio»; la página declara la sección (con href) y la entidad actual (sin href). Si la entidad se subdivide en un L4, ese llevará tres.',
+  },
+  {
+    question: '¿Qué schema emite la ficha?',
+    answer: 'El específico de su entidad, una sola vez: <code>Product</code> en un producto, <code>Service</code> en un servicio, <code>Article</code>/<code>TechArticle</code> en un artículo o guía, <code>LocalBusiness</code> en una zona. La ficha es la hoja del grafo: el índice L2 emitió la <code>ItemList</code> y BaseLayout el <code>Organization</code>. La ficha NO duplica ninguno de esos (regla B3 — un único emisor por página).',
+  },
+  {
+    question: '¿Por qué se dice que la ficha captura el long-tail?',
+    answer: 'Porque rankea por términos específicos y de alta intención («casco dieléctrico clase E precio»), no por el término amplio del índice («cascos»). Son búsquedas de poco volumen pero muchísima intención de compra; el contenido profundo de la ficha (specs, FAQ, casos) es lo que las captura. Por eso una ficha pobre desperdicia el tráfico mejor calificado del sitio.',
+  },
+  {
+    question: '¿Cuántas secciones tiene una ficha en esta plantilla?',
+    answer: 'El molde canónico (docs/MODULOS.md §2): hero sin CTAs, ¿qué es?, ¿para qué sirve?, anatomía con ejemplo en vivo, variantes, responsive, ¿dónde va?, cómo está construido, sí/no, FAQ y cierre con <code>siblingsNiveles</code>/<code>siblingsModules</code>. Esta misma página lo cumple —es su propio ejemplo en vivo (<em>eat-your-own-dog-food</em>)—.',
+  },
+  {
+    question: '¿La ficha puede remitir a otra página para «más información»?',
+    answer: 'No. La ficha agota el tema en su propia página: el visitante ya eligió y quiere decidir aquí. Un «contáctanos para más info» en lugar de la información es fricción que fuga el tráfico mejor calificado. Lo que sí cierra la ficha es UN siguiente paso claro (cotizar, ver hermanas), no más lectura obligatoria.',
+  },
+  {
+    question: '¿El cierre de la ficha se escribe a mano?',
+    answer: 'Nunca. El SectionMenu de cierre (fichas hermanas + home) se deriva de la lista de la sección con un helper (<code>siblingsModules</code> / <code>siblingsNiveles</code>) que solo enlaza lo publicado. Hardcodear cuatro enlaces garantiza 404s el día que una hermana cambia de slug o se despublica. El patrón data-driven los evita automáticamente.',
+  },
+  {
+    question: '¿El schema FAQ de la ficha rinde en Google?',
+    answer: 'Caveat de mayo de 2026: Google retiró los rich results de FAQ para casi todos los sitios (solo sobreviven autoridades gov/health). El schema <code>FAQPage</code> sigue siendo correcto y útil —Bing y DuckDuckGo lo aprovechan, y Google lo usa para entender la página—, pero no esperes el acordeón en la SERP. Se emite una sola vez (regla B3): o el componente con <code>emitSchema</code>, o buildSchema, nunca ambos.',
+  },
+]
+
+// ── 6 VARIANTES (tipos de ficha L3) ──
+const disenos = [
+  {
+    nombre: '1 · Ficha de módulo / guía técnica — el molde de 10 secciones (REAL · /modulos/*)',
+    tag: 'Guía · Documentación · Knowledge base',
+    desc: 'La ficha más completa del sitio: el molde canónico de 10 secciones (hero sin CTAs, qué es, para qué, anatomía con ejemplo en vivo, variantes, responsive, dónde va, cómo se construye, sí/no, cierre). Es /modulos/topbar, /modulos/hero… y esta misma página. Aplica a guías técnicas y documentación donde un tema se explica del concepto al código. La referencia de profundidad del sitio.',
+  },
+  {
+    nombre: '2 · Ficha de producto — galería + specs + CTA',
+    tag: 'E-commerce · Catálogo · Producto físico',
+    desc: 'La hoja comercial: galería de fotos (imagen grande + miniaturas), título, precio, badge, descripción, tabla de especificaciones, y CTA fuerte (comprar/cotizar). Emite Product JSON-LD con precio y disponibilidad (la única página que lo hace). El visitante evalúa y decide; la galería y las specs son el corazón. Cierra con CTABanner (PRESET_CATEGORIA).',
+  },
+  {
+    nombre: '3 · Ficha de servicio — qué incluye + proceso + CTA dual (REAL · /servicios/*)',
+    tag: 'Servicios · Consultoría · B2B',
+    desc: 'La hoja de un servicio: qué incluye, para quién, el proceso paso a paso, casos o entregables, y un CTA dual (ver ficha / hablar por WhatsApp). Emite Service JSON-LD. A diferencia del producto, suele no llevar precio fijo —el siguiente paso es una conversación—, así que el CTA a WhatsApp con mensaje pre-armado (waUrl) pesa más. Es /servicios/consultoria hoy.',
+  },
+  {
+    nombre: '4 · Artículo de blog — intro + cuerpo + FAQ + sigue leyendo (REAL · /blog/*)',
+    tag: 'Blog · Contenido · SEO de cola larga',
+    desc: 'La hoja editorial: hook de entrada, cuerpo con subtítulos, tabla o checklist, FAQ y cierre con «sigue leyendo» (3 enlaces: par cruzado + tesis). Emite Article/TechArticle JSON-LD con autor y fecha. Es el motor de SEO del sitio: cada artículo captura búsquedas específicas y enlaza a la ficha del módulo relacionado. Es /blog/<slug> hoy (25 artículos).',
+  },
+  {
+    nombre: '5 · Ficha de cobertura / zona — SEO local (REAL · /cobertura/*)',
+    tag: 'SEO local · Multi-zona · Negocio regional',
+    desc: 'La hoja de SEO local: una página por ciudad/zona (Inicio › Cobertura › CDMX) con contenido específico de esa área —servicios disponibles, casos locales, NAP—. Emite LocalBusiness con areaServed. Captura búsquedas «<servicio> en <ciudad>». Es /cobertura/cdmx y /cobertura/edomex hoy. El riesgo a evitar: contenido duplicado entre zonas (cada una debe aportar algo real).',
+  },
+  {
+    nombre: '6 · Caso de éxito — problema → solución → resultado',
+    tag: 'Prueba social · Portfolio · Testimonio',
+    desc: 'La hoja de prueba: la narrativa de un proyecto real —el problema del cliente, la solución aplicada, el resultado con números—. Combina texto, capturas y una cita del cliente. Convierte porque es prueba específica y atribuible, no una afirmación de marca. Cierra invitando a «tener un resultado como este». Vive en la colección casos.',
+  },
+]
+
+// ── 4 patrones móviles ──
+const recetaMigasMov = `/* MÓVIL · MIGAS DE DOS NIVELES (Inicio › Sección › Item)
+   La ficha es lo más profundo: su ruta es la más larga. En el teléfono,
+   tres saltos desbordan, así que se colapsa el del medio dejando el
+   primero (Inicio), un «…» y la página actual. El visitante conserva
+   el «volver al inicio» y el «dónde estoy» sin ocupar dos líneas. */
+
+.crumbs { display: flex; flex-wrap: nowrap; gap: .35rem; font-size: var(--text-xs); }
+@media (max-width: 480px) {
+  /* oculta los intermedios, deja Inicio + actual (+ un «…» como aviso) */
+  .crumbs > :not(:first-child):not(:last-child) { display: none; }
+  .crumbs::after { content: '…'; order: 1; }
+}`
+
+const recetaMedidaMov = `/* MÓVIL · CUERPO LEGIBLE (la ficha es texto a fondo)
+   El contenido largo solo convierte si se puede leer. Medida de ~65
+   caracteres por línea, font ≥16 px (anti-zoom iOS), interlineado
+   holgado y subtítulos que dan respiro. */
+
+.ficha__cuerpo { max-width: 65ch; margin-inline: auto; }
+.ficha__cuerpo p { font-size: 1rem; line-height: 1.7; }   /* ≥16px → sin zoom iOS */
+.ficha__cuerpo h2 { margin-top: 2em; }                    /* respiro entre bloques */`
+
+const recetaSpecsMov = `/* MÓVIL · TABLA DE SPECS CON SCROLL HORIZONTAL
+   Una tabla de especificaciones no se «encoge» sin volverse ilegible.
+   En móvil se envuelve en un contenedor con scroll-x: la tabla conserva
+   su forma y el visitante la desplaza, en lugar de aplastar columnas. */
+
+.specs-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.specs-wrap table { min-width: 480px; }                   /* no se aplasta */
+.specs-wrap th { position: sticky; left: 0; background: var(--c-white); }`
+
+const recetaCtaMov = `/* MÓVIL · CIERRE / CTA TÁCTIL EN LA ZONA DEL PULGAR
+   La ficha cierra pidiendo una acción. En móvil el CTA pasa full-width
+   con superficie de 48 px, al alcance del pulgar y con safe-area iOS. */
+
+@media (max-width: 560px) {
+  .ficha__cierre .btn {
+    width: 100%;
+    min-height: 48px;                                      /* WCAG SC 2.5.5 */
+    padding-bottom: calc(.8rem + env(safe-area-inset-bottom, 0));
+  }
+}`
+
+// ── 2 RECETAS DEL «CÓMO ESTÁ CONSTRUIDO» ──
+const recetaEstructura = `---
+// src/pages/productos/[...slug].astro — una ficha L3 desde una colección.
+// La ruta dinámica genera una página por entrada. getStaticPaths produce
+// las rutas; el cuerpo se renderiza del Markdown. Migas de DOS niveles.
+import PageLayout from '@layouts/PageLayout.astro'
+import { getCollection, render } from 'astro:content'
+
+export async function getStaticPaths() {
+  const productos = await getCollection('productos')
+  return productos.map((p) => ({ params: { slug: p.id }, props: { entry: p } }))
+}
+
+const { entry } = Astro.props
+const { Content } = await render(entry)
+---
+
+{/* Migas de DOS niveles: la ficha tiene abuelo (home) y padre (sección). */}
+{/* schemaType="Product" → buildSchema emite el Product de ESTA hoja (B3). */}
+<PageLayout
+  title={entry.data.title}
+  description={entry.data.excerpt}
+  pageType="page"
+  schemaType="Product"
+  breadcrumbs={[{ label: 'Productos', href: '/productos' }, { label: entry.data.title }]}
+>
+  <h1>{entry.data.title}</h1>
+  <Content />                {/* el cuerpo a fondo, desde el Markdown */}
+</PageLayout>`
+
+const recetaSchema = `---
+// La ficha es la HOJA del grafo: emite SU schema específico, una vez.
+// Product en producto, Service en servicio, Article en artículo. El
+// emisor es central (buildSchema desde BaseLayout, regla B3). La ficha
+// NO duplica Organization (eso es del layout) ni emite ItemList (eso
+// es del índice L2). Cada nivel emite lo suyo.
+import { productSchema } from '@lib/seo'
+
+// buildSchema(), según schemaType="Product", arma el nodo:
+//   productSchema({ name, image, description, offers: { price, availability } })
+// y lo compone en el @graph junto al Organization base. La página NO
+// escribe <script type="application/ld+json"> a mano.
+---
+
+{/* Jerarquía del grafo por nivel: */}
+{/*   L1 home  → Organization + WebSite   (BaseLayout)         */}
+{/*   L2 índice → ItemList                 (grid padre)         */}
+{/*   L3 ficha  → Product / Service / Article (esta hoja, B3)   */}`
+---
+
+<PageLayout
+  title="Nivel L3 · Detalle: la ficha que agota un tema y convierte"
+  description="El nivel 3 de un sitio: la ficha de detalle. Qué es, para qué sirve, su molde de 10 secciones, tipos de ficha, responsive y cómo se construye con rutas dinámicas."
+  pageType="page"
+  schemaType="TechArticle"
+  guia={false}
+  breadcrumbs={[{ label: 'Niveles', href: '/niveles' }, { label: 'L3 · Detalle' }]}
+>
+  <Hero
+    badge="Nivel del sitio · L3"
+    title="El Detalle:"
+    accent="la ficha que agota un tema y mueve a la decisión"
+    subtitle="El nivel 3 es la ficha: UNA entidad explicada a fondo. /modulos/topbar, /productos/equipo-base, /servicios/consultoria y cada artículo del blog son L3. Aquí el visitante ya eligió qué le interesa; la ficha le entrega todo para decidir. Esta misma página es un L3."
+    descRight={[
+      'Esta ficha documenta el L3 a fondo —y lo hace siendo uno—: qué problema resuelve (convertir el interés en decisión + rankear por términos específicos de cola larga + ser la hoja donde vive el schema concreto), de qué seis piezas estructurales se compone (hero con migas de dos niveles, cuerpo a fondo, ejemplo/galería/prueba, schema específico, FAQ/buenas prácticas, y cierre derivado de la SSoT), qué tipos de ficha existen (módulo/guía, producto, servicio, artículo, cobertura, caso) y cómo se construye con rutas dinámicas que iteran una colección.',
+      'Con una particularidad recursiva: el L3 ES el molde de 10 secciones de la serie Módulos, y esta página lo cumple al pie de la letra —hero sin CTAs, títulos duo, anatomía con ejemplo en vivo, variantes, responsive, sí/no, cierre con siblings—. Es el nivel más profundo del flujo común (lleva las migas más largas: Inicio › Sección › Item) y la hoja del grafo de datos: el índice L2 emitió la lista (ItemList), la ficha L3 emite el detalle (Product/Service/Article). Un solo emisor por página, regla B3. Cuando una entidad se subdivide aún más, nace el L4.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Definición"
+        title="¿Qué es el nivel L3 · Detalle?"
+        desc="La ficha de UNA entidad, explicada a fondo: un módulo, un producto, un servicio, un artículo, una zona. Cuelga de un índice L2 y, cuando la entidad se subdivide, es padre de un L4. Su trabajo no es presentar el sitio (home) ni listar una sección (índice): es agotar un tema y mover a la decisión. Esta misma página es una ficha L3."
+        body={[
+          'El L3 es la ficha: la página donde el visitante, que ya eligió qué le interesa, encuentra todo lo necesario para decidir. /modulos/topbar explica un módulo del concepto al código; /productos/equipo-base detalla un producto; /servicios/consultoria, un servicio; cada /blog/<slug>, un tema. Es el nivel más profundo del flujo común y el de tráfico mejor calificado.',
+          'En esta plantilla la ficha de la serie Módulos sigue un molde fijo de 10 secciones —el mismo que cumple esta página—, y las fichas de catálogo (producto, servicio, artículo) se generan con rutas dinámicas que iteran una colección. Lleva migas de dos niveles (Inicio › Sección › Item) y es la hoja del grafo de datos: el único lugar del Product/Service/Article específico.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Función e importancia"
+        title="¿Para qué sirve?"
+        desc="Tres trabajos: convertir el interés en decisión (el visitante ya eligió; la ficha agota el tema para que diga «sí»), rankear por términos específicos de cola larga (la intención de compra más alta del sitio) y ser la hoja de contenido donde vive el schema concreto (Product/Service/Article). Una ficha pobre desperdicia el tráfico mejor calificado."
+        body={[
+          'La función primaria de la ficha es la conversión: a diferencia de la home (presenta) y el índice (reparte), el visitante de un L3 ya eligió y quiere decidir. La ficha agota el tema en su propia página —qué es, para qué, cómo, qué lo diferencia, FAQ, siguiente paso— sin remitir a otra. Cada clic extra para entender es una fuga del tráfico mejor calificado del sitio.',
+          'La secundaria es de SEO long-tail: la ficha rankea por términos específicos de alta intención (el nombre concreto + calificadores), donde el contenido profundo (specs, FAQ, casos) captura las búsquedas. Y la terciaria es de datos: la ficha es la hoja del grafo —el único emisor del Product/Service/Article completo (regla B3)—, mientras el índice emitió la lista y el layout el Organization.',
+        ]}
+      />
+      <div class="bene">
+        {beneficios.map((b) => (
+          <article class="bene__card">
+            <h3 class="bene__title">{b.titulo}</h3>
+            <p class="bene__desc">{b.desc}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3) ¿QUÉ LLEVA? — Anatomía (6 piezas) + el molde de 10 secciones ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Anatomía"
+        title="¿Qué lleva por dentro?"
+        desc="Seis piezas estructurales: hero con migas de dos niveles, cuerpo a fondo (secciones h2), ejemplo/galería/prueba, schema específico (la hoja del grafo), FAQ/buenas prácticas, y cierre derivado de la SSoT. En la serie Módulos esas piezas se concretan en un molde fijo de 10 secciones —el que cumple esta misma página—."
+        body={[
+          'La ficha es la página más rica del sitio: seis piezas estructurales que se concretan según el tipo. La 1 (hero + migas de dos niveles) presenta y ubica. La 2 (cuerpo a fondo) agota el tema con jerarquía h1→h2→h3. La 3 (ejemplo/galería/prueba) demuestra. La 4 (schema específico) es la hoja del grafo. La 5 (FAQ/buenas prácticas) despeja la última duda. La 6 (cierre) deriva de la SSoT, nunca se hardcodea.',
+          'En la serie Módulos esas piezas se fijan en un molde de 10 secciones, para que toda guía se lea igual —del concepto al código—. Esta página lo cumple al pie de la letra: por eso es su propio ejemplo en vivo. El molde completo está en el recuadro de abajo y en docs/MODULOS.md §2.',
+        ]}
+      />
+      <ol class="piezas">
+        {piezas.map((p) => (
+          <li class="pieza">
+            <span class="pieza__n" aria-hidden="true">{p.n}</span>
+            <div class="pieza__body">
+              <h3 class="pieza__nombre">{p.nombre}</h3>
+              <p class="pieza__que">{p.que}</p>
+              <p class="pieza__dato"><span class="pieza__dato-label">SSoT:</span> <code>{p.dato}</code></p>
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      <GuiaNota titulo="Ejemplo en vivo · el molde de 10 secciones que cumple ESTA página" archivo="docs/MODULOS.md §2 · src/pages/modulos/topbar.astro">
+        <p>
+          La serie Módulos fija un molde de <strong>10 secciones</strong> para toda ficha L3.
+          Esta misma página lo cumple —cuéntalas mientras bajas—. Es el
+          <em>eat-your-own-dog-food</em> del nivel: la ficha que documenta las fichas
+          es, ella misma, una ficha del molde.
+        </p>
+        <ol class="molde">
+          {molde.map((m, i) => (
+            <li class="molde__li"><span class="molde__n">{i + 1}</span><span>{m}</span></li>
+          ))}
+        </ol>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 4) VARIANTES — GaleriaDisenos + DisenoCard ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Otros diseños y aplicaciones"
+        title="Tipos de ficha"
+        desc="Seis tipos de detalle según la entidad: ficha de módulo/guía técnica (el molde de 10 secciones), de producto (galería + specs + CTA), de servicio (proceso + CTA dual), artículo de blog (cuerpo + FAQ + sigue leyendo), de cobertura/zona (SEO local) y caso de éxito (problema → solución → resultado). Todas son L3 —agotan un tema y convierten— pero cambian el contenido y el schema."
+        body={[
+          'El nivel no cambia, la entidad sí —y con ella el contenido y el schema—. Una guía técnica usa el molde de 10 secciones y emite Article; un producto lleva galería y specs y emite Product con precio; un servicio lleva proceso y CTA dual y emite Service; una zona emite LocalBusiness. Reconocer el tipo correcto define qué piezas resaltan y qué datos estructurados se emiten.',
+          'Cada tipo reordena las mismas seis piezas estructurales: presenta, profundiza, demuestra, marca el schema, despeja dudas, cierra. La plantilla parte de la ficha de módulo (la más completa, el molde de 10 secciones) y las fichas de catálogo se generan con rutas dinámicas. Mismo nivel, distinto contenido y emisor.',
+        ]}
+      />
+
+      <GaleriaDisenos ariaLabel="Seis tipos de ficha de detalle (nivel L3)">
+        {/* 0 · Módulo / guía */}
+        <DisenoCard {...disenos[0]}>
+          <div class="fv">
+            <div class="fv__crumb">Inicio › Módulos › Topbar</div>
+            <div class="fv__hero"><b>El módulo</b></div>
+            <div class="fv__secs"><span></span><span></span><span></span><span></span></div>
+          </div>
+        </DisenoCard>
+        {/* 1 · Producto */}
+        <DisenoCard {...disenos[1]}>
+          <div class="fv fv--prod">
+            <div class="fv__crumb">Inicio › Productos › Item</div>
+            <div class="fv__split">
+              <i class="fv__gal"></i>
+              <div class="fv__meta"><b></b><span class="fv__price">$</span><span class="fv__btn">Cotizar</span></div>
+            </div>
+          </div>
+        </DisenoCard>
+        {/* 2 · Servicio */}
+        <DisenoCard {...disenos[2]}>
+          <div class="fv fv--serv">
+            <div class="fv__crumb">Inicio › Servicios › Item</div>
+            <div class="fv__hero fv__hero--sm"><b>Servicio</b></div>
+            <div class="fv__steps"><i>1</i><i>2</i><i>3</i></div>
+            <div class="fv__dual"><span class="fv__btn">Ver</span><span class="fv__btn fv__btn--wa">WhatsApp</span></div>
+          </div>
+        </DisenoCard>
+        {/* 3 · Artículo */}
+        <DisenoCard {...disenos[3]}>
+          <div class="fv fv--blog">
+            <div class="fv__crumb">Inicio › Blog › Artículo</div>
+            <b class="fv__h2">Título del artículo</b>
+            <span class="fv__line"></span><span class="fv__line"></span><span class="fv__line fv__line--sm"></span>
+            <div class="fv__faq">FAQ + Sigue leyendo</div>
+          </div>
+        </DisenoCard>
+        {/* 4 · Cobertura */}
+        <DisenoCard {...disenos[4]}>
+          <div class="fv fv--zona">
+            <div class="fv__crumb">Inicio › Cobertura › CDMX</div>
+            <div class="fv__map"></div>
+            <div class="fv__nap"><span></span><span></span></div>
+          </div>
+        </DisenoCard>
+        {/* 5 · Caso */}
+        <DisenoCard {...disenos[5]}>
+          <div class="fv fv--caso">
+            <div class="fv__caso-row"><span class="fv__tagx">Problema</span><span class="fv__tagx">Solución</span></div>
+            <div class="fv__result"><b>+38%</b><span>resultado</span></div>
+            <div class="fv__quote">“Cita del cliente”</div>
+          </div>
+        </DisenoCard>
+      </GaleriaDisenos>
+
+      <GuiaNota titulo="El tipo correcto según la entidad · todas son L3" archivo="src/pages/*/[...slug].astro · src/lib/seo.ts">
+        <p>
+          Las seis son <strong>nivel L3</strong> (agotan un tema y convierten); cambian la entidad,
+          el contenido y el schema. La <em>1 (módulo/guía)</em> es el molde de 10 secciones
+          (<a href="/modulos/topbar">/modulos/topbar</a>); la <em>3 (servicio)</em> es
+          <a href="/servicios/consultoria">/servicios/consultoria</a>; la <em>4 (artículo)</em>,
+          cualquier <a href="/blog">/blog/&lt;slug&gt;</a>; la <em>5 (zona)</em>,
+          <a href="/cobertura/cdmx">/cobertura/cdmx</a>. Cada una emite su schema específico, una vez.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 5) RESPONSIVE Y MÓVIL — 4 patrones con MarcoMovil + Receta ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="La ficha, en el teléfono"
+        desc="Cuatro patrones reales: migas de dos niveles que colapsan el salto del medio, cuerpo legible (medida ~65ch, font ≥16px anti-zoom iOS), tabla de especificaciones con scroll horizontal en lugar de columnas aplastadas, y cierre/CTA táctil en la zona del pulgar. La ficha es texto a fondo: su reto móvil es la lectura larga."
+        body={[
+          'La ficha es la página con más contenido, así que en móvil el reto es leer cómodo sin perder la orientación. El cuerpo se limita a una medida de ~65 caracteres y font ≥16 px (que además evita el zoom de iOS); los subtítulos h2/h3 dan respiro. Las migas, las más largas del sitio (tres saltos), colapsan el del medio para no ocupar dos líneas.',
+          'Dos detalles propios del L3: las tablas de especificaciones (que no se «encogen» sin volverse ilegibles, así que se envuelven en un scroll horizontal que conserva su forma) y el cierre táctil (el CTA full-width a 48 px en la zona del pulgar, con safe-area iOS). El contenido profundo solo convierte si se puede leer y la acción solo se toma si se alcanza.',
+        ]}
+      />
+
+      <div class="pats">
+        {/* 1 · Migas */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Las migas de dos niveles colapsan el salto del medio en móvil">
+              <div class="fm fm--migas">
+                <span class="fm__crumbs"><i class="fm__cr">Inicio</i><i>›</i><i class="fm__cr">…</i><i>›</i><i class="fm__cr fm__cr--now">Item</i></span>
+                <b class="fm__h">Nombre de la entidad</b>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · Migas de dos niveles que colapsan</h3>
+            <p class="pat__desc">La ficha lleva la ruta más larga (<code>Inicio › Sección › Item</code>). En el teléfono se colapsa el salto del medio dejando <strong>Inicio</strong>, un «…» y la página actual. El visitante conserva el «volver al inicio» y el «dónde estoy» en una sola línea.</p>
+            <Receta titulo="CSS · migas de dos niveles colapsables" lang="css" code={recetaMigasMov} />
+          </div>
+        </article>
+
+        {/* 2 · Cuerpo legible */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="El cuerpo de la ficha mantiene una medida legible y font de al menos 16px">
+              <div class="fm fm--read">
+                <b class="fm__h2">¿Qué es?</b>
+                <span class="fm__p"></span><span class="fm__p"></span><span class="fm__p fm__p--sm"></span>
+                <b class="fm__h2">¿Para qué sirve?</b>
+                <span class="fm__p"></span><span class="fm__p"></span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · Cuerpo legible (la ficha es texto a fondo)</h3>
+            <p class="pat__desc">El contenido largo solo convierte si se lee: medida de <code>~65ch</code>, <code>font-size ≥16px</code> (anti-zoom iOS), interlineado holgado y subtítulos <code>h2</code>/<code>h3</code> que dan respiro. Una ficha-muro de texto a 14 px se abandona antes del CTA.</p>
+            <Receta titulo="CSS · cuerpo legible mobile" lang="css" code={recetaMedidaMov} />
+          </div>
+        </article>
+
+        {/* 3 · Specs scroll-x */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="La tabla de especificaciones se desplaza en horizontal en lugar de aplastarse">
+              <div class="fm fm--specs">
+                <b class="fm__h2">Especificaciones</b>
+                <div class="fm__table"><span class="fm__tcol">Atributo</span><span class="fm__tcol">Valor</span><span class="fm__tcol">Norma</span><span class="fm__tcol">Más</span></div>
+                <i class="fm__scrollhint">↔ desliza</i>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · Tabla de specs con scroll horizontal</h3>
+            <p class="pat__desc">Una tabla de especificaciones no se «encoge» sin volverse ilegible: en móvil se envuelve en un contenedor con <code>overflow-x: auto</code> y un <code>min-width</code>, así conserva su forma y el visitante la desplaza. La primera columna puede quedar <code>sticky</code> como referencia.</p>
+            <Receta titulo="CSS · tabla con scroll horizontal" lang="css" code={recetaSpecsMov} />
+          </div>
+        </article>
+
+        {/* 4 · Cierre táctil */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="El cierre de la ficha pone el CTA full-width en la zona del pulgar">
+              <div class="fm fm--cierre">
+                <div class="fm__page"><span class="fm__p"></span><span class="fm__p fm__p--sm"></span></div>
+                <span class="fm__btn fm__btn--full">Cotizar por WhatsApp</span>
+                <i class="fm__safe"></i>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">4 · Cierre / CTA en la zona del pulgar</h3>
+            <p class="pat__desc">La ficha cierra pidiendo una acción. En móvil el CTA pasa full-width con <code>min-height: 48px</code> (WCAG SC 2.5.5), al alcance del pulgar y respetando <code>env(safe-area-inset-bottom)</code>. El cierre se deriva de la SSoT de la sección (siblings), nunca hardcodeado.</p>
+            <Receta titulo="CSS · cierre táctil" lang="css" code={recetaCtaMov} />
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 6) ¿DÓNDE VA? — la posición del L3 ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Posición en la jerarquía"
+        title="¿Dónde va en el sitio?"
+        desc="Dos niveles bajo la home: cada ficha cuelga de un índice L2 y, cuando la entidad se subdivide, es padre de un L4. Lleva migas de dos niveles (Inicio › Sección › Item). Es la hoja del flujo común —lo más profundo a lo que llega la mayoría— y, en el grafo de datos, la hoja que emite el schema específico de la entidad."
+        body={[
+          'El L3 ocupa el segundo nivel bajo la raíz: /modulos/topbar cuelga de /modulos; /productos/equipo-base de /productos. Por eso lleva migas de dos niveles (Inicio › Sección › Item): tiene abuelo (la home) y padre (el índice). En la mayoría de los sitios es el nivel más profundo —el flujo termina aquí—; solo los catálogos que se subdividen bajan a L4.',
+          'En el flujo del visitante, la ficha es el destino: llega desde el índice o desde una búsqueda específica, lee a fondo y decide. En el grafo de datos, es la hoja que emite el schema concreto (Product/Service/Article), mientras el índice emitió la lista y el layout el Organization. Cada ficha enlaza «volver a la sección» vía migas, devolviendo equity al índice (hub-and-spoke).',
+        ]}
+      />
+      <GuiaNota titulo="El árbol del sitio · L3 es la hoja del flujo común" archivo="src/pages/*/[...slug].astro · src/components/Breadcrumbs.astro">
+        <p>
+          <strong>L1 (/)</strong> → <strong>L2</strong> (<code>/productos</code>) → <strong>L3</strong>
+          (<code>/productos/equipo-base</code>, <code>/modulos/topbar</code>) → y, si la entidad se
+          subdivide, <strong>L4</strong> (<a href="/niveles/l4-variante">variante o sub-ficha</a>).
+          La ficha cuelga del índice y lleva migas de dos niveles. Es lo más profundo a lo que llega
+          la mayoría; el L4 solo aparece en catálogos que lo necesitan.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 7) CÓMO ESTÁ CONSTRUIDO — 2 recetas ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Capa técnica"
+        title="Cómo está construida"
+        desc="Las fichas de catálogo se generan con una ruta dinámica src/pages/<seccion>/[...slug].astro que itera una colección (getStaticPaths) y renderiza el cuerpo del Markdown; las guías de módulo viven en src/pages/modulos/<slug>.astro. Lleva pageType='page' + schemaType específico (Product/Service/Article) + breadcrumbs de dos niveles. Emite SU schema una vez (regla B3)."
+        body={[
+          'La arquitectura del L3 tiene dos formas. Las fichas de catálogo (producto, servicio, artículo, zona) se generan con una ruta dinámica [...slug].astro: getStaticPaths produce una página por entrada de la colección, y el cuerpo se renderiza del Markdown validado por Zod. Las guías de la serie Módulos son páginas .astro a mano que siguen el molde de 10 secciones. Ambas leen de SSoT, no hardcodean.',
+          'Dos detalles técnicos del nivel: las migas de dos niveles (la ficha declara su sección con href y su nombre sin href; Breadcrumbs antepone «Inicio») y el schema específico (la ficha pasa schemaType="Product"/"Service"/"TechArticle" y buildSchema emite ese nodo una sola vez, regla B3 —sin duplicar Organization ni ItemList—). La receta A muestra la ruta dinámica; la B, la jerarquía del grafo por nivel.',
+        ]}
+      />
+      <div class="recetas">
+        <Receta titulo="A · src/pages/productos/[...slug].astro — ficha desde colección" lang="astro" code={recetaEstructura} />
+        <Receta titulo="B · Schema específico — la hoja del grafo (regla B3)" lang="astro" code={recetaSchema} />
+      </div>
+    </div>
+  </section>
+
+  {/* ── 8) BUENAS PRÁCTICAS (sí/no) ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Buenas prácticas"
+        title="Qué hacer y qué evitar"
+        desc="Siete hábitos que mantienen la ficha como la página que agota un tema, convierte y emite su schema limpio; siete errores que la convierten en un teaser que remite a otra página, desperdicia el long-tail o ensucia el grafo. La ficha recibe el tráfico mejor calificado del sitio: cada acierto y cada error pesan donde más importa."
+        body={[
+          'La diferencia entre una ficha que convierte y una que frustra es disciplinaria: migas de dos niveles, agotar el tema, h1 con el nombre propio, schema específico único, demostrar en lugar de afirmar, cierre derivado de la SSoT y cuerpo legible. Cada regla viene de un error real: fichas sin migas, teasers que remiten, h1 repetido de la sección, schema duplicado, cierres hardcodeados con 404s, párrafos-muro a 14 px.',
+          'Los sí son hábitos de jerarquía + profundidad + SEO long-tail + grafo limpio. Los no son atajos que parecen ahorrar (un teaser corto, un cierre a mano) pero rompen el trabajo del L3: agotar el tema y convertir el tráfico mejor calificado. Léelos en pares.',
+        ]}
+      />
+      <div class="bp">
+        <div class="bp__col bp__col--si">
+          <h3 class="bp__title bp__title--si">Sí</h3>
+          <ul class="bp__list">{sis.map((t) => <li>{t}</li>)}</ul>
+        </div>
+        <div class="bp__col bp__col--no">
+          <h3 class="bp__title bp__title--no">No</h3>
+          <ul class="bp__list">{nos.map((t) => <li>{t}</li>)}</ul>
+        </div>
+      </div>
+
+      <GuiaNota titulo="L3 es el corazón de la serie Niveles (y su molde)" archivo="docs/NIVELES.md · docs/MODULOS.md §2">
+        <p>
+          Esta ficha sigue a <a href="/niveles/l2-indice">L2 · Índice de sección</a> y precede a
+          <a href="/niveles/l4-variante">L4 · Sub-detalle</a>. Es la más recursiva de la serie: el
+          L3 ES el molde de 10 secciones que cumplen todas las fichas (incluida esta). El cierre se
+          deriva de <code>NIVELES</code> con <code>siblingsNiveles('l3-ficha')</code>.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 9) FAQ — preguntas frecuentes del nivel (FAQPage único, regla B3) ── */}
+  <FAQAccordion items={faqs} title="Preguntas frecuentes · el nivel L3" emitSchema />
+
+  {/* ── 10) Cross-linking interno (hub-and-spoke) ── */}
+  <RelatedLinks
+    title="Sigue por el sistema"
+    desc="Los niveles vecinos y los módulos que definen el molde de una ficha."
+    links={[
+      { label: 'L2 · Índice de sección', href: '/niveles/l2-indice', desc: 'El nivel de arriba: el catálogo' },
+      { label: 'L4 · Sub-detalle', href: '/niveles/l4-variante', desc: 'El nivel de abajo: la variante' },
+      { label: 'Módulo · Topbar', href: '/modulos/topbar', desc: 'La ficha que marca el molde de 10 secciones' },
+      { label: 'Módulo · Migas de pan', href: '/modulos/breadcrumbs', desc: 'El rastro de dos niveles de la ficha' },
+    ]}
+    limit={4}
+  />
+
+  {/* ── Cierre: menú de navegación full-width (siblingsNiveles SSoT) ── */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando los niveles" />
+</PageLayout>
+
+<style>
+  /* Estructura (tokens.css = fuente única; scoped por página) */
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* ── Anatomía (piezas) ── */
+  .piezas { display: grid; gap: var(--sp-5); margin: var(--sp-6) 0 0; padding: 0; list-style: none; }
+  .pieza { display: grid; grid-template-columns: 48px 1fr; gap: var(--sp-4); align-items: start; padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .pieza__n { display: grid; place-items: center; width: 48px; height: 48px; border-radius: var(--radius-md); background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-black); font-size: 1.25rem; }
+  .pieza__nombre { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pieza__que { margin: 0 0 var(--sp-3); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pieza__dato { margin: 0; font-size: var(--text-xs); color: var(--c-ink-2); }
+  .pieza__dato-label { font-weight: var(--weight-bold); color: var(--c-primary-dark); text-transform: uppercase; letter-spacing: .06em; margin-right: .35em; }
+  .pieza__dato code { font-family: ui-monospace, Menlo, monospace; font-size: .95em; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .1em .4em; color: var(--c-primary-dark); word-break: break-word; }
+
+  /* ── Molde de 10 secciones (lista numerada en la GuiaNota) ── */
+  .molde { margin: var(--sp-4) 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+  .molde__li { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; font-size: var(--text-sm); color: var(--c-ink-2); line-height: var(--leading-snug); }
+  .molde__n { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 999px; background: var(--c-primary); color: #fff; font-size: 11px; font-weight: 700; }
+
+  /* ── Beneficios ── */
+  .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .bene { grid-template-columns: repeat(3, 1fr); } }
+  .bene__card { padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .bene__title { margin: 0 0 var(--sp-3); font-family: var(--font-heading); font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--c-ink); line-height: var(--leading-snug); }
+  .bene__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Recetas ── */
+  .recetas { display: grid; gap: var(--sp-5); margin-top: var(--sp-6); }
+
+  /* ── Buenas prácticas (sí/no) ── */
+  .bp { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 900px) { .bp { grid-template-columns: 1fr 1fr; } }
+  .bp__col { padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .bp__title { margin: 0 0 var(--sp-4); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-bold); }
+  .bp__title--si { color: #16a34a; }
+  .bp__title--no { color: #dc2626; }
+  .bp__list { margin: 0; padding-left: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-3); }
+  .bp__list li { font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Patrones móviles (.pats / .pat) ── */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pat__desc code { font-family: ui-monospace, Menlo, monospace; font-size: .85em; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
+
+  /* ── Mockups galería de tipos de ficha (.fv = ficha variant) ── */
+  .fv { display: flex; flex-direction: column; gap: 6px; min-height: 100%; padding: 10px; background: var(--c-surface); border-radius: 6px; font-size: 8px; line-height: 1.2; color: var(--c-ink-2); }
+  .fv__crumb { font-size: 7px; color: var(--c-ink-2); background: var(--c-white); border: 1px solid var(--c-border); border-radius: 4px; padding: 2px 5px; align-self: flex-start; }
+  .fv__hero { padding: 12px 10px; border-radius: 5px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); color: #fff; }
+  .fv__hero b { color: #fff; font-size: 10px; font-weight: 800; }
+  .fv__hero--sm { padding: 8px 10px; }
+  .fv__secs { display: grid; gap: 4px; }
+  .fv__secs span { height: 12px; border-radius: 3px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .fv__split { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .fv__gal { height: 50px; border-radius: 4px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .fv__meta { display: flex; flex-direction: column; gap: 5px; }
+  .fv__meta b { height: 8px; width: 80%; border-radius: 3px; background: var(--c-ink); opacity: .8; }
+  .fv__price { font-style: normal; font-size: 12px; font-weight: 800; color: var(--c-primary-dark); }
+  .fv__btn { display: grid; place-items: center; min-height: 18px; padding: 3px 8px; border-radius: 4px; background: var(--c-primary); color: #fff; font-size: 8px; font-weight: 700; }
+  .fv__steps { display: flex; gap: 4px; }
+  .fv__steps i { flex: 1; display: grid; place-items: center; height: 18px; border-radius: 4px; background: var(--c-white); border: 1px solid var(--c-border); font-style: normal; font-size: 8px; font-weight: 700; color: var(--c-primary-dark); }
+  .fv__dual { display: flex; gap: 4px; }
+  .fv__dual .fv__btn { flex: 1; background: var(--c-white); color: var(--c-ink-2); border: 1px solid var(--c-border); }
+  .fv__btn--wa { background: #25D366 !important; color: #fff !important; border: none !important; }
+  .fv__h2 { color: var(--c-ink); font-size: 10px; font-weight: 800; }
+  .fv__line { display: block; height: 4px; border-radius: 2px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .fv__line--sm { width: 60%; }
+  .fv__faq { margin-top: auto; padding: 5px; text-align: center; border-radius: 4px; background: var(--c-white); border: 1px dashed var(--c-border); font-size: 7px; }
+  .fv__map { height: 36px; border-radius: 4px; background: linear-gradient(135deg, #cfe8d4, #a7d3b0); }
+  .fv__nap { display: grid; gap: 3px; }
+  .fv__nap span { height: 7px; border-radius: 2px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .fv__caso-row { display: flex; gap: 4px; }
+  .fv__tagx { flex: 1; text-align: center; font-style: normal; font-size: 7px; padding: 3px; border-radius: 4px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .fv__result { display: flex; flex-direction: column; align-items: center; padding: 6px; border-radius: 4px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); color: #fff; }
+  .fv__result b { color: #fff; font-size: 14px; font-weight: 800; }
+  .fv__quote { font-style: italic; font-size: 7px; padding: 4px; border-left: 2px solid var(--c-primary); }
+
+  /* ── Mockups patrones móviles (.fm = ficha móvil) ── */
+  .fm { display: flex; flex-direction: column; gap: 7px; padding: 12px 10px; min-height: 100%; font-size: 8px; line-height: 1.3; color: var(--c-ink-2); }
+  .fm__crumbs { display: flex; gap: 3px; align-items: center; flex-wrap: nowrap; }
+  .fm__cr { font-style: normal; font-size: 7px; padding: 2px 5px; border-radius: 4px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .fm__cr--now { color: #fff; background: var(--c-primary); border-color: var(--c-primary); }
+  .fm__h { color: var(--c-ink); font-size: 12px; font-weight: 800; letter-spacing: -.02em; }
+  .fm__h2 { color: var(--c-ink); font-size: 10px; font-weight: 800; margin-top: 4px; }
+  .fm__p { display: block; height: 5px; border-radius: 2px; background: var(--c-border); }
+  .fm__p--sm { width: 55%; }
+  .fm--read .fm__p { background: var(--c-surface); border: 1px solid var(--c-border); }
+  .fm__table { display: flex; gap: 4px; overflow: hidden; }
+  .fm__tcol { flex-shrink: 0; min-width: 50px; height: 30px; border-radius: 4px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .fm__scrollhint { font-style: normal; font-size: 7px; color: var(--c-primary-dark); align-self: center; }
+  .fm__btn { display: grid; place-items: center; min-height: 30px; border-radius: 6px; background: var(--c-primary); color: #fff; font-size: 9px; font-weight: 700; margin-top: 4px; }
+  .fm__btn--full { width: 100%; }
+  .fm--cierre { background: var(--c-surface); position: relative; }
+  .fm__page { display: flex; flex-direction: column; gap: 5px; }
+  .fm__safe { display: block; height: 4px; width: 30%; background: #000; border-radius: 2px; margin: 6px auto 0; opacity: .35; }
+</style>

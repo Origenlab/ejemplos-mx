@@ -1,0 +1,743 @@
+---
+// ============================================================================
+// /blog/anatomia/articulos — PÁGINA DEL COMPLEMENTO «Artículos».
+// ----------------------------------------------------------------------------
+// Tercera de la serie /blog/anatomia/* (sidebar · paginacion · articulos), MISMO
+// molde que /modulos/<slug> (docs/MODULOS.md): hero → ¿qué es? → ¿para qué? →
+// ¿qué lleva? (+demo) → variantes → responsive → ¿dónde va? → cómo se arma →
+// buenas prácticas → cierre. Documenta la pieza CENTRAL del blog: el .mdx con
+// frontmatter tipado, la Content Collection (glob + Zod en content.config.ts),
+// la ruta dinámica src/pages/blog/[...slug].astro (getStaticPaths + render →
+// <Content /> → ArticleLayout) y el Article JSON-LD que emite ArticleLayout.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+import { siblingsAnatomia } from '@lib/blogAnatomia'
+
+const cierreItems = siblingsAnatomia('articulos')
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), sub: 'Respuesta inmediata', external: true }
+
+// Las 5 piezas del artículo — mapean con los pines del ejemplo en vivo.
+const partes = [
+  {
+    n: 1,
+    nombre: 'Frontmatter tipado',
+    que: 'El bloque entre --- al inicio del .mdx: los metadatos del artículo. title, description, category, heroImage y pubDate son la columna vertebral; tags, updatedDate, author y los relacionados afinan el resto. No es texto libre: cada campo lo valida Zod en build.',
+    dato: 'title · description · category · pubDate · tags…',
+  },
+  {
+    n: 2,
+    nombre: 'El cuerpo (Markdown/MDX)',
+    que: 'Lo que va debajo del frontmatter: el artículo en sí, en Markdown. Encabezados, listas, citas, enlaces y código se escriben en texto plano. Al ser .mdx, además admite componentes de Astro cuando una entrada necesita algo interactivo —un callout, una demo—.',
+    dato: 'Markdown → admite <Componentes /> (MDX)',
+  },
+  {
+    n: 3,
+    nombre: 'La Content Collection',
+    que: 'La colección articulos (content.config.ts): un glob loader que recoge cada .mdx de src/content/articulos/ y un esquema Zod que valida su frontmatter. Si falta un campo o tiene mal tipo, el build se detiene con un error claro —los datos malos no llegan a producción—.',
+    dato: 'glob() + z.object().strict() en content.config.ts',
+  },
+  {
+    n: 4,
+    nombre: 'La ruta dinámica',
+    que: 'src/pages/blog/[...slug].astro: una sola ruta que sirve TODOS los artículos. getStaticPaths recorre la colección y genera una página por entrada en build; render(articulo) devuelve el <Content /> que pinta el cuerpo dentro de ArticleLayout. Publicar es agregar un .mdx, no tocar código.',
+    dato: '[...slug].astro → render() → <Content /> → ArticleLayout',
+  },
+  {
+    n: 5,
+    nombre: 'El Article JSON-LD + meta',
+    que: 'ArticleLayout arma el schemaData con las claves del Article schema —datePublished, dateModified, author y section (la categoría)— a partir del frontmatter. De ahí salen el JSON-LD que entiende el buscador y los meta og:article:*. Datos estructurados sin escribir una línea de schema a mano.',
+    dato: 'schemaData.article · datePublished/dateModified/author/section',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Contenido separado del diseño',
+    desc: 'El autor escribe en Markdown —texto, encabezados, listas, enlaces— sin tocar HTML ni CSS ni el layout. La presentación la resuelve la plantilla una sola vez; el .mdx solo lleva el contenido. Quien redacta no necesita saber Astro, y un cambio de diseño no obliga a reeditar cada artículo.',
+  },
+  {
+    titulo: 'Validación que evita errores',
+    desc: 'Cada frontmatter pasa por Zod en build. Un título demasiado largo, una categoría inventada, una fecha mal escrita o una imagen sin la ruta correcta detienen la compilación con un mensaje claro. Los errores se atrapan antes de publicar, no cuando ya están en producción rompiendo el SEO.',
+  },
+  {
+    titulo: 'SEO y estructura ya resueltos',
+    desc: 'Cada artículo emite su Article JSON-LD, sus breadcrumbs, su bloque de relacionados y sus meta —todo derivado del frontmatter, sin trabajo extra—. El autor se concentra en escribir bien; la plantilla se encarga de que Google entienda fecha, autor, sección e imagen de cada entrada.',
+  },
+]
+
+const sis = [
+  'Mantén el title entre 10 y 70 caracteres y la description entre 70 y 160: lo exige Zod y lo agradece el SERP.',
+  'Una sola fuente: cada artículo es un .mdx de la colección; nada de páginas .astro sueltas (anti-patrón D3).',
+  'Usa los componentes de Astro en MDX para callouts o demos; el resto del texto, Markdown plano.',
+  'Pon alt descriptivo en cada imagen del cuerpo (y recuerda que el heroImage es obligatorio).',
+  'Rellena category y tags con la taxonomía real: alimentan archivos de categoría, etiquetas y el sidebar.',
+]
+const nos = [
+  'En .mdx, NUNCA pongas llaves o etiquetas dentro de backticks en la prosa: MDX evalúa el contenido entre backticks como JSX y rompe el build. Para código con símbolos, usa un bloque de código cercado.',
+  'No inventes una categoría fuera del enum (guias, novedades, general): el build la rechaza.',
+  'No pegues HTML suelto por artículo para «maquetar» algo puntual: rompe la coherencia y el responsive.',
+  'No subas un .mdx sin description o sin heroImage: Zod detiene la compilación.',
+  'No dupliques estructura entre artículos a mano: el layout y el listado se generan solos desde la colección.',
+]
+
+// Variantes de artículo (galería). Réplica en vivo abajo, mismo orden.
+const disenos = [
+  {
+    nombre: 'Artículo estándar (guía)',
+    tag: 'Blog · Guía',
+    desc: 'La entrada típica: frontmatter mínimo (title, description, category, heroImage, pubDate) y cuerpo en Markdown con encabezados y listas. Es el 90% de los artículos del blog —texto bien estructurado, sin nada interactivo—. Configuración real de la colección.',
+  },
+  {
+    nombre: 'Con imagen de cabecera',
+    tag: 'Editorial · Destacado',
+    desc: 'El mismo artículo, con un heroImage que abre la lectura. En esta plantilla la cabecera es obligatoria (heroImage en el schema); el matiz es que hoy se sustituye por una imagen del pool —ver «¿Dónde va?»—. La figura va a ancho completo y alimenta la og:image.',
+  },
+  {
+    nombre: 'Con componentes MDX',
+    tag: 'Tutorial · Técnico',
+    desc: 'Cuando el texto pide algo más que prosa: un callout de aviso, un bloque de código resaltado, una tabla o una mini-demo. Al ser .mdx, el cuerpo importa y usa componentes de Astro entre el Markdown. Soporte de fábrica —no requiere tocar la ruta ni el layout—.',
+  },
+  {
+    nombre: 'Guía larga con índice',
+    tag: 'Referencia · Pilar',
+    desc: 'Artículos extensos —los de referencia— donde conviene un índice del contenido (anclas a cada H2/H3) que acompañe el scroll. Es el cuerpo Markdown de siempre; el índice se deriva de los encabezados. Extensión sobre el layout, sin cambiar el frontmatter.',
+  },
+  {
+    nombre: 'Borrador (no se publica)',
+    tag: 'Editorial · WIP',
+    desc: 'Un .mdx con draft: true. La ruta dinámica filtra los borradores en getStaticPaths, así que no genera página ni aparece en el listado: el artículo existe en el repo pero no en el sitio. Útil para escribir con calma antes de publicar. Soporte de fábrica.',
+  },
+  {
+    nombre: 'Con relacionados manuales',
+    tag: 'Cross-sell · Negocio',
+    desc: 'Frontmatter con relatedProducts o relatedServices: referencias tipadas a otras colecciones. Conectan el artículo con las fichas que cotizan —del contenido editorial al negocio— y las valida Zod por slug. Campos opcionales del mismo esquema.',
+  },
+]
+
+// ── Recetas de implementación (las pinta <Receta>) ───────────────────────────
+// Receta A · un .mdx de ejemplo (frontmatter + cuerpo).
+const recetaMdx = `---
+title: "Migas de pan en Astro: guía paso a paso"
+description: "Cómo construir un componente de breadcrumbs accesible en Astro y conectarlo al BreadcrumbList JSON-LD, sin duplicar el emisor."
+category: "guias"
+heroImage: "/images/articulos/migas-de-pan-astro.avif"
+pubDate: 2026-03-12
+updatedDate: 2026-04-02
+author: "Ejemplos.mx"
+tags: ["astro", "breadcrumbs", "seo"]
+relatedServices: ["diseno-web"]
+---
+
+El componente de migas resuelve dos cosas a la vez: orienta al lector
+y le declara a Google la jerarquia de la pagina. Aqui lo construimos
+desde cero.
+
+## Por que importa
+
+Una barra de migas convierte una URL opaca en un rastro legible...
+
+## El componente
+
+Para mostrar codigo con llaves o etiquetas, usa un bloque cercado
+(como este) — NUNCA backticks en linea con esos simbolos en .mdx.`
+
+// Receta B · el esquema Zod de la colección (extracto de content.config.ts).
+const recetaSchema = `// content.config.ts · la coleccion 'articulos' (extracto).
+import { defineCollection, reference, z } from 'astro:content'
+import { glob } from 'astro/loaders'
+
+const ARTICLE_CATEGORIES = ['guias', 'novedades', 'general'] as const
+
+const articulos = defineCollection({
+  // glob loader: recoge cada .mdx de la carpeta de articulos.
+  loader: glob({ pattern: '**/*.mdx', base: './src/content/articulos' }),
+  schema: z
+    .object({
+      title: z.string().min(10).max(70),       // <=70 para el SERP
+      description: z.string().min(70).max(160),
+      category: z.enum(ARTICLE_CATEGORIES).default('general'),
+      heroImage: z.string().regex(/^\\/images\\//), // ruta obligatoria
+      pubDate: z.coerce.date(),
+      updatedDate: z.coerce.date().optional(),
+      author: z.string().default('Ejemplos.mx'),
+      tags: z.array(z.string()).max(10).optional(),
+      relatedProducts: z.array(reference('productos')).optional(),
+      relatedServices: z.array(reference('servicios')).optional(),
+      draft: z.boolean().default(false),
+    })
+    .strict(),  // rechaza campos desconocidos
+})
+
+export const collections = { articulos }`
+
+// Receta C · la ruta dinámica (getStaticPaths + render + ArticleLayout).
+const recetaRuta = `---
+// src/pages/blog/[...slug].astro · sirve TODOS los articulos.
+import { getCollection, render } from 'astro:content'
+import ArticleLayout from '@layouts/ArticleLayout.astro'
+import { blogImage } from '@lib/blogImages'
+
+export async function getStaticPaths() {
+  // Filtra borradores: un draft no genera pagina.
+  const articulos = await getCollection('articulos', ({ data }) => !data.draft)
+  return articulos.map((articulo) => ({
+    params: { slug: articulo.id },     // /blog/<slug>
+    props: { articulo },
+  }))
+}
+
+const { articulo } = Astro.props
+const { Content } = await render(articulo)  // compila el cuerpo .mdx
+const d = articulo.data
+---
+
+<ArticleLayout
+  title={d.title}
+  description={d.description}
+  category={d.category}
+  pubDate={d.pubDate}
+  updatedDate={d.updatedDate}
+  author={d.author}
+  image={blogImage(articulo.id)}  {/* hoy sustituye al heroImage */}
+  tags={d.tags}
+>
+  <Content />   {/* el cuerpo del .mdx entra aqui */}
+</ArticleLayout>`
+
+// ── Recetas de los patrones móviles ──────────────────────────────────────────
+const recetaProse = `/* MOVIL · tipografia del articulo: legible y de medida comoda.
+   El cuerpo (.prose) usa una medida acotada (~66ch) para que la
+   linea no sea demasiado larga, y tamanos fluidos con clamp(). */
+
+.prose {
+  max-width: 66ch;                 /* medida de lectura comoda */
+  font-size: clamp(1rem, 0.95rem + 0.3vw, 1.125rem);
+  line-height: var(--leading-relaxed);
+}
+.prose h2 { font-size: clamp(1.4rem, 1.2rem + 1.4vw, 2rem); }`
+
+const recetaHero = `/* MOVIL · imagen de cabecera fluida y sin saltos de layout.
+   width:100% + height:auto la hace responsive; los atributos
+   width/height en el <img> reservan el espacio y evitan el CLS. */
+
+.post__hero img {
+  width: 100%;
+  height: auto;            /* conserva la proporcion */
+  border-radius: var(--radius-lg);
+}
+/* En el HTML: <img ... width="1200" height="630"> para reservar el hueco. */`
+
+const recetaOverflow = `/* MOVIL · codigo y tablas que no caben se desplazan, no desbordan.
+   En el grid del articulo, el contenido va con min-width:0 para que
+   un <pre> o una <table> anchos scrolleen DENTRO de su caja. */
+
+.prose { min-width: 0; }   /* la columna puede encoger bajo el min-content */
+
+.prose pre,
+.prose table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;        /* scroll horizontal local, sin romper la pagina */
+}`
+---
+
+<PageLayout
+  title="Los Artículos del blog — Markdown que se vuelve página"
+  description="El artículo del blog: un .mdx con frontmatter tipado (validado por Zod), cuerpo en Markdown/MDX y una ruta dinámica que lo renderiza con Article JSON-LD, sin tocar código."
+  pageType="page"
+  schemaType="TechArticle"
+  guia={false}
+  breadcrumbs={[{ label: 'Blog', href: '/blog' }, { label: 'Anatomía', href: '/blog/anatomia' }, { label: 'Artículos' }]}
+>
+  <Hero
+    badge="Complemento del blog · Artículos"
+    title="Los Artículos:"
+    accent="Markdown que se vuelve página"
+    subtitle="La pieza central del blog. Cada entrada es un archivo Markdown con unos metadatos al inicio; la plantilla la convierte en una página completa —con su SEO, sus fechas y sus datos estructurados—. El autor escribe; el sistema arma el resto."
+    descRight={[
+      'Esta página no es una ficha técnica: es el complemento entero, abierto y explicado. Qué es un artículo aquí, de qué partes se compone, cómo se comporta en el teléfono, dónde encaja y, al final, cómo está construido —del archivo .mdx al Article JSON-LD que emite el layout—.',
+      'Con una idea que conviene marcar desde el principio: contenido y diseño van separados a propósito. El .mdx solo lleva el texto y unos metadatos tipados; la presentación, el SEO y la estructura los resuelve la plantilla una sola vez. Publicar es agregar un archivo —el listado, la paginación y la página de detalle se generan solas—.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Definición"
+        title="¿Qué es un artículo del blog?"
+        desc="Un archivo Markdown (.mdx) con dos partes: un frontmatter tipado con los metadatos y el cuerpo del texto. La plantilla lo convierte en una página completa."
+        body={[
+          'Un artículo, en esta plantilla, es un único archivo .mdx dentro de la colección de contenido. Arriba lleva el frontmatter —un bloque entre --- con los metadatos: título, descripción, categoría, fecha, imagen, tags—; debajo, el cuerpo en Markdown: encabezados, párrafos, listas, citas, enlaces, código. Nada de HTML ni de plantilla: solo contenido y datos.',
+          'No se inventó aquí: es el patrón estándar del contenido en sitios modernos —Markdown con metadatos al frente—. Lo propio es que ese frontmatter está tipado y validado: forma parte de una Content Collection con esquema Zod, así que el build comprueba cada campo. Y al ser .mdx, el cuerpo puede incluir componentes de Astro cuando una entrada necesita algo más que texto.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Función e importancia"
+        title="¿Para qué sirve?"
+        desc="Hace tres trabajos: separa el contenido del diseño, valida los datos en build para evitar errores, y deja el SEO y la estructura ya resueltos por la plantilla."
+        body={[
+          'Su función es que escribir un artículo no exija saber maquetar. Quien redacta abre un .mdx, llena unos metadatos y escribe en Markdown; no toca HTML, CSS ni el layout. La presentación se decide una vez, en la plantilla, y vale para todos los artículos. Cambiar el diseño del blog no obliga a reeditar una sola entrada.',
+          'Y lo hace sin sacrificar rigor ni SEO. El frontmatter pasa por Zod, así que un campo mal escrito detiene el build antes de publicar; y cada artículo emite su Article JSON-LD, sus breadcrumbs y sus meta a partir de ese mismo frontmatter, sin trabajo extra. Tres efectos —autoría simple, datos correctos, SEO de fábrica— en una sola pieza.',
+        ]}
+      />
+      <div class="bene">
+        {beneficios.map((b) => (
+          <article class="bene__card">
+            <h3 class="bene__title">{b.titulo}</h3>
+            <p class="bene__desc">{b.desc}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3) ¿QUÉ LLEVA? — anatomía con ejemplo en vivo ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Anatomía"
+        title="¿Qué lleva un artículo?"
+        desc="Cinco piezas: el frontmatter tipado, el cuerpo en Markdown/MDX, la Content Collection que lo valida, la ruta dinámica que lo renderiza y el Article JSON-LD que emite el layout."
+        body={[
+          'Cada pieza cumple un papel claro. El frontmatter aporta los datos; el cuerpo, el texto. La colección valida ese frontmatter y agrupa todos los artículos; la ruta dinámica los convierte en páginas; y el layout emite el JSON-LD y los meta. Dos piezas visibles en el archivo (frontmatter y cuerpo), tres invisibles que las orquestan —pero todas necesarias—.',
+          'Abajo, el ejemplo en vivo —un .mdx en miniatura, anotado—. Cada punto numerado se desglosa en su tarjeta: qué resuelve y de qué dato sale. El frontmatter va entre los guiones de apertura; el cuerpo, debajo; y las tres piezas de sistema (colección, ruta, schema) trabajan detrás para que publicar sea solo agregar el archivo.',
+        ]}
+      />
+
+      {/* Ejemplo en vivo del artículo (un .mdx en miniatura, anotado). */}
+      <div class="artx" role="img" aria-label="Ejemplo de un archivo .mdx de artículo: frontmatter tipado arriba y cuerpo en Markdown abajo, más las piezas de sistema que lo procesan">
+        <div class="artx__file">
+          <span class="artx__name">mi-articulo.mdx</span>
+          <div class="artx__fm">
+            <span class="artx__n">1</span>
+            <span class="artx__rule">---</span>
+            <span class="artx__line"><i>title:</i> "Migas de pan en Astro"</span>
+            <span class="artx__line"><i>description:</i> "Componente accesible…"</span>
+            <span class="artx__line"><i>category:</i> "guias"</span>
+            <span class="artx__line"><i>heroImage:</i> "/images/…"</span>
+            <span class="artx__line"><i>pubDate:</i> 2026-03-12</span>
+            <span class="artx__line"><i>tags:</i> ["astro", "seo"]</span>
+            <span class="artx__rule">---</span>
+          </div>
+          <div class="artx__body">
+            <span class="artx__n artx__n--mid">2</span>
+            <span class="artx__h">Por qué importa</span>
+            <span class="artx__p"></span>
+            <span class="artx__p artx__p--s"></span>
+            <span class="artx__cmp">&lt;Callout /&gt; <small>MDX</small></span>
+          </div>
+        </div>
+        <div class="artx__sys">
+          <span class="artx__pill"><span class="artx__n artx__n--mid">3</span> Content Collection · glob + Zod</span>
+          <span class="artx__pill"><span class="artx__n artx__n--mid">4</span> [...slug].astro · render() → ArticleLayout</span>
+          <span class="artx__pill"><span class="artx__n artx__n--mid">5</span> Article JSON-LD · datePublished/author/section</span>
+        </div>
+      </div>
+
+      <div class="partes">
+        {partes.map((p) => (
+          <article class="parte">
+            <span class="parte__num">{p.n}</span>
+            <div class="parte__body">
+              <h3 class="parte__nombre">{p.nombre}</h3>
+              <p class="parte__que">{p.que}</p>
+              <p class="parte__dato"><span>Dato</span> <code>{p.dato}</code></p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3b) VARIANTES ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Variantes"
+        title="Otros diseños y aplicaciones"
+        desc="El de esta plantilla es un .mdx con frontmatter tipado y cuerpo Markdown, pero el artículo cambia de cara según lo que pida: imagen de cabecera, componentes MDX, índice, borrador o relacionados."
+        body={[
+          'No hay un único tipo de artículo: hay una misma estructura —metadatos + cuerpo— que cada caso aprovecha distinto. Una guía corta vive de texto bien estructurado; una de cabecera abre con su heroImage; un tutorial técnico incrusta componentes; una pieza de referencia suma índice; y un borrador (draft) ni siquiera se publica.',
+          'Abajo, seis variantes —casi todas son configuraciones reales del mismo esquema (cambiando campos del frontmatter o el contenido del cuerpo), y un par son extensiones sobre el layout, como el índice—. Cada una con su réplica en vivo y el tipo de artículo donde rinde mejor.',
+        ]}
+      />
+
+      <GaleriaDisenos ariaLabel="Variantes de artículo">
+        {/* 0 · Artículo estándar (guía) */}
+        <DisenoCard {...disenos[0]}>
+          <div class="artv" role="img" aria-label="Artículo estándar: título, párrafos y una lista">
+            <span class="artv__title"></span>
+            <span class="artv__p"></span>
+            <span class="artv__p artv__p--s"></span>
+            <span class="artv__sub"></span>
+            <span class="artv__p"></span>
+          </div>
+        </DisenoCard>
+
+        {/* 1 · Con imagen de cabecera */}
+        <DisenoCard {...disenos[1]}>
+          <div class="artv" role="img" aria-label="Artículo con una imagen de cabecera sobre el título">
+            <span class="artv__hero"></span>
+            <span class="artv__title"></span>
+            <span class="artv__p"></span>
+            <span class="artv__p artv__p--s"></span>
+          </div>
+        </DisenoCard>
+
+        {/* 2 · Con componentes MDX */}
+        <DisenoCard {...disenos[2]}>
+          <div class="artv" role="img" aria-label="Artículo con un callout y un bloque de código embebidos">
+            <span class="artv__title"></span>
+            <span class="artv__p"></span>
+            <span class="artv__callout">! Aviso</span>
+            <span class="artv__code"><i></i><i></i></span>
+          </div>
+        </DisenoCard>
+
+        {/* 3 · Guía larga con índice */}
+        <DisenoCard {...disenos[3]}>
+          <div class="artv artv--toc" role="img" aria-label="Guía larga con un índice de contenido a un lado">
+            <span class="artv__idx"><b></b><i></i><i></i><i></i></span>
+            <span class="artv__col"><span class="artv__title"></span><span class="artv__p"></span><span class="artv__p artv__p--s"></span></span>
+          </div>
+        </DisenoCard>
+
+        {/* 4 · Borrador (no se publica) */}
+        <DisenoCard {...disenos[4]}>
+          <div class="artv artv--draft" role="img" aria-label="Borrador con draft true: no genera página">
+            <span class="artv__flag">draft: true</span>
+            <span class="artv__title"></span>
+            <span class="artv__p"></span>
+            <span class="artv__p artv__p--s"></span>
+          </div>
+        </DisenoCard>
+
+        {/* 5 · Con relacionados manuales */}
+        <DisenoCard {...disenos[5]}>
+          <div class="artv" role="img" aria-label="Artículo con un bloque de productos y servicios relacionados al pie">
+            <span class="artv__title"></span>
+            <span class="artv__p"></span>
+            <span class="artv__rel"><i></i><i></i></span>
+          </div>
+        </DisenoCard>
+      </GaleriaDisenos>
+    </div>
+  </section>
+
+  {/* ── 3c) RESPONSIVE Y MÓVIL ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="Cómo se comporta en el teléfono"
+        desc="En móvil lo que manda es la legibilidad del cuerpo: tipografía fluida y una medida cómoda, imagen de cabecera sin saltos, y código o tablas que se desplazan dentro de su caja en vez de desbordar."
+        body={[
+          'Un artículo es, ante todo, texto para leer. En el teléfono eso significa una columna única donde la tipografía escala con clamp() y la medida no se dispara —una línea demasiado larga cansa—. El cuerpo (.prose) acota su ancho a unas 66 columnas para que la lectura sea cómoda con cualquier longitud de pantalla.',
+          'A partir de ahí, tres patrones que cuidan los puntos donde un artículo suele romperse en móvil: la imagen de cabecera fluida y sin CLS (reservando su hueco con width/height), y los bloques anchos —código y tablas— que scrollean dentro de su caja sin empujar el layout. Cada uno, abajo, con su vista en el teléfono y su receta.',
+        ]}
+      />
+
+      <div class="pats">
+        {/* 1 · Tipografía fluida */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="En móvil, el cuerpo del artículo con tipografía legible y medida cómoda">
+              <div class="artm">
+                <span class="artm__title"></span>
+                <span class="artm__meta">Por Ejemplos.mx · 12 mar 2026</span>
+                <span class="artm__p"></span>
+                <span class="artm__p"></span>
+                <span class="artm__p artm__p--s"></span>
+                <span class="artm__h"></span>
+                <span class="artm__p"></span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · Tipografía fluida del cuerpo</h3>
+            <p class="pat__desc">El cuerpo (<code>.prose</code>) usa tamaños con <code>clamp()</code> y acota la medida a ~66 columnas, así la línea nunca queda demasiado larga. La lectura es cómoda lo mismo en un teléfono que en escritorio, sin saltos de tamaño.</p>
+            <Receta titulo="CSS · tipografía fluida y medida" lang="css" code={recetaProse} />
+          </div>
+        </article>
+
+        {/* 2 · Imagen hero fluida */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="La imagen de cabecera ocupa el ancho y conserva su proporción">
+              <div class="artm">
+                <span class="artm__hero"></span>
+                <span class="artm__title"></span>
+                <span class="artm__meta">12 mar 2026</span>
+                <span class="artm__p"></span>
+                <span class="artm__p artm__p--s"></span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · Imagen de cabecera fluida (sin CLS)</h3>
+            <p class="pat__desc">La cabecera usa <code>max-width:100%</code> y <code>height:auto</code> para ocupar el ancho conservando su proporción. Los atributos <code>width</code>/<code>height</code> en el <code>&lt;img&gt;</code> reservan el hueco y evitan el salto de layout (CLS) al cargar.</p>
+            <Receta titulo="CSS · imagen hero responsive" lang="css" code={recetaHero} />
+          </div>
+        </article>
+
+        {/* 3 · Overflow de código/tablas */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Un bloque de código se desplaza horizontalmente dentro de su caja">
+              <div class="artm">
+                <span class="artm__p"></span>
+                <span class="artm__code">
+                  <i>const x = articulos.slice(0, 9) →</i>
+                </span>
+                <span class="artm__p artm__p--s"></span>
+                <span class="artm__table"><b></b><b></b><b></b></span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · Código y tablas con overflow-x</h3>
+            <p class="pat__desc">Un <code>&lt;pre&gt;</code> o una <code>&lt;table&gt;</code> anchos no caben en un teléfono. Con <code>min-width:0</code> en la columna y <code>overflow-x:auto</code> en el bloque, se desplazan DENTRO de su caja en vez de empujar y romper la página.</p>
+            <Receta titulo="CSS · scroll local en bloques anchos" lang="css" code={recetaOverflow} />
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 4) ¿DÓNDE VA? ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Posición"
+        title="¿Dónde vive un artículo?"
+        desc="El archivo, en src/content/articulos/; la página resultante, en /blog/<slug>. Una sola ruta dinámica los sirve a todos —no hay un .astro por artículo—."
+        body={[
+          'El artículo no es una página suelta: es un .mdx dentro de la colección, en src/content/articulos/. De ahí lo recoge el glob loader, lo valida Zod y lo sirve la ruta dinámica [...slug].astro como /blog/<slug>. Su cara en el listado es la tarjeta de artículo; su cierre, el bloque de relacionados; y su posición en el sitio la declara el breadcrumb.',
+          'Un matiz real de esta plantilla conviene marcarlo: el frontmatter exige heroImage, pero hoy ese valor se sustituye por blogImage(id) en la ruta dinámica, porque las imágenes .avif de la demo todavía no existen. El campo sigue siendo obligatorio en el esquema (un sitio real pondrá su ruta), pero la imagen que se pinta sale del pool compartido mientras tanto.',
+        ]}
+      />
+      <p class="rl">Piezas cercanas: <a href="/blog/anatomia/tarjeta-articulo">la tarjeta de artículo</a> (su cara en el listado), <a href="/blog/anatomia/relacionados">los relacionados</a> (cómo cierra cada artículo) y <a href="/modulos/breadcrumbs">los breadcrumbs</a> (la jerarquía que declara su posición).</p>
+    </div>
+  </section>
+
+  {/* ── 5) CÓMO SE ARMA ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Implementación"
+        title="Cómo está construido"
+        desc="Un .mdx con frontmatter tipado, una colección con glob loader + Zod que lo valida, y una ruta dinámica que hace getStaticPaths sobre la colección, render(articulo) → <Content /> y lo pasa a ArticleLayout."
+        body={[
+          'El flujo va de archivo a página sin intermediarios. El autor escribe el .mdx (frontmatter + cuerpo). La colección articulos —glob loader sobre src/content/articulos/ + esquema Zod .strict()— recoge cada archivo y valida su frontmatter en build: si algo falta o tiene mal tipo, el build se detiene. Los datos buenos quedan disponibles para todo el sitio.',
+          'La ruta [...slug].astro cierra el círculo: getStaticPaths recorre la colección (filtrando borradores) y genera una página por entrada; render(articulo) devuelve el componente <Content /> que pinta el cuerpo; y ArticleLayout lo envuelve y emite el Article JSON-LD (datePublished, dateModified, author, section) más los meta. Publicar es agregar un archivo —el resto se genera solo—.',
+        ]}
+      />
+
+      <div class="recetas">
+        <Receta titulo="Markdown · un .mdx de ejemplo (frontmatter + cuerpo)" lang="md" code={recetaMdx} />
+        <Receta titulo="TypeScript · el esquema Zod de la colección (content.config.ts)" lang="ts" code={recetaSchema} />
+        <Receta titulo="Astro · la ruta dinámica (getStaticPaths + render → ArticleLayout)" lang="astro" code={recetaRuta} />
+      </div>
+
+      <div class="prose">
+        <p>
+          En concreto: la colección usa <code>glob({'{'} pattern: '**/*.mdx' {'}'})</code> para recoger
+          cada archivo, y un esquema <code>z.object().strict()</code> que <strong>rechaza campos
+          desconocidos</strong> —un <code>hero_image:</code> mal escrito no se ignora en silencio, detiene
+          el build—. La ruta dinámica filtra con <code>!data.draft</code> en <code>getStaticPaths</code>,
+          así que un borrador no genera página ni aparece en el listado.
+        </p>
+        <p>
+          El SEO es de fábrica y sale del mismo frontmatter: <code>ArticleLayout</code> arma el
+          <code>schemaData.article</code> con <code>datePublished</code>, <code>dateModified</code>
+          (por defecto, la fecha de publicación), <code>author</code> y <code>section</code> (la
+          categoría), de donde el proyecto emite el <strong>Article JSON-LD</strong> una sola vez por
+          página, junto con los <code>breadcrumbs</code> y los meta <code>og:article:*</code>. El cuerpo se
+          inyecta por <code>&lt;slot&gt;</code> —lo rellena <code>&lt;Content /&gt;</code>—, así que el
+          texto y la estructura nunca se mezclan.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 6) BUENAS PRÁCTICAS ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Buenas prácticas"
+        title="Qué hacer y qué evitar"
+        desc="La diferencia entre un artículo que se publica limpio y uno que rompe el build cabe en un puñado de hábitos —empezando por un gotcha clásico de MDX—."
+        body={[
+          'Ninguno de estos hábitos es capricho: salen de mirar dónde tropieza un blog en Markdown. Un artículo sano respeta los límites del esquema (título y descripción en su rango), usa la taxonomía real, pone alt a las imágenes y deja que la colección sea la única fuente. Uno que estorba inventa categorías, pega HTML suelto o cae en el gotcha de MDX con los backticks.',
+          'Ese gotcha merece subrayado porque rompe el build de forma desconcertante: en .mdx, el contenido dentro de backticks en la prosa se evalúa como JSX, así que unas llaves o una etiqueta entre backticks lanzan un error. La regla es simple —para código con símbolos, bloque cercado—. Abajo, lo que conviene y lo que conviene evitar, enfrentados.',
+        ]}
+      />
+      <div class="dodont">
+        <article class="dd dd--si">
+          <h3 class="dd__title"><span class="dd__icon" aria-hidden="true">✓</span> Sí conviene</h3>
+          <ul class="dd__list">{sis.map((s) => <li>{s}</li>)}</ul>
+        </article>
+        <article class="dd dd--no">
+          <h3 class="dd__title"><span class="dd__icon" aria-hidden="true">✕</span> Mejor evita</h3>
+          <ul class="dd__list">{nos.map((s) => <li>{s}</li>)}</ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* Cierre */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+</PageLayout>
+
+<style>
+  /* Utilidades estructurales (tokens.css = fuente única; scoped por página). */
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* Related-links inline · interlinking natural entre páginas. */
+  .rl { margin: var(--sp-5) 0 0; font-size: var(--text-sm); color: var(--c-ink-2); line-height: var(--leading-relaxed); }
+  .rl a { color: var(--c-primary); text-decoration: underline; text-underline-offset: 2px; }
+  .rl a:hover { color: var(--c-primary-dark); }
+
+  /* ── Beneficios ── */
+  .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .bene { grid-template-columns: repeat(3, 1fr); } }
+  .bene__card { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); }
+  .bene__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .bene__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Cards de las 5 partes ── */
+  .partes { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+  @media (min-width: 600px) { .partes { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1000px) { .partes { grid-template-columns: repeat(3, 1fr); } }
+  .parte { display: flex; gap: var(--sp-3); align-items: start; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-4); }
+  .parte__num { flex-shrink: 0; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: var(--radius-full); background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: var(--text-sm); }
+  .parte__body { display: grid; gap: 4px; min-width: 0; }
+  .parte__nombre { margin: 0; font-family: var(--font-heading); font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .parte__que { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
+  .parte__dato { margin: 4px 0 0; display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--text-xs); color: var(--c-muted); }
+  .parte__dato span { text-transform: uppercase; letter-spacing: .06em; font-weight: var(--weight-semibold); }
+  .parte__dato code, .prose code, .pat__desc code {
+    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace; font-size: .85em;
+    background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+    padding: .05em .4em; color: var(--c-primary-dark);
+  }
+
+  /* ── Recetas «Cómo se arma» ── */
+  .recetas { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
+
+  /* ── Prose técnica ── */
+  .prose { max-width: 75ch; margin-top: var(--sp-6); }
+  .prose p { margin: 0 0 var(--sp-4); font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .prose strong { color: var(--c-ink); font-weight: var(--weight-semibold); }
+
+  /* ── Sí / No ── */
+  .dodont { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .dodont { grid-template-columns: 1fr 1fr; } }
+  .dd { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); }
+  .dd__title { margin: 0 0 var(--sp-3); display: flex; align-items: center; gap: var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .dd__icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-full); font-size: var(--text-sm); }
+  .dd--si .dd__icon { background: rgba(34,197,94,.14); color: #16a34a; }
+  .dd--no .dd__icon { background: rgba(239,68,68,.12); color: #dc2626; }
+  .dd__list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-2); }
+  .dd__list li { position: relative; padding-left: var(--sp-5); font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
+  .dd__list li::before { content: ''; position: absolute; left: 0; top: .55em; width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--c-muted); }
+
+  /* ── Sección Responsive: teléfono | explicación + receta ── */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     Mockups propios de esta página (prefijo `art`): simples y con tokens.
+     artx = ejemplo en vivo · artv = variantes · artm = móvil.
+     ════════════════════════════════════════════════════════════════════════ */
+
+  /* ── artx · ejemplo en vivo: el .mdx en miniatura + piezas de sistema ── */
+  .artx { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); max-width: 34rem; }
+  .artx__file { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); overflow: hidden; }
+  .artx__name { display: block; padding: 6px var(--sp-4); font-family: ui-monospace, Menlo, monospace; font-size: var(--text-xs); color: var(--c-muted); background: var(--c-surface); border-bottom: 1px solid var(--c-border); }
+  .artx__fm { position: relative; display: grid; gap: 3px; padding: var(--sp-4) var(--sp-4) var(--sp-4) calc(var(--sp-4) + 16px); background: var(--c-surface); }
+  .artx__rule { font-family: ui-monospace, Menlo, monospace; font-size: var(--text-xs); color: var(--c-muted); }
+  .artx__line { font-family: ui-monospace, Menlo, monospace; font-size: var(--text-xs); color: var(--c-ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .artx__line i { font-style: normal; color: var(--c-primary-dark); }
+  .artx__body { position: relative; display: grid; gap: 6px; padding: var(--sp-4) var(--sp-4) var(--sp-4) calc(var(--sp-4) + 16px); }
+  .artx__h { font-family: var(--font-heading); font-weight: var(--weight-semibold); font-size: var(--text-sm); color: var(--c-ink); }
+  .artx__p { height: 8px; border-radius: 4px; background: var(--c-surface); }
+  .artx__p--s { width: 70%; }
+  .artx__cmp { display: inline-flex; align-items: center; gap: 6px; align-self: start; margin-top: 2px; font-family: ui-monospace, Menlo, monospace; font-size: var(--text-xs); color: var(--c-primary-dark); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: 2px 8px; }
+  .artx__cmp small { color: var(--c-muted); font-family: var(--font-heading); }
+  .artx__n {
+    position: absolute; top: 8px; left: 8px;
+    display: inline-grid; place-items: center; width: 18px; height: 18px;
+    border-radius: var(--radius-full); background: var(--c-primary); color: #fff;
+    font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: .6875rem;
+  }
+  .artx__n--mid { position: static; background: var(--c-muted); }
+  .artx__sys { display: grid; gap: var(--sp-2); }
+  .artx__pill { display: inline-flex; align-items: center; gap: 8px; font-family: ui-monospace, Menlo, monospace; font-size: var(--text-xs); color: var(--c-ink-2); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .4em .7em; }
+
+  /* ── artv · mockups de variantes (dentro de <GaleriaDisenos>) ── */
+  .artv { display: grid; gap: 6px; width: 100%; min-height: 92px; padding: var(--sp-2); align-content: start; }
+  .artv__title { height: 12px; width: 80%; border-radius: 4px; background: var(--c-ink); opacity: .82; }
+  .artv__sub { height: 9px; width: 55%; border-radius: 4px; background: var(--c-primary); opacity: .55; margin-top: 2px; }
+  .artv__p { height: 7px; border-radius: 4px; background: var(--c-surface); }
+  .artv__p--s { width: 65%; }
+  .artv__hero { height: 30px; border-radius: var(--radius-sm); background: repeating-linear-gradient(135deg, var(--c-surface) 0 8px, var(--c-white) 8px 16px); border: 1px solid var(--c-border); }
+  .artv__callout { font-size: 9px; font-weight: var(--weight-semibold); color: var(--c-primary-dark); background: var(--c-surface); border-left: 3px solid var(--c-primary); border-radius: var(--radius-sm); padding: 5px 8px; }
+  .artv__code { display: grid; gap: 4px; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: 6px; }
+  .artv__code i { display: block; height: 6px; border-radius: 3px; background: var(--c-white); }
+  .artv__code i:last-child { width: 60%; }
+  /* índice a un lado */
+  .artv--toc { grid-template-columns: 38% 1fr; gap: 8px; align-items: start; }
+  .artv__idx { display: grid; gap: 5px; align-content: start; }
+  .artv__idx b { display: block; height: 8px; width: 70%; border-radius: 3px; background: var(--c-primary); opacity: .5; }
+  .artv__idx i { display: block; height: 6px; margin-left: 8px; border-radius: 3px; background: var(--c-surface); }
+  .artv__col { display: grid; gap: 6px; }
+  /* borrador */
+  .artv--draft .artv__title, .artv--draft .artv__p { opacity: .45; }
+  .artv__flag { align-self: start; font-family: ui-monospace, Menlo, monospace; font-size: 9px; font-weight: var(--weight-bold); color: var(--c-muted); background: var(--c-surface); border: 1px dashed var(--c-border); border-radius: var(--radius-sm); padding: 2px 7px; }
+  /* relacionados al pie */
+  .artv__rel { display: flex; gap: 5px; margin-top: 2px; }
+  .artv__rel i { flex: 1; height: 22px; border-radius: var(--radius-sm); background: var(--c-white); border: 1px solid var(--c-border); }
+
+  /* ── artm · mockups MÓVIL (dentro de <MarcoMovil>) ── */
+  .artm { padding: 11px; display: grid; gap: 7px; }
+  .artm__title { height: 13px; width: 85%; border-radius: 4px; background: var(--c-ink); opacity: .85; }
+  .artm__meta { font-size: 8px; color: var(--c-muted); }
+  .artm__p { height: 7px; border-radius: 4px; background: var(--c-surface); }
+  .artm__p--s { width: 60%; }
+  .artm__h { height: 9px; width: 50%; border-radius: 4px; background: var(--c-primary); opacity: .55; margin-top: 3px; }
+  .artm__hero { height: 56px; border-radius: 8px; background: repeating-linear-gradient(135deg, var(--c-surface) 0 9px, var(--c-white) 9px 18px); border: 1px solid var(--c-border); }
+  .artm__code { overflow: hidden; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 6px; padding: 6px 8px; }
+  .artm__code i { font-style: normal; display: block; font-family: ui-monospace, Menlo, monospace; font-size: 8px; color: var(--c-ink-2); white-space: nowrap; }
+  .artm__table { display: flex; gap: 4px; overflow: hidden; }
+  .artm__table b { flex: 0 0 38%; height: 16px; border-radius: 4px; background: var(--c-white); border: 1px solid var(--c-border); }
+</style>

@@ -13,6 +13,8 @@ import CategoryCard from '@components/CategoryCard.astro'
 import SectionMenu from '@components/SectionMenu.astro'
 import { getCollection } from 'astro:content'
 import { waUrl, WA_MESSAGES } from '@config/site'
+import { blogImage } from '@lib/blogImages'
+import { CAT_LABEL } from '@lib/blog'
 
 export async function getStaticPaths() {
   const posts = (await getCollection('articulos', ({ data }) => !data.draft)).sort(
@@ -26,6 +28,7 @@ export async function getStaticPaths() {
 }
 
 const { categoria, posts } = Astro.props
+const catLabel = CAT_LABEL[categoria] ?? categoria
 
 const cierreItems = [
   { label: 'Todo el blog', href: '/blog', sub: 'Ver todos los artículos' },
@@ -37,17 +40,17 @@ const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.blog)
 ---
 
 <PageLayout
-  title={`Categoría: ${categoria} — blog`}
-  description={`Artículos del blog de Ejemplos.mx en la categoría ${categoria}. Archivo de categoría generado automáticamente desde la colección de artículos.`}
+  title={`Categoría: ${catLabel} — blog`}
+  description={`Artículos del blog de Ejemplos.mx en la categoría ${catLabel}. Archivo de categoría generado automáticamente desde la colección de artículos.`}
   pageType="page"
-  breadcrumbs={[{ label: 'Blog', href: '/blog' }, { label: categoria }]}
+  breadcrumbs={[{ label: 'Blog', href: '/blog' }, { label: catLabel }]}
   guia={false}
 >
   <Hero
     badge="Blog · Categoría"
     title="Categoría:"
-    accent={categoria}
-    subtitle={`Todos los artículos agrupados bajo «${categoria}». Las categorías ordenan el contenido por tema y crean páginas de archivo que el buscador indexa.`}
+    accent={catLabel}
+    subtitle={`Todos los artículos agrupados bajo «${catLabel}». Las categorías ordenan el contenido por tema y crean páginas de archivo que el buscador indexa.`}
     descRight={[
       'Las páginas de categoría agrupan los artículos por tema y, de paso, generan una URL de archivo que el buscador puede posicionar para búsquedas más amplias. Son un puente entre el artículo individual y el blog completo: ayudan a la persona a seguir leyendo sobre lo que le interesa.',
       'Esta página se genera sola: lista los artículos cuya categoría coincide, desde la colección. Al publicar un artículo nuevo en esta categoría, aparece aquí sin tocar código. El contenido es DEMO de la plantilla.',
@@ -59,7 +62,7 @@ const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.blog)
       <SectionHeading
         layout="duo"
         eyebrow="Archivo de categoría"
-        title={`Artículos en «${categoria}»`}
+        title={`Artículos en «${catLabel}»`}
         desc={`${posts.length} ${posts.length === 1 ? 'artículo' : 'artículos'} en esta categoría.`}
         body={[
           'Agrupar por categoría no es solo orden: es estructura que el buscador entiende. Cada archivo de categoría refuerza el tema del sitio y reparte autoridad entre los artículos relacionados mediante enlaces internos.',
@@ -71,9 +74,9 @@ const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.blog)
           <CategoryCard
             label={a.data.title}
             href={`/blog/${a.id}`}
-            image={a.data.heroImage}
+            image={blogImage(a.id)}
             imageAlt={a.data.title}
-            badge={a.data.category}
+            badge={CAT_LABEL[a.data.category] ?? a.data.category}
             blurb={a.data.description}
             ctaLabel="Leer artículo"
             index={i}

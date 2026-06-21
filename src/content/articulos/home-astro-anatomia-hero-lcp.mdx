@@ -1,0 +1,180 @@
+---
+title: "Anatomía de una home en Astro: hero, LCP y velocidad"
+description: "Cómo construir la home (L1) en Astro: el hero con un solo H1, LCP por debajo de 2.5 s, vitrina data-driven desde site.ts y el Organization JSON-LD sin duplicar."
+category: "guias"
+heroImage: "/images/articulos/home-astro-anatomia-hero-lcp.avif"
+pubDate: 2026-06-21
+author: "Ejemplos.mx"
+tags: ["astro", "arquitectura", "performance", "core-web-vitals", "seo", "home"]
+seoTitle: "Anatomía de una home en Astro: hero y LCP"
+seoDescription: "Guía técnica de la home en Astro: un solo H1, LCP por debajo de 2.5 s, vitrina data-driven desde site.ts y Organization JSON-LD único (regla B3)."
+---
+
+La primera home que medimos en serio para un cliente —un negocio local de la Ciudad de México— tardaba 4.3 segundos en pintar su elemento más grande en un Pixel 5 con Slow 4G. El dueño juraba que «se veía rápida» porque la abría en su MacBook con fibra. Cuando le mostramos el waterfall, el culpable era obvio: un hero con una foto de 1.9 MB en PNG, sin dimensiones declaradas, cargada por un carrusel que además traía 38 KB de JavaScript para rotar tres slides que nadie miraba. El primer slide capturaba el 0.9 % de los clics; el segundo y el tercero, prácticamente cero. Cambiamos el carrusel por un mensaje fijo, la foto a AVIF de 96 KB con `width` y `height` declarados y `fetchpriority="high"`, y el LCP bajó a 1.6 segundos. La tasa de rebote en móvil cayó nueve puntos en tres semanas. No tocamos el diseño: tocamos la física.
+
+Esa experiencia es la razón por la que esta guía existe. La home —el nivel 1 (L1) en la taxonomía de un sitio— es la página más visitada y la de más autoridad, y por eso cada error en ella se multiplica por todo el tráfico. Aquí construimos la home en Astro de principio a fin: la anatomía del hero con un solo H1, la composición data-driven desde `site.ts`, el LCP por debajo de 2.5 segundos como meta no negociable, el `Organization` JSON-LD emitido una sola vez (regla B3) y el árbol de decisión sobre cuándo la home no es la respuesta y conviene una landing focal. Es para quien construye sitios con Content Collections de Astro 6 y quiere una raíz que comunique en cinco segundos, reparta el tráfico y pase Core Web Vitals sin trucos.
+
+## Por qué este patrón existe
+
+La home carga un peso que ninguna otra página soporta: es la primera impresión. Gitte Lindgaard midió en 2006 que los usuarios se forman un juicio estético de una página en 50 milisegundos —menos de lo que tarda un parpadeo—, y que ese juicio condiciona cómo evalúan el resto del contenido. Nielsen Norman Group lo reforzó con estudios de seguimiento ocular: en los primeros segundos el visitante no lee, escanea, y decide si el sitio «es para él» antes de procesar una sola frase completa. Una home que tarda en pintar o que entierra su propuesta de valor bajo decoración pierde a ese visitante antes de que llegue al catálogo.
+
+A la primera impresión perceptual se sumó, a partir de 2020, la primera impresión técnica: Google formalizó los Core Web Vitals como señal de ranking y de experiencia. El Largest Contentful Paint (LCP) mide cuánto tarda en pintarse el elemento más grande del viewport inicial —en una home, casi siempre la imagen o el titular del hero—. El umbral «bueno» es 2.5 segundos en el percentil 75 de cargas reales; por encima de 4 segundos la página entra en «pobre». En la home el LCP no es un detalle de ingeniería: es la métrica que decide si el visitante ve tu mensaje o una pantalla en blanco. Por eso el patrón de esta guía trata la velocidad del hero como un requisito de producto, no como una optimización posterior.
+
+El tercer motivo es estructural. La home es la raíz del árbol de información: el nodo del que cuelgan los índices de sección (L2) y, bajo ellos, las fichas (L3). Concentra la mayoría de los enlaces externos y reparte autoridad interna hacia abajo. Es también la página de marca por excelencia, y por tanto el lugar natural del nodo `Organization` en el grafo de datos estructurados. Construirla bien —rápida, clara, con un solo H1 y un schema limpio— no beneficia solo a la home: beneficia a cada página que cuelga de ella.
+
+## Contexto
+
+La home hace dos trabajos a la vez, y confundirlos es el error de diseño más común. El primero es presentar: decir quién eres y qué ofreces en lenguaje claro, en los segundos que dura la primera impresión. El segundo es repartir: mandar a cada visitante a la sección correcta —productos, servicios, cobertura, blog— sin que tenga que adivinar. La home no agota ningún tema; para eso están las fichas L3. Si intenta explicarlo todo, se vuelve infinita y nadie llega al catálogo.
+
+La consecuencia práctica de esos dos trabajos es una composición sobria: un hero que presenta, una franja de atajos que orienta, una vitrina de categorías que reparte, uno o dos bloques de profundidad, prueba social y un cierre de conversión. Cada bloque es un componente reutilizable, y los datos —el catálogo de la vitrina, los enlaces del menú, el teléfono del cierre— viven en `site.ts`, no escritos a mano en la página. Esa disciplina es lo que mantiene la home sincronizada con el resto del sitio: agregar una categoría la pinta en la home, en el menú y en el footer a la vez.
+
+Y hay un rasgo que separa a la home de todos los demás niveles: no lleva migas de pan. Es la raíz, no tiene padre. El componente de migas modela la cadena de ancestros con `BreadcrumbList`, y la home no tiene ninguno; ponerle migas declararía un padre inexistente. Todos los demás niveles —L2, L3, L4— anteponen «Inicio» que enlaza de vuelta aquí. La home es el ancla a la que regresan todas las rutas.
+
+## Implementación paso a paso
+
+La home vive en `src/pages/index.astro` y se arma componiendo piezas del sistema. No inventa diseño ni datos: importa componentes y los alimenta desde `site.ts`. Lo primero es el contrato del layout —`pageType="home"`, que activa el `Organization` y el `WebSite` en el grafo— y la ausencia deliberada de `breadcrumbs`, porque es la raíz.
+
+```astro
+---
+// src/pages/index.astro — la home compone piezas; no inventa diseño.
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import CategoryCard from '@components/CategoryCard.astro'
+import CTABanner from '@components/CTABanner.astro'
+import { SHOWCASE, NAV } from '@config/site'
+import { PRESET_GENERAL } from '@config/cta-presets'
+---
+
+{/* pageType="home" → buildSchema emite Organization + WebSite (regla B3). */}
+{/* SIN breadcrumbs: la home es la raíz, no tiene padre. */}
+<PageLayout title="..." description="..." pageType="home">
+  <Hero title="Tu propuesta de valor, clara" subtitle="Una frase de apoyo." />
+
+  <SectionMenu items={NAV} />
+
+  <section class="section">
+    <div class="showcase">
+      {SHOWCASE.map((c, i) => <CategoryCard {...c} index={i} />)}
+    </div>
+  </section>
+
+  <CTABanner {...PRESET_GENERAL} />
+</PageLayout>
+```
+
+El hero es el corazón del rendimiento. Su titular es el **único** `‹h1›` del sitio entero: declara el tema de la página para el árbol de accesibilidad (WCAG 2.2 SC 1.3.1, *Info and Relationships*) y concentra la señal temática para el buscador. El logotipo del header no es un encabezado —es una imagen con `alt`—; los títulos de cada sección son `‹h2›` y los de cada tarjeta, `‹h3›`. Un solo H1 por página no es una preferencia estética: es jerarquía semántica.
+
+Si el hero lleva imagen, esa imagen suele ser el elemento LCP, así que se sirve con prioridad y con dimensiones fijas para no provocar saltos de layout (CLS). Con `astro:assets` el componente `‹Image /›` genera AVIF/WebP y exige `width`/`height`; para el recurso del fold se añade `loading="eager"` y `fetchpriority="high"`.
+
+```astro
+---
+import { Image } from 'astro:assets'
+import heroImg from '../assets/hero.jpg'
+---
+<Image
+  src={heroImg}
+  width={1280}
+  height={720}
+  alt="Propuesta de valor del negocio con la keyword principal"
+  loading="eager"
+  fetchpriority="high"
+  decoding="async"
+/>
+```
+
+La regla de oro del hero: la imagen del fold nunca va en `loading="lazy"` (retrasaría el LCP), y siempre lleva `width` y `height` (reserva el espacio y deja el CLS en cero). El resto de las imágenes de la home —las de la vitrina por debajo del pliegue— sí cargan en `lazy`. Una sola línea mal puesta aquí es la diferencia entre un LCP de 1.6 y uno de 4 segundos.
+
+## Tabla comparativa
+
+No todas las homes son iguales: el nivel es el mismo (la raíz que presenta y reparte), pero el protagonista cambia con el negocio. Elegir el tipo correcto evita copiar la home equivocada.
+
+| Tipo de home | Protagonista | CTA típico | Riesgo principal |
+|---|---|---|---|
+| Negocio local / servicios | Contacto + confianza | «Cotizar por WhatsApp» | Enterrar el teléfono bajo el pliegue |
+| Landing focal (campaña) | Una sola propuesta | «Empezar» / «Comprar» | Distraer con menú y enlaces de más |
+| E-commerce | El catálogo | «Ver catálogo» | Hero largo que retrasa el grid |
+| SaaS / producto digital | Demo + features | «Probar gratis» | Pricing escondido a tres clics |
+
+### Decisión por contexto: matriz operativa
+
+La elección entre una home «que reparte» y una landing «que enfoca» depende del tráfico, no del gusto. Para tráfico de marca o genérico —alguien que llegó buscando tu nombre—, la home que reparte hacia varias secciones es correcta. Para tráfico pagado dirigido a una sola conversión, una landing focal (un hero, tres beneficios, prueba social y un CTA repetido, sin menú que distraiga) suele rendir mejor: cada elemento empuja a la misma acción. La pregunta de control es simple: «¿esta página tiene una sola acción o varias?». Una sola acción pide landing; varias, home.
+
+## Patrones avanzados
+
+**Preload del recurso LCP cuando no es una imagen directa.** Si el elemento LCP es una imagen de fondo CSS o una fuente web grande, el navegador la descubre tarde. Un `‹link rel="preload"›` en el `‹head›` adelanta esa descarga. Con fuentes, `font-display: swap` evita el texto invisible mientras carga (FOIT) y `preload` reduce el reflow; midiendo siempre, porque un preload de más compite por ancho de banda con el propio LCP.
+
+**View transitions sin recargar el chrome.** Astro 6 trae transiciones de vista nativas. En la home conviene marcar el header y el footer con `transition:persist` para que no se vuelvan a pintar entre navegaciones, conservando el estado del menú y evitando un parpadeo del chrome. El cuerpo de la home transiciona; el marco permanece.
+
+**Vitrina data-driven, cero hardcoding.** La rejilla de categorías se genera con un `.map()` sobre `SHOWCASE` de `site.ts`. Agregar una categoría a esa lista la pinta en la home, en el dropdown del header y en el footer a la vez —una sola fuente de verdad—. El día que cambia la oferta se edita una lista, no cinco páginas. La home compone; no reinventa.
+
+## Edge cases y debugging
+
+**Hero con video sin póster.** Un video de fondo sin atributo `poster` deja el LCP esperando al primer frame decodificado, que en Slow 4G puede tardar varios segundos. Solución: `poster` con una imagen AVIF ligera (esa será el LCP), `preload="none"` en el video y reproducción diferida tras la carga. Y respeta `prefers-reduced-motion`: si el visitante pidió menos movimiento, no reproduzcas el video.
+
+**CLS por fuentes que cambian de tamaño.** Cuando la fuente web carga y reemplaza a la de sistema, el texto del hero puede reflowear y disparar CLS. Mitigación: `size-adjust` y las métricas `ascent-override`/`descent-override` en la `@font-face`, o una fuente de sistema como fallback de métricas parecidas. Mídelo en el panel Performance, no a ojo.
+
+**LCP que «se ve bien» en escritorio y falla en móvil.** El error del cliente del inicio. Core Web Vitals se miden sobre cargas reales (CrUX), dominadas por móviles de gama media en redes lentas. El banco de pruebas correcto es Lighthouse 12.x emulando Pixel 5 en Slow 4G, no tu equipo con fibra. Si solo pruebas en escritorio, estás midiendo a la persona equivocada.
+
+**Carrusel automático que nadie controla.** Más allá del CTR ínfimo del segundo slide, el auto-avance viola WCAG 2.2 SC 2.2.2 (*Pause, Stop, Hide*) si dura más de cinco segundos sin control. Si insistes en un carrusel, dale controles visibles y pausa al hover/focus —pero la recomendación de NN/g sigue siendo no usarlo en el hero.
+
+## Performance y a11y con números reales
+
+Las metas de la home, medidas en Lighthouse 12.x sobre Pixel 5 / Slow 4G, son concretas: **LCP por debajo de 2.5 s**, **CLS por debajo de 0.1** e **INP por debajo de 200 ms**. El LCP se gana con AVIF optimizado (un hero de 1280×720 suele caber en 80–120 KB), `fetchpriority="high"` y dimensiones fijas. El CLS se gana reservando espacio para toda imagen y todo bloque que cargue después. El INP se gana no metiendo JavaScript que no haga falta: una home estática de Astro envía cerca de cero JS por defecto, y ese es justo el punto.
+
+En accesibilidad, la home cumple varios criterios de WCAG 2.2 que conviene citar por número, no en abstracto: SC 1.3.1 (un solo H1 y jerarquía de encabezados), SC 2.4.1 (un enlace «saltar al contenido» antes del header para usuarios de teclado), SC 1.4.3 (contraste de texto mínimo 4.5:1 sobre el fondo del hero, que con imágenes de fondo exige un overlay), y SC 2.4.4 (texto de enlace descriptivo en cada tarjeta de la vitrina, nunca «ver más»). El objetivo operativo: Lighthouse Accessibility de 95 o más, con verificación manual del foco y del lector de pantalla.
+
+## Casos donde NO usar esta home
+
+El patrón «home que reparte» es el correcto para la mayoría de los sitios de negocio, pero no para todos. Una **campaña pagada a una sola conversión** se sirve mejor con una landing focal: menú mínimo, un hero, beneficios, prueba social y un CTA repetido. Un **micrositio de un solo producto** no necesita vitrina de categorías; el hero ES el producto. Un **portfolio o agencia** invierte la proporción: menos texto, una galería grande de trabajo como protagonista. Y un **medio o blog-first** convierte el feed de contenido en la portada, cediendo el hero al artículo destacado. En todos esos casos el nivel sigue siendo L1 —la raíz—, pero el molde de bloques se recompone. Forzar la home de negocio local en un portfolio se nota y resta.
+
+## Checklist de implementación
+
+- Un solo `‹h1›` en la home, con la propuesta de valor y la keyword principal.
+- Hero sin carrusel automático; mensaje fijo y claro.
+- Imagen del fold en AVIF, con `width`/`height` y `fetchpriority="high"`; nunca `lazy`.
+- Resto de imágenes (vitrina) en `loading="lazy"`.
+- `pageType="home"` en el layout; `Organization` y `WebSite` emitidos una sola vez (B3).
+- Sin `breadcrumbs`: la home es la raíz.
+- Vitrina y menú data-driven desde `SHOWCASE` y `NAV` de `site.ts`.
+- CTA de conversión visible sin scroll y repetido al cierre, armado con `waUrl()`.
+- NAP del `Organization` idéntico letra por letra al del topbar y el footer.
+- LCP por debajo de 2.5 s, CLS por debajo de 0.1, INP por debajo de 200 ms en Pixel 5 / Slow 4G.
+- Enlace «saltar al contenido» (SC 2.4.1) y contraste 4.5:1 en el hero (SC 1.4.3).
+
+## Preguntas frecuentes
+
+### ¿La home puede tener más de un H1?
+
+No. Lleva exactamente un `‹h1›` con la propuesta de valor. El H1 declara el tema de la página para el árbol de accesibilidad (WCAG 2.2 SC 1.3.1) y concentra la señal temática para Google; varios reparten esa señal y confunden a los lectores de pantalla. Las secciones son `‹h2›` y las tarjetas `‹h3›`.
+
+### ¿Por qué la home no lleva migas de pan?
+
+Porque es la raíz del árbol: no tiene padre. Las migas modelan la cadena de ancestros (el `BreadcrumbList` del JSON-LD), y la home no tiene ninguno. Todos los demás niveles anteponen «Inicio» que enlaza de vuelta aquí.
+
+### ¿Qué LCP debería buscar y cómo lo mido?
+
+Por debajo de 2.5 segundos en el percentil 75 de cargas reales. Mídelo con Lighthouse 12.x emulando un móvil de gama media en Slow 4G, o con datos de campo en Search Console (informe de Core Web Vitals). El escritorio con fibra no es un banco de pruebas representativo.
+
+### ¿Conviene un carrusel automático en el hero?
+
+No. Nielsen Norman Group lo desaconseja: el primer slide capta cerca del 1 % de los clics y los siguientes casi cero, mientras el auto-avance compite con la lectura y puede violar WCAG 2.2 SC 2.2.2. Un mensaje fijo convierte más; si hay tres propuestas, repártelas en tres secciones a lo largo del scroll.
+
+### ¿Dónde se declara el `Organization` de la marca?
+
+En `buildSchema()` desde el layout base, una sola vez por página (regla B3 — un único emisor). La home no escribe el JSON-LD a mano. El NAP del `Organization` debe coincidir letra por letra con el del topbar y el footer; si divergen, Google interpreta dos entidades distintas.
+
+### ¿La home en Astro o en Next.js para velocidad?
+
+Astro envía cero JavaScript por defecto y renderiza la home como HTML estático, lo que da una ventaja natural en INP y en tiempo de hidratación frente a un framework que hidrata todo el árbol. Next.js con React Server Components ha cerrado distancia, pero para una home mayormente estática —el caso de un sitio de negocio— Astro parte con menos JS que enviar, y eso es justo lo que mide INP.
+
+### ¿Cuántas secciones debería tener la home?
+
+Las justas para repartir, no para agotar: hero, atajos, vitrina, uno o dos bloques de profundidad, prueba social y cierre. Si una sección necesita ocho párrafos, eso es una ficha L3 —enlázala con una tarjeta—. La home distribuye; el detalle vive un nivel más abajo.
+
+## Sigue leyendo
+
+- [Nivel L1 · Inicio: la portada que presenta y reparte](/niveles/l1-inicio) — la ficha que documenta el nivel a fondo, con su anatomía y tipos de home.
+- [La home: primera impresión y reparto de tráfico](/blog/home-primera-impresion-distribucion-trafico) — el lado estratégico de este mismo nivel.
+- [Los 4 niveles de un sitio: de la raíz a la hoja](/blog/niveles-de-un-sitio-l1-l4-arquitectura-informacion) — la tesis que conecta L1, L2, L3 y L4.
+- Fuente externa: [web.dev — Optimize Largest Contentful Paint](https://web.dev/articles/optimize-lcp) y los umbrales de [Core Web Vitals](https://web.dev/articles/vitals).

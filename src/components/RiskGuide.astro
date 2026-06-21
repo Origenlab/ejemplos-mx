@@ -1,0 +1,161 @@
+---
+// ============================================================================
+// RiskGuide.astro — Guía de selección por nivel de riesgo.
+// ----------------------------------------------------------------------------
+// Tabla "qué equipo necesito según mi riesgo" (ordinario / moderado / alto),
+// basada en la clasificación de la NOM-002-STPS-2010. Patrón de ALTO valor:
+// resuelve la duda real del comprador, posiciona en SEO de cola larga y abre la
+// conversación de cotización. Contenido normativo (no inventado).
+// Encabezado vía SectionHeading (duo). ORIGEN del patrón: PROYECTORED SeleccionIndex.
+// ============================================================================
+import SectionHeading from './SectionHeading.astro';
+
+interface Row {
+  nivel: string;
+  ejemplos: string;
+  minimo: string;
+  complementos: string;
+}
+interface Props {
+  eyebrow?: string;
+  title: string;
+  titleAccent?: string;
+  desc?: string;
+  body?: string[];
+  rows: Row[];
+  /** Encabezados de columna (4). Default orientado a riesgo/equipo; sobreescribe para otro vertical. */
+  columns?: [string, string, string, string];
+  note?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+}
+const {
+  eyebrow = 'Guía de selección',
+  title,
+  titleAccent,
+  desc,
+  body = [],
+  rows,
+  columns = ['Nivel de riesgo', 'Ejemplos de inmueble', 'Equipo base', 'Complementos recomendados'],
+  note,
+  ctaLabel,
+  ctaHref,
+} = Astro.props;
+---
+
+<section class="riskguide">
+  <div class="container">
+    <SectionHeading
+      layout="duo"
+      eyebrow={eyebrow}
+      title={title}
+      titleAccent={titleAccent}
+      desc={desc}
+      body={body}
+    />
+
+    <div class="tbl-wrap" role="region" aria-label="Equipo recomendado por nivel de riesgo" tabindex="0">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th scope="col">{columns[0]}</th>
+            <th scope="col">{columns[1]}</th>
+            <th scope="col">{columns[2]}</th>
+            <th scope="col">{columns[3]}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr>
+              <td><strong>{r.nivel}</strong></td>
+              <td>{r.ejemplos}</td>
+              <td>{r.minimo}</td>
+              <td>{r.complementos}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    {(note || (ctaLabel && ctaHref)) && (
+      <div class="riskguide__footer">
+        {note && <p class="riskguide__note">{note}</p>}
+        {ctaLabel && ctaHref && (
+          <a class="riskguide__cta" href={ctaHref} target="_blank" rel="noopener noreferrer">
+            {ctaLabel}
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        )}
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .container {
+    max-width: var(--container-max);
+    margin-inline: auto;
+    padding-inline: var(--container-px);
+  }
+  .riskguide { padding: var(--section-py) 0; background: var(--c-white); }
+
+  /* Tabla con scroll horizontal en móvil (robusto, sin reflow frágil). */
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .tbl-wrap:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; }
+  .tbl { width: 100%; min-width: 720px; border-collapse: collapse; font-size: var(--text-sm); }
+  .tbl thead th {
+    text-align: left;
+    background: var(--c-surface);
+    color: var(--c-ink);
+    font-family: var(--font-heading);
+    font-weight: var(--weight-bold);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding: var(--sp-3) var(--sp-4);
+    border-bottom: 1px solid var(--c-border);
+    white-space: nowrap;
+  }
+  .tbl tbody td {
+    padding: var(--sp-3) var(--sp-4);
+    border-bottom: 1px solid var(--c-border);
+    color: var(--c-ink-2);
+    line-height: var(--leading-normal);
+    vertical-align: top;
+  }
+  .tbl tbody tr:last-child td { border-bottom: none; }
+  .tbl tbody td strong { color: var(--c-primary); white-space: nowrap; }
+
+  .riskguide__footer {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-5);
+    flex-wrap: wrap;
+    margin-top: var(--sp-5);
+  }
+  .riskguide__note {
+    flex: 1;
+    min-width: 280px;
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--c-muted);
+    line-height: var(--leading-relaxed);
+  }
+  .riskguide__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: .65em 1.2em;
+    font-family: var(--font-heading);
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-sm);
+    color: #fff;
+    text-decoration: none;
+    background: var(--c-primary);
+    border-radius: var(--radius-md);
+    transition: background var(--transition), gap var(--transition);
+  }
+  .riskguide__cta:hover { background: var(--c-primary-dark); gap: var(--sp-3); }
+  .riskguide__cta:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { .riskguide__cta { transition: none; } }
+</style>

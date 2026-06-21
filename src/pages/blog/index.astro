@@ -1,23 +1,30 @@
 ---
 // ============================================================================
-// /blog/ — Landing del Blog (lista de artículos).
+// /blog/ — Landing del Blog (PÁGINA 1 del listado + sidebar de interlinking).
 // ----------------------------------------------------------------------------
-// El grid NO se escribe a mano: sale de la colección `articulos` (.mdx), ordenada
-// por fecha de publicación. Cada tarjeta enlaza a su artículo /blog/<slug>,
-// generado por [...slug].astro con ArticleLayout. Contenido DEMO de la plantilla.
+// Página 1 del listado paginado. Muestra los primeros PAGE_SIZE artículos de la
+// colección `articulos` (.mdx, ordenada por fecha) y enlaza a /blog/pagina/<n>
+// para el resto (ver src/pages/blog/pagina/[page].astro). El cuerpo (rejilla +
+// sidebar + paginación) lo pinta BlogListing, COMPARTIDO con las demás páginas,
+// alimentado por blogSidebarData() (lib/blog.ts). Imágenes ilustrativas (pool).
 // ============================================================================
 import PageLayout from '@layouts/PageLayout.astro'
 import Hero from '@components/Hero.astro'
 import SectionHeading from '@components/SectionHeading.astro'
-import CategoryCard from '@components/CategoryCard.astro'
 import GuiaNota from '@components/GuiaNota.astro'
 import SectionMenu from '@components/SectionMenu.astro'
+import BlogListing from '@components/BlogListing.astro'
 import { getCollection } from 'astro:content'
 import { waUrl, WA_MESSAGES } from '@config/site'
+import { PAGE_SIZE, blogSidebarData } from '@lib/blog'
 
 const articulos = (await getCollection('articulos', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 )
+
+const sidebar = blogSidebarData(articulos)
+const total = Math.max(1, Math.ceil(articulos.length / PAGE_SIZE))
+const pageItems = articulos.slice(0, PAGE_SIZE)
 
 const cierreItems = [
   { label: 'Servicios', href: '/servicios', sub: 'Lo que ofrecemos' },
@@ -42,7 +49,7 @@ const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.blog)
     subtitle="Artículos sobre cómo se construye y se mantiene un sitio profesional: guías prácticas y novedades del sistema."
     descRight={[
       'El blog es el motor de contenido del sitio: cada artículo es una página nueva que puede responder a una búsqueda y atraer visitas que aún no te conocen. Bien hecho, es la forma más sostenible de crecer en orgánico —no depende de pagar por cada clic, sino de resolver dudas reales.',
-      'Aquí el grid no se escribe a mano: sale de la colección de artículos (.mdx) ordenada por fecha. Publicar es agregar un archivo Markdown; la lista y la página del artículo se generan solas. Los artículos son DEMO de la plantilla: reemplázalos por los tuyos.',
+      'Aquí el grid no se escribe a mano: sale de la colección de artículos (.mdx) ordenada por fecha. Publicar es agregar un archivo Markdown; la lista, la paginación y la página del artículo se generan solas. Los artículos son DEMO de la plantilla: reemplázalos por los tuyos.',
     ]}
   />
 
@@ -51,7 +58,8 @@ const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.blog)
       <GuiaNota titulo="Qué es esta página (blog · listado)" archivo="src/pages/blog/index.astro">
         <p>
           Landing del blog: lista los artículos de <code>getCollection('articulos')</code>, ordenados por
-          <code>pubDate</code>. Cada tarjeta enlaza a su artículo <code>/blog/&lt;slug&gt;</code>,
+          <code>pubDate</code>. Esta es la <strong>página 1</strong>; el resto vive en
+          <code>/blog/pagina/&lt;n&gt;</code>. Cada tarjeta enlaza a su artículo <code>/blog/&lt;slug&gt;</code>,
           renderizado por <code>[...slug].astro</code> con <code>ArticleLayout</code>. Para publicar,
           agrega un <code>.mdx</code> en <code>src/content/articulos/</code> — esta página se actualiza sola.
         </p>
@@ -68,20 +76,22 @@ const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.blog)
         ]}
       />
 
-      <div class="grid">
-        {articulos.map((a, i) => (
-          <CategoryCard
-            label={a.data.title}
-            href={`/blog/${a.id}`}
-            image={a.data.heroImage}
-            imageAlt={a.data.title}
-            badge={a.data.category}
-            blurb={a.data.description}
-            ctaLabel="Leer artículo"
-            index={i}
-          />
-        ))}
-      </div>
+      <BlogListing articulos={pageItems} current={1} total={total} sidebar={sidebar}>
+        <GuiaNota titulo="Qué es y para qué sirve un sidebar" archivo="src/components/BlogSidebar.astro">
+          <p>
+            El <strong>sidebar</strong> (barra lateral) es la columna secundaria junto al contenido. En un
+            blog no es decoración: es el <strong>motor de enlazado interno</strong> de la sección. Reúne
+            accesos a <em>categorías</em> y <em>temas</em> (con su conteo), <em>lecturas recomendadas</em> y
+            puentes al resto del sitio. Tiene su propia página a fondo en
+            <a href="/blog/anatomia/sidebar">anatomía del blog · sidebar</a>.
+          </p>
+          <p>
+            Buenas prácticas que aplica: enlaces con <strong>texto descriptivo</strong>, se mantiene
+            <strong>sticky</strong> en escritorio y en móvil <strong>baja debajo</strong> del contenido. Se
+            alimenta solo de la colección: al publicar, sus listas se actualizan sin tocar código.
+          </p>
+        </GuiaNota>
+      </BlogListing>
     </div>
   </section>
 
@@ -92,7 +102,4 @@ const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.blog)
   .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
   .section { padding: var(--sp-8) 0; }
   @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
-  .grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
-  @media (min-width: 640px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (min-width: 1024px) { .grid { grid-template-columns: repeat(3, 1fr); } }
 </style>

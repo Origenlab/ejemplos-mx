@@ -1,0 +1,756 @@
+---
+// ============================================================================
+// /niveles/l1-inicio — FICHA DEL NIVEL «L1 · Inicio».
+// ----------------------------------------------------------------------------
+// PRIMERA ficha L3 de la serie /niveles/* — marca el molde de 10 secciones para
+// los niveles (espejo de /modulos/topbar en la serie Módulos). MISMO molde
+// (docs/MODULOS.md §2): Hero sin CTAs, SectionHeading layout="duo", anatomía,
+// galería de variantes (tipos de home), 4 patrones móviles con MarcoMovil +
+// Receta, recetas de construcción, sí/no, cierre con siblingsNiveles('l1-inicio').
+//
+// QUÉ DOCUMENTA: el nivel 1, la portada/home. La única página raíz del sitio:
+// presenta el negocio y reparte hacia las secciones. Sin migas de pan (es el
+// origen de la jerarquía). Vive en src/pages/index.astro.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import FAQAccordion from '@components/FAQAccordion.astro'
+import RelatedLinks from '@components/RelatedLinks.astro'
+import { waUrl, WA_MESSAGES } from '@config/site'
+import { siblingsNiveles } from '@lib/niveles'
+
+const cierreItems = siblingsNiveles('l1-inicio')
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), sub: 'Respuesta inmediata', external: true }
+
+// ── Anatomía: las 6 PIEZAS de una home en esta plantilla (de arriba a abajo) ──
+const piezas = [
+  {
+    n: 1,
+    nombre: 'Hero — la apertura con un H1 único',
+    que: 'La franja de apertura: un H1 único (el ÚNICO h1 del sitio entero) con la propuesta de valor en lenguaje claro, un subtítulo de apoyo y, en la home, opcionalmente los CTAs. Es lo primero que decide si el visitante se queda. El logotipo NO va aquí —vive en el header—. Tienes pocos segundos: manda el mensaje, no la decoración.',
+    dato: 'src/pages/index.astro → <Hero> · UN solo <h1> por página · propuesta de valor + keyword principal',
+  },
+  {
+    n: 2,
+    nombre: 'Franja de atajos (SectionMenu) — el mapa rápido',
+    que: 'Justo bajo el hero, una fila de botones que salta a cada sección de la home (o del sitio) sin volver al header. Patrón de catálogo: el visitante entra y de inmediato ve por dónde moverse. Data-driven desde NAV; el último botón es el CTA de conversión (WhatsApp con waUrl()).',
+    dato: 'src/components/SectionMenu.astro · items desde NAV · último botón = CTA waUrl(WA_MESSAGES.x)',
+  },
+  {
+    n: 3,
+    nombre: 'Vitrina de categorías (CategoryCard) — lo que ofreces',
+    que: 'La rejilla de tarjetas que presenta cada categoría del catálogo como un producto: foto, etiqueta, título H3, texto de venta y atajos a subcategorías. Es el corazón de la distribución de tráfico: convierte una lista larga en un mapa que se entiende de un vistazo. Data-driven desde SHOWCASE (site.ts).',
+    dato: 'src/components/CategoryCard.astro · grid .showcase 1→2→4 · data-driven desde SHOWCASE',
+  },
+  {
+    n: 4,
+    nombre: 'Bloques «a fondo» (CategoryDetail) — profundizar sin salir',
+    que: 'Dos columnas (info izquierda · galería derecha) que amplían UNA categoría antes de que el visitante entre a su L2. Refuerzan la propuesta con texto y prueba visual. Regla del sitio: todos idénticos, sin zig-zag (no se alternan lados ni fondos), para que la lectura sea predecible.',
+    dato: 'src/components/CategoryDetail.astro · info izq · galería der · SIN zig-zag',
+  },
+  {
+    n: 5,
+    nombre: 'Prueba social + FAQ — la confianza',
+    que: 'Reseñas (ReviewCard) que responden «¿le funcionó a alguien como yo?» con la voz de un tercero, y el acordeón de preguntas frecuentes (FAQAccordion) que resuelve objeciones antes de que frenen la conversión. La FAQ además aporta esquema FAQPage para SEO (un solo emisor por página, regla B3).',
+    dato: 'src/components/ReviewCard.astro · FAQAccordion.astro · faqSchema() en lib/seo.ts',
+  },
+  {
+    n: 6,
+    nombre: 'Cierre de conversión + Footer — el siguiente paso',
+    que: 'La franja final que pide UNA acción (CTABanner con PRESET_GENERAL) o reparte rutas útiles (SectionMenu), seguida del footer que aparece en TODAS las páginas. La home suele llevar ambos: primero el banner (conversión), debajo el footer (mapa global del sitio + NAP + legales).',
+    dato: 'src/components/CTABanner.astro (PRESET_GENERAL) · Footer.astro (montado por PageLayout)',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Primera impresión — los segundos que deciden si se quedan',
+    desc: 'La home es la cara del negocio para quien llega por la marca, una tarjeta o una campaña. En pocos segundos el visitante decide si el sitio es para él. Por eso el hero manda el mensaje (un H1 claro con la propuesta de valor) y no la decoración: el logotipo vive en el header, la animación no compite con el texto, y la promesa se entiende sin scroll. Una home que no comunica en 5 segundos pierde al visitante antes de que vea el catálogo.',
+  },
+  {
+    titulo: 'Distribución de tráfico — el mapa que reparte a las secciones',
+    desc: 'A diferencia de una ficha (que profundiza en una cosa), la home reparte: su trabajo es mandar a cada visitante a la sección correcta —productos, servicios, cobertura, blog— sin que tenga que adivinar. La franja de atajos y la vitrina de categorías son las dos herramientas; ambas son data-driven (NAV y SHOWCASE) para que nunca se desincronicen del contenido real. Una home es buena cuando, en un vistazo, cualquiera sabe a dónde ir.',
+  },
+  {
+    titulo: 'Ancla SEO de marca — la URL más fuerte del sitio',
+    desc: 'La home (/) es la página con más autoridad: la que recibe la mayoría de los enlaces externos y la que rankea por el nombre de la marca. Por eso lleva el H1 con la keyword principal, el Organization JSON-LD (emitido una vez por buildSchema desde BaseLayout, regla B3) y los enlaces internos que reparten equity al resto del sitio. Cuidarla es cuidar la raíz del árbol: lo que pasa aquí se propaga hacia abajo.',
+  },
+]
+
+const sis = [
+  'Usa UN solo h1 en la home, con la propuesta de valor y la keyword principal. El h1 es la promesa de la página para personas y buscadores; debe decir qué ofreces y para quién, sin tecnicismos. Los demás títulos de la home son h2 (cada sección) y h3 (cada card). Un solo h1 por página es regla dura de jerarquía del sitio.',
+  'Reparte: la home manda a las secciones, no agota cada tema. Su trabajo es distribución, no profundidad. Presenta cada categoría con una card que enlaza a su L2 y deja el detalle para la ficha. Si la home intenta explicarlo todo, se vuelve infinita y nadie llega al catálogo. Una frase de venta + un enlace bastan por sección.',
+  'Mantén el contenido data-driven: vitrina desde SHOWCASE, atajos desde NAV. La home no hardcodea su catálogo —lee de site.ts—, así agregar una categoría actualiza la home, el menú y el footer a la vez. El día que cambie la oferta, editas una lista, no cinco páginas.',
+  'Pon el CTA de conversión visible sin scroll y repítelo al cierre. El visitante debe poder contactar desde el primer pantallazo (CTA en el hero o en la franja de atajos) y al final (CTABanner con PRESET_GENERAL). El número de WhatsApp se arma siempre con waUrl(WA_MESSAGES.x) —nunca hardcodeado (regla D4)—.',
+  'Cuida el LCP: la imagen del hero o la primera card carga en eager con fetchpriority alta. La home es la página más visitada; su velocidad es la primera impresión técnica. Las imágenes son AVIF optimizadas, la primera del fold carga prioritaria y el resto en lazy. Un hero que tarda 3 segundos pierde visitantes antes del mensaje.',
+  'Emite el Organization JSON-LD una sola vez (lo hace buildSchema desde BaseLayout). La home es la página natural para el schema de marca (Organization con NAP, logo, sameAs). Pero el emisor es único y central (regla B3): la home NO duplica el grafo en su markup. El NAP debe coincidir letra por letra con topbar y footer (§6.2).',
+  'No olvides que la home NO lleva migas de pan: es el origen. Es el único nivel sin Breadcrumbs —no tiene padre—. Todos los demás niveles (L2, L3, L4) sí las llevan, y siempre anteponen «Inicio» que enlaza de vuelta aquí. La home es el ancla a la que vuelven todas las rutas.',
+]
+const nos = [
+  'NO pongas más de un h1, ni metas el logotipo como h1. Dos h1 confunden la jerarquía para el lector de pantalla y para Google; el logotipo en el header es una imagen con alt, no un encabezado. La home tiene exactamente un h1 —la propuesta de valor— y el logo vive en el chrome, no en el cuerpo.',
+  'NO conviertas la home en una ficha gigante. La tentación de explicar el producto estrella entero en la home rompe su trabajo (repartir). Si una sección necesita 8 párrafos, eso es una ficha L3 —enlázala desde una card—. La home presenta y manda; el detalle vive un nivel más abajo.',
+  'NO hardcodees el catálogo ni el número de contacto en la home. Escribir las categorías a mano en index.astro garantiza desincronización con el menú y el footer el día que cambie la oferta. Y un wa.me/<número> hardcodeado sobrevive al cambio de número del cliente. Todo desde site.ts (SHOWCASE, NAV, CONTACT) vía sus helpers.',
+  'NO entierres el CTA bajo tres pantallas de scroll. Si el visitante tiene que bajar mucho para encontrar cómo contactar, lo pierdes. La acción principal va visible en el primer fold (hero o franja de atajos) y se repite al cierre. Una home sin CTA visible es un folleto, no una herramienta de conversión.',
+  'NO uses carruseles automáticos como protagonista del hero. Los sliders que rotan solos tienen tasas de clic bajísimas (NN/g) y mueven el mensaje antes de que se lea. Si tienes tres propuestas, repártelas en tres secciones a lo largo del scroll, no en un carrusel que el visitante no controla. Un mensaje fijo y claro convierte más que tres rotando.',
+  'NO descuides el LCP por una imagen pesada o un hero con video sin póster. La home es la página que más se mide; un hero de 2 MB o un video que bloquea el render matan la primera impresión y el ranking. Imagen AVIF optimizada, dimensiones fijas (cero CLS), y si hay video, con póster y lazy.',
+  'NO dupliques el Organization schema en la home. Como es la página de marca, la tentación es meter un <script type="application/ld+json"> a mano. No: el emisor es buildSchema desde BaseLayout (regla B3). Dos Organization en el grafo confunden a Google y los validadores marcan error. Un solo emisor, central.',
+]
+
+// ── FAQ — preguntas frecuentes del nivel (voz v2; emitSchema → FAQPage único, regla B3) ──
+const faqs = [
+  {
+    question: '¿La home puede tener más de un H1?',
+    answer: 'No. La home lleva <strong>exactamente un H1</strong> con la propuesta de valor. El H1 declara el tema de la página para el árbol de accesibilidad (WCAG 2.2 SC 1.3.1, <em>Info and Relationships</em>) y concentra la señal temática para Google. Varios H1 reparten esa señal y confunden a los lectores de pantalla. Los demás títulos son H2 por sección y H3 por tarjeta; el logotipo del header es una imagen con <code>alt</code>, no un encabezado.',
+  },
+  {
+    question: '¿Por qué la home es la única página sin migas de pan?',
+    answer: 'Porque es la raíz del árbol: no tiene padre. Las migas modelan la cadena de ancestros (el JSON-LD <code>BreadcrumbList</code> que emite buildSchema), y la home no tiene ninguno. Todos los demás niveles —L2, L3, L4— anteponen «Inicio» que enlaza de vuelta aquí. Ponerle migas a la home declararía un padre que no existe.',
+  },
+  {
+    question: '¿Conviene un carrusel automático en el hero?',
+    answer: 'No. Nielsen Norman Group lo desaconseja desde hace años: el primer slide capta cerca del 1% de los clics y los siguientes caen casi a cero, mientras el movimiento automático compite con la lectura y afecta a personas con sensibilidad vestibular (WCAG 2.2 SC 2.2.2, <em>Pause, Stop, Hide</em>). Un mensaje fijo y claro convierte más. Si tienes tres propuestas, repártelas en tres secciones a lo largo del scroll, no en un carrusel que el visitante no controla.',
+  },
+  {
+    question: '¿Cómo mido si la home carga lo bastante rápido?',
+    answer: 'Con Core Web Vitals: <strong>LCP por debajo de 2.5 s</strong>, CLS por debajo de 0.1 e INP por debajo de 200 ms (umbrales de Google). En la home el LCP casi siempre es la imagen del hero: sírvela en AVIF optimizado, con <code>width</code>/<code>height</code> fijos (cero CLS) y <code>fetchpriority="high"</code>. El banco de pruebas es Lighthouse 12.x emulando un móvil de gama media en Slow 4G, no tu equipo de escritorio.',
+  },
+  {
+    question: '¿Dónde se declaran los datos de marca (Organization) en la home?',
+    answer: 'En <code>buildSchema()</code> desde BaseLayout, una sola vez por página (regla B3 — un único emisor). La home NO escribe el JSON-LD a mano. El NAP (nombre, dirección, teléfono) del Organization debe coincidir <strong>letra por letra</strong> con el del topbar y el footer; si divergen, Google interpreta dos entidades distintas con el mismo nombre y baja la confianza del panel de marca.',
+  },
+  {
+    question: '¿Home o una landing dedicada para una campaña?',
+    answer: 'Depende del tráfico. La home reparte hacia varias secciones; una <em>landing</em> de campaña recorta todo a una sola conversión y suele rendir mejor para tráfico pagado, donde cada elemento debe empujar a una acción. Regla operativa: si la campaña tiene UNA acción clara, manda una landing focal (tipo 2 de la galería); si es tráfico de marca o genérico, la home es el destino correcto.',
+  },
+  {
+    question: '¿Cuántas secciones debería tener la home?',
+    answer: 'Las justas para repartir, no para agotar. El molde de esta plantilla es hero, franja de atajos, vitrina de categorías, uno o dos bloques «a fondo», prueba social y cierre. Si una sección necesita ocho párrafos para explicarse, eso es una ficha L3: preséntala con una tarjeta y enlázala. La home distribuye; el detalle vive un nivel más abajo.',
+  },
+]
+
+// ── 6 VARIANTES (tipos de home) ──────────────────────────────────────────────
+// La galería pinta una réplica esquemática (.hv = home variant) de cada tipo.
+const disenos = [
+  {
+    nombre: '1 · Negocio local / servicios — hero + vitrina + contacto (REAL · esta plantilla)',
+    tag: 'Negocio local · Servicios · B2B regional',
+    desc: 'La cara natural de esta plantilla: topbar con contacto, hero con propuesta de valor, franja de atajos, vitrina de categorías, bloques a fondo, reseñas, FAQ y cierre a WhatsApp. El foco es la confianza y el contacto inmediato (teléfono/WhatsApp siempre a la vista). Aplica a despachos, talleres, clínicas, proveedores regionales —donde la conversión es una llamada o un mensaje, no un carrito—.',
+  },
+  {
+    nombre: '2 · Landing focal — una sola propuesta, un solo CTA',
+    tag: 'Campaña paga · Lanzamiento · Funnel',
+    desc: 'Home reducida a UNA conversión: hero fuerte, 3 bloques de beneficio, prueba social y un CTA repetido. Sin menú que distraiga (o menú mínimo). Es la página de aterrizaje de una campaña de Ads donde cada elemento empuja a una sola acción. La métrica única es la conversión; todo lo que no la sirva, fuera.',
+  },
+  {
+    nombre: '3 · E-commerce — vitrina de productos + ofertas',
+    tag: 'Tienda en línea · Catálogo amplio · Retail',
+    desc: 'El protagonista es el catálogo: barra de anuncio (envío gratis), grid de productos destacados, categorías, ofertas y prueba social. El hero es más corto —el visitante viene a comprar, no a leer—. La home reparte hacia categorías (L2) y fichas de producto (L3/L4). El CTA es «ver catálogo» / «comprar», no «cotizar».',
+  },
+  {
+    nombre: '4 · SaaS / producto digital — hero + features + pricing',
+    tag: 'Software · App · Suscripción',
+    desc: 'Estructura clásica de producto digital: hero con captura/demo, fila de logos de confianza, bloques de features, tabla de precios y CTA «empezar gratis». La home explica el valor y baja al registro. El foco es la claridad del producto y la fricción cero para probarlo. Prueba social en forma de logos + testimonios.',
+  },
+  {
+    nombre: '5 · Portfolio / agencia — showcase visual',
+    tag: 'Agencia · Estudio · Freelance creativo',
+    desc: 'El trabajo habla: hero breve y una galería grande de proyectos/casos como protagonista. Menos texto, más imagen. La home demuestra capacidad con ejemplos y cierra con «hablemos de tu proyecto». El visitante evalúa estética y nivel; la prueba es visual, no argumental.',
+  },
+  {
+    nombre: '6 · Editorial / blog-first — contenido como portada',
+    tag: 'Medio · Blog · Publicación · Knowledge base',
+    desc: 'La portada es el contenido: artículo destacado, rejilla de últimas publicaciones por categoría, y suscripción al newsletter. El hero cede su lugar al feed. Aplica a medios, blogs corporativos y bases de conocimiento donde la home se actualiza sola con lo último y el SEO vive en el volumen de artículos (L3).',
+  },
+]
+
+// ── 4 patrones móviles — strings que pinta <Receta>. ──
+const recetaHeroMov = `/* MÓVIL · HERO QUE PRIORIZA EL MENSAJE
+   En el teléfono el hero no «encoge»: reordena. El H1 baja de tamaño
+   con clamp() (nunca por debajo de lo legible), el subtítulo se acorta
+   y el CTA pasa full-width en la zona del pulgar. La imagen, si existe,
+   va detrás o debajo —nunca compite con el texto en pantalla angosta—. */
+
+.hero__title { font-size: clamp(1.75rem, 7vw, 3.25rem); line-height: 1.1; }
+.hero__subtitle { font-size: clamp(1rem, 4vw, 1.25rem); }
+
+@media (max-width: 560px) {
+  .hero__ctas { flex-direction: column; }
+  .hero__ctas .btn { width: 100%; min-height: 48px; }  /* zona del pulgar */
+}`
+
+const recetaVitrinaMov = `/* MÓVIL · VITRINA 4 → 2 → 1 (mobile-first)
+   La rejilla de categorías arranca en UNA columna y crece con min-width.
+   Es el mismo .showcase del catálogo: la home no inventa diseño propio. */
+
+.showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
+@media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .showcase { grid-template-columns: repeat(4, 1fr); } }`
+
+const recetaCtaMov = `/* MÓVIL · CTA EN LA ZONA DEL PULGAR
+   La acción principal de la home debe alcanzarse sin estirar el dedo.
+   En móvil el CTA de cierre pasa full-width y, opcionalmente, una barra
+   de contacto se ancla al borde inferior respetando el safe-area de iOS. */
+
+@media (max-width: 768px) {
+  .home-cta { position: sticky; bottom: 0; }
+  .home-cta .btn {
+    width: 100%;
+    min-height: 48px;                                   /* WCAG SC 2.5.5 */
+    padding-bottom: calc(.8rem + env(safe-area-inset-bottom, 0));
+  }
+}`
+
+const recetaLcpMov = `/* MÓVIL · LCP DEL HERO (la métrica de la primera impresión)
+   La home es la página más visitada: su velocidad ES la primera
+   impresión. La imagen del hero (o la primera card) carga prioritaria;
+   el resto, en lazy. AVIF optimizado + dimensiones fijas = cero CLS. */
+
+<img
+  src="/images/hero.avif"
+  width="1280" height="720"          {/* dimensiones fijas → cero CLS */}
+  fetchpriority="high"               {/* el navegador la prioriza */}
+  loading="eager" decoding="async"
+  alt="Propuesta de valor del negocio con la keyword principal"
+/>`
+
+// ── 2 RECETAS DEL «CÓMO ESTÁ CONSTRUIDO» ─────────────────────────────────────
+const recetaEstructura = `---
+// src/pages/index.astro — la home compone piezas, no inventa diseño.
+// Cada bloque es un componente del sistema; los datos vienen de site.ts.
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import CategoryCard from '@components/CategoryCard.astro'
+import CategoryDetail from '@components/CategoryDetail.astro'
+import CTABanner from '@components/CTABanner.astro'
+import { SHOWCASE, NAV } from '@config/site'
+import { PRESET_GENERAL } from '@config/cta-presets'
+---
+
+{/* pageType="home" → buildSchema emite Organization (regla B3). SIN breadcrumbs: es la raíz. */}
+<PageLayout title="..." description="..." pageType="home">
+  <Hero title="..." subtitle="..." />            {/* el ÚNICO h1 del sitio */}
+  <SectionMenu items={NAV} />                     {/* atajos data-driven */}
+
+  <section class="section">
+    <div class="showcase">
+      {SHOWCASE.map((c, i) => <CategoryCard {...c} index={i} />)}
+    </div>
+  </section>
+
+  <CTABanner {...PRESET_GENERAL} />              {/* cierre de conversión */}
+</PageLayout>`
+
+const recetaSchema = `---
+// La home es la página de MARCA → Organization JSON-LD.
+// Pero el emisor es ÚNICO y central: buildSchema() lo emite desde
+// BaseLayout cuando pageType lo amerita (regla B3). La home NO mete
+// un <script ld+json> a mano. El NAP coincide letra por letra con
+// el topbar y el footer (docs/MODULOS.md §6.2).
+import { organizationSchema } from '@lib/seo'
+// buildSchema() (en BaseLayout) hace:
+//   const graph = [ organizationSchema(), ...(pageType === 'home' ? [websiteSchema()] : []) ]
+// y emite UN solo <script type="application/ld+json"> con el @graph.
+---
+
+{/* En la home NO escribas esto a mano — ya lo emite BaseLayout: */}
+{/* <script type="application/ld+json">{ "@type": "Organization", ... }</script> */}
+{/* Duplicarlo = dos entidades en el grafo = Google confundido. */}`
+---
+
+<PageLayout
+  title="Nivel L1 · Inicio: la portada que presenta y reparte"
+  description="El nivel 1 de un sitio: la home. Qué es, para qué sirve, de qué se compone, tipos de home, responsive y cómo se construye en src/pages/index.astro."
+  pageType="page"
+  schemaType="TechArticle"
+  guia={false}
+  breadcrumbs={[{ label: 'Niveles', href: '/niveles' }, { label: 'L1 · Inicio' }]}
+>
+  <Hero
+    badge="Nivel del sitio · L1"
+    title="El Inicio:"
+    accent="la portada que presenta el negocio y reparte hacia las secciones"
+    subtitle="El nivel 1 es la home: la única página raíz del sitio, en /. Es lo primero que ve quien llega por la marca o una campaña, y hace dos trabajos a la vez —presentar en segundos y mandar a cada visitante a la sección correcta—. No es un catálogo ni una ficha: es el mapa de bienvenida."
+    descRight={[
+      'Esta ficha abre la serie «Niveles» y marca su molde. Documenta el L1 a fondo: qué problema resuelve la home (primera impresión + distribución de tráfico + ancla SEO de marca), de qué seis piezas se compone (hero con h1 único, franja de atajos, vitrina de categorías, bloques a fondo, prueba social + FAQ, y cierre de conversión + footer), qué tipos de home existen (negocio local, landing focal, e-commerce, SaaS, portfolio, editorial), cómo se comporta en el teléfono (hero que prioriza el mensaje, vitrina 4→2→1, CTA en la zona del pulgar, LCP cuidado) y cómo está construida en src/pages/index.astro.',
+      'Con dos rasgos que separan al L1 del resto de los niveles. Primero: es la única página SIN migas de pan —es el origen de la jerarquía, no tiene padre—; todos los demás niveles anteponen «Inicio» que vuelve aquí. Segundo: es la página de marca, así que es el lugar natural del Organization JSON-LD —pero el emisor es único y central (buildSchema desde BaseLayout, regla B3); la home no duplica el grafo—. Cuidar el L1 es cuidar la raíz del árbol: su velocidad, su mensaje y sus enlaces internos se propagan hacia abajo, a todos los niveles.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Definición"
+        title="¿Qué es el nivel L1 · Inicio?"
+        desc="La página raíz del sitio (/), la única en su nivel. Su trabajo no es agotar un tema (eso es la ficha L3) ni listar una sección (eso es el índice L2): es presentar el negocio en segundos y repartir el tráfico hacia las secciones. Es el origen de la jerarquía —la única página sin migas de pan— y la URL con más autoridad del sitio."
+        body={[
+          'El L1 es la home: la primera y única página raíz. Mientras un índice (L2) lista los hijos de una sección y una ficha (L3) profundiza en una entidad, la home hace dos cosas a la vez: comunica quién eres y qué ofreces en pocos segundos, y manda a cada visitante a la sección correcta. Es bienvenida y mapa, no catálogo ni detalle.',
+          'En esta plantilla vive en src/pages/index.astro y se arma componiendo piezas del sistema —no inventa diseño propio—: hero, franja de atajos, vitrina de categorías, bloques a fondo, prueba social, FAQ y cierre. Es el origen de la jerarquía: la única página sin Breadcrumbs (no tiene padre) y la natural para el Organization JSON-LD de la marca.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Función e importancia"
+        title="¿Para qué sirve?"
+        desc="Tres trabajos a la vez, todos críticos: causar la primera impresión que decide si el visitante se queda, repartir el tráfico hacia las secciones correctas, y servir de ancla SEO de marca (la URL con más autoridad del sitio). Si la home falla en cualquiera de los tres, el resto del sitio recibe menos visitantes y peor calificados."
+        body={[
+          'La función primaria de la home es la primera impresión: en pocos segundos el visitante decide si el sitio es para él. Por eso el hero manda el mensaje (un h1 claro con la propuesta de valor) y la velocidad importa (el LCP del hero es la primera impresión técnica). Una home que no comunica en cinco segundos pierde al visitante antes de que vea el catálogo.',
+          'Su función secundaria es la distribución: a diferencia de una ficha que profundiza, la home reparte —manda a cada quien a productos, servicios, cobertura o blog sin que adivine—. Y la terciaria es de SEO: la home (/) es la página con más autoridad, la que rankea por marca y reparte equity interno al resto. Cuidar la raíz cuida todo el árbol.',
+        ]}
+      />
+      <div class="bene">
+        {beneficios.map((b) => (
+          <article class="bene__card">
+            <h3 class="bene__title">{b.titulo}</h3>
+            <p class="bene__desc">{b.desc}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3) ¿QUÉ LLEVA? — Anatomía (6 piezas) + wireframe en vivo ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Anatomía"
+        title="¿Qué lleva por dentro?"
+        desc="Seis piezas en orden de aparición, de arriba a abajo: hero con h1 único, franja de atajos (SectionMenu), vitrina de categorías (CategoryCard), bloques a fondo (CategoryDetail), prueba social + FAQ, y cierre de conversión + footer. Cada pieza es un componente del sistema; ninguna es diseño nuevo inventado para la home."
+        body={[
+          'La home no es un bloque monolítico: es una composición de piezas reutilizables, cada una con un trabajo. La 1 (hero) presenta. La 2 (atajos) reparte rápido. La 3 (vitrina) es el corazón de la distribución —cada categoría como card que enlaza a su L2—. La 4 (a fondo) profundiza sin sacar al visitante. La 5 (reseñas + FAQ) genera confianza y resuelve objeciones. La 6 (cierre + footer) pide la acción y reparte el mapa global.',
+          'Todas son data-driven: la vitrina lee de SHOWCASE, los atajos de NAV, el contacto de CONTACT. Agregar una categoría actualiza la home, el menú y el footer a la vez. Esa es la lección del nivel raíz: la home compone lo que ya existe, no reinventa —por eso un cambio de oferta es una línea en site.ts, no cinco páginas tocadas—.',
+        ]}
+      />
+      <ol class="piezas">
+        {piezas.map((p) => (
+          <li class="pieza">
+            <span class="pieza__n" aria-hidden="true">{p.n}</span>
+            <div class="pieza__body">
+              <h3 class="pieza__nombre">{p.nombre}</h3>
+              <p class="pieza__que">{p.que}</p>
+              <p class="pieza__dato"><span class="pieza__dato-label">SSoT:</span> <code>{p.dato}</code></p>
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      <GuiaNota titulo="Ejemplo en vivo · la home de esta plantilla es un L1 real" archivo="src/pages/index.astro">
+        <p>
+          El esquema de abajo es la anatomía de una home L1 de arriba a abajo. La
+          home real de este sitio (<a href="/">/</a>) es exactamente esto:
+          hero → atajos → vitrina → a fondo → prueba social → cierre → footer.
+          Si una pieza del sistema se rompe, la home lo refleja a la vista del
+          visitante (<em>eat-your-own-dog-food</em>).
+        </p>
+        <div class="wire" aria-hidden="true">
+          <div class="wire__row wire__row--chrome"><span>Topbar · contacto</span></div>
+          <div class="wire__row wire__row--chrome"><span>Header · logo + navegación</span></div>
+          <div class="wire__row wire__row--hero"><b>Hero · H1 único + propuesta de valor</b></div>
+          <div class="wire__row wire__row--menu"><span>Atajos</span><span>Atajos</span><span>Atajos</span><span class="wire__cta">CTA</span></div>
+          <div class="wire__grid"><i></i><i></i><i></i><i></i></div>
+          <div class="wire__row wire__row--detail"><span class="wire__half">Info a fondo</span><span class="wire__half wire__half--img">Galería</span></div>
+          <div class="wire__row wire__row--social"><span>Reseñas</span><span>FAQ</span></div>
+          <div class="wire__row wire__row--cierre"><b>Cierre de conversión · CTA</b></div>
+          <div class="wire__row wire__row--chrome"><span>Footer · mapa global + NAP + legales</span></div>
+        </div>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 4) VARIANTES — GaleriaDisenos + DisenoCard ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Otros diseños y aplicaciones"
+        title="Tipos de home"
+        desc="Seis tipos de portada según el negocio: negocio local/servicios (la de esta plantilla), landing focal, e-commerce, SaaS/producto digital, portfolio/agencia y editorial/blog-first. Todas son L1 —raíz que presenta y reparte— pero cambian el protagonista: contacto, conversión única, catálogo, producto, trabajo o contenido."
+        body={[
+          'El nivel no cambia, el énfasis sí. Un negocio local pone el contacto al frente; una landing de campaña reduce todo a una conversión; un e-commerce hace protagonista al catálogo; un SaaS explica el producto y baja al registro; un portfolio deja que el trabajo hable; un medio convierte el feed en portada. Reconocer el tipo correcto evita copiar la home equivocada.',
+          'Cada tipo reordena las mismas piezas: más o menos hero, vitrina de categorías o de productos, prueba social en logos o en reseñas, CTA de «cotizar», «comprar» o «empezar gratis». La plantilla parte del tipo «negocio local/servicios» porque es el caso de uso central; los demás se arman recomponiendo los mismos componentes.',
+        ]}
+      />
+
+      <GaleriaDisenos ariaLabel="Seis tipos de home (nivel L1)">
+        {/* 0 · Negocio local / servicios */}
+        <DisenoCard {...disenos[0]}>
+          <div class="hv">
+            <div class="hv__hero"><b>Propuesta de valor</b><span class="hv__line"></span></div>
+            <div class="hv__menu"><i></i><i></i><i></i><i class="hv__cta">WA</i></div>
+            <div class="hv__grid"><i></i><i></i><i></i></div>
+          </div>
+        </DisenoCard>
+        {/* 1 · Landing focal */}
+        <DisenoCard {...disenos[1]}>
+          <div class="hv hv--focal">
+            <div class="hv__hero hv__hero--big"><b>Una sola propuesta</b><span class="hv__btn">CTA</span></div>
+            <div class="hv__bene"><i></i><i></i><i></i></div>
+            <div class="hv__row"><span class="hv__btn hv__btn--wide">CTA</span></div>
+          </div>
+        </DisenoCard>
+        {/* 2 · E-commerce */}
+        <DisenoCard {...disenos[2]}>
+          <div class="hv hv--shop">
+            <div class="hv__ann">Envío gratis +$999</div>
+            <div class="hv__hero hv__hero--sm"><b>Tienda</b></div>
+            <div class="hv__grid hv__grid--6"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+        </DisenoCard>
+        {/* 3 · SaaS */}
+        <DisenoCard {...disenos[3]}>
+          <div class="hv hv--saas">
+            <div class="hv__hero"><b>Producto digital</b><span class="hv__btn">Probar</span></div>
+            <div class="hv__logos"><i></i><i></i><i></i><i></i></div>
+            <div class="hv__feat"><span></span><span></span></div>
+          </div>
+        </DisenoCard>
+        {/* 4 · Portfolio */}
+        <DisenoCard {...disenos[4]}>
+          <div class="hv hv--folio">
+            <div class="hv__hero hv__hero--sm"><b>Estudio</b></div>
+            <div class="hv__gallery"><i></i><i></i><i></i><i></i></div>
+          </div>
+        </DisenoCard>
+        {/* 5 · Editorial */}
+        <DisenoCard {...disenos[5]}>
+          <div class="hv hv--edit">
+            <div class="hv__feature"><b>Artículo destacado</b><span class="hv__line"></span></div>
+            <div class="hv__feed"><span></span><span></span><span></span></div>
+          </div>
+        </DisenoCard>
+      </GaleriaDisenos>
+
+      <GuiaNota titulo="El tipo correcto según el negocio · todas son L1" archivo="src/pages/index.astro · src/config/site.ts (SHOWCASE)">
+        <p>
+          Las seis son <strong>nivel L1</strong> (la raíz que presenta y reparte); cambia el
+          protagonista. La plantilla parte de la <em>1 (negocio local/servicios)</em> porque
+          el caso central es contacto + confianza. Para un e-commerce, la vitrina pasa de
+          categorías a productos y el CTA de «cotizar» a «comprar»; para un SaaS, entran
+          features + pricing. Mismas piezas, distinto orden y énfasis.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 5) RESPONSIVE Y MÓVIL — 4 patrones con MarcoMovil + Receta ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="La home, en el teléfono"
+        desc="Cuatro patrones reales: hero que prioriza el mensaje (H1 con clamp, CTA full-width en la zona del pulgar), vitrina 4→2→1 mobile-first, CTA en la zona del pulgar con safe-area iOS, y LCP del hero cuidado (AVIF + fetchpriority + dimensiones fijas). La home es la página más visitada: su comportamiento móvil es el que más pesa."
+        body={[
+          'La mayoría del tráfico de una home llega por teléfono, así que el caso base es el móvil, no el escritorio. El hero reordena (no encoge): el H1 baja de tamaño con clamp sin perder legibilidad, el subtítulo se acorta y el CTA pasa full-width al alcance del pulgar. La vitrina nace en una columna y suma columnas con ancho. Nada de esto es media-query-por-componente: vive en el sistema central (tokens.css + mobile.css).',
+          'Dos detalles que separan una buena home móvil de una mediocre: el CTA en la zona del pulgar (la franja inferior que el dedo alcanza sin estirarse, con env(safe-area-inset-bottom) para no chocar con el home indicator de iOS) y el LCP del hero (imagen AVIF optimizada, dimensiones fijas para cero CLS, fetchpriority alta en el fold). La primera impresión técnica de tu sitio se decide en estos dos detalles.',
+        ]}
+      />
+
+      <div class="pats">
+        {/* 1 · Hero móvil */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="El hero prioriza el mensaje: H1 grande, CTA full-width en la zona del pulgar">
+              <div class="hm hm--hero">
+                <b class="hm__h">Propuesta de valor clara</b>
+                <span class="hm__d"></span><span class="hm__d hm__d--sm"></span>
+                <span class="hm__btn hm__btn--solid">Cotizar por WhatsApp</span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · Hero que prioriza el mensaje</h3>
+            <p class="pat__desc">El H1 escala con <code>clamp()</code> (nunca bajo lo legible), el subtítulo se acorta y el CTA pasa <strong>full-width</strong> en la zona del pulgar. La imagen, si existe, va detrás o debajo —en pantalla angosta el texto manda, no la decoración—.</p>
+            <Receta titulo="CSS · hero mobile-first" lang="css" code={recetaHeroMov} />
+          </div>
+        </article>
+
+        {/* 2 · Vitrina */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="La vitrina de categorías baja a una sola columna en el teléfono">
+              <div class="hm hm--grid">
+                <span class="hm__card"><i></i><b></b></span>
+                <span class="hm__card"><i></i><b></b></span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · Vitrina 4 → 2 → 1 mobile-first</h3>
+            <p class="pat__desc">La rejilla de categorías (<code>.showcase</code>) arranca en una columna y crece con <code>min-width</code> (2 en tablet, 4 en escritorio). Es el mismo grid del catálogo —la home no inventa diseño—. El visitante recorre una columna cómoda en lugar de cuatro tarjetas apretadas.</p>
+            <Receta titulo="CSS · vitrina mobile-first" lang="css" code={recetaVitrinaMov} />
+          </div>
+        </article>
+
+        {/* 3 · CTA zona del pulgar */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="El CTA de cierre se ancla en la zona del pulgar con safe-area iOS">
+              <div class="hm hm--thumb">
+                <div class="hm__page"><span class="hm__line"></span><span class="hm__line"></span><span class="hm__line hm__line--sm"></span></div>
+                <div class="hm__bar"><span class="hm__btn hm__btn--solid hm__btn--full">Cotizar por WhatsApp</span><i class="hm__safe"></i></div>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · CTA en la zona del pulgar</h3>
+            <p class="pat__desc">La acción principal debe alcanzarse sin estirar el dedo. En móvil el CTA pasa full-width con <code>min-height: 48px</code> (WCAG SC 2.5.5) y, opcionalmente, se ancla al borde inferior respetando <code>env(safe-area-inset-bottom)</code> para no chocar con el home indicator de iOS.</p>
+            <Receta titulo="CSS · CTA en la zona del pulgar" lang="css" code={recetaCtaMov} />
+          </div>
+        </article>
+
+        {/* 4 · LCP del hero */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="La imagen del hero carga prioritaria, con dimensiones fijas para cero CLS">
+              <div class="hm hm--lcp">
+                <span class="hm__img"><i class="hm__tag">AVIF</i></span>
+                <span class="hm__chip">fetchpriority=high</span>
+                <span class="hm__chip">width/height → 0 CLS</span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">4 · LCP del hero (la primera impresión técnica)</h3>
+            <p class="pat__desc">La home es la página más medida: la imagen del fold carga en <code>eager</code> con <code>fetchpriority="high"</code> y dimensiones fijas (<code>width</code>/<code>height</code>) para cero CLS. AVIF optimizado mantiene el peso bajo. Un hero que tarda pierde visitantes antes del mensaje.</p>
+            <Receta titulo="HTML · imagen del hero con LCP cuidado" lang="astro" code={recetaLcpMov} />
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 6) ¿DÓNDE VA? — la posición del L1 en la jerarquía ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Posición en la jerarquía"
+        title="¿Dónde va en el sitio?"
+        desc="En la raíz: la URL / del dominio, el origen del árbol. Es el único nivel sin padre y, por tanto, sin migas de pan. Todos los demás niveles cuelgan de aquí: cada L2 (índice de sección) es hijo directo de la home, y cada L3/L4 cuelga de un L2. Es también el destino del logotipo del header desde cualquier página."
+        body={[
+          'El L1 ocupa la raíz del dominio (/). No tiene padre, así que es la única página sin Breadcrumbs —el componente Breadcrumbs antepone «Inicio» en todos los demás niveles, enlazando de vuelta aquí—. En el árbol del sitio, la home es el nodo del que cuelga todo: los L2 (productos, servicios, módulos, blog, niveles) son sus hijos directos.',
+          'Por su posición, la home concentra autoridad: recibe la mayoría de los enlaces externos y reparte equity interno hacia abajo. El logotipo del header enlaza siempre a / —el «volver al inicio» universal—. Cuidar la raíz (velocidad, mensaje, enlaces internos) beneficia a cada nivel que cuelga de ella.',
+        ]}
+      />
+      <GuiaNota titulo="El árbol del sitio · L1 es la raíz" archivo="src/pages/index.astro · src/components/Breadcrumbs.astro">
+        <p>
+          <strong>L1 (/)</strong> → de aquí cuelgan los <strong>L2</strong> (<code>/productos</code>,
+          <code>/servicios</code>, <code>/modulos</code>, <code>/niveles</code>, <code>/blog</code>);
+          de cada L2 cuelgan los <strong>L3</strong> (<code>/productos/equipo-base</code>,
+          <code>/modulos/topbar</code>); y de un L3 que se subdivide, los <strong>L4</strong>.
+          La home es la única sin migas porque es el origen; las demás siempre anteponen
+          «Inicio» que vuelve aquí.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 7) CÓMO ESTÁ CONSTRUIDO — 2 recetas ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Capa técnica"
+        title="Cómo está construida"
+        desc="Vive en src/pages/index.astro y compone piezas del sistema —no inventa diseño—. Los datos vienen de site.ts (SHOWCASE, NAV, CONTACT); el copy de cierre, de cta-presets.ts. Lleva pageType='home' (no 'page') para que buildSchema emita el Organization + WebSite JSON-LD una sola vez (regla B3). NO lleva breadcrumbs: es la raíz."
+        body={[
+          'La arquitectura del L1 es composición pura: la home importa componentes (Hero, SectionMenu, CategoryCard, CategoryDetail, CTABanner) y los alimenta con datos de site.ts. No hay diseño nuevo ni datos hardcodeados —agregar una categoría a SHOWCASE la pinta en la home sin tocar el .astro—. Esa disciplina es lo que mantiene la home estable y sincronizada con el resto del sitio.',
+          'Dos detalles técnicos propios del nivel raíz: el pageType="home" (que activa el Organization + WebSite schema en buildSchema, una sola vez, regla B3) y la ausencia de breadcrumbs (es el origen). La receta A muestra cómo se compone la página; la B, por qué el schema de marca NO se escribe a mano en la home —ya lo emite BaseLayout—.',
+        ]}
+      />
+      <div class="recetas">
+        <Receta titulo="A · src/pages/index.astro — componer la home" lang="astro" code={recetaEstructura} />
+        <Receta titulo="B · Organization JSON-LD — emisor único (regla B3)" lang="astro" code={recetaSchema} />
+      </div>
+    </div>
+  </section>
+
+  {/* ── 8) BUENAS PRÁCTICAS (sí/no) ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Buenas prácticas"
+        title="Qué hacer y qué evitar"
+        desc="Siete hábitos que mantienen la home como una raíz rápida, clara y que reparte; siete errores que la convierten en un folleto lento que no manda a nadie a ningún lado. La home es la página más visitada y la de más autoridad: cada acierto y cada error se multiplican por todo el tráfico del sitio."
+        body={[
+          'La diferencia entre una home que convierte y una que pierde visitantes es disciplinaria: un solo h1, repartir en lugar de agotar, contenido data-driven, CTA visible, LCP cuidado, schema único y migas ausentes (porque es la raíz). Cada regla viene de un error real visto en sitios: dos h1, la home como ficha gigante, catálogo hardcodeado, CTA enterrado, carrusel automático, hero de 2 MB, Organization duplicado.',
+          'Los sí son hábitos de jerarquía + SSoT + velocidad. Los no son tentaciones que parecen ricas (un carrusel vistoso, una home que «lo dice todo») pero rompen el trabajo del nivel raíz: presentar y repartir, rápido. Léelos en pares —cada sí apunta al error que el no describe—.',
+        ]}
+      />
+      <div class="bp">
+        <div class="bp__col bp__col--si">
+          <h3 class="bp__title bp__title--si">Sí</h3>
+          <ul class="bp__list">{sis.map((t) => <li>{t}</li>)}</ul>
+        </div>
+        <div class="bp__col bp__col--no">
+          <h3 class="bp__title bp__title--no">No</h3>
+          <ul class="bp__list">{nos.map((t) => <li>{t}</li>)}</ul>
+        </div>
+      </div>
+
+      <GuiaNota titulo="L1 es el primero de la serie Niveles" archivo="docs/NIVELES.md · src/lib/niveles.ts">
+        <p>
+          Esta ficha abre la serie <strong>«Niveles del sitio»</strong> y marca su molde de 10
+          secciones (espejo de la serie Módulos). Los siguientes: <a href="/niveles/l2-indice">L2 ·
+          Índice de sección</a>, <a href="/niveles/l3-ficha">L3 · Detalle</a> y
+          <a href="/niveles/l4-variante">L4 · Sub-detalle</a>. El cierre de cada ficha se deriva de
+          <code>NIVELES</code> (SSoT) con <code>siblingsNiveles('&lt;slug&gt;')</code> — nunca se hardcodea.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 9) FAQ — preguntas frecuentes del nivel (FAQPage único, regla B3) ── */}
+  <FAQAccordion items={faqs} title="Preguntas frecuentes · el nivel L1" emitSchema />
+
+  {/* ── 10) Cross-linking interno (hub-and-spoke) ── */}
+  <RelatedLinks
+    title="Sigue por el sistema"
+    desc="Los niveles vecinos y los módulos que arman una home."
+    links={[
+      { label: 'L2 · Índice de sección', href: '/niveles/l2-indice', desc: 'El siguiente nivel: catálogos que listan' },
+      { label: 'L3 · Detalle', href: '/niveles/l3-ficha', desc: 'La ficha que agota un tema' },
+      { label: 'Módulo · Hero', href: '/modulos/hero', desc: 'La apertura con H1 único' },
+      { label: 'Módulo · Menú de secciones', href: '/modulos/section-menu', desc: 'La franja de atajos de la home' },
+    ]}
+    limit={4}
+  />
+
+  {/* ── Cierre: menú de navegación full-width (siblingsNiveles SSoT) ── */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando los niveles" />
+</PageLayout>
+
+<style>
+  /* Estructura (tokens.css = fuente única; scoped por página) */
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* ── Anatomía (piezas) ── */
+  .piezas { display: grid; gap: var(--sp-5); margin: var(--sp-6) 0 0; padding: 0; list-style: none; }
+  .pieza { display: grid; grid-template-columns: 48px 1fr; gap: var(--sp-4); align-items: start; padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .pieza__n { display: grid; place-items: center; width: 48px; height: 48px; border-radius: var(--radius-md); background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-black); font-size: 1.25rem; }
+  .pieza__nombre { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pieza__que { margin: 0 0 var(--sp-3); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pieza__dato { margin: 0; font-size: var(--text-xs); color: var(--c-ink-2); }
+  .pieza__dato-label { font-weight: var(--weight-bold); color: var(--c-primary-dark); text-transform: uppercase; letter-spacing: .06em; margin-right: .35em; }
+  .pieza__dato code { font-family: ui-monospace, Menlo, monospace; font-size: .95em; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .1em .4em; color: var(--c-primary-dark); word-break: break-word; }
+
+  /* ── Beneficios ── */
+  .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .bene { grid-template-columns: repeat(3, 1fr); } }
+  .bene__card { padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .bene__title { margin: 0 0 var(--sp-3); font-family: var(--font-heading); font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--c-ink); line-height: var(--leading-snug); }
+  .bene__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Recetas ── */
+  .recetas { display: grid; gap: var(--sp-5); margin-top: var(--sp-6); }
+
+  /* ── Buenas prácticas (sí/no) ── */
+  .bp { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 900px) { .bp { grid-template-columns: 1fr 1fr; } }
+  .bp__col { padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .bp__title { margin: 0 0 var(--sp-4); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-bold); }
+  .bp__title--si { color: #16a34a; }
+  .bp__title--no { color: #dc2626; }
+  .bp__list { margin: 0; padding-left: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-3); }
+  .bp__list li { font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Wireframe de la home (anatomía en vivo) ── */
+  .wire { display: grid; gap: 6px; margin-top: var(--sp-4); padding: var(--sp-4); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .wire__row { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: var(--radius-sm); background: var(--c-white); border: 1px solid var(--c-border); font-size: var(--text-xs); color: var(--c-ink-2); }
+  .wire__row--chrome { background: var(--c-surface); color: var(--c-ink-2); font-size: 11px; }
+  .wire__row--hero { background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); color: #fff; padding: 16px 12px; }
+  .wire__row--hero b { color: #fff; font-weight: var(--weight-bold); }
+  .wire__row--menu span { flex: 1; text-align: center; padding: 5px; background: var(--c-surface); border-radius: var(--radius-sm); }
+  .wire__cta { background: var(--c-primary) !important; color: #fff; font-weight: 700; }
+  .wire__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .wire__grid i { height: 46px; border-radius: var(--radius-sm); background: var(--c-white); border: 1px solid var(--c-border); }
+  .wire__half { flex: 1; padding: 18px 10px; background: var(--c-surface); border-radius: var(--radius-sm); text-align: center; }
+  .wire__half--img { background: linear-gradient(135deg, var(--c-primary-light), var(--c-surface)); }
+  .wire__row--social span { flex: 1; text-align: center; padding: 12px; background: var(--c-surface); border-radius: var(--radius-sm); }
+  .wire__row--cierre { background: var(--c-ink); color: #fff; justify-content: center; padding: 14px; }
+  .wire__row--cierre b { color: #fff; }
+
+  /* ── Patrones móviles (.pats / .pat) ── */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pat__desc code { font-family: ui-monospace, Menlo, monospace; font-size: .85em; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
+
+  /* ── Mockups galería de tipos de home (.hv = home variant) ── */
+  .hv { display: flex; flex-direction: column; gap: 6px; min-height: 100%; padding: 10px; background: var(--c-surface); border-radius: 6px; font-size: 8px; line-height: 1.2; color: var(--c-ink-2); }
+  .hv__hero { display: flex; flex-direction: column; gap: 5px; padding: 12px 10px; border-radius: 5px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); color: #fff; }
+  .hv__hero b { color: #fff; font-size: 10px; font-weight: 800; }
+  .hv__hero--big { padding: 18px 10px; align-items: center; text-align: center; }
+  .hv__hero--sm { padding: 8px 10px; }
+  .hv__line { display: block; height: 3px; width: 70%; background: rgba(255,255,255,.35); border-radius: 2px; }
+  .hv__menu { display: flex; gap: 4px; }
+  .hv__menu i { flex: 1; height: 14px; border-radius: 3px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .hv__cta { background: var(--c-primary) !important; border-color: var(--c-primary) !important; color: #fff; display: grid; place-items: center; font-style: normal; font-size: 6px; font-weight: 700; }
+  .hv__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .hv__grid--6 { grid-template-columns: repeat(3, 1fr); grid-auto-rows: 22px; }
+  .hv__grid i { height: 30px; border-radius: 4px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .hv__grid--6 i { height: 22px; }
+  .hv__bene { display: flex; gap: 4px; }
+  .hv__bene i { flex: 1; height: 20px; border-radius: 4px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .hv__row { display: flex; }
+  .hv__btn { display: grid; place-items: center; padding: 5px 10px; border-radius: 4px; background: #fff; color: var(--c-primary-dark); font-size: 8px; font-weight: 700; border: 1px solid var(--c-border); }
+  .hv__btn--wide { width: 100%; background: var(--c-primary); color: #fff; border-color: var(--c-primary); }
+  .hv__ann { padding: 3px; text-align: center; background: var(--c-ink); color: #fff; border-radius: 3px; font-size: 7px; }
+  .hv__logos { display: flex; gap: 4px; }
+  .hv__logos i { flex: 1; height: 10px; border-radius: 99px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .hv__feat { display: flex; gap: 4px; }
+  .hv__feat span { flex: 1; height: 22px; border-radius: 4px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .hv__gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .hv__gallery i { height: 26px; border-radius: 4px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-surface)); border: 1px solid var(--c-border); }
+  .hv__feature { display: flex; flex-direction: column; gap: 5px; padding: 12px 10px; border-radius: 5px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .hv__feature b { color: var(--c-ink); font-size: 10px; font-weight: 800; }
+  .hv__feed { display: flex; flex-direction: column; gap: 4px; }
+  .hv__feed span { height: 12px; border-radius: 3px; background: var(--c-white); border: 1px solid var(--c-border); }
+
+  /* ── Mockups patrones móviles (.hm = home móvil) ── */
+  .hm { display: flex; flex-direction: column; gap: 6px; padding: 12px 10px; min-height: 100%; font-size: 8px; line-height: 1.2; color: var(--c-ink-2); }
+  .hm--hero { background: linear-gradient(160deg, var(--c-primary), var(--c-primary-dark)); color: #fff; }
+  .hm__h { color: #fff; font-size: 12px; font-weight: 800; letter-spacing: -.02em; }
+  .hm__d { display: block; height: 4px; width: 88%; background: rgba(255,255,255,.25); border-radius: 2px; }
+  .hm__d--sm { width: 60%; }
+  .hm__btn { display: grid; place-items: center; padding: 8px 10px; min-height: 32px; border-radius: 6px; font-size: 9px; font-weight: 700; margin-top: 4px; }
+  .hm__btn--solid { background: #fff; color: var(--c-primary-dark); }
+  .hm__btn--full { width: 100%; }
+  .hm--grid { gap: 8px; }
+  .hm__card { display: grid; gap: 5px; padding: 8px; border-radius: 8px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .hm__card i { display: block; height: 60px; border-radius: 5px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .hm__card b { display: block; height: 8px; width: 70%; border-radius: 3px; background: var(--c-ink); opacity: .8; }
+  .hm--thumb { background: var(--c-surface); color: var(--c-ink-2); padding: 0; position: relative; }
+  .hm__page { display: flex; flex-direction: column; gap: 6px; padding: 12px 10px; }
+  .hm__line { display: block; height: 4px; width: 90%; background: var(--c-border); border-radius: 2px; }
+  .hm__line--sm { width: 60%; }
+  .hm__bar { position: absolute; bottom: 0; left: 0; right: 0; padding: 8px 10px 12px; background: #fff; border-top: 1px solid var(--c-border); box-shadow: 0 -8px 18px rgba(0,0,0,.08); }
+  .hm__safe { display: block; height: 4px; width: 30%; background: #000; border-radius: 2px; margin: 6px auto 0; opacity: .35; }
+  .hm--lcp { background: var(--c-surface); gap: 6px; }
+  .hm__img { position: relative; display: block; height: 80px; border-radius: 6px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .hm__tag { position: absolute; top: 6px; left: 6px; font-style: normal; font-size: 7px; font-weight: 700; color: var(--c-primary-dark); background: #fff; border-radius: 3px; padding: 1px 5px; }
+  .hm__chip { display: inline-block; font-size: 7px; padding: 2px 6px; background: var(--c-white); border: 1px solid var(--c-border); border-radius: 99px; color: var(--c-ink-2); width: fit-content; }
+</style>

@@ -21,12 +21,45 @@ import ContactForm from "@components/ContactForm.astro";
 import GuiaNota from "@components/GuiaNota.astro";
 import MarcoMovil from "@components/MarcoMovil.astro";
 import Receta from "@components/Receta.astro";
+import TrustBar from "@components/TrustBar.astro";
+import RiskGuide from "@components/RiskGuide.astro";
+import NormsTable from "@components/NormsTable.astro";
+import ProcessSteps from "@components/ProcessSteps.astro";
 import { SITE, KEYWORDS, NAV, SERVICES, WA_MESSAGES, MODULOS, waUrl } from "@config/site";
 import { MODULE_CARD_META, MODULE_AFONDO, moduleGallery } from "@lib/modules";
 import { buildKeywordTitle, buildKeywordDescription, metaAudit } from "@lib/seo";
 
 // ── WhatsApp: SIEMPRE vía waUrl() (regla D4, nunca número hardcodeado) ──
 const waLink = waUrl();
+
+// ── DEMO de las "secciones de venta" reutilizables (TrustBar / RiskGuide /
+//    NormsTable / ProcessSteps). Son componentes presentacionales data-driven:
+//    aquí van datos DEMO genéricos; en un sitio de cliente se alimentan con
+//    datos REALES del giro (riesgos, normas, garantías, proceso). Las tablas
+//    aceptan `columns` para reetiquetar encabezados por vertical. ──
+const demoPilares = [
+  { icon: "check", title: "Atención directa", desc: "Hablas con quien resuelve, no con un robot. Respuesta por WhatsApp." },
+  { icon: "doc", title: "Todo por escrito", desc: "Cotización, alcance y tiempos claros antes de empezar." },
+  { icon: "shield", title: "Conforme a norma", desc: "Trabajamos alineados a la normatividad aplicable a tu giro." },
+  { icon: "pin", title: "Cobertura local", desc: "Atendemos tu ciudad y la zona metropolitana." },
+];
+const demoGuiaRows = [
+  { nivel: "Básico", ejemplos: "Negocios pequeños y locales", minimo: "Lo esencial para arrancar", complementos: "Extras opcionales" },
+  { nivel: "Intermedio", ejemplos: "Comercios y oficinas medianas", minimo: "Cobertura estándar completa", complementos: "Personalización" },
+  { nivel: "Completo", ejemplos: "Empresas e inmuebles grandes", minimo: "Solución integral", complementos: "Soporte y seguimiento" },
+];
+const demoNormRows = [
+  { norma: "Garantía", alcance: "Respaldo del trabajo entregado", aplica: "Todos los servicios" },
+  { norma: "Factura", alcance: "Comprobante fiscal a tu nombre", aplica: "Quien lo requiera" },
+  { norma: "Norma aplicable", alcance: "El estándar que rige tu giro", aplica: "Según el tipo de proyecto" },
+];
+const demoPasos = [
+  { num: "01", title: "Cuéntanos", desc: "Nos dices qué necesitas por WhatsApp o formulario." },
+  { num: "02", title: "Cotización", desc: "Te enviamos propuesta con alcance, precio y tiempos." },
+  { num: "03", title: "Ejecución", desc: "Hacemos el trabajo acordado con comunicación clara." },
+  { num: "04", title: "Entrega", desc: "Revisamos juntos y dejamos todo documentado." },
+  { num: "05", title: "Seguimiento", desc: "Quedamos disponibles para lo que surja después." },
+];
 
 // ── Módulos REALES del sitio (SSoT: MODULOS en site.ts). La vitrina «el sistema»
 //    de la home muestra los 'listo'; cada card enlaza a su página /modulos/<slug>.
@@ -894,6 +927,105 @@ const faqs: { question: string; answer: string }[] = [
           <code>{`{Product, Service, Article}Layout`}</code>. Ya están en
           <code>src/layouts/</code>; las páginas que los usan se cablean en las
           próximas partes del template.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ═══ 6.5) SECCIONES DE VENTA (reutilizables) — confianza · guía · respaldo · proceso ═══
+       Cuatro módulos data-driven que cualquier sitio del sistema puede usar. Aquí van con
+       datos DEMO genéricos; en un cliente se alimentan con datos reales del giro. Las dos
+       tablas aceptan `columns` para reetiquetar encabezados por vertical. */}
+  <TrustBar items={demoPilares} />
+  <section class="band">
+    <div class="container">
+      <GuiaNota titulo="Módulo TrustBar — barra de confianza" archivo="src/components/TrustBar.astro · src/pages/index.astro">
+        <p>
+          Tira de <strong>pilares honestos</strong> bajo el hero: ícono + título + frase. Son
+          <strong>compromisos reales</strong> del negocio (atención, garantía, cobertura), NUNCA
+          métricas inventadas (nada de «+500 clientes» ni reseñas falsas). El ícono se elige por
+          clave (<code>shield · doc · chat · pin · check · clock</code>). Edita el arreglo
+          <code>demoPilares</code> del frontmatter.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  <RiskGuide
+    eyebrow="Guía de selección"
+    title="Elige según"
+    titleAccent="tu necesidad"
+    desc="Una tabla que orienta al visitante hacia la opción correcta — y abre la conversación."
+    body={[
+      "Cuando el cliente no sabe qué pedir, una tabla de selección lo guía y reduce la fricción: ve su caso reflejado y entiende qué le toca.",
+      "El detalle fino se cierra con un diagnóstico; por eso la tabla termina con un CTA a WhatsApp.",
+    ]}
+    columns={["Nivel", "Para quién", "Incluye", "Complementos"]}
+    rows={demoGuiaRows}
+    note="Cifras orientativas: ajusta filas y columnas a tu giro. En un sitio real, esta tabla es oro para SEO de cola larga y para calificar al prospecto antes de cotizar."
+    ctaLabel="Cotizar por WhatsApp"
+    ctaHref={waUrl(WA_MESSAGES.cotizar)}
+  />
+  <section class="band">
+    <div class="container">
+      <GuiaNota titulo="Módulo RiskGuide — tabla de selección por nivel" archivo="src/components/RiskGuide.astro · src/pages/index.astro">
+        <p>
+          Tabla de <strong>guía de selección</strong> (3–4 filas) con nota y CTA. Pensada para
+          el patrón «¿qué necesito según mi caso?». Los <strong>encabezados son configurables</strong>
+          vía la prop <code>columns</code>, así que sirve a cualquier vertical (planes, niveles de
+          riesgo, tamaños…). Es responsive con scroll horizontal en móvil. Edita
+          <code>demoGuiaRows</code> y <code>columns</code>.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  <NormsTable
+    eyebrow="Respaldo"
+    title="Lo que te"
+    titleAccent="respalda"
+    desc="No vendes solo un producto: vendes tranquilidad y cumplimiento."
+    body={[
+      "Una tabla de respaldo (garantías, normas, comprobantes) convierte porque responde la pregunta silenciosa: «¿y si algo sale mal?».",
+      "Dilo con precisión: el rigor es señal de autoridad y mejora tu SEO.",
+    ]}
+    columns={["Respaldo", "Qué cubre", "Aplica a"]}
+    rows={demoNormRows}
+    note="Adapta las filas a tu giro: garantías, normas oficiales aplicables, certificaciones reales, comprobantes. Nunca cites una norma o certificación que no tengas."
+  />
+  <section class="band">
+    <div class="container">
+      <GuiaNota titulo="Módulo NormsTable — tabla de respaldo / cumplimiento" archivo="src/components/NormsTable.astro · src/pages/index.astro">
+        <p>
+          Tabla de 3 columnas para mapear <strong>respaldo</strong> (normas, garantías,
+          certificaciones) a su alcance y a quién aplica. Vende <strong>cumplimiento</strong>, no
+          solo producto. Encabezados configurables con <code>columns</code>. Edita
+          <code>demoNormRows</code>. <strong>Regla del sistema:</strong> cero datos fabricados — solo
+          normas/certificaciones reales.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  <ProcessSteps
+    eyebrow="Cómo trabajamos"
+    title="De tu mensaje"
+    titleAccent="al trabajo entregado"
+    desc="Un proceso claro reduce el miedo a dar el primer paso."
+    body={[
+      "Mostrar el proceso en pasos numerados le dice al visitante exactamente qué pasa si te escribe. Menos incertidumbre, más mensajes.",
+      "Descríbelo honesto: sin prometer tiempos que no puedas cumplir.",
+    ]}
+    steps={demoPasos}
+  />
+  <section class="band">
+    <div class="container">
+      <GuiaNota titulo="Módulo ProcessSteps — proceso en pasos (fondo oscuro)" archivo="src/components/ProcessSteps.astro · src/pages/index.astro">
+        <p>
+          Proceso de trabajo en 4–5 pasos numerados sobre fondo tinta — contraste visual que
+          rompe la página y da ritmo. Usa el mismo <code>SectionHeading</code> en modo
+          <code>dark</code>. Edita el arreglo <code>demoPasos</code>. Describe el proceso REAL del
+          negocio, sin tiempos garantizados que no se cumplan.
         </p>
       </GuiaNota>
     </div>

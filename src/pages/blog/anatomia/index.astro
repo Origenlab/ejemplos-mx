@@ -1,0 +1,159 @@
+---
+// ============================================================================
+// /blog/anatomia/ — ÍNDICE de los complementos del blog.
+// ----------------------------------------------------------------------------
+// Serie hermana de /modulos pero acotada al BLOG. Presenta el concepto de
+// «complemento del blog» y lista TODOS (roadmap), cada uno enlazando a su página
+// de detalle (/blog/anatomia/<slug>). Data-driven desde BLOG_ANATOMIA (site.ts,
+// SSoT) — la misma fuente del dropdown «Blog» del Header. Los 'listo' enlazan;
+// los 'proximo' se muestran como roadmap (sin enlace, para no romper con 404s).
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import CategoryCard from '@components/CategoryCard.astro'
+import CategoryDetail from '@components/CategoryDetail.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import { BLOG_ANATOMIA, waUrl, WA_MESSAGES } from '@config/site'
+import { ANATOMIA_CARD_META as META, ANATOMIA_AFONDO, anatomiaGallery } from '@lib/blogAnatomia'
+
+const partes = BLOG_ANATOMIA
+const listos = partes.filter((p) => p.estado === 'listo').length
+
+const cierreItems = [
+  { label: 'Complemento Sidebar', href: '/blog/anatomia/sidebar', sub: 'El primero, a fondo' },
+  { label: 'El blog', href: '/blog', sub: 'Volver al listado' },
+  { label: 'Módulos del sitio', href: '/modulos', sub: 'La serie hermana' },
+  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
+]
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), sub: 'Respuesta inmediata', external: true }
+---
+
+<PageLayout
+  title="Anatomía del blog — los complementos que lo arman"
+  description="Qué es un complemento del blog e índice de las piezas que lo componen: sidebar, paginación y artículos. Cada uno con su página de detalle: qué es, para qué y cómo se arma."
+  pageType="page"
+  breadcrumbs={[{ label: 'Blog', href: '/blog' }, { label: 'Anatomía' }]}
+  guia={false}
+>
+  <Hero
+    badge="Guía del blog · Anatomía"
+    title="La anatomía del blog:"
+    accent="sus complementos"
+    subtitle="El blog no es una sola página: es un conjunto de piezas que trabajan juntas —la columna lateral, la paginación, el artículo—. Aquí están todas, cada una con su página de detalle."
+    descRight={[
+      'Esta página es el mapa del blog por dentro. Cada complemento se abre y se explica a la misma profundidad —qué problema resuelve, de qué piezas se compone, cómo se comporta en el teléfono, dónde encaja y cómo está construido—, igual que la serie de Módulos del sitio.',
+      'Y todos descansan en el mismo principio: el contenido (Markdown) va separado del diseño (la plantilla). Publicar un artículo es agregar un archivo; el listado, la paginación y el detalle se generan solos. Una sola fuente de verdad, cero trabajo repetido.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES UN COMPLEMENTO DEL BLOG? ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Concepto"
+        title="¿Qué es un complemento del blog?"
+        desc="Una pieza con una función clara dentro del blog: navegar entre artículos, partir el listado o renderizar el artículo en sí. Cada una se construye una vez y se reutiliza."
+        body={[
+          'Si un módulo es un ladrillo del sitio entero, un complemento del blog es un ladrillo de su sección de contenido. El sidebar reparte hacia categorías y temas; la paginación ordena el listado cuando crece; el artículo es la pieza central que convierte un archivo Markdown en una página completa con su SEO resuelto.',
+          'Pensar el blog en complementos —y no como una página suelta— es lo que lo mantiene coherente y fácil de mantener. Un cambio en una pieza se refleja en todo el blog a la vez. En esta serie, cada complemento tiene su página: qué es, para qué sirve, qué lleva, dónde va y cómo está construido.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 2) EL ÍNDICE — todos los complementos (roadmap) ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="El índice"
+        title="Todos los complementos del blog"
+        desc={`Los ${listos > 1 ? `${listos} complementos publicados` : 'complementos del blog'}, cada uno como tarjeta: foto, nombre, qué hace y las piezas que lo componen. Entra a cualquiera para verlo a fondo.`}
+        body={[
+          'Cada tarjeta es una pieza real del blog: foto, nombre, qué hace y los elementos que lo componen. Es el MISMO card del catálogo —no inventamos un diseño aparte—, porque la coherencia es justo lo que esta serie enseña.',
+          'Empezamos por el sidebar; la paginación y los artículos llegan después. Los marcados como «próximamente» ya tienen su lugar en el mapa: se publican con el mismo molde.',
+        ]}
+      />
+      <div class="showcase">
+        {partes.map((p, i) => {
+          const meta = META[p.slug]
+          return (
+            <CategoryCard
+              label={p.label}
+              href={p.href}
+              image={meta?.image}
+              imageAlt={`Imagen de ejemplo del complemento ${p.label}`}
+              badge={p.estado === 'listo' ? 'Listo' : 'Próximamente'}
+              blurb={p.desc}
+              subcategories={(meta?.chips ?? []).map((c) => ({ label: c, href: p.href }))}
+              ctaLabel="Ver complemento"
+              disabled={p.estado !== 'listo'}
+              index={i}
+            />
+          )
+        })}
+      </div>
+
+      <GuiaNota titulo="De dónde sale este índice" archivo="src/config/site.ts · src/pages/blog/anatomia/index.astro">
+        <p>
+          Esta lista no se escribe a mano: sale de <code>BLOG_ANATOMIA</code> en <code>site.ts</code>,
+          la MISMA fuente que alimenta el dropdown «Blog» del menú. Al terminar la página de un
+          complemento, se cambia su <code>estado</code> a <code>'listo'</code> y aparece enlazado
+          aquí y en el menú, sin tocar más código.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 3) CADA COMPLEMENTO, POR DENTRO — bloques «a fondo» (CategoryDetail). ──
+       Mismo patrón que /modulos/index: info izq · galería der, SIN zig-zag, gap
+       uniforme. El copy/galería salen de ANATOMIA_AFONDO (SSoT en lib). El CTA
+       solo aparece en los complementos 'listo'. */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Por dentro"
+        title="Cada complemento, por dentro"
+        desc="La vitrina de arriba te dice qué es cada pieza; aquí la abrimos. Mismo formato para todas: qué resuelve, de qué partes se compone y en qué te fijas al construirla."
+        body={[
+          'Es el MISMO bloque «a fondo» del catálogo —información a la izquierda, galería a la derecha, idéntico para cada pieza—. Reusar el patrón es, otra vez, la lección: el blog se arma con componentes que ya existen en el sitio.',
+          'Son los mismos complementos que ves arriba como tarjetas, abiertos uno por uno con la misma estructura. El copy y la galería salen de una sola fuente (ANATOMIA_AFONDO en lib/blogAnatomia.ts). El botón «Ver complemento» solo aparece en los que ya tienen su página.',
+        ]}
+      />
+      <div class="afondo">
+        {partes.map((p, i) => (
+          <CategoryDetail
+            eyebrow="El complemento a fondo"
+            title={p.label}
+            body={ANATOMIA_AFONDO[p.slug].body}
+            points={ANATOMIA_AFONDO[p.slug].points}
+            cta={p.estado === 'listo' ? { label: `Ver el complemento ${p.label}`, href: p.href } : undefined}
+            gallery={anatomiaGallery(p.slug, p.label, i)}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* Cierre: menú de navegación full-width. */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+</PageLayout>
+
+<style>
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* Vitrina de complementos: misma rejilla del catálogo (1 → 2 → 4 por fila). */
+  .showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .showcase { grid-template-columns: repeat(3, 1fr); } }
+
+  /* Pila «a fondo» (CategoryDetail) — separación uniforme, SIN zig-zag (= /modulos). */
+  .afondo { display: grid; gap: clamp(2.5rem, 6vw, 5rem); margin-top: var(--sp-6); }
+</style>

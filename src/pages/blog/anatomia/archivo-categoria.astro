@@ -1,0 +1,688 @@
+---
+// ============================================================================
+// /blog/anatomia/archivo-categoria — PÁGINA DEL COMPLEMENTO «Archivo de categoría».
+// ----------------------------------------------------------------------------
+// De la serie /blog/anatomia/* (sidebar · paginacion · … · archivo-categoria),
+// MISMO molde que /modulos/<slug>: hero → ¿qué es? → ¿para qué? → ¿qué lleva?
+// (+demo) → variantes → responsive → ¿dónde va? → cómo se arma → buenas
+// prácticas → cierre. Documenta la ruta REAL /blog/categoria/<cat>: una ruta
+// dinámica [...categoria].astro cuyo getStaticPaths calcula las categorías
+// USADAS por los artículos no-draft (Set sobre posts) y genera UNA página por
+// categoría usada, con props { categoria, posts filtrados }. El badge de cada
+// artículo (ArticleLayout) y el widget «Categorías» del sidebar enlazan aquí.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+import { siblingsAnatomia } from '@lib/blogAnatomia'
+
+const cierreItems = siblingsAnatomia('archivo-categoria')
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), sub: 'Respuesta inmediata', external: true }
+
+// Las 5 piezas del archivo de categoría — mapean con los pines del ejemplo en vivo.
+const partes = [
+  {
+    n: 1,
+    nombre: 'La ruta dinámica',
+    que: 'Un solo archivo [...categoria].astro que vale por todas las categorías. Su getStaticPaths declara los params y, por cada categoría, Astro emite una página estática en build: /blog/categoria/<cat>. No se escribe una página por tema a mano.',
+    dato: '[...categoria].astro · getStaticPaths()',
+  },
+  {
+    n: 2,
+    nombre: 'El cálculo de categorías usadas',
+    que: 'Se recorren los artículos no-draft y se reduce a las categorías DISTINTAS que aparecen, con un Set. Así solo se generan las páginas de categorías que realmente tienen contenido —no las del enum entero— y nunca queda un archivo vacío.',
+    dato: '[...new Set(posts.map(p => p.data.category))]',
+  },
+  {
+    n: 3,
+    nombre: 'El filtro de artículos',
+    que: 'Cada página recibe como prop los artículos cuya categoría coincide. Es el subconjunto del blog que esa página lista: el filtro corre una vez en build, no en cada visita. La categoría es un enum cerrado y única por artículo, así que el filtro es exacto.',
+    dato: 'posts.filter(p => p.data.category === categoria)',
+  },
+  {
+    n: 4,
+    nombre: 'El enlace de entrada',
+    que: 'Nadie teclea estas URLs: se llega desde el badge de categoría de cada artículo (en ArticleLayout) y desde el widget «Categorías» del sidebar. Ese anchor text real reparte autoridad hacia el archivo y le da contexto temático al buscador.',
+    dato: 'badge + sidebar → /blog/categoria/<cat>',
+  },
+  {
+    n: 5,
+    nombre: 'El listado y el SEO de archivo',
+    que: 'La página pinta su Hero, un SectionHeading con el conteo y la rejilla de CategoryCard. El title, la description y el H1 incluyen el nombre de la categoría: una vista de archivo temática, indexable, con su propia URL.',
+    dato: 'title/description/H1 + conteo · CategoryCard',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Vista de archivo temática e indexable',
+    desc: 'Cada categoría obtiene su propia URL —/blog/categoria/<cat>— con su título, su descripción y su listado. Para el lector es «todo lo de este tema» de un vistazo; para el buscador, una página de archivo que puede posicionar para búsquedas más amplias que las de un artículo suelto. Es SEO de cola larga sin escribir contenido nuevo.',
+  },
+  {
+    titulo: 'Enlazado interno que reparte autoridad por tema',
+    desc: 'El badge de cada artículo y el widget «Categorías» del sidebar apuntan aquí con anchor text real —el nombre de la categoría—. Eso concentra señales temáticas en una página y reparte equity interno entre los artículos relacionados. El archivo se vuelve el nodo que agrupa y conecta todo un tema del blog.',
+  },
+  {
+    titulo: 'Se genera sola, una por categoría usada',
+    desc: 'No hay páginas que mantener a mano: la ruta dinámica calcula las categorías con contenido y crea una página por cada una en el build. Publicar un .mdx en una categoría lo suma a su archivo; estrenar una categoría crea su página sola. Cero listas paralelas, cero archivos vacíos, cero desincronización.',
+  },
+]
+
+const sis = [
+  'Mantén pocas categorías bien definidas: cada una, un interés real con contenido suficiente.',
+  'Genera una página por categoría USADA (Set sobre los posts), no una por el enum entero.',
+  'Escribe title y description de archivo claros, con el nombre de la categoría y el tema.',
+  'Enlaza el badge del artículo y el widget del sidebar a su archivo, con anchor text real.',
+  'Reutiliza la tarjeta y la rejilla del listado: el archivo se ve idéntico, sin layout nuevo.',
+]
+const nos = [
+  'No generes una página por cada valor del enum: las categorías sin artículos quedan vacías.',
+  'No multipliques categorías casi iguales: dispersan el contenido y diluyen la autoridad.',
+  'No dupliques el listado a mano por categoría: una ruta dinámica lo hace solo.',
+  'No dejes el badge del artículo sin enlace: es la puerta de entrada al archivo.',
+  'No confundas categoría (una, enum cerrado) con etiqueta (varias, abiertas): son piezas distintas.',
+]
+
+// Variantes de archivo de categoría (galería). Réplica en vivo abajo, mismo orden.
+const disenos = [
+  {
+    nombre: 'Archivo simple (esta plantilla)',
+    tag: 'Negocio · Blog',
+    desc: 'El de esta plantilla: Hero, título con el conteo y la rejilla de tarjetas, sin más. Es el patrón más seguro y el que mejor reutiliza la card y la rejilla del listado. Configuración real de la ruta /blog/categoria/<cat>.',
+  },
+  {
+    nombre: 'Con descripción de categoría',
+    tag: 'Editorial · Revista',
+    desc: 'El mismo archivo con un párrafo introductorio que explica de qué va el tema, encima de las tarjetas. Útil para dar contexto y sumar texto indexable. Se logra añadiendo una descripción por categoría a la fuente de datos.',
+  },
+  {
+    nombre: 'Con conteo / contador',
+    tag: 'Blog grande · Catálogo',
+    desc: 'Muestra de forma destacada cuántos artículos hay en la categoría —«24 artículos»—, no solo en el subtítulo. Ya sale del mismo dato (posts.length); aquí solo gana protagonismo visual como señal de volumen del archivo.',
+  },
+  {
+    nombre: 'Paginado (cuando crece)',
+    tag: 'Archivo extenso',
+    desc: 'Cuando una categoría acumula muchas entradas, el listado se parte en páginas —el mismo patrón que la paginación del blog—. Extensión: el getStaticPaths añade el número de página al params y reparte los posts por tramos.',
+  },
+  {
+    nombre: 'Con imagen / encabezado de categoría',
+    tag: 'Magazine · Portada',
+    desc: 'Un encabezado de archivo más rico: imagen o color propio de la categoría sobre el título, a modo de portada temática. Variante visual del mismo Hero; requiere asociar una imagen a cada categoría en la fuente de datos.',
+  },
+  {
+    nombre: 'Con orden o subfiltros',
+    tag: 'Knowledge base',
+    desc: 'Dentro del archivo, controles para ordenar (recientes / antiguos) o acotar por subtema. Útil en categorías muy pobladas. Extensión: el orden puede resolverse en build; los subfiltros piden algo de lógica adicional.',
+  },
+]
+
+// ── Recetas de implementación (las pinta <Receta>) ───────────────────────────
+const recetaPaths = `---
+// /blog/categoria/[...categoria].astro · genera UNA página por categoría USADA.
+import { getCollection } from 'astro:content'
+
+export async function getStaticPaths() {
+  const posts = (await getCollection('articulos', ({ data }) => !data.draft))
+    .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+
+  // Categorías DISTINTAS que aparecen en los artículos (no el enum entero).
+  const cats = [...new Set(posts.map((p) => p.data.category))]
+
+  return cats.map((categoria) => ({
+    params: { categoria },
+    props: {
+      categoria,
+      posts: posts.filter((p) => p.data.category === categoria),
+    },
+  }))
+}
+
+const { categoria, posts } = Astro.props
+---`
+
+const recetaFiltro = `// EL FILTRO · cada página recibe solo los artículos de su categoría.
+// La categoría es un enum cerrado y ÚNICA por artículo, así que la
+// comparación estricta basta —no hay que normalizar ni dudar del tipo—.
+
+const delTema = posts.filter((p) => p.data.category === categoria)
+
+// 'delTema' es el subconjunto que lista esta página. Corre una vez en
+// build (no por visita) y, como sale del Set de arriba, nunca queda vacío.`
+
+const recetaEntrada = `---
+// EL ENLACE DE ENTRADA · el badge del artículo apunta a su archivo.
+// (en ArticleLayout.astro · también lo hace el widget «Categorías» del sidebar)
+const { category } = Astro.props
+---
+
+{category && (
+  <a class="post__cat" href={\`/blog/categoria/\${category}\`}>
+    {category}   {/* anchor text real = nombre de la categoría */}
+  </a>
+)}`
+
+// ── Recetas de los patrones móviles ──────────────────────────────────────────
+const recetaRejilla = `/* MÓVIL · la rejilla del archivo crece 1 → 2 → 3 columnas.
+   Una sola columna en el teléfono; dos en tablet; tres en
+   escritorio. Es la MISMA rejilla del listado del blog. */
+
+.grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
+
+@media (min-width: 640px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .grid { grid-template-columns: repeat(3, 1fr); } }`
+
+const recetaEncabezado = `/* MÓVIL · el encabezado del archivo, legible en pantalla chica.
+   El título («Categoría: Guías») y el conteo no se aprietan: el
+   título baja de tamaño y el conteo va debajo, no al costado. */
+
+@media (max-width: 480px) {
+  .acg-h1    { font-size: var(--text-2xl); line-height: var(--leading-tight); }
+  .acg-count { display: block; margin-top: var(--sp-1); font-size: var(--text-sm); }
+}`
+
+const recetaTactil = `/* Área táctil de las cards: toda la tarjeta es el objetivo.
+   El enlace cubre la card entera y deja ≥ 44 px de alto, para
+   tocarse con el dedo sin fallar. */
+
+@media (max-width: 768px) {
+  .grid > * a { display: block; min-height: 44px; }   /* card = un solo target */
+}`
+---
+
+<PageLayout
+  title="El Archivo de categoría — agrupar el blog por tema"
+  description="Archivo de categoría del blog: la página /blog/categoria/<cat> que agrupa los artículos de un tema. Ruta dinámica generada por cada categoría usada, con su listado y su SEO de archivo."
+  pageType="page"
+  schemaType="TechArticle"
+  guia={false}
+  breadcrumbs={[{ label: 'Blog', href: '/blog' }, { label: 'Anatomía', href: '/blog/anatomia' }, { label: 'Archivo de categoría' }]}
+>
+  <Hero
+    badge="Complemento del blog · Archivo de categoría"
+    title="El Archivo de categoría:"
+    accent="agrupar el blog por tema"
+    subtitle="La página que reúne todos los artículos de una categoría. No se escribe a mano ni una por una: una ruta dinámica calcula las categorías con contenido y genera el archivo de cada una, con su listado y su URL propia."
+    descRight={[
+      'Esta página no es una ficha técnica: es el complemento entero, abierto y explicado. Qué problema resuelve y por qué gana su lugar en el blog, de qué piezas se compone, cómo se comporta en el teléfono, dónde encaja y, al final, cómo está construido —del criterio de diseño a la línea de código—.',
+      'Con un matiz propio que conviene marcar: no se genera una página por cada valor del enum, sino una por cada categoría USADA por los artículos. Un Set sobre la colección decide cuáles existen, así que nunca queda un archivo vacío y publicar un .mdx actualiza el archivo de su tema solo.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Definición"
+        title="¿Qué es el archivo de categoría?"
+        desc="La página que agrupa los artículos de una categoría del blog —/blog/categoria/<cat>—: una vista temática, con su propio título y su listado, generada por cada categoría con contenido."
+        body={[
+          'El archivo de categoría es la página que responde a «muéstrame todo lo de este tema». En el blog, cada artículo lleva UNA categoría —un enum cerrado: guías, novedades, general—; el archivo reúne en una sola página todos los que comparten esa categoría, en /blog/categoria/<cat>. Es el índice temático que un artículo suelto, por sí solo, no ofrece.',
+          'No se inventó aquí: es el patrón de archivo de cualquier blog o medio —«ver todo lo de Recetas», «ver todo lo de Opinión»—. En esta plantilla, además, no es estático: es una ruta dinámica que mira la colección de artículos, calcula qué categorías tienen contenido y emite una página por cada una. El archivo refleja siempre el blog real.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Función e importancia"
+        title="¿Para qué sirve?"
+        desc="Hace tres trabajos: crea una vista de archivo temática e indexable (SEO de cola más amplia), reparte autoridad por tema con enlazado interno, y se genera sola —una por categoría usada—."
+        body={[
+          'Su función es darle al tema una página propia. Un artículo responde a una búsqueda concreta; el archivo de categoría responde a una más amplia —«todo lo de este tema»— y, de paso, le ofrece al lector que llegó a un artículo la forma de seguir leyendo sobre lo mismo. Convierte una colección dispersa de entradas en un cuerpo temático navegable.',
+          'Y por eso pesa más de lo que parece. Para el SEO, es una URL de archivo indexable que puede posicionar por términos de cola más amplia y que concentra señales de un tema. Para el lector, es la puerta a «más de esto». Para el mantenimiento, es gratis: se genera sola, una por categoría con contenido, sin páginas que cuidar a mano.',
+        ]}
+      />
+      <div class="bene">
+        {beneficios.map((b) => (
+          <article class="bene__card">
+            <h3 class="bene__title">{b.titulo}</h3>
+            <p class="bene__desc">{b.desc}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3) ¿QUÉ LLEVA? — anatomía con ejemplo en vivo ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Anatomía"
+        title="¿Qué lleva el archivo de categoría?"
+        desc="Cinco piezas: la ruta dinámica, el cálculo de categorías usadas (Set), el filtro de artículos de la categoría, el enlace de entrada (badge + sidebar) y el listado con su SEO de archivo."
+        body={[
+          'Cada pieza cumple un papel claro. La ruta dinámica vale por todas las categorías; el Set decide cuáles existen; el filtro arma el subconjunto de cada una; el enlace de entrada lleva al lector hasta aquí; y el listado, con su título y su conteo, es la cara visible del archivo. Visibles arriba (listado y conteo), invisibles abajo (ruta, Set y filtro), pero todas necesarias.',
+          'Abajo, el ejemplo en vivo —réplica anotada a escala de la página de archivo—. Cada punto numerado se desglosa en su tarjeta: qué resuelve y de qué dato sale. A diferencia de una página escrita a mano, aquí el listado viene del filtro sobre la colección, así que publicar en la categoría lo actualiza solo.',
+        ]}
+      />
+
+      {/* Ejemplo en vivo del archivo de categoría (réplica a escala de la página). */}
+      <div class="acgx" role="img" aria-label="Ejemplo de página de archivo de categoría: título «Categoría: Guías», conteo y una rejilla de tarjetas de artículo">
+        <span class="acgx__n acgx__n--abs" style="top:8px;left:8px">5</span>
+        <div class="acgx__head">
+          <span class="acgx__eyebrow">Blog · Categoría</span>
+          <h3 class="acgx__h1">Categoría: <b>Guías</b></h3>
+          <span class="acgx__count">24 artículos</span>
+        </div>
+        <div class="acgx__grid">
+          <span class="acgx__card">
+            <span class="acgx__thumb"></span>
+            <span class="acgx__badge">Guías</span>
+            <span class="acgx__line"></span>
+            <span class="acgx__line acgx__line--s"></span>
+          </span>
+          <span class="acgx__card">
+            <span class="acgx__thumb"></span>
+            <span class="acgx__badge">Guías</span>
+            <span class="acgx__line"></span>
+            <span class="acgx__line acgx__line--s"></span>
+          </span>
+          <span class="acgx__card">
+            <span class="acgx__thumb"></span>
+            <span class="acgx__badge">Guías</span>
+            <span class="acgx__line"></span>
+            <span class="acgx__line acgx__line--s"></span>
+          </span>
+        </div>
+        <div class="acgx__meta">
+          <span class="acgx__tag"><span class="acgx__n acgx__n--mid">1</span> /blog/categoria/[...categoria].astro</span>
+          <span class="acgx__tag"><span class="acgx__n acgx__n--mid">2</span> [...new Set(posts.map(p =&gt; p.data.category))]</span>
+          <span class="acgx__tag"><span class="acgx__n acgx__n--mid">3</span> posts.filter(p =&gt; p.data.category === categoria)</span>
+          <span class="acgx__tag"><span class="acgx__n acgx__n--mid">4</span> badge + sidebar → aquí</span>
+        </div>
+      </div>
+
+      <div class="partes">
+        {partes.map((p) => (
+          <article class="parte">
+            <span class="parte__num">{p.n}</span>
+            <div class="parte__body">
+              <h3 class="parte__nombre">{p.nombre}</h3>
+              <p class="parte__que">{p.que}</p>
+              <p class="parte__dato"><span>Dato</span> <code>{p.dato}</code></p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3b) VARIANTES ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Variantes"
+        title="Otros diseños y aplicaciones"
+        desc="El de esta plantilla es un archivo simple —título, conteo y rejilla—, pero la página cambia de cara según el blog: con descripción del tema, con contador destacado, paginada, con portada de categoría o con orden y subfiltros."
+        body={[
+          'No hay un único modelo: hay una misma idea —una página por tema que agrupa sus artículos— que cada proyecto ajusta. Una revista suma un párrafo introductorio; un archivo extenso lo pagina; un magazine le pone portada a cada categoría; una base de conocimiento añade orden y subfiltros.',
+          'Abajo, seis variantes —la primera es la configuración real de la ruta, y el resto son extensiones que requieren sumar datos por categoría o algo de lógica—. Cada una con su réplica en vivo y el tipo de proyecto donde rinde mejor.',
+        ]}
+      />
+
+      <GaleriaDisenos ariaLabel="Variantes de archivo de categoría">
+        {/* 0 · Archivo simple (esta plantilla) */}
+        <DisenoCard {...disenos[0]}>
+          <div class="acgv" role="img" aria-label="Título de categoría, conteo y una rejilla de tarjetas">
+            <span class="acgv__title"></span>
+            <span class="acgv__count"></span>
+            <span class="acgv__grid"><i></i><i></i><i></i></span>
+          </div>
+        </DisenoCard>
+
+        {/* 1 · Con descripción de categoría */}
+        <DisenoCard {...disenos[1]}>
+          <div class="acgv" role="img" aria-label="Título, un párrafo de descripción y la rejilla de tarjetas">
+            <span class="acgv__title"></span>
+            <span class="acgv__desc"></span>
+            <span class="acgv__desc acgv__desc--s"></span>
+            <span class="acgv__grid"><i></i><i></i><i></i></span>
+          </div>
+        </DisenoCard>
+
+        {/* 2 · Con conteo / contador */}
+        <DisenoCard {...disenos[2]}>
+          <div class="acgv" role="img" aria-label="Título con un contador destacado y la rejilla de tarjetas">
+            <span class="acgv__row"><span class="acgv__title acgv__title--row"></span><b class="acgv__pill">24</b></span>
+            <span class="acgv__grid"><i></i><i></i><i></i></span>
+          </div>
+        </DisenoCard>
+
+        {/* 3 · Paginado (cuando crece) */}
+        <DisenoCard {...disenos[3]}>
+          <div class="acgv" role="img" aria-label="Rejilla de tarjetas con paginación numerada al pie">
+            <span class="acgv__title"></span>
+            <span class="acgv__grid"><i></i><i></i><i></i></span>
+            <span class="acgv__pag"><em></em><em class="acgv__pag--cur"></em><em></em></span>
+          </div>
+        </DisenoCard>
+
+        {/* 4 · Con imagen / encabezado de categoría */}
+        <DisenoCard {...disenos[4]}>
+          <div class="acgv" role="img" aria-label="Encabezado con imagen de portada de la categoría sobre la rejilla">
+            <span class="acgv__cover"></span>
+            <span class="acgv__title acgv__title--on"></span>
+            <span class="acgv__grid"><i></i><i></i><i></i></span>
+          </div>
+        </DisenoCard>
+
+        {/* 5 · Con orden o subfiltros */}
+        <DisenoCard {...disenos[5]}>
+          <div class="acgv" role="img" aria-label="Barra de orden o subfiltros sobre la rejilla de tarjetas">
+            <span class="acgv__title"></span>
+            <span class="acgv__filters"><em></em><em class="acgv__filters--on"></em><em></em></span>
+            <span class="acgv__grid"><i></i><i></i><i></i></span>
+          </div>
+        </DisenoCard>
+      </GaleriaDisenos>
+    </div>
+  </section>
+
+  {/* ── 3c) RESPONSIVE Y MÓVIL ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="Cómo se comporta en el teléfono"
+        desc="En móvil el archivo no se aprieta: la rejilla baja a una columna, el encabezado (título + conteo) se acomoda legible y cada tarjeta es un objetivo táctil cómodo."
+        body={[
+          'En escritorio el archivo muestra su rejilla a tres columnas bajo un encabezado con el tema y su conteo. En el teléfono no hay ancho para tres tarjetas, así que la rejilla pasa a una sola columna (dos en tablet) —la MISMA rejilla del listado del blog, sin componente nuevo—. El contenido manda y nada desborda.',
+          'A partir de ahí, tres patrones según lo que pida la pantalla: que la rejilla del archivo crezca 1 → 2 → 3, que el encabezado (título y conteo) quede legible sin apretarse, y que cada tarjeta sea un objetivo táctil de al menos 44 px. Cada uno, abajo, con su vista en el teléfono y su receta.',
+        ]}
+      />
+
+      <div class="pats">
+        {/* 1 · Rejilla 1→2→3 */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="En móvil la rejilla del archivo baja a una sola columna">
+              <div class="acgm">
+                <span class="acgm__head"><b></b><i class="acgm__c"></i></span>
+                <span class="acgm__grid acgm__grid--1">
+                  <span class="acgm__card"><i class="acgm__th"></i><i class="acgm__t"></i></span>
+                  <span class="acgm__card"><i class="acgm__th"></i><i class="acgm__t"></i></span>
+                </span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · Rejilla del archivo 1 → 2 → 3 (default)</h3>
+            <p class="pat__desc">Mobile-first: el <code>grid</code> arranca en <code>1fr</code> y sube a dos columnas en tablet y tres en escritorio. Es exactamente la rejilla del listado del blog reutilizada; el archivo no estrena layout y se ve idéntico al resto.</p>
+            <Receta titulo="CSS · rejilla del archivo 1→2→3" lang="css" code={recetaRejilla} />
+          </div>
+        </article>
+
+        {/* 2 · Encabezado legible */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="El título y el conteo del archivo, legibles en pantalla chica">
+              <div class="acgm">
+                <span class="acgm__head acgm__head--col">
+                  <b class="acgm__h1">Categoría: Guías</b>
+                  <i class="acgm__count">24 artículos</i>
+                </span>
+                <span class="acgm__grid acgm__grid--1">
+                  <span class="acgm__card"><i class="acgm__th"></i><i class="acgm__t"></i></span>
+                </span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · Encabezado de archivo legible</h3>
+            <p class="pat__desc">El título («Categoría: Guías») baja de tamaño en pantallas estrechas y el conteo cae <code>debajo</code>, no al costado, para no apretarse. El H1 sigue siendo uno solo y el tema queda claro de un vistazo, sin desbordar la línea.</p>
+            <Receta titulo="CSS · encabezado legible en móvil" lang="css" code={recetaEncabezado} />
+          </div>
+        </article>
+
+        {/* 3 · Área táctil */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Cada tarjeta del archivo es un objetivo táctil cómodo">
+              <div class="acgm">
+                <span class="acgm__head"><b></b></span>
+                <span class="acgm__grid acgm__grid--1">
+                  <span class="acgm__card acgm__card--tap"><i class="acgm__th"></i><i class="acgm__t"></i></span>
+                </span>
+                <span class="acgm__ruler" aria-hidden="true">44px</span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · Área táctil de las cards (≥44 px)</h3>
+            <p class="pat__desc">En el teléfono se toca con el dedo: el enlace cubre la tarjeta entera y deja al menos 44 px de alto, el objetivo táctil recomendado. Toda la card es un solo target —imagen, título y CTA—, así no hay toques fallidos.</p>
+            <Receta titulo="CSS · objetivo táctil 44px" lang="css" code={recetaTactil} />
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 4) ¿DÓNDE VA? ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Posición"
+        title="¿Dónde se coloca?"
+        desc="No es una sección dentro de otra página: es una página propia —/blog/categoria/<cat>—, una por categoría usada. Se llega a ella desde el blog, no se incrusta."
+        body={[
+          'El archivo de categoría es una ruta en sí misma, no un bloque que se mete en otra página. Vive en /blog/categoria/<cat> y se genera una por cada categoría con contenido. Su lugar en el sistema es ser el destino: las puertas que llevan hasta él son el badge de categoría de cada artículo y el widget «Categorías» del sidebar.',
+          'Por eso no se repite ni se incrusta: es el nodo que agrupa un tema, y los demás complementos del blog apuntan hacia él. Forma pareja con el archivo de etiqueta (la misma idea, pero por tema transversal), reutiliza la tarjeta del listado y recibe su tráfico interno del sidebar.',
+        ]}
+      />
+      <p class="rl">Piezas cercanas: <a href="/blog/anatomia/archivo-etiqueta">el archivo de etiqueta</a> (la misma idea, por tema transversal), <a href="/blog/anatomia/tarjeta-articulo">la tarjeta de artículo</a> (la card que llena la rejilla, con el badge que enlaza aquí) y <a href="/blog/anatomia/sidebar">el sidebar</a> (cuyo widget «Categorías» trae el tráfico).</p>
+    </div>
+  </section>
+
+  {/* ── 5) CÓMO SE ARMA ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Implementación"
+        title="Cómo está construido"
+        desc="Una ruta dinámica ([...categoria].astro) cuyo getStaticPaths calcula las categorías usadas con un Set y, por cada una, pasa como props la categoría y sus artículos filtrados. El enlace de entrada llega desde el badge del artículo."
+        body={[
+          'El reparto es deliberado. En vez de una página .astro por tema, hay un solo archivo —[...categoria].astro— que vale por todas las categorías. Su getStaticPaths lee la colección de artículos no-draft, calcula con un Set las categorías DISTINTAS que aparecen (no las del enum entero) y emite una página por cada una, con sus posts ya filtrados en las props.',
+          'El resto es presentación: cada página pinta su Hero, un SectionHeading con el conteo y la rejilla de CategoryCard —la misma del listado—. El title, la description y el H1 incluyen el nombre de la categoría, así que cada archivo tiene su propio SEO. Y el lector llega aquí porque el badge del artículo (en ArticleLayout) y el widget del sidebar enlazan a /blog/categoria/<cat>. Cero JavaScript: todo se genera en build.',
+        ]}
+      />
+
+      <div class="recetas">
+        <Receta titulo="Astro · la ruta dinámica (cats únicas con Set + map a params/props)" lang="astro" code={recetaPaths} />
+        <Receta titulo="TypeScript · el filtro de artículos de la categoría" lang="ts" code={recetaFiltro} />
+        <Receta titulo="Astro · el enlace de entrada desde el artículo (badge → /blog/categoria/<cat>)" lang="astro" code={recetaEntrada} />
+      </div>
+
+      <div class="prose">
+        <p>
+          En concreto: <code>getStaticPaths</code> hace el trabajo de una vez —ordena los artículos por
+          fecha, deriva las categorías con <code>[...new Set(posts.map(p =&gt; p.data.category))]</code> y,
+          por cada una, devuelve <code>{`{ params: { categoria }, props: { categoria, posts } }`}</code> con
+          el filtro <code>posts.filter(p =&gt; p.data.category === categoria)</code>. Como la categoría es un
+          enum cerrado y única por artículo, la comparación estricta basta.
+        </p>
+        <p>
+          La página de destino es presentacional: recibe <code>categoria</code> y <code>posts</code> por
+          props, calcula <code>posts.length</code> para el conteo del <code>&lt;SectionHeading&gt;</code> y
+          recorre los artículos con <code>map</code> hacia <code>&lt;CategoryCard&gt;</code>. El
+          <code>title</code>, la <code>description</code> y el <code>&lt;h1&gt;</code> llevan el nombre de la
+          categoría —SEO de archivo—, y el lector entra por el badge de cada artículo y el widget del
+          sidebar. Todo HTML estático generado en build, sin consultas por visita.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 6) BUENAS PRÁCTICAS ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Buenas prácticas"
+        title="Qué hacer y qué evitar"
+        desc="La diferencia entre un archivo de categoría que ayuda y uno que estorba cabe en un puñado de hábitos —empezando por tener pocas categorías bien definidas—."
+        body={[
+          'Ninguno de estos hábitos es capricho: salen de mirar dónde tropieza un blog cuando las categorías crecen sin criterio. Un archivo sano nace de pocas categorías bien definidas, genera una página por categoría USADA, escribe su title y description con claridad y se enlaza desde el badge. Uno que estorba multiplica categorías casi iguales, crea páginas vacías del enum o duplica el listado a mano.',
+          'La buena noticia es que casi todo se sostiene solo cuando las páginas salen del Set sobre la colección y el listado reutiliza la tarjeta del blog. Abajo, lo que conviene y lo que conviene evitar, enfrentados.',
+        ]}
+      />
+      <div class="dodont">
+        <article class="dd dd--si">
+          <h3 class="dd__title"><span class="dd__icon" aria-hidden="true">✓</span> Sí conviene</h3>
+          <ul class="dd__list">{sis.map((s) => <li>{s}</li>)}</ul>
+        </article>
+        <article class="dd dd--no">
+          <h3 class="dd__title"><span class="dd__icon" aria-hidden="true">✕</span> Mejor evita</h3>
+          <ul class="dd__list">{nos.map((s) => <li>{s}</li>)}</ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* Cierre */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+</PageLayout>
+
+<style>
+  /* Utilidades estructurales (tokens.css = fuente única; scoped por página). */
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* Related-links inline · interlinking natural entre páginas. */
+  .rl { margin: var(--sp-5) 0 0; font-size: var(--text-sm); color: var(--c-ink-2); line-height: var(--leading-relaxed); }
+  .rl a { color: var(--c-primary); text-decoration: underline; text-underline-offset: 2px; }
+  .rl a:hover { color: var(--c-primary-dark); }
+
+  /* ── Beneficios ── */
+  .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .bene { grid-template-columns: repeat(3, 1fr); } }
+  .bene__card { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); }
+  .bene__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .bene__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Cards de las 5 partes ── */
+  .partes { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+  @media (min-width: 600px) { .partes { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1000px) { .partes { grid-template-columns: repeat(3, 1fr); } }
+  .parte { display: flex; gap: var(--sp-3); align-items: start; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-4); }
+  .parte__num { flex-shrink: 0; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: var(--radius-full); background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: var(--text-sm); }
+  .parte__body { display: grid; gap: 4px; min-width: 0; }
+  .parte__nombre { margin: 0; font-family: var(--font-heading); font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .parte__que { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
+  .parte__dato { margin: 4px 0 0; display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--text-xs); color: var(--c-muted); }
+  .parte__dato span { text-transform: uppercase; letter-spacing: .06em; font-weight: var(--weight-semibold); }
+  .parte__dato code, .prose code, .pat__desc code {
+    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace; font-size: .85em;
+    background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+    padding: .05em .4em; color: var(--c-primary-dark);
+  }
+
+  /* ── Recetas «Cómo se arma» ── */
+  .recetas { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
+
+  /* ── Prose técnica ── */
+  .prose { max-width: 75ch; margin-top: var(--sp-6); }
+  .prose p { margin: 0 0 var(--sp-4); font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .prose strong { color: var(--c-ink); font-weight: var(--weight-semibold); }
+
+  /* ── Sí / No ── */
+  .dodont { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .dodont { grid-template-columns: 1fr 1fr; } }
+  .dd { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); }
+  .dd__title { margin: 0 0 var(--sp-3); display: flex; align-items: center; gap: var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .dd__icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-full); font-size: var(--text-sm); }
+  .dd--si .dd__icon { background: rgba(34,197,94,.14); color: #16a34a; }
+  .dd--no .dd__icon { background: rgba(239,68,68,.12); color: #dc2626; }
+  .dd__list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-2); }
+  .dd__list li { position: relative; padding-left: var(--sp-5); font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
+  .dd__list li::before { content: ''; position: absolute; left: 0; top: .55em; width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--c-muted); }
+
+  /* ── Sección Responsive: teléfono | explicación + receta ── */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     MOCKUPS ESPECÍFICOS DEL ARCHIVO DE CATEGORÍA · prefijo `acg`.
+     acgx = ejemplo en vivo · acgv = variantes · acgm = móvil.
+     ════════════════════════════════════════════════════════════════════════ */
+
+  /* ── Ejemplo en vivo (réplica a escala de la página de archivo) ── */
+  .acgx {
+    position: relative; display: grid; gap: var(--sp-4); margin-top: var(--sp-6); padding: var(--sp-5);
+    background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md);
+  }
+  .acgx__head { display: grid; gap: 4px; padding-left: 26px; }
+  .acgx__eyebrow { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .08em; font-weight: var(--weight-semibold); color: var(--c-primary); }
+  .acgx__h1 { margin: 0; font-family: var(--font-heading); font-size: var(--text-xl); font-weight: var(--weight-bold); color: var(--c-ink); }
+  .acgx__h1 b { color: var(--c-primary); }
+  .acgx__count { font-size: var(--text-sm); color: var(--c-muted); }
+  .acgx__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); }
+  .acgx__card { display: grid; gap: 6px; padding: 8px; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); }
+  .acgx__thumb { height: 44px; border-radius: 6px; background: var(--c-surface); }
+  .acgx__badge { justify-self: start; font-size: 9px; font-weight: var(--weight-semibold); color: var(--c-primary); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-full); padding: 2px 8px; }
+  .acgx__line { height: 8px; border-radius: 4px; background: var(--c-surface); }
+  .acgx__line--s { width: 65%; }
+  .acgx__meta { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  .acgx__tag { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-xs); color: var(--c-muted); font-family: ui-monospace, Menlo, monospace; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .25em .6em; }
+  .acgx__n { flex-shrink: 0; display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: var(--radius-full); background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: .6875rem; }
+  .acgx__n--mid { background: var(--c-muted); }
+  .acgx__n--abs { position: absolute; }
+  @media (max-width: 560px) { .acgx__grid { grid-template-columns: 1fr 1fr; } .acgx__card:last-child { display: none; } }
+
+  /* ── Mockups de variantes (dentro de <GaleriaDisenos>) ── */
+  .acgv { display: flex; flex-direction: column; gap: 6px; width: 100%; min-height: 92px; padding: var(--sp-2); }
+  .acgv__title { height: 12px; width: 55%; border-radius: 4px; background: var(--c-ink); opacity: .8; }
+  .acgv__count { height: 7px; width: 28%; border-radius: 4px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .acgv__desc { height: 6px; border-radius: 4px; background: var(--c-surface); }
+  .acgv__desc--s { width: 70%; }
+  .acgv__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 2px; }
+  .acgv__grid i { display: block; height: 26px; border-radius: 4px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .acgv__row { display: flex; align-items: center; gap: 6px; }
+  .acgv__title--row { flex: 1; }
+  .acgv__pill { font-style: normal; font-size: 10px; font-weight: var(--weight-bold); color: #fff; background: var(--c-primary); border-radius: var(--radius-full); padding: 2px 9px; }
+  .acgv__pag { display: flex; justify-content: center; gap: 5px; margin-top: 2px; }
+  .acgv__pag em { display: inline-block; width: 16px; height: 16px; border-radius: 4px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .acgv__pag .acgv__pag--cur { background: var(--c-primary); border-color: var(--c-primary); }
+  .acgv__cover { height: 22px; border-radius: 5px; background: repeating-linear-gradient(135deg, var(--c-surface) 0 8px, var(--c-white) 8px 16px); border: 1px solid var(--c-border); }
+  .acgv__title--on { width: 45%; margin-top: -16px; margin-left: 6px; background: var(--c-primary); opacity: .65; }
+  .acgv__filters { display: flex; gap: 5px; }
+  .acgv__filters em { display: inline-block; width: 30%; height: 12px; border-radius: var(--radius-full); background: var(--c-white); border: 1px solid var(--c-border); }
+  .acgv__filters .acgv__filters--on { background: var(--c-primary); border-color: var(--c-primary); }
+
+  /* ── Mockups MÓVIL (dentro de <MarcoMovil>) ── */
+  .acgm { padding: 10px; display: grid; gap: 8px; font-size: 10px; }
+  .acgm__head { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 8px 9px; background: var(--c-white); border: 1px solid var(--c-border); border-radius: 8px; }
+  .acgm__head b { display: block; height: 10px; width: 60%; border-radius: 4px; background: var(--c-ink); opacity: .8; }
+  .acgm__head .acgm__c { height: 7px; width: 26%; border-radius: 4px; background: var(--c-surface); }
+  .acgm__head--col { flex-direction: column; align-items: flex-start; gap: 5px; }
+  .acgm__h1 { font-style: normal; font-weight: var(--weight-bold); color: var(--c-ink); }
+  .acgm__count { font-style: normal; color: var(--c-muted); font-size: 9px; }
+  .acgm__grid { display: grid; gap: 6px; }
+  .acgm__grid--1 { grid-template-columns: 1fr; }
+  .acgm__card { display: grid; gap: 5px; padding: 8px; background: var(--c-white); border: 1px solid var(--c-border); border-radius: 8px; }
+  .acgm__card .acgm__th { height: 30px; border-radius: 5px; background: var(--c-surface); }
+  .acgm__card .acgm__t { height: 7px; width: 70%; border-radius: 4px; background: var(--c-surface); }
+  .acgm__card--tap { min-height: 80px; outline: 1px dashed var(--c-primary); outline-offset: -3px; }
+  .acgm__ruler { justify-self: center; font-size: 9px; font-weight: 700; color: var(--c-primary); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 4px; padding: 1px 6px; }
+</style>

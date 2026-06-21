@@ -1,0 +1,108 @@
+---
+// ============================================================================
+// TrustBar.astro — Barra de confianza bajo el hero.
+// ----------------------------------------------------------------------------
+// Tira compacta de 3–4 "pilares" honestos (compromiso real del negocio, NO
+// métricas inventadas: nada de "+X clientes", años fabricados ni reseñas). Cada
+// pilar = ícono de línea + título + descripción corta. Pensada para sentarse
+// justo debajo del Hero/SectionMenu y dar señales de confianza inmediatas.
+//
+// DATA-DRIVEN: la página pasa `items`; el ícono se elige por clave (ICONS).
+// ORIGEN del patrón: PROYECTORED TrustIndex (adaptado a tira sin métricas).
+// ============================================================================
+interface Pillar {
+  /** clave de ícono: shield | doc | chat | pin | check | clock */
+  icon?: string;
+  title: string;
+  desc: string;
+}
+interface Props {
+  items: Pillar[];
+}
+const { items } = Astro.props;
+
+const ICONS: Record<string, string> = {
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/>',
+  doc: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h6"/>',
+  chat: '<path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>',
+  pin: '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>',
+  check: '<circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+};
+---
+
+<section class="trustbar" aria-label="Por qué elegirnos">
+  <div class="container">
+    <ul class="trustbar__grid" role="list">
+      {items.map((it) => (
+        <li class="tb-item">
+          <span class="tb-item__icon" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" set:html={ICONS[it.icon ?? 'check'] ?? ICONS.check} />
+          </span>
+          <div class="tb-item__text">
+            <p class="tb-item__title">{it.title}</p>
+            <p class="tb-item__desc">{it.desc}</p>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .container {
+    max-width: var(--container-max);
+    margin-inline: auto;
+    padding-inline: var(--container-px);
+  }
+  .trustbar {
+    background: var(--c-white);
+    border-bottom: 1px solid var(--c-border);
+    padding: var(--sp-5) 0;
+  }
+  .trustbar__grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--sp-4);
+  }
+  .tb-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-3);
+  }
+  .tb-item__icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    color: var(--c-primary);
+    background: color-mix(in srgb, var(--c-primary) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--c-primary) 18%, transparent);
+  }
+  .tb-item__title {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-weight: var(--weight-bold);
+    font-size: var(--text-base);
+    color: var(--c-ink);
+    line-height: var(--leading-snug);
+  }
+  .tb-item__desc {
+    margin: .2rem 0 0;
+    font-size: var(--text-sm);
+    color: var(--c-muted);
+    line-height: var(--leading-normal);
+  }
+  @media (min-width: 640px) {
+    .trustbar__grid { grid-template-columns: repeat(2, 1fr); gap: var(--sp-5); }
+  }
+  @media (min-width: 1024px) {
+    .trustbar__grid { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>

@@ -252,6 +252,60 @@ export const MODULOS: readonly Modulo[] = [
   { slug: 'whatsapp-flotante',   label: 'WhatsApp flotante',       href: '/modulos/whatsapp-flotante',   desc: 'El botón de WhatsApp siempre visible, fijo en una esquina.', estado: 'listo' },
 ];
 
+// ── NIVELES — los 4 niveles de profundidad de un sitio (SSoT) ─────────────────
+// Serie hermana de MODULOS. Si MODULOS documenta las PIEZAS (componentes), NIVELES
+// documenta los TIPOS DE PÁGINA por su lugar en la jerarquía: raíz → índice de
+// sección → detalle → sub-detalle. Cada nivel tiene su PÁGINA propia en
+// /niveles/<slug> que lo explica a fondo (mismo molde de 10 secciones que /modulos).
+// Alimenta el dropdown «Niveles» del Header y el índice /niveles. SSoT del aspecto
+// (foto + chips) y del cierre (siblingsNiveles) viven en src/lib/niveles.ts.
+export type Nivel = { slug: string; label: string; href: string; desc: string; estado: 'listo' | 'proximo' };
+export const NIVELES: readonly Nivel[] = [
+  // En ORDEN DE PROFUNDIDAD (raíz → hoja). El número L es parte del label visible.
+  { slug: 'l1-inicio',   label: 'L1 · Inicio',            href: '/niveles/l1-inicio',   desc: 'La portada del sitio: la única raíz. Presenta el negocio y reparte hacia las secciones.', estado: 'listo' },
+  { slug: 'l2-indice',   label: 'L2 · Índice de sección', href: '/niveles/l2-indice',   desc: 'El catálogo de una sección: explica de qué va y lista sus hijos (productos, servicios, módulos…).', estado: 'listo' },
+  { slug: 'l3-ficha',    label: 'L3 · Detalle',           href: '/niveles/l3-ficha',    desc: 'La ficha de UNA entidad a fondo: un producto, un servicio, un módulo, un artículo.', estado: 'listo' },
+  { slug: 'l4-variante', label: 'L4 · Sub-detalle',       href: '/niveles/l4-variante', desc: 'El nivel más profundo: variantes o sub-fichas cuando una entidad se subdivide.', estado: 'listo' },
+];
+
+// ── BLOG_ANATOMIA — complementos del blog, cada uno con su página de detalle ──
+// Serie hermana de MODULOS, acotada al BLOG: documenta pieza por pieza los
+// COMPLEMENTOS del blog (sidebar, paginación, artículos…). Cada uno tiene su
+// página en /blog/anatomia/<slug> con el MISMO molde de 10 secciones que /modulos.
+// Alimenta el índice /blog/anatomia y el dropdown «Blog» del Header. Al publicar
+// la página de un complemento, pon estado:'listo' (los 'proximo' no enlazan → evitan 404s).
+export type BlogParte = { slug: string; label: string; href: string; desc: string; estado: 'listo' | 'proximo' };
+export const BLOG_ANATOMIA: readonly BlogParte[] = [
+  { slug: 'sidebar',           label: 'Sidebar',             href: '/blog/anatomia/sidebar',           desc: 'La columna lateral que enlaza categorías, temas y el resto del sitio: el motor de enlazado interno del blog.', estado: 'listo' },
+  { slug: 'paginacion',        label: 'Paginación',          href: '/blog/anatomia/paginacion',        desc: 'Cómo se parte el listado en páginas navegables cuando hay muchos artículos, sin perder SEO.', estado: 'listo' },
+  { slug: 'articulos',         label: 'Artículos',           href: '/blog/anatomia/articulos',         desc: 'La pieza central: el artículo en Markdown (.mdx) y su página de detalle generada sola.', estado: 'listo' },
+  { slug: 'tarjeta-articulo',  label: 'Tarjeta de artículo', href: '/blog/anatomia/tarjeta-articulo',  desc: 'La card del listado: imagen, badge de categoría, título, resumen y «Leer artículo».', estado: 'listo' },
+  { slug: 'archivo-categoria', label: 'Archivo de categoría',href: '/blog/anatomia/archivo-categoria', desc: 'La página que agrupa los artículos de una categoría (/blog/categoria/<cat>).', estado: 'listo' },
+  { slug: 'archivo-etiqueta',  label: 'Archivo de etiqueta', href: '/blog/anatomia/archivo-etiqueta',  desc: 'La página que agrupa los artículos de un tema o etiqueta (/blog/tag/<tag>).', estado: 'listo' },
+  { slug: 'relacionados',      label: 'Relacionados',        href: '/blog/anatomia/relacionados',      desc: 'El bloque «sigue leyendo» que conecta cada artículo con otros del blog.', estado: 'listo' },
+];
+
+// ── PRODUCTOS_GUIA — la guía «cómo crear productos en un sitio» (SSoT) ─────────
+// Tercera serie hermana de MODULOS y NIVELES. Si MODULOS documenta las PIEZAS
+// (componentes) y NIVELES los TIPOS DE PÁGINA (profundidad), PRODUCTOS_GUIA
+// documenta el FLUJO DE CREAR UN PRODUCTO: la colección Markdown, las categorías,
+// las imágenes, el precio, la ficha de detalle y el schema. Cada pieza tiene su
+// página en /productos/guia/<slug> con el MISMO molde de 10 secciones que /modulos.
+// Alimenta el dropdown «Productos» del Header (el enlace principal va al catálogo
+// /productos) y el índice-hub /productos. SSoT del aspecto (foto + chips) y del
+// cierre (siblingsProductos) viven en src/lib/productos.ts. Al publicar la página
+// de una pieza, pon estado:'listo' (los 'proximo' no enlazan → evitan 404s).
+export type ProductoGuia = { slug: string; label: string; href: string; desc: string; estado: 'listo' | 'proximo' };
+export const PRODUCTOS_GUIA: readonly ProductoGuia[] = [
+  // En ORDEN DEL FLUJO de creación (definir → ilustrar → tarifar → publicar la ficha → SEO).
+  { slug: 'la-coleccion',  label: 'La colección',  href: '/productos/guia/la-coleccion',  desc: 'Cómo nace un producto: un archivo Markdown validado por Zod. El frontmatter, los campos obligatorios y por qué una colección y no .astro sueltos.', estado: 'listo' },
+  { slug: 'las-categorias', label: 'Las categorías', href: '/productos/guia/las-categorias', desc: 'El enum cerrado que organiza el catálogo (equipos · accesorios · general): badges, sincronía site.ts ↔ esquema y enlazado entre fichas.', estado: 'listo' },
+  { slug: 'las-imagenes',  label: 'Las imágenes',  href: '/productos/guia/las-imagenes',  desc: 'La foto y la galería del producto: ruta obligatoria bajo /images, AVIF ligero, alt con palabra clave y cero saltos de maqueta (CLS).', estado: 'listo' },
+  { slug: 'el-precio',     label: 'El precio',     href: '/productos/guia/el-precio',     desc: 'Precio público o «bajo cotización»: el campo opcional, el modelo WhatsApp-first y el Offer honesto, sin cifras inventadas.', estado: 'listo' },
+  { slug: 'la-ficha',      label: 'La ficha',      href: '/productos/guia/la-ficha',      desc: 'La página de detalle que se genera sola: ProductLayout (L4), bloques opcionales (specs, usos, FAQ) y la conversión por WhatsApp.', estado: 'listo' },
+  { slug: 'el-schema',     label: 'El schema',     href: '/productos/guia/el-schema',     desc: 'El JSON-LD que sale del catálogo: Product + Offer en la ficha, ItemList en el grid, y la regla de un solo emisor por página.', estado: 'listo' },
+];
+
 // ── NAV — menú principal del Header (FUENTE ÚNICA: escritorio + móvil) ────────
 // Header.astro itera ESTE array para generar los DOS menús (desktop y móvil) y
 // sus paneles desplegables. Para agregar, quitar o reordenar una entrada del
@@ -278,11 +332,14 @@ export type NavItem = {
 };
 export const NAV: readonly NavItem[] = [
   {
+    // Productos: el enlace principal va al catálogo-hub (L2) /productos; el
+    // dropdown lista la GUÍA «cómo crear productos» (SSoT: PRODUCTOS_GUIA, los
+    // 'listo'). Mismo patrón que Módulos/Niveles/Blog: dropdown con descripción.
     label: 'Productos',
     href: '/productos',
-    panel: 'mega',
-    allLabel: 'Ver catálogo completo',
-    items: PRODUCT_CATEGORIES.map((c) => ({ label: c.label, href: c.href })),
+    panel: 'dropdown',
+    allLabel: 'Ver catálogo de productos',
+    items: PRODUCTOS_GUIA.filter((p) => p.estado === 'listo').map((p) => ({ label: p.label, href: p.href, desc: p.desc })),
   },
   {
     label: 'Servicios',
@@ -299,6 +356,16 @@ export const NAV: readonly NavItem[] = [
     panel: 'dropdown',
     allLabel: 'Ver todos los módulos',
     items: MODULOS.filter((m) => m.estado === 'listo').map((m) => ({ label: m.label, href: m.href, desc: m.desc })),
+  },
+  {
+    // Niveles del sitio (SSoT: NIVELES). Serie hermana de Módulos: documenta los
+    // 4 tipos de página por profundidad. El dropdown lista los 'listo'; el enlace
+    // principal va al índice /niveles.
+    label: 'Niveles',
+    href: '/niveles',
+    panel: 'dropdown',
+    allLabel: 'Ver los 4 niveles',
+    items: NIVELES.filter((n) => n.estado === 'listo').map((n) => ({ label: n.label, href: n.href, desc: n.desc })),
   },
   {
     label: 'Cobertura',
@@ -318,7 +385,18 @@ export const NAV: readonly NavItem[] = [
         items: SECTORS.map((s) => ({ label: s.label, href: `/sectores/${s.slug}` })),
       }]
     : []),
-  { label: 'Blog', href: '/blog' },
+  {
+    // Blog: enlace directo a /blog (listado) + dropdown con su «anatomía»
+    // (los complementos del blog documentados, serie BLOG_ANATOMIA).
+    label: 'Blog',
+    href: '/blog',
+    panel: 'dropdown',
+    allLabel: 'Ir al blog',
+    items: [
+      { label: 'Anatomía del blog', href: '/blog/anatomia', desc: 'Cómo está hecho el blog, pieza por pieza' },
+      ...BLOG_ANATOMIA.filter((p) => p.estado === 'listo').map((p) => ({ label: p.label, href: p.href, desc: p.desc })),
+    ],
+  },
   { label: 'Contacto', href: '/contacto' },
 ];
 

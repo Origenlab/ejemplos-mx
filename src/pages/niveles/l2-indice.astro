@@ -1,0 +1,729 @@
+---
+// ============================================================================
+// /niveles/l2-indice — FICHA DEL NIVEL «L2 · Índice de sección».
+// ----------------------------------------------------------------------------
+// SEGUNDA ficha L3 de la serie /niveles/*. MISMO molde de 10 secciones
+// (docs/MODULOS.md §2). Documenta el nivel 2: el índice/catálogo de una sección
+// que explica de qué va y lista sus hijos. Ejemplos reales del sitio:
+// /modulos, /productos, /servicios, /blog. Migas de un nivel (Inicio › Sección).
+// Cierre con siblingsNiveles('l2-indice').
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import FAQAccordion from '@components/FAQAccordion.astro'
+import RelatedLinks from '@components/RelatedLinks.astro'
+import { waUrl, WA_MESSAGES } from '@config/site'
+import { siblingsNiveles } from '@lib/niveles'
+
+const cierreItems = siblingsNiveles('l2-indice')
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), sub: 'Respuesta inmediata', external: true }
+
+// ── Anatomía: las 5 PIEZAS de un índice de sección ──
+const piezas = [
+  {
+    n: 1,
+    nombre: 'Encabezado de sección — qué es esta rama + migas',
+    que: 'El hero (o un SectionHeading fuerte) que nombra la sección y dice de qué va en una frase. A diferencia de la home, aquí SÍ van migas de pan de un nivel (Inicio › Sección), porque el índice tiene padre: la home. El h1 lleva el nombre de la sección con su keyword (p. ej. «Productos», «Servicios», «Módulos del sitio»).',
+    dato: 'src/pages/<seccion>/index.astro → <Hero> · breadcrumbs={[{ label: "Sección" }]} · h1 = nombre de la sección',
+  },
+  {
+    n: 2,
+    nombre: 'Intro — el contexto de la sección',
+    que: 'Un SectionHeading layout="duo" que explica qué incluye la sección y cómo está organizada, antes de la rejilla. Orienta: «esto es lo que hay aquí y cómo navegarlo». Mantiene la jerarquía (h2) y da contexto a personas y buscadores antes de la lista de hijos.',
+    dato: 'src/components/SectionHeading.astro layout="duo" · h2 + 2 párrafos de contexto',
+  },
+  {
+    n: 3,
+    nombre: 'Rejilla de hijos (CategoryCard / ProductCard) — el corazón',
+    que: 'La cuadrícula de tarjetas que lista los hijos de la sección: cada producto, servicio, módulo o artículo como una card uniforme con foto, título H3 y CTA. Es data-driven —se genera con un .map() sobre una colección (getCollection) o una lista de site.ts—, así que agregar un hijo lo pinta sin tocar la página. La regla del sitio: el mismo card para todas las secciones, cero diseño duplicado.',
+    dato: 'CategoryCard.astro / ProductCard.astro · grid .showcase 1→2→4 · getCollection() o SSoT',
+  },
+  {
+    n: 4,
+    nombre: 'Filtros / orden o destacados (opcional) — para catálogos grandes',
+    que: 'Cuando la sección tiene muchos hijos, una barra de filtros (categoría, precio, etiqueta) u orden ayuda a encontrar. Cuando tiene pocos, se omite. Alternativamente, un bloque de destacados (CategoryDetail) amplía la entrada más importante. La regla: no añadir filtros si caben todas las tarjetas de un vistazo —añaden fricción sin valor—.',
+    dato: 'Opcional · filtros/facetas para catálogos amplios · CategoryDetail para destacar',
+  },
+  {
+    n: 5,
+    nombre: 'Cierre — el siguiente paso',
+    que: 'Una franja final que reparte hacia otras secciones (SectionMenu) o pide una acción (CTABanner). En un índice de catálogo suele ser un CTA contextual («¿no encuentras lo que buscas? cotiza»). Seguido del footer, que aparece en todas las páginas. El número de WhatsApp se arma con waUrl() —nunca hardcodeado—.',
+    dato: 'SectionMenu.astro o CTABanner.astro (PRESET_CATEGORIA) · waUrl(WA_MESSAGES.x)',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Orienta — dice «esto es lo que hay aquí»',
+    desc: 'El índice es la antesala de las fichas: su trabajo es que el visitante entienda de qué va la sección y encuentre el hijo correcto sin adivinar. A diferencia de la home (que reparte entre secciones) o de la ficha (que agota un tema), el L2 ordena una rama: presenta el contexto, muestra todos los hijos como tarjetas escaneables y deja que el visitante elija. Un índice claro reduce los rebotes —el visitante no se pierde entre opciones— y mejora la tasa de clic hacia las fichas.',
+  },
+  {
+    titulo: 'Distribuye — manda a la ficha correcta',
+    desc: 'El índice convierte una sección entera en un mapa navegable. Cada tarjeta enlaza a su ficha L3 con anchor text real (el nombre del hijo, no «ver más»), así el visitante y el buscador entienden a dónde lleva cada enlace. Es data-driven: la rejilla se genera desde una colección o una lista (SSoT), de modo que el índice nunca se desincroniza del contenido real —si agregas un producto, aparece en su índice sin tocar la página—.',
+  },
+  {
+    titulo: 'Ancla SEO de categoría — rankea por términos amplios',
+    desc: 'Mientras la ficha L3 rankea por términos específicos («casco de seguridad marca X»), el índice L2 rankea por términos de categoría («cascos de seguridad», «servicios de consultoría»). Es la página pilar de la sección: concentra los enlaces internos de sus hijos y reparte autoridad hacia ellos (patrón hub-and-spoke). Su schema típico es ItemList o CollectionPage, emitido una sola vez por el grid padre (regla B3), nunca por cada card.',
+  },
+]
+
+const sis = [
+  'Pon el nombre de la sección como h1, con su keyword de categoría. El h1 del índice es el término amplio por el que rankea la página pilar: «Productos», «Servicios de consultoría», «Módulos del sitio». Las cards de abajo son h3; el contexto intermedio, h2. Un solo h1 por página, siempre.',
+  'Genera la rejilla con .map() sobre una colección o lista (data-driven). El índice NO escribe sus hijos a mano: itera getCollection(\'productos\') o una lista de site.ts. Agregar un hijo lo pinta solo; cambiar el orden se hace en la fuente. Cero tarjetas hardcodeadas que se queden viejas.',
+  'Reusa el mismo card que el resto del sitio (CategoryCard / ProductCard). El índice no inventa un diseño de tarjeta propio: usa el componente del catálogo. Así productos, servicios, módulos y blog se ven y se navegan igual, y mantener una card mejora todas las secciones a la vez.',
+  'Lleva migas de pan de un nivel (Inicio › Sección). El índice tiene padre —la home—, así que muestra el rastro. El componente Breadcrumbs antepone «Inicio»; la página solo declara su sección. Es la diferencia con el L1, que no lleva migas por ser la raíz.',
+  'Usa anchor text real en cada card: el nombre del hijo, no «ver más». El texto del enlace es lo que leen el visitante y el crawler. «Consultoría de desarrollo web» enseña; «ver más» no enseña nada y diluye el SEO. Cada card enlaza a su ficha con su nombre propio.',
+  'Emite ItemList / CollectionPage una sola vez, desde el grid padre. El índice es el lugar del ItemList (la lista de hijos); las cards NO emiten schema propio (regla B3). El emisor es único —el helper del grid o buildSchema—, así Google ve una sola lista bien formada, no una por tarjeta.',
+  'Añade filtros solo cuando la sección los necesita. Para 6 servicios, una rejilla basta. Para 200 productos, filtros por categoría/precio ayudan. La regla: si todas las tarjetas caben de un vistazo, los filtros añaden fricción sin valor. Escala la complejidad con el tamaño real del catálogo.',
+]
+const nos = [
+  'NO hardcodees los hijos de la sección en el .astro. Escribir cada producto a mano en index.astro garantiza que el índice se quede viejo en cuanto cambie el catálogo. La rejilla se genera desde la colección o la lista (SSoT); el día que agregas un hijo, aparece solo. Hardcodear es deuda asegurada.',
+  'NO inventes un diseño de card distinto por sección. Si productos usa una tarjeta y servicios otra, el sitio se ve cosido a parches y mantienes dos componentes. Reusa CategoryCard / ProductCard; la coherencia visual entre secciones es parte de la calidad percibida del sitio.',
+  'NO omitas las migas de pan en el índice. El L2 tiene padre (la home): sin migas, el visitante pierde el «dónde estoy» y el «volver». Las migas de un nivel (Inicio › Sección) son obligatorias en todo lo que no sea la raíz. Solo el L1 va sin ellas.',
+  'NO uses «ver más» / «click aquí» como texto de las cards. Es anchor text muerto: no dice a dónde lleva, penaliza el SEO y obliga al visitante a leer alrededor para entender. Cada enlace lleva el nombre real del destino. Un índice lleno de «ver más» es un índice que no enseña.',
+  'NO metas el detalle completo de cada hijo en el índice. La tentación de explicar cada producto a fondo en su card convierte el índice en una página infinita y le roba el trabajo a la ficha L3. El índice presenta (foto + título + una línea + enlace); el detalle vive un nivel más abajo.',
+  'NO emitas un schema por cada card del grid. Veinte Product/Service en el markup del índice ensucian el grafo y confunden a Google. El índice emite UNA ItemList (la lista de hijos); el Product/Service individual vive solo en la ficha L3 (regla B3, un emisor por página).',
+  'NO satures el índice de filtros que no se usan. Filtros por marca, precio, color, fecha y rating en una sección de 8 productos son ruido: ocupan espacio y no ayudan. La complejidad de navegación debe ser proporcional al tamaño del catálogo, no al deseo de parecer «completo».',
+]
+
+// ── FAQ — preguntas frecuentes del nivel (voz v2; emitSchema → FAQPage único, regla B3) ──
+const faqs = [
+  {
+    question: '¿El índice de sección lleva migas de pan?',
+    answer: 'Sí, de <strong>un nivel</strong> (Inicio › Sección). El índice tiene padre —la home—, así que muestra el rastro; el componente Breadcrumbs antepone «Inicio» y la página solo declara su sección. La única página sin migas es el L1 (la raíz). El L2 lleva uno, el L3 dos y el L4 tres.',
+  },
+  {
+    question: '¿Cuál debe ser el H1 de un índice?',
+    answer: 'El nombre de la sección con su keyword de categoría —el término amplio por el que rankea la página pilar— (p. ej. «Productos», «Servicios de consultoría»). Las tarjetas de abajo son H3 y el contexto intermedio H2 (WCAG 2.2 SC 1.3.1, <em>Info and Relationships</em>). El índice rankea por el término de categoría; la ficha L3, por el específico. No repitas en la ficha el H1 del índice.',
+  },
+  {
+    question: '¿El índice emite un schema por cada tarjeta?',
+    answer: 'No. El índice emite <strong>una sola</strong> <code>ItemList</code> (o <code>CollectionPage</code>) con la lista de hijos, desde el grid padre. Las tarjetas NO emiten schema propio; el <code>Product</code>/<code>Service</code> individual vive solo en la ficha L3 (regla B3 — un único emisor por página). Veinte schemas en un índice ensucian el grafo y confunden a Google.',
+  },
+  {
+    question: '¿Cuándo conviene añadir filtros o facetas?',
+    answer: 'Cuando el catálogo lo pide. Para 6-8 hijos, una rejilla limpia basta y los filtros añaden fricción sin valor. Para decenas o cientos (e-commerce), filtros por categoría/precio/marca + orden ayudan a encontrar; en móvil se pliegan en un drawer. Regla: la complejidad de navegación es proporcional al número real de hijos, no al deseo de parecer completo.',
+  },
+  {
+    question: '¿«Ver más» o el nombre del hijo como texto del enlace?',
+    answer: 'El <strong>nombre real</strong> del destino. El texto del enlace (anchor text) es lo que leen el visitante y el crawler: «Consultoría de desarrollo web» enseña; «ver más» / «clic aquí» es anchor muerto que no dice a dónde lleva, diluye el SEO y obliga a leer alrededor. Cada tarjeta enlaza a su ficha con su nombre propio.',
+  },
+  {
+    question: '¿Cuántas columnas debe tener la rejilla?',
+    answer: 'Mobile-first: una columna que crece con el ancho (1 → 2 → 4), el mismo <code>.showcase</code> del catálogo. El índice no inventa un grid propio —reusa el componente de tarjeta del sitio (CategoryCard/ProductCard)— para que productos, servicios y módulos se vean y se naveguen igual. Mantener una tarjeta mejora todas las secciones a la vez.',
+  },
+  {
+    question: '¿Para qué un índice si la home ya lista todo?',
+    answer: 'Porque hacen trabajos distintos: la home reparte ENTRE secciones (productos, servicios, blog…); el índice lista DENTRO de una. Meter el catálogo completo de cada sección en la home la vuelve infinita y le roba el trabajo de repartir. La home presenta cada sección con una tarjeta que enlaza a su índice; el índice agota la lista de esa rama.',
+  },
+]
+
+// ── 6 VARIANTES (tipos de índice) ──
+const disenos = [
+  {
+    nombre: '1 · Grid de tarjetas — catálogo clásico (REAL · /modulos, /productos)',
+    tag: 'Catálogo · Servicios · Módulos · Casos',
+    desc: 'La cara natural del índice en esta plantilla: encabezado de sección + rejilla de cards (CategoryCard/ProductCard) 1→2→4 por fila, data-driven desde una colección o lista. Es /modulos, /productos y /servicios hoy. Aplica a cualquier sección con hijos visuales y un número manejable de entradas. El visitante escanea, elige y entra a la ficha.',
+  },
+  {
+    nombre: '2 · Índice con filtros / facetas — e-commerce',
+    tag: 'Tienda · Catálogo amplio · Muchos hijos',
+    desc: 'Para catálogos grandes: barra lateral o superior de filtros (categoría, precio, marca, disponibilidad) + orden (relevancia, precio, novedad) + el grid de productos. Los filtros actualizan la rejilla (idealmente sin recargar). Aplica cuando hay decenas o cientos de hijos y encontrar requiere acotar. En móvil los filtros se pliegan en un drawer.',
+  },
+  {
+    nombre: '3 · Blog index — feed + categorías + tags (REAL · /blog)',
+    tag: 'Blog · Medio · Knowledge base',
+    desc: 'El índice editorial: feed cronológico de artículos (el más reciente arriba) + navegación por categoría y por tag. Es /blog hoy, con sus rutas hijas /blog/categoria/<x> y /blog/tag/<y> (que son a su vez índices filtrados). El protagonista es la frescura: lo último primero. El SEO vive en el volumen de fichas L3 (artículos) que cuelgan de aquí.',
+  },
+  {
+    nombre: '4 · Lista densa — directorio',
+    tag: 'Directorio · Listado largo · Poca foto',
+    desc: 'Cuando hay muchos hijos y la foto importa poco: una lista compacta (nombre + una línea + enlace), agrupada por inicial o categoría. Prioriza densidad y escaneo rápido sobre impacto visual. Aplica a directorios de cobertura, glosarios, listados de sucursales o cualquier índice donde el visitante busca un nombre concreto.',
+  },
+  {
+    nombre: '5 · Índice editorial — destacado + grid',
+    tag: 'Sección con jerarquía · Lanzamiento · Campaña',
+    desc: 'Un hijo destacado en grande arriba (CategoryDetail o card hero) + la rejilla del resto debajo. Sirve cuando una entrada de la sección importa más que las demás (producto estrella, servicio insignia, artículo pilar). Da jerarquía sin sacar al destacado de su sección. La regla del sitio (sin zig-zag) se mantiene en el grid de abajo.',
+  },
+  {
+    nombre: '6 · Índice mínimo — pocas entradas, cards grandes',
+    tag: 'Sección pequeña · 2-4 hijos · Servicios premium',
+    desc: 'Cuando la sección tiene pocos hijos (2-4), cards grandes a 1-2 columnas con más texto y foto. No fuerza una rejilla de 4 que quedaría vacía. Aplica a secciones de servicios premium o líneas de producto cortas, donde cada hijo merece espacio. La estructura es la misma; cambia la densidad.',
+  },
+]
+
+// ── 4 patrones móviles ──
+const recetaGridMov = `/* MÓVIL · REJILLA DE HIJOS 4 → 2 → 1 (mobile-first)
+   El grid del índice arranca en UNA columna y crece con min-width.
+   Mismo .showcase del catálogo: el índice no inventa diseño propio. */
+
+.showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
+@media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .showcase { grid-template-columns: repeat(4, 1fr); } }`
+
+const recetaFiltrosMov = `/* MÓVIL · FILTROS QUE COLAPSAN EN DRAWER
+   En escritorio los filtros viven en una barra lateral visible. En el
+   teléfono ocupan demasiado: se pliegan tras un botón «Filtrar» que
+   abre un panel (drawer) o un <details> nativo. El grid recupera el
+   ancho completo y el visitante filtra solo cuando lo necesita. */
+
+.filtros { display: block; }                 /* barra lateral en desktop */
+
+@media (max-width: 768px) {
+  .filtros { position: fixed; inset: 0; transform: translateX(-100%); }
+  .filtros[data-open="true"] { transform: translateX(0); }
+  .filtros__toggle { display: inline-flex; min-height: 44px; }  /* botón abrir */
+}`
+
+const recetaMigasMov = `/* MÓVIL · MIGAS DE UN NIVEL (Inicio › Sección)
+   El índice solo lleva un salto, así que casi nunca desborda. Aun así,
+   en pantallas muy angostas se truncan los labels largos con ellipsis
+   en lugar de romper a dos líneas. */
+
+.crumbs { display: flex; gap: .35rem; font-size: var(--text-xs); white-space: nowrap; }
+.crumbs a, .crumbs span {
+  overflow: hidden; text-overflow: ellipsis; max-width: 16ch;
+}`
+
+const recetaCardMov = `/* MÓVIL · CARD Y PAGINACIÓN TÁCTILES
+   Las cards del índice y los controles de paginación crecen al área
+   táctil de 44 px. El grid completo se toca cómodo con el pulgar. */
+
+@media (max-width: 1024px) {
+  .ccard, .pager a, .pager button {
+    min-height: 44px;
+    -webkit-tap-highlight-color: rgba(91, 61, 245, .15);
+  }
+}`
+
+// ── 2 RECETAS DEL «CÓMO ESTÁ CONSTRUIDO» ──
+const recetaEstructura = `---
+// src/pages/productos/index.astro — un índice L2 data-driven.
+// El índice itera una colección y pinta una card por hijo. NO escribe
+// los hijos a mano: getCollection() es la fuente. Migas de un nivel.
+import PageLayout from '@layouts/PageLayout.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import ProductCard from '@components/ProductCard.astro'
+import { getCollection } from 'astro:content'
+
+const productos = (await getCollection('productos'))
+  .filter((p) => !p.data.noindex)
+  .sort((a, b) => (a.data.order ?? 0) - (b.data.order ?? 0))
+---
+
+{/* Migas de UN nivel: el índice tiene padre (la home). */}
+<PageLayout title="Productos — catálogo" description="..."
+  pageType="page" breadcrumbs={[{ label: 'Productos' }]}>
+
+  <SectionHeading layout="duo" eyebrow="Catálogo" title="Productos"
+    desc="Lo que ofrecemos, por categoría." body={["...", "..."]} />
+
+  <div class="showcase">
+    {productos.map((p, i) => (
+      <ProductCard
+        title={p.data.title}
+        href={\`/productos/\${p.id}\`}        {/* enlace a la ficha L3 */}
+        image={p.data.image}
+        description={p.data.excerpt}
+        index={i}
+      />
+    ))}
+  </div>
+</PageLayout>`
+
+const recetaSchema = `---
+// El índice emite ItemList (la lista de hijos) UNA sola vez.
+// Las cards NO emiten schema (regla B3 — un emisor por página).
+// El Product/Service individual vive solo en la ficha L3.
+import { directorySchema } from '@lib/seo'   // helper del grid padre
+
+// directorySchema arma un ItemList con los hijos del índice:
+const itemList = directorySchema(
+  productos.map((p) => ({ name: p.data.title, url: \`/productos/\${p.id}\` }))
+)
+// itemList = { '@type': 'ItemList', itemListElement: [{ '@type':'ListItem', position, url, name }, ...] }
+// buildSchema() lo compone en el @graph base; la página NO mete <script> a mano.
+---
+
+{/* En las cards NO pongas Product JSON-LD: */}
+{/* el ItemList del índice + el Product de la ficha L3 bastan. */}`
+---
+
+<PageLayout
+  title="Nivel L2 · Índice de sección: el catálogo que lista y orienta"
+  description="El nivel 2 de un sitio: el índice de sección. Qué es, para qué sirve, de qué se compone, tipos de índice, responsive y cómo se construye con getCollection."
+  pageType="page"
+  schemaType="TechArticle"
+  guia={false}
+  breadcrumbs={[{ label: 'Niveles', href: '/niveles' }, { label: 'L2 · Índice de sección' }]}
+>
+  <Hero
+    badge="Nivel del sitio · L2"
+    title="El Índice de sección:"
+    accent="el catálogo que explica una rama y lista sus hijos"
+    subtitle="El nivel 2 es el índice de una sección: la página que dice de qué va una rama del sitio y muestra todos sus hijos como tarjetas. /modulos, /productos, /servicios y /blog son todos L2. Su trabajo es orientar y mandar a la ficha correcta, no agotar un tema."
+    descRight={[
+      'Esta ficha documenta el L2 a fondo: qué problema resuelve (orientar + distribuir a las fichas + anclar el SEO de la categoría), de qué cinco piezas se compone (encabezado de sección con migas, intro de contexto, rejilla de hijos data-driven, filtros o destacados opcionales, y cierre), qué tipos de índice existen (grid de tarjetas, con filtros, blog, lista densa, editorial, mínimo), cómo se comporta en el teléfono (grid 4→2→1, filtros en drawer, migas de un nivel, cards táctiles) y cómo se construye iterando una colección con getCollection.',
+      'Con dos rasgos que lo distinguen de la home (L1) y de la ficha (L3). Frente al L1: el índice SÍ lleva migas de pan —de un nivel, Inicio › Sección—, porque tiene padre. Frente al L3: el índice no agota un tema, lo reparte —cada card es una entrada a su ficha, no la ficha entera—. Es la página pilar de la sección: concentra los enlaces de sus hijos y reparte autoridad hacia ellos (hub-and-spoke), emitiendo una sola ItemList (regla B3), nunca un schema por tarjeta.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Definición"
+        title="¿Qué es el nivel L2 · Índice de sección?"
+        desc="La página que lista los hijos de una rama del sitio y explica de qué va: /modulos, /productos, /servicios, /blog. Cuelga directamente de la home (L1) y es padre de las fichas (L3). Su trabajo no es presentar el negocio entero (eso es la home) ni agotar un tema (eso es la ficha): es orientar dentro de una sección y mandar a la ficha correcta."
+        body={[
+          'El L2 es el índice de una sección: la antesala de las fichas. Cada rama del sitio tiene el suyo —productos, servicios, módulos, blog, e incluso esta serie de niveles—. El visitante llega aquí desde la home o el menú, entiende qué incluye la sección y elige a qué ficha entrar. Es un mapa de una rama, no del sitio entero.',
+          'En esta plantilla vive en src/pages/<seccion>/index.astro y se arma iterando una colección (getCollection) o una lista de site.ts: una card por hijo, generada con .map(). Lleva migas de pan de un nivel (Inicio › Sección) porque tiene padre, y es la página pilar de la sección para el SEO —concentra y reparte la autoridad de sus hijos—.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Función e importancia"
+        title="¿Para qué sirve?"
+        desc="Tres trabajos: orientar (decir qué hay en la sección y cómo navegarla), distribuir (mandar a la ficha correcta con enlaces de anchor text real) y anclar el SEO de la categoría (rankear por términos amplios y repartir autoridad a los hijos vía hub-and-spoke). Un buen índice baja rebotes y sube la tasa de clic hacia las fichas."
+        body={[
+          'La función primaria del índice es orientar: convierte una sección en un mapa escaneable. El visitante entiende de qué va la rama y encuentra el hijo correcto sin perderse. La secundaria es distribuir: cada card enlaza a su ficha con anchor text real (el nombre del hijo), de modo que tanto la persona como el crawler saben a dónde lleva cada enlace.',
+          'La terciaria es de SEO: el índice es la página pilar de la sección. Rankea por términos de categoría (más amplios que los de una ficha) y, vía hub-and-spoke, concentra los enlaces internos de sus hijos y les reparte autoridad. Su schema natural es ItemList/CollectionPage, emitido una sola vez por el grid padre (regla B3) —nunca una vez por tarjeta—.',
+        ]}
+      />
+      <div class="bene">
+        {beneficios.map((b) => (
+          <article class="bene__card">
+            <h3 class="bene__title">{b.titulo}</h3>
+            <p class="bene__desc">{b.desc}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3) ¿QUÉ LLEVA? — Anatomía (5 piezas) + wireframe ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Anatomía"
+        title="¿Qué lleva por dentro?"
+        desc="Cinco piezas: encabezado de sección con migas de un nivel, intro de contexto (SectionHeading duo), rejilla de hijos data-driven (CategoryCard/ProductCard), filtros u destacados opcionales para catálogos grandes, y cierre. El corazón es la rejilla: una card por hijo, generada con .map() sobre una colección."
+        body={[
+          'El índice es una composición sobria: encabeza, contextualiza, lista y cierra. La pieza 1 (encabezado + migas) ubica al visitante. La 2 (intro) da contexto. La 3 (rejilla) es el corazón —los hijos como cards data-driven, el mismo componente que el resto del sitio—. La 4 (filtros/destacados) es opcional y escala con el tamaño del catálogo. La 5 (cierre) reparte o convierte.',
+          'Todo lo importante es data-driven: la rejilla se genera desde getCollection() o una lista de site.ts, así que el índice nunca queda viejo. Esa es la diferencia entre un índice que se mantiene solo y uno que hay que editar a mano cada vez que cambia el catálogo. El índice compone; no hardcodea.',
+        ]}
+      />
+      <ol class="piezas">
+        {piezas.map((p) => (
+          <li class="pieza">
+            <span class="pieza__n" aria-hidden="true">{p.n}</span>
+            <div class="pieza__body">
+              <h3 class="pieza__nombre">{p.nombre}</h3>
+              <p class="pieza__que">{p.que}</p>
+              <p class="pieza__dato"><span class="pieza__dato-label">SSoT:</span> <code>{p.dato}</code></p>
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      <GuiaNota titulo="Ejemplo en vivo · /modulos y /productos son índices L2 reales" archivo="src/pages/modulos/index.astro · src/pages/productos/index.astro">
+        <p>
+          El esquema de abajo es la anatomía de un índice L2. Los índices reales del
+          sitio son exactamente esto: <a href="/modulos">/modulos</a>,
+          <a href="/productos">/productos</a>, <a href="/servicios">/servicios</a> y
+          <a href="/blog">/blog</a> —encabezado de sección + migas de un nivel + rejilla
+          de hijos data-driven—. Esta misma página (<a href="/niveles">/niveles</a>) también
+          es un L2.
+        </p>
+        <div class="wire" aria-hidden="true">
+          <div class="wire__row wire__row--chrome"><span>Header · navegación</span></div>
+          <div class="wire__crumbs"><span>Inicio</span><span>›</span><span class="wire__now">Sección</span></div>
+          <div class="wire__row wire__row--hero"><b>Encabezado de sección · H1 = nombre + keyword</b></div>
+          <div class="wire__row wire__row--intro"><span>Intro · qué incluye esta rama (contexto)</span></div>
+          <div class="wire__grid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="wire__row wire__row--cierre"><b>Cierre · CTA contextual o menú</b></div>
+          <div class="wire__row wire__row--chrome"><span>Footer · mapa global</span></div>
+        </div>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 4) VARIANTES — GaleriaDisenos + DisenoCard ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Otros diseños y aplicaciones"
+        title="Tipos de índice"
+        desc="Seis formas de listar una sección: grid de tarjetas (catálogo clásico, la de esta plantilla), con filtros/facetas (e-commerce), blog index (feed + categorías + tags), lista densa (directorio), editorial (destacado + grid) y mínimo (pocas entradas, cards grandes). Todos son L2 —orientan y reparten— pero cambian la densidad y la forma de encontrar."
+        body={[
+          'El nivel no cambia, la densidad sí. Un catálogo de 8 servicios pide un grid limpio; uno de 200 productos pide filtros; un blog pide un feed cronológico con categorías; un directorio pide una lista densa. Reconocer el tipo correcto evita dos errores opuestos: filtros sobrantes en una sección chica, o una rejilla plana imposible de navegar en una grande.',
+          'Cada tipo reordena las mismas piezas: encabezado, contexto, lista de hijos, controles de navegación. La plantilla parte del grid de tarjetas porque es el caso central (productos, servicios, módulos); los demás se arman recomponiendo los mismos componentes y escalando la complejidad con el tamaño real del catálogo.',
+        ]}
+      />
+
+      <GaleriaDisenos ariaLabel="Seis tipos de índice de sección (nivel L2)">
+        {/* 0 · Grid de tarjetas */}
+        <DisenoCard {...disenos[0]}>
+          <div class="iv">
+            <div class="iv__head"><b>Sección</b><span class="iv__crumb">Inicio › Sección</span></div>
+            <div class="iv__grid"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+        </DisenoCard>
+        {/* 1 · Con filtros */}
+        <DisenoCard {...disenos[1]}>
+          <div class="iv iv--filtros">
+            <div class="iv__bar"><span class="iv__f"></span><span class="iv__f"></span><span class="iv__f"></span></div>
+            <div class="iv__split">
+              <div class="iv__side"><i></i><i></i><i></i></div>
+              <div class="iv__grid iv__grid--2"><i></i><i></i><i></i><i></i></div>
+            </div>
+          </div>
+        </DisenoCard>
+        {/* 2 · Blog index */}
+        <DisenoCard {...disenos[2]}>
+          <div class="iv iv--blog">
+            <div class="iv__tags"><span class="iv__tag">Guías</span><span class="iv__tag">Novedades</span></div>
+            <div class="iv__post"><i class="iv__post-img"></i><span class="iv__post-t"></span></div>
+            <div class="iv__post"><i class="iv__post-img"></i><span class="iv__post-t"></span></div>
+          </div>
+        </DisenoCard>
+        {/* 3 · Lista densa */}
+        <DisenoCard {...disenos[3]}>
+          <div class="iv iv--lista">
+            <span class="iv__li"></span><span class="iv__li"></span><span class="iv__li"></span>
+            <span class="iv__li"></span><span class="iv__li"></span><span class="iv__li"></span>
+          </div>
+        </DisenoCard>
+        {/* 4 · Editorial */}
+        <DisenoCard {...disenos[4]}>
+          <div class="iv iv--edit">
+            <div class="iv__feature"><b>Destacado</b></div>
+            <div class="iv__grid iv__grid--3"><i></i><i></i><i></i></div>
+          </div>
+        </DisenoCard>
+        {/* 5 · Mínimo */}
+        <DisenoCard {...disenos[5]}>
+          <div class="iv iv--min">
+            <div class="iv__big"><i></i><span></span></div>
+            <div class="iv__big"><i></i><span></span></div>
+          </div>
+        </DisenoCard>
+      </GaleriaDisenos>
+
+      <GuiaNota titulo="El tipo correcto según el tamaño del catálogo · todos son L2" archivo="src/pages/*/index.astro">
+        <p>
+          Las seis son <strong>nivel L2</strong> (orientan una rama y reparten a las fichas);
+          cambia la densidad. La plantilla parte del <em>1 (grid de tarjetas)</em>. Para un
+          catálogo grande entran <em>filtros</em> (2); para un blog, el <em>feed</em> (3, que es
+          /blog hoy); para muchas entradas sin foto, la <em>lista densa</em> (4). Escala la
+          complejidad con el número real de hijos.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 5) RESPONSIVE Y MÓVIL — 4 patrones con MarcoMovil + Receta ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="El índice, en el teléfono"
+        desc="Cuatro patrones reales: rejilla de hijos 4→2→1 mobile-first, filtros que colapsan en un drawer, migas de un nivel que truncan labels largos antes de romper a dos líneas, y cards + paginación táctiles. El reto del índice en móvil es listar muchos hijos sin que el visitante se pierda al hacer scroll."
+        body={[
+          'El índice en móvil es, sobre todo, una columna larga de tarjetas. El grid arranca en una columna y crece con ancho —el mismo .showcase del catálogo, no diseño nuevo—. Las cards se tocan cómodo (44 px) y la paginación, si existe, también. El visitante recorre una columna clara en lugar de una rejilla apretada.',
+          'El detalle propio del L2 son los filtros: en escritorio viven en una barra visible; en el teléfono ocupan demasiado, así que se pliegan tras un botón «Filtrar» que abre un drawer o un <details> nativo. El grid recupera el ancho completo y el visitante filtra solo cuando lo necesita. Las migas, de un nivel, casi nunca desbordan; en lo más estrecho truncan con ellipsis.',
+        ]}
+      />
+
+      <div class="pats">
+        {/* 1 · Grid */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="La rejilla de hijos baja a una sola columna en el teléfono">
+              <div class="im im--grid">
+                <span class="im__card"><i></i><b></b></span>
+                <span class="im__card"><i></i><b></b></span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · Rejilla de hijos 4 → 2 → 1</h3>
+            <p class="pat__desc">El grid del índice (<code>.showcase</code>) arranca en una columna y crece con <code>min-width</code> (2 en tablet, 4 en escritorio). Es el mismo grid del catálogo —el índice no inventa diseño—. En móvil, una columna cómoda de escanear en lugar de cuatro tarjetas apretadas.</p>
+            <Receta titulo="CSS · rejilla mobile-first" lang="css" code={recetaGridMov} />
+          </div>
+        </article>
+
+        {/* 2 · Filtros drawer */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Los filtros se pliegan tras un botón y abren un panel en móvil">
+              <div class="im im--filtros">
+                <div class="im__top"><span class="im__btn">Filtrar ▾</span><span class="im__btn im__btn--ghost">Ordenar</span></div>
+                <span class="im__card"><i></i><b></b></span>
+                <span class="im__card"><i></i><b></b></span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · Filtros que colapsan en drawer</h3>
+            <p class="pat__desc">En escritorio los filtros viven en una barra lateral; en el teléfono se pliegan tras un botón «Filtrar» que abre un panel (drawer) o un <code>&lt;details&gt;</code> nativo. El grid recupera el ancho completo y el visitante filtra solo cuando lo necesita. El botón cumple el área táctil de 44 px.</p>
+            <Receta titulo="CSS · filtros en drawer móvil" lang="css" code={recetaFiltrosMov} />
+          </div>
+        </article>
+
+        {/* 3 · Migas */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Las migas de un nivel truncan labels largos en lugar de romper a dos líneas">
+              <div class="im im--migas">
+                <span class="im__crumbs"><i class="im__cr">Inicio</i><i>›</i><i class="im__cr im__cr--now">Sección…</i></span>
+                <span class="im__card"><i></i><b></b></span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · Migas de un nivel, sin desbordar</h3>
+            <p class="pat__desc">El índice solo lleva un salto (<code>Inicio › Sección</code>), así que casi nunca desborda. En pantallas muy angostas se truncan los labels con <code>text-overflow: ellipsis</code> en lugar de romper a dos líneas. El visitante conserva el «volver al inicio» en una sola línea.</p>
+            <Receta titulo="CSS · migas de un nivel con ellipsis" lang="css" code={recetaMigasMov} />
+          </div>
+        </article>
+
+        {/* 4 · Cards táctiles */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Cards y paginación con superficie táctil de al menos 44 px">
+              <div class="im im--touch">
+                <span class="im__card im__card--tap"><i></i><b></b><i class="im__ruler">44px</i></span>
+                <div class="im__pager"><span>1</span><span>2</span><span>3</span><span>›</span></div>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">4 · Cards y paginación táctiles</h3>
+            <p class="pat__desc">Cada card del índice y cada control de paginación crecen al área táctil de 44 px (Apple HIG · WCAG SC 2.5.5), con realce de toque al tap. En un índice largo, la paginación cómoda evita el «scroll infinito» que pierde la posición del visitante.</p>
+            <Receta titulo="CSS · card y paginación táctiles" lang="css" code={recetaCardMov} />
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 6) ¿DÓNDE VA? — la posición del L2 ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Posición en la jerarquía"
+        title="¿Dónde va en el sitio?"
+        desc="Un nivel bajo la home: cada índice cuelga directamente del L1 y es padre de las fichas L3 de su sección. Lleva migas de un nivel (Inicio › Sección). Es el nodo intermedio del árbol: recibe tráfico de la home y del menú, y lo reparte hacia las fichas. Su URL es /<seccion> (sin barra final, regla del sitio)."
+        body={[
+          'El L2 ocupa el primer nivel bajo la raíz: /productos, /servicios, /modulos, /blog, /niveles. Cada uno es hijo directo de la home y padre de sus fichas L3. Por eso lleva migas de un nivel (Inicio › Sección) y aparece en el menú principal del header como entrada con su dropdown de hijos —el menú y el índice se alimentan de la misma fuente (NAV/colección)—.',
+          'En el flujo del visitante, el índice es la parada intermedia: llega desde la home o el menú, se orienta, y baja a la ficha. En el flujo de SEO, es la página pilar: recibe enlaces de sus hijos (cada ficha enlaza «volver a la sección» vía migas) y reparte autoridad hacia ellos. Quitar un índice rompería el puente entre la home y las fichas.',
+        ]}
+      />
+      <GuiaNota titulo="El árbol del sitio · L2 es el nodo intermedio" archivo="src/pages/*/index.astro · src/config/site.ts (NAV)">
+        <p>
+          <strong>L1 (/)</strong> → <strong>L2</strong> (<code>/productos</code>, <code>/servicios</code>,
+          <code>/modulos</code>, <code>/niveles</code>, <code>/blog</code>) → <strong>L3</strong>
+          (<code>/productos/equipo-base</code>, <code>/modulos/topbar</code>). El índice cuelga de la
+          home y es padre de las fichas. Aparece en el menú del header con su dropdown de hijos,
+          alimentado por la misma fuente que la rejilla (<code>NAV</code> / la colección).
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 7) CÓMO ESTÁ CONSTRUIDO — 2 recetas ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Capa técnica"
+        title="Cómo está construido"
+        desc="Vive en src/pages/<seccion>/index.astro e itera una colección (getCollection) o una lista de site.ts para pintar una card por hijo. Lleva pageType='page' + breadcrumbs de un nivel. Emite ItemList/CollectionPage una sola vez desde el grid padre (regla B3); las cards NO emiten schema. Cero hijos hardcodeados."
+        body={[
+          'La arquitectura del L2 es iteración data-driven: el índice obtiene sus hijos de una fuente (getCollection para productos/servicios/blog, o una lista de site.ts como MODULOS/NIVELES) y los pinta con .map(). No hay tarjetas escritas a mano —agregar un hijo a la colección lo pinta en su índice sin tocar el .astro—. Esa disciplina mantiene el índice sincronizado con el contenido real.',
+          'Dos detalles técnicos del nivel: las migas de un nivel (el índice tiene padre, así que declara su sección y Breadcrumbs antepone «Inicio») y el schema de lista (el índice es el lugar del ItemList; el emisor es único —el helper del grid o buildSchema—, nunca una card por su cuenta). La receta A muestra cómo se itera la colección; la B, cómo se emite la lista sin duplicar el grafo.',
+        ]}
+      />
+      <div class="recetas">
+        <Receta titulo="A · src/pages/productos/index.astro — iterar la colección" lang="astro" code={recetaEstructura} />
+        <Receta titulo="B · ItemList del índice — emisor único (regla B3)" lang="astro" code={recetaSchema} />
+      </div>
+    </div>
+  </section>
+
+  {/* ── 8) BUENAS PRÁCTICAS (sí/no) ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Buenas prácticas"
+        title="Qué hacer y qué evitar"
+        desc="Siete hábitos que mantienen el índice como una página pilar viva, navegable y bien enlazada; siete errores que la convierten en una lista vieja, incoherente o que no enseña a dónde lleva nada. El índice es el puente entre la home y las fichas: si falla, las fichas reciben menos tráfico y peor enlazado."
+        body={[
+          'La diferencia entre un índice que reparte y uno que estanca es disciplinaria: nombre de sección como h1, rejilla data-driven, card reusada, migas de un nivel, anchor text real, ItemList único y filtros proporcionales. Cada regla viene de un error real: hijos hardcodeados que se quedan viejos, una card distinta por sección, migas ausentes, «ver más» por todos lados, el detalle entero en la card, un schema por tarjeta, filtros de sobra.',
+          'Los sí son hábitos de SSoT + jerarquía + SEO de categoría. Los no son atajos que parecen rápidos (hardcodear cuatro productos, copiar «ver más») pero rompen el trabajo del índice: orientar y repartir, sincronizado con el contenido. Léelos en pares.',
+        ]}
+      />
+      <div class="bp">
+        <div class="bp__col bp__col--si">
+          <h3 class="bp__title bp__title--si">Sí</h3>
+          <ul class="bp__list">{sis.map((t) => <li>{t}</li>)}</ul>
+        </div>
+        <div class="bp__col bp__col--no">
+          <h3 class="bp__title bp__title--no">No</h3>
+          <ul class="bp__list">{nos.map((t) => <li>{t}</li>)}</ul>
+        </div>
+      </div>
+
+      <GuiaNota titulo="L2 es el segundo de la serie Niveles" archivo="docs/NIVELES.md · src/lib/niveles.ts">
+        <p>
+          Esta ficha sigue a <a href="/niveles/l1-inicio">L1 · Inicio</a> en la serie «Niveles del
+          sitio». Después vienen <a href="/niveles/l3-ficha">L3 · Detalle</a> y
+          <a href="/niveles/l4-variante">L4 · Sub-detalle</a>. El cierre se deriva de
+          <code>NIVELES</code> (SSoT) con <code>siblingsNiveles('l2-indice')</code>.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 9) FAQ — preguntas frecuentes del nivel (FAQPage único, regla B3) ── */}
+  <FAQAccordion items={faqs} title="Preguntas frecuentes · el nivel L2" emitSchema />
+
+  {/* ── 10) Cross-linking interno (hub-and-spoke) ── */}
+  <RelatedLinks
+    title="Sigue por el sistema"
+    desc="Los niveles vecinos y los módulos que arman un índice."
+    links={[
+      { label: 'L1 · Inicio', href: '/niveles/l1-inicio', desc: 'El nivel de arriba: la raíz' },
+      { label: 'L3 · Detalle', href: '/niveles/l3-ficha', desc: 'El nivel de abajo: la ficha' },
+      { label: 'Módulo · Tarjeta de categoría', href: '/modulos/category-card', desc: 'La card de la rejilla' },
+      { label: 'Módulo · Tarjeta de producto', href: '/modulos/product-card', desc: 'La card del catálogo' },
+    ]}
+    limit={4}
+  />
+
+  {/* ── Cierre: menú de navegación full-width (siblingsNiveles SSoT) ── */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando los niveles" />
+</PageLayout>
+
+<style>
+  /* Estructura (tokens.css = fuente única; scoped por página) */
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* ── Anatomía (piezas) ── */
+  .piezas { display: grid; gap: var(--sp-5); margin: var(--sp-6) 0 0; padding: 0; list-style: none; }
+  .pieza { display: grid; grid-template-columns: 48px 1fr; gap: var(--sp-4); align-items: start; padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .pieza__n { display: grid; place-items: center; width: 48px; height: 48px; border-radius: var(--radius-md); background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-black); font-size: 1.25rem; }
+  .pieza__nombre { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pieza__que { margin: 0 0 var(--sp-3); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pieza__dato { margin: 0; font-size: var(--text-xs); color: var(--c-ink-2); }
+  .pieza__dato-label { font-weight: var(--weight-bold); color: var(--c-primary-dark); text-transform: uppercase; letter-spacing: .06em; margin-right: .35em; }
+  .pieza__dato code { font-family: ui-monospace, Menlo, monospace; font-size: .95em; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .1em .4em; color: var(--c-primary-dark); word-break: break-word; }
+
+  /* ── Beneficios ── */
+  .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .bene { grid-template-columns: repeat(3, 1fr); } }
+  .bene__card { padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .bene__title { margin: 0 0 var(--sp-3); font-family: var(--font-heading); font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--c-ink); line-height: var(--leading-snug); }
+  .bene__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Recetas ── */
+  .recetas { display: grid; gap: var(--sp-5); margin-top: var(--sp-6); }
+
+  /* ── Buenas prácticas (sí/no) ── */
+  .bp { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 900px) { .bp { grid-template-columns: 1fr 1fr; } }
+  .bp__col { padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .bp__title { margin: 0 0 var(--sp-4); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-bold); }
+  .bp__title--si { color: #16a34a; }
+  .bp__title--no { color: #dc2626; }
+  .bp__list { margin: 0; padding-left: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-3); }
+  .bp__list li { font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Wireframe del índice ── */
+  .wire { display: grid; gap: 6px; margin-top: var(--sp-4); padding: var(--sp-4); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .wire__row { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: var(--radius-sm); background: var(--c-white); border: 1px solid var(--c-border); font-size: var(--text-xs); color: var(--c-ink-2); }
+  .wire__row--chrome { background: var(--c-surface); font-size: 11px; }
+  .wire__row--hero { background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); color: #fff; padding: 14px 12px; }
+  .wire__row--hero b { color: #fff; font-weight: var(--weight-bold); }
+  .wire__row--intro { background: var(--c-white); }
+  .wire__crumbs { display: flex; gap: 6px; align-items: center; font-size: 10px; color: var(--c-ink-2); padding: 0 4px; }
+  .wire__now { color: var(--c-primary-dark); font-weight: 700; }
+  .wire__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .wire__grid i { height: 46px; border-radius: var(--radius-sm); background: var(--c-white); border: 1px solid var(--c-border); }
+  .wire__row--cierre { background: var(--c-ink); color: #fff; justify-content: center; padding: 12px; }
+  .wire__row--cierre b { color: #fff; }
+
+  /* ── Patrones móviles (.pats / .pat) ── */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pat__desc code { font-family: ui-monospace, Menlo, monospace; font-size: .85em; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
+
+  /* ── Mockups galería de tipos de índice (.iv = index variant) ── */
+  .iv { display: flex; flex-direction: column; gap: 6px; min-height: 100%; padding: 10px; background: var(--c-surface); border-radius: 6px; font-size: 8px; line-height: 1.2; color: var(--c-ink-2); }
+  .iv__head { display: flex; flex-direction: column; gap: 3px; padding: 8px 10px; border-radius: 5px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .iv__head b { color: var(--c-ink); font-size: 10px; font-weight: 800; }
+  .iv__crumb { font-size: 7px; color: var(--c-ink-2); }
+  .iv__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .iv__grid--2 { grid-template-columns: repeat(2, 1fr); flex: 1; }
+  .iv__grid--3 { grid-template-columns: repeat(3, 1fr); }
+  .iv__grid i { height: 26px; border-radius: 4px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .iv__bar { display: flex; gap: 4px; }
+  .iv__f { flex: 1; height: 12px; border-radius: 99px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .iv__split { display: grid; grid-template-columns: 1fr 2fr; gap: 4px; }
+  .iv__side { display: flex; flex-direction: column; gap: 3px; }
+  .iv__side i { height: 12px; border-radius: 3px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .iv__tags { display: flex; gap: 4px; }
+  .iv__tag { font-style: normal; font-size: 7px; padding: 2px 6px; border-radius: 99px; background: var(--c-white); border: 1px solid var(--c-border); color: var(--c-ink-2); }
+  .iv__post { display: flex; gap: 6px; align-items: center; padding: 5px; background: var(--c-white); border: 1px solid var(--c-border); border-radius: 5px; }
+  .iv__post-img { width: 24px; height: 18px; border-radius: 3px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); flex-shrink: 0; }
+  .iv__post-t { display: block; height: 6px; width: 70%; border-radius: 3px; background: var(--c-ink); opacity: .7; }
+  .iv--lista { display: grid; gap: 4px; }
+  .iv__li { display: block; height: 13px; border-radius: 3px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .iv__feature { padding: 16px 10px; border-radius: 5px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); color: #fff; }
+  .iv__feature b { color: #fff; font-size: 10px; font-weight: 800; }
+  .iv--min { gap: 6px; }
+  .iv__big { display: flex; gap: 6px; align-items: center; padding: 6px; background: var(--c-white); border: 1px solid var(--c-border); border-radius: 5px; }
+  .iv__big i { width: 32px; height: 24px; border-radius: 4px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .iv__big span { display: block; height: 7px; width: 60%; border-radius: 3px; background: var(--c-ink); opacity: .7; }
+
+  /* ── Mockups patrones móviles (.im = index móvil) ── */
+  .im { display: flex; flex-direction: column; gap: 8px; padding: 12px 10px; min-height: 100%; font-size: 8px; line-height: 1.2; color: var(--c-ink-2); }
+  .im__card { display: grid; gap: 5px; padding: 8px; border-radius: 8px; background: var(--c-white); border: 1px solid var(--c-border); position: relative; }
+  .im__card i { display: block; height: 56px; border-radius: 5px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .im__card b { display: block; height: 8px; width: 70%; border-radius: 3px; background: var(--c-ink); opacity: .8; }
+  .im__top { display: flex; gap: 6px; }
+  .im__btn { display: inline-flex; align-items: center; justify-content: center; min-height: 28px; padding: 4px 10px; border-radius: 6px; background: var(--c-primary); color: #fff; font-size: 8px; font-weight: 700; }
+  .im__btn--ghost { background: var(--c-white); color: var(--c-ink-2); border: 1px solid var(--c-border); }
+  .im__crumbs { display: flex; gap: 4px; align-items: center; }
+  .im__cr { font-style: normal; font-size: 7px; padding: 2px 5px; border-radius: 4px; background: var(--c-white); border: 1px solid var(--c-border); max-width: 9ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .im__cr--now { color: #fff; background: var(--c-primary); border-color: var(--c-primary); }
+  .im__card--tap i.im__ruler { position: absolute; top: 10px; right: 8px; height: auto; width: auto; background: var(--c-primary); color: #fff; font-style: normal; font-size: 7px; font-weight: 700; padding: 1px 4px; border-radius: 4px; }
+  .im__pager { display: flex; gap: 4px; justify-content: center; }
+  .im__pager span { display: grid; place-items: center; min-width: 24px; min-height: 24px; border-radius: 5px; background: var(--c-white); border: 1px solid var(--c-border); font-size: 8px; }
+</style>

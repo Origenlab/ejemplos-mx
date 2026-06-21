@@ -1,0 +1,72 @@
+---
+// ============================================================================
+// PaginationNav.astro — Navegación de paginación del blog.
+// ----------------------------------------------------------------------------
+// Enlaces anterior / números / siguiente. URLs: la página 1 es /blog (canónica);
+// las demás, /blog/pagina/<n>. Los extremos llevan rel="prev"/"next" (señal de
+// continuidad para buscadores) y la actual marca aria-current. Cero JavaScript:
+// son <a> reales, indexables y navegables sin script. No se pinta si total ≤ 1.
+//
+// PROPS
+//   current → página actual (1-based).
+//   total   → número total de páginas.
+//   ariaLabel? → etiqueta del <nav>.
+// ============================================================================
+interface Props { current: number; total: number; ariaLabel?: string }
+const { current, total, ariaLabel = 'Paginación de artículos' } = Astro.props
+
+const url = (p: number) => (p <= 1 ? '/blog' : `/blog/pagina/${p}`)
+const prev = current > 1 ? url(current - 1) : null
+const next = current < total ? url(current + 1) : null
+const pages = Array.from({ length: total }, (_, i) => i + 1)
+---
+
+{total > 1 && (
+  <nav class="pag" aria-label={ariaLabel}>
+    {prev
+      ? <a class="pag__edge" href={prev} rel="prev"><span aria-hidden="true">←</span> Anteriores</a>
+      : <span class="pag__edge pag__edge--off" aria-hidden="true">← Anteriores</span>}
+
+    <ul class="pag__nums">
+      {pages.map((p) => (
+        <li>
+          {p === current
+            ? <span class="pag__num pag__num--cur" aria-current="page" aria-label={`Página ${p}, actual`}>{p}</span>
+            : <a class="pag__num" href={url(p)} aria-label={`Ir a la página ${p}`}>{p}</a>}
+        </li>
+      ))}
+    </ul>
+
+    {next
+      ? <a class="pag__edge" href={next} rel="next">Siguientes <span aria-hidden="true">→</span></a>
+      : <span class="pag__edge pag__edge--off" aria-hidden="true">Siguientes →</span>}
+  </nav>
+)}
+
+<style>
+  .pag {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+    gap: var(--sp-2); margin-top: var(--sp-8);
+  }
+  .pag__edge {
+    display: inline-flex; align-items: center; gap: var(--sp-2);
+    padding: .55em 1em; font-size: var(--text-sm); font-weight: var(--weight-semibold);
+    color: var(--c-ink); text-decoration: none;
+    background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md);
+  }
+  .pag__edge:hover, .pag__edge:focus-visible { color: var(--c-primary); border-color: var(--c-primary); outline: none; }
+  .pag__edge:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; }
+  .pag__edge--off { color: var(--c-muted); background: var(--c-surface); cursor: default; }
+  .pag__edge--off:hover { color: var(--c-muted); border-color: var(--c-border); }
+
+  .pag__nums { display: flex; flex-wrap: wrap; gap: var(--sp-1); list-style: none; margin: 0; padding: 0; }
+  .pag__num {
+    display: inline-grid; place-items: center; min-width: 2.5em; height: 2.5em;
+    padding: 0 .5em; font-size: var(--text-sm); font-weight: var(--weight-semibold);
+    color: var(--c-ink-2); text-decoration: none;
+    background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md);
+  }
+  .pag__num:hover, .pag__num:focus-visible { color: var(--c-primary); border-color: var(--c-primary); outline: none; }
+  .pag__num:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; }
+  .pag__num--cur { color: #fff; background: var(--c-primary); border-color: var(--c-primary); cursor: default; }
+</style>

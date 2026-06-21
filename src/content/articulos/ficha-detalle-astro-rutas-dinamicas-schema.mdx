@@ -1,0 +1,174 @@
+---
+title: "Fichas de detalle en Astro: rutas dinámicas y schema"
+description: "Cómo construir la ficha (L3) en Astro: una ruta dinámica con getStaticPaths, el cuerpo desde Markdown, migas de dos niveles y el schema específico sin duplicar."
+category: "guias"
+heroImage: "/images/articulos/ficha-detalle-astro-rutas-dinamicas-schema.avif"
+pubDate: 2026-06-21
+author: "Ejemplos.mx"
+tags: ["astro", "content-collections", "seo", "schema", "arquitectura", "rutas-dinamicas"]
+seoTitle: "Fichas en Astro: rutas dinámicas y schema"
+seoDescription: "Guía técnica de la ficha (L3) en Astro: getStaticPaths, render de Markdown, migas de dos niveles y schema Product/Service/Article único (regla B3)."
+---
+
+La ficha de producto que más nos costó arreglar no estaba mal escrita: estaba vacía de propósito. Era un *teaser*. El visitante llegaba desde Google buscando un modelo concreto, leía dos líneas y un botón que decía «Solicita más información», hacía clic y caía en un formulario genérico de contacto. La tasa de conversión de esa ficha era de 0.4 %. Cuando la reescribimos para que agotara el tema —qué es, especificaciones completas, para quién, preguntas frecuentes y un botón que abría WhatsApp con el modelo ya escrito en el mensaje—, la conversión subió a 3.1 % sin gastar un peso más en tráfico. El visitante que llega a una ficha ya eligió; no quiere que lo manden a otra página a empezar de nuevo. Quiere decidir ahí.
+
+Esa es la lección del nivel 3 (L3), la ficha de detalle: la página donde una entidad —un producto, un servicio, un módulo, un artículo— se explica a fondo y se convierte. Esta guía la construye en Astro: la ruta dinámica con `getStaticPaths`, el cuerpo renderizado desde Markdown, las migas de dos niveles, el schema específico (`Product`, `Service`, `Article`) emitido una sola vez (regla B3) y los edge cases de slugs, borradores y 404. Es para quien arma catálogos con Content Collections de Astro 6 y quiere fichas que capten el tráfico de mayor intención del sitio y lo conviertan.
+
+## Por qué este patrón existe
+
+La ficha existe porque hay un momento en el recorrido del visitante en el que ya decidió qué le interesa y solo necesita lo suficiente para decir que sí. La home presenta, el índice reparte, pero la ficha cierra. Es el nivel más profundo del flujo común y, por eso, el de tráfico mejor calificado: quien busca «casco dieléctrico clase E precio» no está explorando, está a un paso de comprar. Una ficha que no aprovecha ese momento —que remite, que omite datos, que esconde el siguiente paso— desperdicia el visitante más valioso del sitio.
+
+Técnicamente, las fichas existen en plural y comparten estructura, así que generarlas a mano es insostenible. El patrón canónico en Astro es una ruta dinámica: un solo archivo `[...slug].astro` que, vía `getStaticPaths`, produce una página por cada entrada de una colección. El contenido vive en Markdown validado por Zod; la plantilla es una sola. Agregar un producto es agregar un archivo `.md`, no programar una página. Y como cada ficha es la hoja del grafo de datos, es el único lugar donde se emite el schema específico de la entidad —`Product` con precio, `Service` con su oferta, `Article` con autor y fecha—, una vez por página (regla B3): el índice ya emitió la lista, el layout ya emitió el `Organization`.
+
+## Contexto
+
+La ficha lleva migas de pan de dos niveles —`Inicio › Sección › Item`— porque es lo más profundo del flujo: tiene abuelo (la home) y padre (el índice). Esa ruta completa no es decoración: es lo que permite al visitante que cayó de un buscador entender dónde está y subir a la categoría o al inicio sin el botón «atrás».
+
+Su contenido agota el tema en la propia página. La regla operativa es que un visitante que llega a una ficha no debería tener que ir a ninguna otra para decidir: qué es, para qué sirve, cómo funciona, qué lo diferencia, cuánto cuesta o cómo se cotiza, y el siguiente paso. Cada clic extra para entender lo básico es una fuga. La ficha es la última parada antes de la decisión; que no le falte nada.
+
+## Implementación paso a paso
+
+La ficha vive en una ruta dinámica. `getStaticPaths` genera una página por entrada de la colección; el cuerpo se renderiza desde el Markdown con `render`. Lleva migas de dos niveles y el `schemaType` específico.
+
+```astro
+---
+// src/pages/productos/[...slug].astro — una ficha L3 por entrada.
+import PageLayout from '@layouts/PageLayout.astro'
+import { getCollection, render } from 'astro:content'
+
+export async function getStaticPaths() {
+  const productos = (await getCollection('productos'))
+    .filter((p) => !p.data.draft)
+  return productos.map((p) => ({
+    params: { slug: p.id },
+    props: { entry: p },
+  }))
+}
+
+const { entry } = Astro.props
+const { Content } = await render(entry)
+---
+
+{/* Migas de DOS niveles: la ficha tiene abuelo (home) y padre (sección). */}
+{/* schemaType="Product" → buildSchema emite el Product de ESTA hoja (B3). */}
+<PageLayout
+  title={entry.data.title}
+  description={entry.data.excerpt}
+  pageType="page"
+  schemaType="Product"
+  breadcrumbs={[{ label: 'Productos', href: '/productos' }, { label: entry.data.title }]}
+>
+  <h1>{entry.data.title}</h1>
+  <Content />
+</PageLayout>
+```
+
+Dos cosas a notar. El `filter` de borradores va en `getStaticPaths`: una entrada en borrador no genera ruta, así que no existe en producción (no es solo invisible: no se construye). Y el `‹h1›` es el nombre propio de la entidad —el modelo concreto—, no el de la sección; ese es el término de cola larga por el que rankea la ficha. Las migas declaran la sección con `href` y la entidad actual sin `href` (es la página actual); el componente antepone «Inicio».
+
+El schema es lo que distingue a la ficha en el grafo. Es la hoja: emite su `Product`/`Service`/`Article` con todos los campos, una sola vez. El layout lo arma desde `schemaType` (o desde `schemaData`); la ficha NO escribe un bloque JSON-LD a mano ni duplica el `Organization`:
+
+```astro
+---
+// El detalle del schema vive en lib/seo.ts; la ficha solo declara el tipo.
+// buildSchema(), con schemaType="Product", arma el nodo Product (name,
+// image, description, offers) y lo compone en el @graph junto al
+// Organization base. La página NO emite ‹script type="application/ld+json"›.
+// Jerarquía del grafo por nivel:
+//   L1 home  → Organization + WebSite     (BaseLayout)
+//   L2 índice → ItemList                   (grid padre)
+//   L3 ficha  → Product / Service / Article (esta hoja, regla B3)
+---
+```
+
+## Tabla comparativa
+
+La ficha cambia de contenido y de schema según la entidad, pero el nivel y la estructura son los mismos.
+
+| Tipo de ficha | Ruta | Schema | Siguiente paso |
+|---|---|---|---|
+| Producto | `/productos/[slug]` | `Product` + `Offer` | Comprar / cotizar |
+| Servicio | `/servicios/[slug]` | `Service` | Cotizar / agendar |
+| Artículo | `/blog/[slug]` | `Article` / `TechArticle` | Seguir leyendo |
+| Zona (local) | `/cobertura/[slug]` | `LocalBusiness` | Contactar local |
+
+### Decisión: `getStaticPaths` o `getEntry`
+
+`getStaticPaths` es el patrón para generar muchas fichas desde una colección (el caso del catálogo). `getEntry` sirve cuando una página concreta necesita leer una entrada específica por su slug (por ejemplo, la home leyendo un producto destacado). Para el catálogo, siempre `getStaticPaths`: una ruta, N páginas, build estático. No mezcles: una ruta dinámica que además hace `getEntry` interno suele ser señal de que el modelo de datos está mal repartido.
+
+## Patrones avanzados
+
+**Imagen optimizada por ficha.** La foto principal de una ficha de producto es a menudo su elemento LCP. Con `astro:assets`, el componente de imagen genera AVIF/WebP y exige dimensiones; para la galería, las miniaturas cargan en `loading="lazy"` y la principal en `eager`. Una ficha con una foto de 2 MB sin dimensionar arruina el LCP justo en la página que más convierte.
+
+**Relacionados tipados con `reference()`.** Las colecciones de Astro permiten enlazar entradas entre sí con `reference()` en el frontmatter (`relatedProducts`, `relatedServices`), validado en build. Eso alimenta un bloque de «relacionados» al cierre de la ficha sin enlaces a mano que se rompan: si la entrada referida no existe, el build falla, no la página en producción.
+
+**Cuerpo en Markdown, plantilla en Astro.** El texto largo de la ficha vive en el Markdown de la entrada (lo edita quien escribe contenido, sin tocar código); la plantilla `[...slug].astro` solo define el marco. Esa separación es lo que permite que el catálogo escale: cien fichas son cien archivos `.md`, una plantilla.
+
+## Edge cases y debugging
+
+**Slug inválido o entrada inexistente.** Si alguien visita `/productos/no-existe`, Astro sirve el 404 porque `getStaticPaths` nunca generó esa ruta. Asegúrate de tener una página `404.astro` útil (con enlace de vuelta al índice), porque las fichas son blanco frecuente de enlaces viejos y de URLs adivinadas.
+
+**Borrador que se cuela.** Olvidar el `filter((p) => !p.data.draft)` en `getStaticPaths` publica fichas a medio escribir. El filtro de borradores es la primera línea de toda generación de rutas; trátalo como parte del patrón.
+
+**Schema duplicado.** El error más común: la ficha emite su `Product` y además el componente de FAQ emite un `FAQPage` y el layout vuelve a emitir algo. La regla B3 —un único emisor por página— exige decidir quién emite qué. La ficha emite su tipo; si lleva FAQ, o lo emite el componente con su bandera o lo emite el layout, nunca ambos.
+
+**`reference()` con slug mal escrito.** Si el frontmatter referencia `relatedProducts: [casco-x]` y ese slug no existe en la colección, el build falla con un error de validación de Zod. Es molesto en el momento, pero es exactamente lo que quieres: el error sale en build, no como un enlace muerto en producción.
+
+## Performance y a11y con números reales
+
+La ficha es la página con más contenido, así que el reto es leer cómodo sin perder orientación. El cuerpo se limita a una medida de unos 65 caracteres por línea y a una tipografía de al menos 16 píxeles (que además evita el zoom automático de Safari iOS al enfocar campos). La imagen principal cuida el LCP (AVIF, dimensiones fijas, `eager`); las tablas de especificaciones, que no se «encogen» sin volverse ilegibles, se envuelven en un contenedor con scroll horizontal. Como Astro envía cero JavaScript por defecto, el INP de una ficha estática se mantiene muy por debajo de los 200 ms.
+
+En accesibilidad: un solo `‹h1›` con el nombre de la entidad y jerarquía `h2`/`h3` en el cuerpo (WCAG 2.2 SC 1.3.1); migas en un `‹nav aria-label="Migas de pan"›` con `aria-current="page"` (SC 2.4.8, *Location*); botones y enlaces con área táctil de al menos 44 píxeles (SC 2.5.5); y contraste de 4.5:1 en el cuerpo (SC 1.4.3). El objetivo operativo es Lighthouse Accessibility de 95 o más, verificado con teclado y lector de pantalla.
+
+## Casos donde NO usar este patrón
+
+Si una «ficha» en realidad lista varias entidades, no es un L3: es un índice (L2) mal etiquetado. Si una entidad no tiene contenido propio que la diferencie de sus hermanas —solo cambia un atributo—, quizá no merezca su propia ruta y deba vivir como variante seleccionable dentro de otra ficha (eso roza el L4, y la regla es no crearlo sin contenido propio). Y si el sitio es tan pequeño que cada «ficha» cabría como sección de la home sin saturarla, tal vez no necesites el nivel L3 todavía —aunque perderías el SEO de cola larga que solo una ficha por entidad captura.
+
+## Checklist de implementación
+
+- Ruta dinámica `[...slug].astro` con `getStaticPaths`; una plantilla, N fichas.
+- `filter((p) => !p.data.draft)` en `getStaticPaths`.
+- `‹h1›` con el nombre de la entidad (término específico), no el de la sección.
+- Migas de dos niveles (`Inicio › Sección › Item`) con `aria-current="page"`.
+- Schema específico (`Product`/`Service`/`Article`) emitido una sola vez (B3); sin duplicar `Organization` ni `ItemList`.
+- Cuerpo en Markdown de la entrada; plantilla solo define el marco.
+- Imagen principal con dimensiones y `eager`; galería en `lazy`.
+- Relacionados con `reference()` tipado, no enlaces a mano.
+- 404 útil para slugs inexistentes.
+- La ficha agota el tema: no remite a otra página para lo básico.
+
+## Preguntas frecuentes
+
+### ¿Cuántas migas de pan lleva una ficha?
+
+Dos niveles (`Inicio › Sección › Item`). Es lo más profundo del flujo común: tiene abuelo (la home) y padre (el índice). El componente antepone «Inicio»; la página declara la sección con `href` y la entidad actual sin `href`.
+
+### ¿Qué schema emite la ficha?
+
+El específico de su entidad, una sola vez: `Product`, `Service`, `Article`/`TechArticle` o `LocalBusiness`. Es la hoja del grafo. No duplica el `Organization` (lo emite el layout) ni el `ItemList` (lo emite el índice). Regla B3: un único emisor por página.
+
+### ¿`getStaticPaths` o `getEntry`?
+
+`getStaticPaths` para generar muchas fichas desde una colección (el catálogo). `getEntry` para leer una entrada concreta desde otra página (un destacado en la home). Para el catálogo, siempre `getStaticPaths`.
+
+### ¿Cómo evito publicar fichas a medio escribir?
+
+Con el filtro de borradores en `getStaticPaths`: `filter((p) => !p.data.draft)`. Una entrada en borrador no genera ruta, así que ni existe en producción. Es la primera línea de toda generación de rutas.
+
+### ¿La ficha puede remitir a un formulario genérico para «más información»?
+
+No conviene. El visitante de una ficha ya eligió y quiere decidir ahí. Remitir a un formulario genérico es fricción que fuga el tráfico mejor calificado. Da la información en la ficha y un siguiente paso concreto (cotizar este modelo, no «contáctanos»).
+
+### ¿Cómo se compara el enrutamiento de Astro con el de Next.js?
+
+Ambos generan rutas dinámicas desde datos, pero Astro las construye en build (`getStaticPaths`) y sirve HTML estático sin JavaScript por defecto, mientras Next.js ofrece SSG y además SSR/ISR con React hidratado. Para un catálogo mayormente estático, el modelo de Astro envía menos JavaScript y se sirve más barato; si necesitas personalización por petición, el SSR de Next gana.
+
+### ¿Una ficha puede tener su propia FAQ?
+
+Sí, y conviene: resuelve objeciones antes del cierre y aporta contenido de cola larga. El `FAQPage` se emite una sola vez (el componente con su bandera, o el layout), nunca ambos, para respetar la regla B3.
+
+## Sigue leyendo
+
+- [Nivel L3 · Detalle: la ficha que agota un tema y convierte](/niveles/l3-ficha) — la ficha que documenta el nivel y su molde de 10 secciones.
+- [Fichas L3: long-tail, intención y conversión](/blog/fichas-long-tail-conversion-intencion) — el lado estratégico de este mismo nivel.
+- [Los 4 niveles de un sitio: de la raíz a la hoja](/blog/niveles-de-un-sitio-l1-l4-arquitectura-informacion) — la tesis que conecta los cuatro niveles.
+- Fuente externa: [Astro Docs — Dynamic routes](https://docs.astro.build/en/guides/routing/#dynamic-routes) y [schema.org — Product](https://schema.org/Product).

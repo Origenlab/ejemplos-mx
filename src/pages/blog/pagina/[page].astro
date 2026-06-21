@@ -1,0 +1,87 @@
+---
+// ============================================================================
+// /blog/pagina/<n> — Páginas 2..N del listado del blog.
+// ----------------------------------------------------------------------------
+// La página 1 es /blog (index.astro, canónica); esta ruta sirve el resto. Se usa
+// un subpath (/blog/pagina/<n>) a propósito: la raíz /blog/<slug> ya está tomada
+// por el catch-all de artículos ([...slug].astro), así que NO se puede paginar en
+// /blog/<n> sin colisionar. getStaticPaths genera 2..N en build; el cuerpo lo
+// pinta BlogListing (el MISMO del listado). Ver /blog/anatomia/paginacion.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import BlogListing from '@components/BlogListing.astro'
+import { getCollection } from 'astro:content'
+import { waUrl, WA_MESSAGES } from '@config/site'
+import { PAGE_SIZE, blogSidebarData, type SidebarData } from '@lib/blog'
+import type { CollectionEntry } from 'astro:content'
+
+export async function getStaticPaths() {
+  const articulos = (await getCollection('articulos', ({ data }) => !data.draft)).sort(
+    (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+  )
+  const total = Math.max(1, Math.ceil(articulos.length / PAGE_SIZE))
+  const sidebar = blogSidebarData(articulos)
+
+  // Solo páginas 2..N (la 1 vive en /blog). Si solo hay una página, no se genera nada.
+  const paths = []
+  for (let p = 2; p <= total; p++) {
+    paths.push({
+      params: { page: String(p) },
+      props: {
+        items: articulos.slice((p - 1) * PAGE_SIZE, p * PAGE_SIZE),
+        current: p,
+        total,
+        sidebar,
+      },
+    })
+  }
+  return paths
+}
+
+interface Props {
+  items: CollectionEntry<'articulos'>[]
+  current: number
+  total: number
+  sidebar: SidebarData
+}
+const { items, current, total, sidebar } = Astro.props as Props
+
+const cierreItems = [
+  { label: 'Servicios', href: '/servicios', sub: 'Lo que ofrecemos' },
+  { label: 'Productos', href: '/productos', sub: 'Catálogo del sitio' },
+  { label: 'Nosotros', href: '/nosotros', sub: 'Cómo trabajamos' },
+  { label: 'Contacto', href: '/contacto', sub: 'Hablemos de tu proyecto' },
+]
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.blog), sub: 'Respuesta inmediata', external: true }
+---
+
+<PageLayout
+  title={`Blog — página ${current} de ${total}`}
+  description={`Artículos del blog de Ejemplos.mx, página ${current} de ${total}. Guías y novedades sobre construir sitios Astro con contenido en Markdown.`}
+  pageType="page"
+  breadcrumbs={[{ label: 'Blog', href: '/blog' }, { label: `Página ${current}` }]}
+  guia={false}
+>
+  <Hero
+    badge="Guías y novedades"
+    title="El"
+    accent="blog"
+    subtitle={`Más artículos del blog — página ${current} de ${total}. Sigue explorando guías y novedades del sistema.`}
+  />
+
+  <section class="section">
+    <div class="container">
+      <BlogListing articulos={items} current={current} total={total} sidebar={sidebar} />
+    </div>
+  </section>
+
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando el sitio" />
+</PageLayout>
+
+<style>
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+</style>

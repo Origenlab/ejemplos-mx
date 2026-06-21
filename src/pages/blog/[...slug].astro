@@ -9,6 +9,7 @@
 // ============================================================================
 import { getCollection, render } from 'astro:content'
 import ArticleLayout from '@layouts/ArticleLayout.astro'
+import { blogImage } from '@lib/blogImages'
 
 export async function getStaticPaths() {
   const articulos = await getCollection('articulos', ({ data }) => !data.draft)
@@ -40,7 +41,7 @@ const d = articulo.data
   pubDate={d.pubDate}
   updatedDate={d.updatedDate}
   author={d.author}
-  image={d.heroImage}
+  image={blogImage(articulo.id)}
   imageAlt={d.title}
   tags={d.tags}
   related={related}

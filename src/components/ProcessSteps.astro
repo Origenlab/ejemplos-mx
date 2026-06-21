@@ -1,0 +1,122 @@
+---
+// ============================================================================
+// ProcessSteps.astro — "Cómo trabajamos" en pasos (fondo oscuro).
+// ----------------------------------------------------------------------------
+// Proceso de trabajo en 4–5 pasos numerados sobre fondo tinta. Da claridad y
+// reduce fricción ("¿qué pasa si te escribo?"). Contenido = proceso real del
+// negocio (sin promesas que no se puedan cumplir, p. ej. tiempos garantizados).
+// Encabezado vía SectionHeading (duo, dark). ORIGEN del patrón: PROYECTORED ProcesoIndex.
+// ============================================================================
+import SectionHeading from './SectionHeading.astro';
+
+interface Step {
+  num: string;
+  title: string;
+  desc: string;
+}
+interface Props {
+  eyebrow?: string;
+  title: string;
+  titleAccent?: string;
+  desc?: string;
+  body?: string[];
+  steps: Step[];
+}
+const {
+  eyebrow = 'Cómo trabajamos',
+  title,
+  titleAccent,
+  desc,
+  body = [],
+  steps,
+} = Astro.props;
+---
+
+<section class="process">
+  <div class="container">
+    <SectionHeading
+      layout="duo"
+      dark
+      eyebrow={eyebrow}
+      title={title}
+      titleAccent={titleAccent}
+      desc={desc}
+      body={body}
+    />
+
+    <ol class="process__grid" aria-label="Proceso de trabajo">
+      {steps.map((p) => (
+        <li class="step">
+          <span class="step__num" aria-hidden="true">{p.num}</span>
+          <div class="step__body">
+            <h3 class="step__title">{p.title}</h3>
+            <p class="step__desc">{p.desc}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
+
+<style>
+  .container {
+    max-width: var(--container-max);
+    margin-inline: auto;
+    padding-inline: var(--container-px);
+  }
+  .process { padding: var(--section-py) 0; background: var(--c-ink); color: #fff; }
+
+  .process__grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .step {
+    padding: var(--sp-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    border-top: 1px solid rgba(255,255,255,.10);
+  }
+  .step:first-child { border-top: none; }
+  .step__num {
+    font-family: var(--font-heading);
+    font-size: var(--text-3xl);
+    font-weight: var(--weight-black);
+    color: var(--c-primary-light);
+    letter-spacing: -.04em;
+    line-height: 1;
+  }
+  .step__title {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: var(--text-base);
+    font-weight: var(--weight-bold);
+    color: #fff;
+    line-height: var(--leading-snug);
+  }
+  .step__desc {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: rgba(255,255,255,.62);
+    line-height: var(--leading-relaxed);
+  }
+
+  @media (min-width: 640px) {
+    .process__grid { grid-template-columns: repeat(2, 1fr); }
+    .step { border-top: 1px solid rgba(255,255,255,.10); }
+    .step:nth-child(-n+2) { border-top: none; }
+    .step:nth-child(odd) { border-right: 1px solid rgba(255,255,255,.10); }
+  }
+  @media (min-width: 1024px) {
+    .process__grid { grid-template-columns: repeat(5, 1fr); }
+    .step { border-top: none; border-right: 1px solid rgba(255,255,255,.10); }
+    .step:last-child { border-right: none; }
+  }
+</style>

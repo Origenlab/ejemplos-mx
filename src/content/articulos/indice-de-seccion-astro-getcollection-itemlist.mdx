@@ -1,0 +1,172 @@
+---
+title: "Índices de sección en Astro: getCollection e ItemList"
+description: "Cómo construir un índice de sección (L2) en Astro: rejilla data-driven con getCollection, ItemList como emisor único de schema y migas de un nivel."
+category: "guias"
+heroImage: "/images/articulos/indice-de-seccion-astro-getcollection-itemlist.avif"
+pubDate: 2026-06-21
+author: "Ejemplos.mx"
+tags: ["astro", "content-collections", "seo", "arquitectura", "data-driven", "itemlist"]
+seoTitle: "Índices de sección en Astro: getCollection"
+seoDescription: "Guía técnica del índice de sección (L2) en Astro: getCollection, grid mobile-first, ItemList único (regla B3) y migas de un nivel sin hardcodear hijos."
+---
+
+Heredamos un sitio donde la página de catálogo era un archivo de 600 líneas con cada producto escrito a mano: la foto, el título, el precio y el enlace, copiados y pegados veinte veces. Funcionaba el día que se entregó. Seis meses después, tres productos estaban descontinuados pero seguían en la página, dos precios estaban viejos, y un enlace apuntaba a una ficha que ya no existía —un 404 servido a cada visitante que hacía clic—. El problema no era descuido del cliente: era que el índice no tenía una fuente de verdad. Cada cambio de catálogo exigía editar HTML a mano, y tarde o temprano alguien olvidaba uno. Lo reescribimos para que la rejilla se generara desde la colección de contenido: una sola lista, un `getCollection`, un `.map()`. Desde entonces, agregar o retirar un producto es editar un archivo Markdown; el índice se actualiza solo y nunca vuelve a servir un enlace muerto.
+
+Esa es la lección del nivel 2 (L2), el índice de sección: la página que lista los hijos de una rama del sitio —`/productos`, `/servicios`, `/modulos`, `/blog`— y los manda a su ficha. Esta guía lo construye en Astro de principio a fin: la rejilla data-driven con `getCollection`, el `ItemList` como único emisor de schema del índice (regla B3), las migas de un nivel, los filtros que solo se ponen cuando el catálogo los pide y los edge cases de paginación y secciones vacías. Es para quien arma catálogos con Content Collections de Astro 6 y quiere un índice que nunca se quede viejo ni sirva un 404.
+
+## Por qué este patrón existe
+
+Un índice de sección tiene un problema de mantenimiento que no tiene ninguna otra página: refleja una lista que cambia. La home cambia poco; una ficha cambia cuando cambia su entidad; pero el índice cambia cada vez que se agrega, retira o reordena un hijo. Si esa lista vive escrita a mano en el HTML, cada cambio es una oportunidad de error humano —un producto fantasma, un precio viejo, un enlace muerto—. La única defensa estructural es separar los datos de la presentación: los hijos viven en una colección validada, y el índice los itera. Astro 6 hace esto nativo con Content Collections y `getCollection`, que además valida el frontmatter con Zod en tiempo de build: un hijo con un campo mal escrito rompe el build, no la página en producción.
+
+El segundo motivo es de SEO. El índice es la página pilar de su sección: rankea por el término amplio de categoría («cascos de seguridad») mientras las fichas rankean por los específicos. Para que el buscador entienda que esta página es una lista de cosas, el patrón canónico es emitir un `ItemList` (o un `CollectionPage` que lo contiene) con la enumeración de hijos. Pero ese schema lo emite el índice **una sola vez**, desde el grid padre; las tarjetas individuales no emiten `Product` ni `Service` cada una. Veinte schemas de producto en una página de catálogo ensucian el grafo y confunden al rastreador. La regla B3 —un único emisor por página— resuelve el reparto: el índice emite la lista, la ficha emite el detalle.
+
+## Contexto
+
+El índice es la antesala de las fichas. Su trabajo no es presentar el negocio entero (eso es la home) ni agotar un tema (eso es la ficha): es orientar dentro de una rama y mandar a la ficha correcta. El visitante llega desde la home o el menú, entiende qué incluye la sección y elige a dónde entrar. Por eso el índice lleva migas de pan de un nivel —`Inicio › Sección`—: tiene padre, la home, a diferencia de la raíz que no lleva ninguna.
+
+La consecuencia de diseño es una composición simple: un encabezado que nombra la sección, una intro que da contexto, la rejilla de hijos como tarjetas uniformes y un cierre. El corazón es la rejilla, y la regla del sitio es que reusa el mismo componente de tarjeta que el resto del catálogo —no inventa un diseño por sección—. Así productos, servicios y módulos se ven y se navegan igual, y mantener una tarjeta mejora todas las secciones a la vez.
+
+## Implementación paso a paso
+
+El índice vive en `src/pages/‹seccion›/index.astro`. Obtiene sus hijos con `getCollection`, descarta borradores, los ordena y los pinta con `.map()`. Lleva migas de un nivel y `pageType="page"`.
+
+```astro
+---
+// src/pages/productos/index.astro — índice L2 data-driven.
+import PageLayout from '@layouts/PageLayout.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import ProductCard from '@components/ProductCard.astro'
+import { getCollection } from 'astro:content'
+
+const productos = (await getCollection('productos'))
+  .filter((p) => !p.data.draft)
+  .sort((a, b) => (a.data.order ?? 0) - (b.data.order ?? 0))
+---
+
+{/* Migas de UN nivel: el índice tiene padre (la home). */}
+<PageLayout title="Productos — catálogo" description="..."
+  pageType="page" breadcrumbs={[{ label: 'Productos' }]}>
+
+  <SectionHeading layout="duo" eyebrow="Catálogo" title="Productos"
+    desc="Lo que ofrecemos, por categoría." body={["...", "..."]} />
+
+  <ul class="showcase" role="list">
+    {productos.map((p, i) => (
+      <li>
+        <ProductCard
+          title={p.data.title}
+          href={`/productos/${p.id}`}
+          image={p.data.image}
+          description={p.data.excerpt}
+          index={i}
+        />
+      </li>
+    ))}
+  </ul>
+</PageLayout>
+```
+
+Dos detalles importan. El primero: el enlace de cada tarjeta usa el `id` de la entrada (`/productos/` más el slug), así que apunta siempre a una ficha que existe —si la entrada se borra de la colección, desaparece del índice y no queda un enlace huérfano—. El segundo: la rejilla es una lista semántica (`‹ul role="list"›` con un `‹li›` por hijo), no una pila de ‹div›, porque un lector de pantalla anuncia «lista de 12 elementos» y permite saltarla; eso es WCAG 2.2 SC 1.3.1.
+
+El schema del índice se emite una sola vez. El patrón canónico arma un `ItemList` con los hijos y lo entrega a `buildSchema()` desde el layout, en lugar de que cada tarjeta emita el suyo:
+
+```astro
+---
+import { directorySchema } from '@lib/seo'
+// directorySchema arma un ItemList con position + url + name por hijo.
+const itemList = directorySchema(
+  productos.map((p) => ({ name: p.data.title, url: `/productos/${p.id}` }))
+)
+// itemList se pasa a buildSchema (vía schemaData); la página NO escribe JSON-LD a mano.
+// Las ProductCard NO emiten Product: ese vive en la ficha L3 (regla B3).
+---
+```
+
+## Tabla comparativa
+
+El índice tiene varias formas según el tamaño y la naturaleza de la sección. El nivel es el mismo; cambia la densidad y la manera de encontrar.
+
+| Tipo de índice | Cuándo | Schema | Riesgo |
+|---|---|---|---|
+| Grid de tarjetas | Catálogo manejable (6–30) | `ItemList` | Ninguno; es el caso base |
+| Con filtros / facetas | Catálogo grande (50+) | `ItemList` + `CollectionPage` | Filtros que nadie usa |
+| Feed editorial (blog) | Contenido cronológico | `Blog` / `ItemList` | Portada que no se actualiza |
+| Lista densa (directorio) | Muchos hijos, poca foto | `ItemList` | Sacrificar escaneo por densidad |
+
+### Decisión por contexto
+
+La complejidad de navegación debe ser proporcional al número real de hijos. Para 6–8 servicios, una rejilla limpia es suficiente y los filtros solo añaden fricción. Para cientos de productos, filtros por categoría/precio/marca y orden ayudan a encontrar, y en móvil se pliegan en un drawer. La pregunta de control: «¿caben todas las tarjetas de un vistazo escaneable?». Si la respuesta es sí, no metas filtros; si es no, escálalos con el catálogo.
+
+## Patrones avanzados
+
+**Paginación con canonical correcto.** Si el catálogo se pagina, cada página (`?page=2`) debe llevar su propio `‹title›` y, según la estrategia, un `rel="canonical"` a sí misma (no a la página 1, error común que oculta el contenido de las páginas profundas a Google). Los enlaces `rel="prev"`/`rel="next"` ayudaban antes; hoy Google los ignora, pero la navegación visible de paginación sigue siendo necesaria para el rastreo.
+
+**Filtros como parámetros de URL rastreables.** Un filtro que solo vive en estado de JavaScript no es indexable. Si quieres que `/productos?categoria=cascos` rankee, hazlo una URL real (o una subruta `/productos/cascos`) con su propio título y su `ItemList` filtrado. Decide qué combinaciones merecen indexarse y cuáles llevan `noindex` para no generar miles de URLs facetadas duplicadas.
+
+**FAQ del catálogo en modo incrustado.** Un índice puede cerrar con un acordeón de preguntas frecuentes de la sección. El componente de FAQ se incrusta en modo `bare` (sin su propio padding de sección) y el `FAQPage` se emite una sola vez —o por el componente, o por `buildSchema`, nunca ambos (regla B3)—.
+
+## Edge cases y debugging
+
+**Sección vacía.** Si una colección no tiene hijos publicados (todos en borrador), el índice no debe quedar como una página en blanco: muestra un estado vacío con copy útil («pronto publicaremos…») y, si aplica, `noindex` hasta que haya contenido. Un índice vacío indexado es una mala señal de calidad.
+
+**Un solo hijo.** Si la sección tiene un único hijo, plantéate si el índice aporta: a veces conviene redirigir directo a la ficha. Un índice de un solo elemento es un clic de más sin valor.
+
+**Orden inestable.** `.sort()` sobre `data.order` con valores repetidos da un orden no determinista entre builds, lo que cambia el HTML y confunde a los diffs. Desempata con un segundo criterio estable (el slug): `sort` por `order` y, a igualdad, por `id`.
+
+**Borradores que se cuelan.** Olvidar el `.filter((p) => !p.data.draft)` publica entradas a medio escribir. El filtro de borradores es la primera línea de toda consulta a una colección; documéntalo como parte del patrón, no como un extra.
+
+## Performance y a11y con números reales
+
+La rejilla del índice es mobile-first: una columna que crece con el ancho (1 → 2 → 4), declarada con `min-width`, nunca al revés. Cada tarjeta reserva el espacio de su imagen con `width`/`height` para mantener el CLS por debajo de 0.1; las imágenes por debajo del pliegue cargan en `loading="lazy"`. Como Astro envía cero JavaScript por defecto, el INP de un índice estático se mantiene muy por debajo de los 200 ms incluso con decenas de tarjetas.
+
+En accesibilidad: la rejilla es una lista semántica (SC 1.3.1), cada tarjeta enlaza con texto descriptivo —el nombre del hijo, nunca «ver más» (SC 2.4.4)—, las áreas táctiles de tarjetas y paginación miden al menos 44 píxeles (SC 2.5.5), y el contraste del texto sobre la tarjeta cumple 4.5:1 (SC 1.4.3). Las migas de un nivel van en un `‹nav aria-label="Migas de pan"›` con `aria-current="page"` en el elemento actual.
+
+## Casos donde NO usar este patrón
+
+Si una sección tiene dos o tres hijos estables que casi nunca cambian, un índice data-driven con filtros es sobreingeniería: una página simple con tres tarjetas basta. Si la sección es tan pequeña que cabe en la home sin saturarla, quizá no necesite índice propio —pero cuidado, porque sin índice pierdes la página pilar que rankea por el término de categoría—. Y si el «índice» en realidad necesita explicar a fondo un solo tema, eso no es un L2: es una ficha L3 disfrazada.
+
+## Checklist de implementación
+
+- La rejilla se genera con `getCollection` + `.map()`; cero hijos hardcodeados.
+- Filtro de borradores (`!data.draft`) en toda consulta.
+- `.sort()` con desempate estable (por `id`) para builds deterministas.
+- Enlaces a fichas con el `id` de la entrada (nunca apuntan a un 404).
+- Rejilla como lista semántica (`‹ul role="list"›`).
+- `ItemList` emitido una sola vez desde el grid padre; las tarjetas NO emiten schema (B3).
+- Migas de un nivel (`Inicio › Sección`) con `aria-current="page"`.
+- Grid mobile-first (1 → 2 → 4); imágenes con `width`/`height` y `lazy` bajo el pliegue.
+- Anchor text real en cada tarjeta (el nombre del hijo).
+- Filtros solo si el catálogo lo pide; facetas indexables como URLs reales.
+
+## Preguntas frecuentes
+
+### ¿El índice debe emitir un schema por cada producto?
+
+No. Emite una sola `ItemList` (o `CollectionPage`) con la lista de hijos, desde el grid padre. El `Product`/`Service` individual vive solo en la ficha L3 (regla B3 — un único emisor por página). Veinte schemas en un índice ensucian el grafo.
+
+### ¿Hardcodeo los productos o uso una colección?
+
+Una colección, siempre. `getCollection` lee de Markdown validado por Zod; agregar o retirar un hijo actualiza el índice solo. Hardcodear garantiza enlaces muertos y datos viejos en cuanto cambia el catálogo.
+
+### ¿El índice lleva migas de pan?
+
+Sí, de un nivel (`Inicio › Sección`). Tiene padre —la home—, así que muestra el rastro. La única página sin migas es la raíz (L1); el L2 lleva uno, el L3 dos, el L4 tres.
+
+### ¿Cómo pagino sin dañar el SEO?
+
+Cada página de paginación lleva su propio título y su `rel="canonical"` a sí misma (no a la página 1). Mantén la navegación de paginación visible para el rastreo. No escondas el contenido de las páginas profundas bajo un canonical a la primera.
+
+### ¿Los filtros perjudican el SEO?
+
+Solo si generan miles de URLs facetadas duplicadas. Decide qué combinaciones merecen indexarse (esas, como URLs reales con su `ItemList`) y cuáles llevan `noindex`. Un filtro que solo vive en JavaScript no es indexable, pero tampoco daña.
+
+### ¿En qué se diferencia el índice de Astro frente a uno de WordPress?
+
+En WordPress el índice (un archive) se arma con el loop de PHP en tiempo de petición; en Astro se arma con `getCollection` en tiempo de build y se sirve como HTML estático, sin base de datos ni consulta por visita. El resultado es más rápido y más barato de servir, a cambio de reconstruir el sitio cuando cambia el contenido.
+
+## Sigue leyendo
+
+- [Nivel L2 · Índice de sección: el catálogo que lista y orienta](/niveles/l2-indice) — la ficha que documenta el nivel a fondo.
+- [Páginas pilar: hub-and-spoke y SEO de categoría](/blog/pagina-pilar-hub-and-spoke-seo-categorias) — el lado estratégico de este mismo nivel.
+- [Los 4 niveles de un sitio: de la raíz a la hoja](/blog/niveles-de-un-sitio-l1-l4-arquitectura-informacion) — la tesis que conecta L1, L2, L3 y L4.
+- Fuente externa: [Astro Docs — Content Collections](https://docs.astro.build/en/guides/content-collections/) y [schema.org — ItemList](https://schema.org/ItemList).

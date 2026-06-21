@@ -1,0 +1,746 @@
+---
+// ============================================================================
+// /niveles/l4-variante — FICHA DEL NIVEL «L4 · Sub-detalle».
+// ----------------------------------------------------------------------------
+// CUARTA y última ficha L3 de la serie /niveles/*. MISMO molde de 10 secciones
+// (docs/MODULOS.md §2). Documenta el nivel 4 —el más profundo—: la sub-ficha o
+// variante que aparece cuando una entidad L3 se subdivide. NO todos los sitios
+// lo necesitan (este parte mayormente en L3); un catálogo grande sí. Migas de
+// tres niveles (Inicio › Sección › Categoría › Item). Cierre con
+// siblingsNiveles('l4-variante').
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import FAQAccordion from '@components/FAQAccordion.astro'
+import RelatedLinks from '@components/RelatedLinks.astro'
+import { waUrl, WA_MESSAGES } from '@config/site'
+import { siblingsNiveles } from '@lib/niveles'
+
+const cierreItems = siblingsNiveles('l4-variante')
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), sub: 'Respuesta inmediata', external: true }
+
+// ── Anatomía: las 6 PIEZAS de una sub-ficha L4 ──
+const piezas = [
+  {
+    n: 1,
+    nombre: 'Migas de tres niveles — la ruta más larga del sitio',
+    que: 'La sub-ficha es lo más profundo: lleva migas de TRES niveles (Inicio › Sección › Categoría › Item). El visitante llegó a la hoja del árbol y necesita poder subir a cualquier ancestro. Es la diferencia con el L3 (dos niveles): aquí hay un nivel intermedio más —la categoría o la entidad padre— entre la sección y la página actual.',
+    dato: 'breadcrumbs={[{ label: "Sección", href }, { label: "Categoría", href }, { label: "Variante" }]}',
+  },
+  {
+    n: 2,
+    nombre: 'Contexto del padre / selector de variante',
+    que: 'Lo que ata la hoja a su L3 padre: un selector de variante (color, talla, modelo, plan) que cambia entre hermanas sin perder el contexto, o un encabezado que recuerda a qué entidad pertenece. La sub-ficha no se entiende sola —es una rama de algo mayor—, así que siempre muestra de dónde viene y cómo saltar a sus hermanas.',
+    dato: 'selector de variantes (chips/swatches) · enlace al L3 padre · estado seleccionado claro',
+  },
+  {
+    n: 3,
+    nombre: 'Galería ampliada + especificaciones — el detalle máximo',
+    que: 'El contenido que diferencia esta hoja de sus hermanas: la galería específica de la variante (la foto del color exacto, no la genérica), la tabla de especificaciones de este modelo, lo que esta sub-ficha aporta que las demás no. Si la hoja no tiene contenido propio que la distinga, NO debería existir como L4 —sería thin content duplicado—.',
+    dato: 'galería de la variante · specs específicas · contenido único (no duplicado del padre)',
+  },
+  {
+    n: 4,
+    nombre: 'Schema de variante + canonical — datos sin duplicar',
+    que: 'El schema de la sub-ficha (Product con sku/color/size, o ProductGroup con variantes) y, crítico, el canonical: si varias variantes comparten casi todo el contenido, el canonical le dice a Google cuál es la principal para no penalizar por duplicado. La sub-ficha emite SU dato (regla B3), pero declara honestamente su relación con las hermanas.',
+    dato: 'lib/seo.ts → productSchema con variante · <link rel="canonical"> · ProductGroup opcional',
+  },
+  {
+    n: 5,
+    nombre: 'CTA fuerte — la conversión final',
+    que: 'La sub-ficha es la hoja donde se cierra la compra: el CTA es de conversión directa (añadir al carrito, comprar, cotizar este modelo), no exploratorio. El visitante bajó cuatro niveles porque sabe exactamente qué quiere —dáselo sin fricción—. El enlace de WhatsApp se arma con waUrl() y un mensaje que incluye la variante exacta.',
+    dato: 'CTABanner (PRESET_CATEGORIA) o botón de compra · waUrl(WA_MESSAGES.x) con la variante',
+  },
+  {
+    n: 6,
+    nombre: 'Cross-link a hermanas — el reparto lateral',
+    que: 'El cierre que reparte entre variantes hermanas y de vuelta al L3 padre (RelatedLinks o SectionMenu). A diferencia del L3 (que reparte entre fichas de la sección), el L4 reparte sobre todo lateralmente —«¿no es esta talla? mira las otras»— y hacia arriba —«ver todas las variantes»—. Derivado de la lista de variantes del padre, no hardcodeado.',
+    dato: 'RelatedLinks / SectionMenu · variantes hermanas + enlace al L3 padre · derivado de SSoT',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Captura la cola más larga — la búsqueda ultra-específica',
+    desc: 'Si el L3 rankea por «casco de seguridad marca X», el L4 rankea por «casco de seguridad marca X color amarillo talla L norma ANSI». Es la cola más larga del SEO: poquísimo volumen por término, pero la intención de compra más alta que existe —quien busca así, ya decidió—. Una sub-ficha con contenido propio (la foto del color exacto, las specs de ese modelo) captura esas búsquedas que el L3 genérico no puede. Es tráfico escaso pero casi 100% convertible.',
+  },
+  {
+    titulo: 'Cierra la conversión de la variante exacta',
+    desc: 'El visitante que baja a un L4 sabe exactamente qué quiere: este color, esta talla, este plan. La sub-ficha le da justo eso sin obligarlo a configurar nada —la galería ya muestra el color correcto, las specs son las de ese modelo, el CTA cotiza ese SKU—. Reduce la fricción de la decisión final a cero. En un catálogo grande, esa precisión es la diferencia entre «lo quiero pero no encuentro la talla» y la compra cerrada.',
+  },
+  {
+    titulo: 'Organiza catálogos grandes sin saturar el L3',
+    desc: 'Cuando una entidad tiene muchas variantes, meterlas todas en el L3 lo vuelve ilegible (una ficha con 40 combinaciones). El L4 reparte esa complejidad: el L3 presenta el modelo y sus opciones; cada L4 detalla una. Pero es un arma de doble filo —crear L4 innecesarios genera thin content y dispersa la autoridad—. La regla: solo se baja a L4 cuando cada hoja aporta contenido propio que la diferencia. Si no, dos clics para llegar a lo mismo solo añaden fricción.',
+  },
+]
+
+const sis = [
+  'Crea un L4 solo cuando cada hoja aporta contenido propio que la diferencia. Una variante merece su URL si tiene foto, specs o información únicas (el color real, las medidas de ese modelo, el alcance de ese plan). Si todas las variantes dirían casi lo mismo, NO bajes a L4: usa un selector dentro del L3. La pregunta de control: «¿esta página tiene algo que sus hermanas no?».',
+  'Lleva migas de tres niveles (Inicio › Sección › Categoría › Item). El L4 es la hoja: necesita el rastro completo para que el visitante suba a cualquier ancestro. Es la ruta más larga del sitio; en móvil se colapsa, pero la estructura completa va en el marcado (para SEO y para el «volver»).',
+  'Declara el canonical honestamente. Si varias variantes comparten casi todo el contenido, el canonical apunta a la principal (o al L3 padre) para que Google no penalice por duplicado. Es la pieza que hace seguro tener muchas hojas parecidas: le dices al buscador cuál indexar. Sin canonical, un catálogo grande se canibaliza solo.',
+  'Muestra siempre el contexto del padre y el salto a las hermanas. La sub-ficha no se entiende sola: un selector de variantes (swatches/chips) o un enlace «ver todas las opciones» mantiene al visitante orientado. Bajó a una rama; dale cómo moverse entre ramas sin volver a empezar.',
+  'Usa galería y specs ESPECÍFICAS de la variante, no las genéricas del padre. El valor del L4 es la precisión: la foto del color exacto, la tabla de ese modelo. Repetir la galería genérica del L3 vacía de sentido a la sub-ficha y la convierte en duplicado. Contenido propio o no hay L4.',
+  'Cierra con conversión directa, no exploración. El visitante de un L4 ya decidió: el CTA es «comprar/cotizar este modelo», no «ver más productos». El mensaje de WhatsApp incluye la variante exacta (waUrl con el SKU/color). La cola más larga es el tráfico más convertible —no lo mandes a explorar de nuevo—.',
+  'Deriva el cross-link de la lista de variantes del padre. Las hermanas y el enlace «ver todas» salen de la SSoT (las variantes declaradas en el frontmatter del L3 o en la colección), no de enlaces a mano. Así agregar o quitar una variante actualiza el cross-link de todas sus hermanas sin tocarlas una por una.',
+]
+const nos = [
+  'NO crees un L4 por cada variante si no aportan contenido propio. Veinte URLs que dicen casi lo mismo (mismo texto, misma foto, cambia una palabra) son thin content: Google las ve como duplicados, dispersan la autoridad del L3 y no rankean. Si las variantes no se diferencian de verdad, quédate en L3 con un selector. Más URLs no es más SEO.',
+  'NO omitas el canonical en hojas casi idénticas. Sin canonical, cinco variantes parecidas compiten entre sí por la misma búsqueda (canibalización) y Google elige una al azar —o ninguna—. El canonical apuntando a la principal (o al padre) concentra la señal. Es barato de poner y caro de olvidar en un catálogo grande.',
+  'NO bajes a L4 «por completar la jerarquía». La profundidad no es una meta: cada nivel extra es un clic más para el visitante y una página más que mantener. Si el sitio se entiende en tres niveles, no inventes un cuarto. El L4 existe para catálogos que lo necesitan, no para que el árbol se vea más grande.',
+  'NO dejes la sub-ficha sin contexto del padre. Una hoja que no muestra de qué entidad es variante deja al visitante perdido: «llegué a un color, ¿de qué producto?». Siempre el encabezado del padre + el selector de hermanas. La sub-ficha es una rama, no un árbol independiente.',
+  'NO repitas la galería y el texto genérico del padre en cada variante. Si la sub-ficha del color rojo muestra la misma foto azul genérica y el mismo párrafo del L3, no aporta nada y es duplicado. La variante existe por su contenido propio; sin él, es ruido que diluye al padre.',
+  'NO cierres el L4 mandando a explorar de nuevo. El visitante bajó cuatro niveles porque sabe qué quiere; un cierre tipo «descubre más productos» lo aleja de la compra. Cierra con conversión directa de ESTA variante y, a lo más, cross-link lateral a las hermanas (otra talla/color), no al catálogo entero.',
+  'NO hardcodees el cross-link de variantes hermanas. Escribir a mano los enlaces a las otras tallas/colores se rompe en cuanto cambia el surtido. Las hermanas se derivan de la lista de variantes del padre (frontmatter/colección); agregar una variante actualiza el cross-link de todas. Hardcodear es 404s asegurados.',
+]
+
+// ── FAQ — preguntas frecuentes del nivel (voz v2; emitSchema → FAQPage único, regla B3) ──
+const faqs = [
+  {
+    question: '¿Cuándo debo crear un nivel L4 y cuándo no?',
+    answer: 'Solo cuando cada hoja aporta <strong>contenido propio</strong> que la diferencia (la foto del color exacto, las specs de ese modelo, el alcance de ese plan). La pregunta de control: «¿esta página tiene algo que sus hermanas no?». Si la respuesta es no, la variante vive como <em>selector</em> dentro del L3, no como URL aparte. Crear L4 «por completar la jerarquía» genera thin content.',
+  },
+  {
+    question: '¿De cuántos niveles son las migas de un L4?',
+    answer: 'De <strong>tres</strong> (Inicio › Sección › Categoría › Item): es la ruta más larga del sitio. En móvil se colapsan los intermedios dejando «Inicio», un «…» y la página actual, pero la cadena completa va en el marcado para SEO y accesibilidad. Solo el L1 va sin migas; el L4 lleva el máximo.',
+  },
+  {
+    question: '¿Cómo evito el contenido duplicado entre variantes?',
+    answer: 'Con el <code>canonical</code>: si varias variantes comparten casi todo, su <code>&lt;link rel="canonical"&gt;</code> apunta a la principal (o al L3 padre) para que Google concentre la señal y no canibalice. Además, agrúpalas con <code>ProductGroup</code> y dale a cada hoja contenido propio. Sin canonical, un catálogo grande de variantes parecidas compite consigo mismo.',
+  },
+  {
+    question: '¿Más URLs de variante significan más SEO?',
+    answer: 'No —suele ser lo contrario—. URLs sin contenido propio son thin content: Google las trata como duplicados, dispersan la autoridad del L3 padre y no rankean. La autoridad concentrada en una ficha L3 sólida rinde más que repartida en veinte hojas casi idénticas. Más profundidad no es una meta; cada nivel extra es un clic más y una página más que mantener.',
+  },
+  {
+    question: '¿URL por variante o un selector dentro del L3?',
+    answer: 'URL propia (L4) si la variante se busca e indexa por separado y tiene contenido distintivo. Selector dentro del L3 si las variantes solo cambian un atributo y comparten todo lo demás. La decisión técnica vive en <code>getStaticPaths</code>: genera L4 únicamente para las variantes con contenido propio; las demás, como opción del selector.',
+  },
+  {
+    question: '¿Las sub-zonas (colonia dentro de ciudad) son seguras para SEO?',
+    answer: 'Son el L4 más riesgoso. El contenido local casi idéntico entre colonias es spam que penaliza (Google Search Central es explícito sobre las <em>doorway pages</em>). Cada sub-zona debe aportar algo real —servicios, casos, referencias propias de esa área— o no debe existir. Si no puedes diferenciarlas, quédate en la ficha de ciudad (L3) con <code>areaServed</code>.',
+  },
+  {
+    question: '¿Este sitio tiene páginas L4 hoy?',
+    answer: 'No. El catálogo de esta plantilla se resuelve en L3 (productos y servicios son fichas directas). El L4 está documentado aquí como el patrón listo para cuando el catálogo crezca y aparezcan variantes con contenido propio —para no bajar a L4 antes de tiempo ni reinventarlo después—.',
+  },
+]
+
+// ── 6 VARIANTES (tipos de L4) ──
+const disenos = [
+  {
+    nombre: '1 · Variante de producto — color / talla / modelo (selector + galería)',
+    tag: 'E-commerce · Producto configurable',
+    desc: 'El caso clásico del L4: un producto con variantes que merecen URL propia por tener foto y specs distintas. Selector de swatches (color/talla), galería del color exacto, specs del modelo y CTA de compra de ese SKU. Emite Product (o ProductGroup) con la variante. Canonical a la principal si comparten mucho. Aplica cuando cada variante se busca y se compra por separado.',
+  },
+  {
+    nombre: '2 · Sub-categoría — categoría dentro de categoría',
+    tag: 'Catálogo amplio · Taxonomía profunda',
+    desc: 'Cuando una sección tiene tantos hijos que necesita un nivel intermedio: Productos › Cascos › Dieléctricos. La sub-categoría es, en realidad, un índice más profundo (lista hijos como el L2, pero dos niveles abajo). Aplica a catálogos grandes con taxonomía rica. Riesgo: no crear sub-categorías de un solo hijo (no aportan, solo añaden un clic).',
+  },
+  {
+    nombre: '3 · Paquete / plan de servicio — básico · pro · enterprise',
+    tag: 'Servicios · SaaS · Suscripción',
+    desc: 'La hoja de un plan dentro de un servicio: Servicios › Consultoría › Plan Pro. Detalla qué incluye ese paquete, para quién es, su precio o rango, y un CTA de contratación. Emite Service/Offer. Útil cuando los planes difieren lo suficiente como para buscarse y decidirse por separado; si solo cambia el precio, una tabla comparativa en el L3 basta.',
+  },
+  {
+    nombre: '4 · Sub-zona — colonia dentro de ciudad (SEO hiperlocal)',
+    tag: 'SEO local profundo · Negocio multi-zona',
+    desc: 'La hoja hiperlocal: Cobertura › CDMX › Polanco. Contenido específico de esa micro-zona (servicios, casos, referencias locales). Emite LocalBusiness con areaServed preciso. Captura «<servicio> en <colonia>». El riesgo más alto de todos los L4: el contenido duplicado entre zonas. Cada sub-zona debe aportar algo real, o es spam local que penaliza.',
+  },
+  {
+    nombre: '5 · Versión / edición — de un producto o documento',
+    tag: 'Software · Documentación · Producto versionado',
+    desc: 'La hoja de una versión: Producto › App › v2.0, o Docs › Guía › edición 2026. Detalla lo propio de esa versión (changelog, compatibilidad, descargas). Canonical a la versión vigente para no fragmentar el SEO entre ediciones viejas. Aplica a software, documentación versionada y productos con revisiones que se referencian por separado.',
+  },
+  {
+    nombre: '6 · Bundle / combo — agrupación de productos',
+    tag: 'E-commerce · Promoción · Kit',
+    desc: 'La hoja de un paquete que agrupa varios productos: Productos › Kits › Kit de seguridad básico. Detalla qué incluye el combo, el ahorro frente a comprar por separado, y un CTA de compra del kit. Enlaza a las fichas L3 de cada componente. Aplica a kits, combos y promociones que se buscan y compran como unidad.',
+  },
+]
+
+// ── 4 patrones móviles ──
+const recetaMigasMov = `/* MÓVIL · MIGAS DE TRES NIVELES (la ruta más larga)
+   El L4 lleva la ruta más larga del sitio (4 nodos). En el teléfono se
+   colapsan TODOS los intermedios dejando Inicio + un «…» + la página
+   actual. La estructura completa sigue en el marcado (SEO + accesibilidad);
+   solo se oculta visualmente lo del medio. */
+
+.crumbs { display: flex; flex-wrap: nowrap; gap: .3rem; font-size: var(--text-xs); }
+@media (max-width: 560px) {
+  .crumbs > :not(:first-child):not(:last-child) { display: none; }
+  .crumbs::after { content: '…'; order: 1; color: var(--c-ink-2); }
+}`
+
+const recetaSelectorMov = `/* MÓVIL · SELECTOR DE VARIANTE TÁCTIL (swatches/chips ≥44px)
+   El selector de color/talla es lo que más se toca en una sub-ficha.
+   Cada opción es un objetivo de ≥44px con estado seleccionado claro
+   (no solo color: también borde/anillo, para daltonismo). */
+
+.swatch { min-width: 44px; min-height: 44px; border-radius: 999px; }
+.swatch[aria-pressed="true"] {
+  outline: 2px solid var(--c-primary);     /* no solo color: anillo visible */
+  outline-offset: 2px;
+}`
+
+const recetaGaleriaMov = `/* MÓVIL · GALERÍA CON SWIPE (scroll-snap, sin JS)
+   La galería de la variante se recorre con el pulgar: scroll horizontal
+   con scroll-snap para que cada foto quede centrada. Cero JavaScript,
+   cero librería de carrusel. */
+
+.galeria { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: var(--sp-2); }
+.galeria > img { flex: 0 0 100%; scroll-snap-align: center; -webkit-overflow-scrolling: touch; }`
+
+const recetaStickyMov = `/* MÓVIL · CTA / AÑADIR STICKY EN LA ZONA DEL PULGAR
+   La sub-ficha cierra una compra: en móvil el CTA de la variante
+   seleccionada se ancla al borde inferior (precio + botón), siempre
+   visible mientras el visitante lee, con safe-area iOS. */
+
+@media (max-width: 768px) {
+  .add-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    display: flex; gap: var(--sp-3); align-items: center;
+    padding: var(--sp-3);
+    padding-bottom: calc(var(--sp-3) + env(safe-area-inset-bottom, 0));
+    background: #fff; box-shadow: 0 -8px 24px rgba(0,0,0,.12); z-index: 40;
+  }
+  .add-bar .btn { flex: 1; min-height: 48px; }   /* WCAG SC 2.5.5 */
+}`
+
+// ── 2 RECETAS DEL «CÓMO ESTÁ CONSTRUIDO» ──
+const recetaEstructura = `---
+// DOS formas de modelar el L4:
+// (A) RUTA ANIDADA — una página por variante (URL propia, para SEO).
+//     src/pages/productos/[categoria]/[producto].astro
+// (B) VARIANTES EN EL FRONTMATTER del L3 — un selector, sin URLs nuevas
+//     (cuando las variantes NO merecen indexarse por separado).
+import { getCollection, render } from 'astro:content'
+
+export async function getStaticPaths() {
+  const productos = await getCollection('productos')
+  // Genera L4 SOLO para variantes con contenido propio:
+  return productos.flatMap((p) =>
+    (p.data.variantes ?? [])
+      .filter((v) => v.contenidoPropio)          // ← la regla: nada de thin content
+      .map((v) => ({
+        params: { categoria: p.data.categoria, producto: \`\${p.id}-\${v.slug}\` },
+        props: { entry: p, variante: v },
+      }))
+  )
+}
+const { entry, variante } = Astro.props
+---
+
+{/* Migas de TRES niveles: la hoja tiene bisabuelo, abuelo y padre. */}
+<PageLayout
+  title={\`\${entry.data.title} — \${variante.nombre}\`}
+  pageType="page" schemaType="Product"
+  breadcrumbs={[
+    { label: 'Productos', href: '/productos' },
+    { label: entry.data.title, href: \`/productos/\${entry.id}\` },
+    { label: variante.nombre },
+  ]}
+>
+  {/* galería + specs ESPECÍFICAS de la variante */}
+</PageLayout>`
+
+const recetaCanonical = `---
+// CANONICAL + schema de variante — el SEO seguro del L4.
+// Si varias variantes comparten casi todo, el canonical apunta a la
+// PRINCIPAL (o al L3 padre) para no canibalizar. La variante emite su
+// Product con el atributo distintivo; el ProductGroup las agrupa.
+const principal = \`/productos/\${entry.id}\`      // la ficha L3 padre
+const esCasiIdentica = !variante.contenidoPropio
+---
+
+{/* En <head> (vía PageLayout): si la variante no se diferencia, */}
+{/* su canonical apunta al padre para concentrar la señal SEO.   */}
+<link rel="canonical" href={esCasiIdentica ? principal : Astro.url.pathname} />
+
+{/* Schema: Product de la variante (color/size/sku), agrupable en */}
+{/* un ProductGroup. Un emisor por página (regla B3) — sin duplicar */}
+{/* el Organization del layout ni el ItemList del índice.          */}`
+---
+
+<PageLayout
+  title="Nivel L4 · Sub-detalle: la hoja más profunda, solo cuando hace falta"
+  description="El nivel 4 de un sitio: la sub-ficha o variante. Qué es, cuándo crearlo (y cuándo no), tipos de L4, canonical anti-duplicado, responsive y cómo se construye."
+  pageType="page"
+  schemaType="TechArticle"
+  guia={false}
+  breadcrumbs={[{ label: 'Niveles', href: '/niveles' }, { label: 'L4 · Sub-detalle' }]}
+>
+  <Hero
+    badge="Nivel del sitio · L4"
+    title="El Sub-detalle:"
+    accent="la hoja más profunda, que solo existe cuando aporta algo"
+    subtitle="El nivel 4 es el más profundo: la sub-ficha o variante que aparece cuando una entidad L3 se subdivide —un producto con colores, una categoría con sub-categorías, un servicio con planes—. No todos los sitios lo necesitan: este parte mayormente en L3. Un catálogo grande sí. Es la hoja del árbol, donde se cierra la conversión."
+    descRight={[
+      'Esta ficha cierra la serie «Niveles» y documenta el L4 a fondo: qué problema resuelve (capturar la cola más larga del SEO + cerrar la conversión de la variante exacta + organizar catálogos grandes sin saturar el L3), de qué seis piezas se compone (migas de tres niveles, contexto del padre/selector, galería y specs específicas, schema de variante + canonical, CTA fuerte, y cross-link a hermanas), qué tipos existen (variante de producto, sub-categoría, plan de servicio, sub-zona, versión, bundle) y cómo se construye —con rutas anidadas o con variantes en el frontmatter del padre—.',
+      'Con una regla que lo separa de los demás niveles: el L4 es opcional y peligroso. Es el único nivel que NO deberías crear «por completar la jerarquía» —cada hoja extra sin contenido propio es thin content que dispersa la autoridad del padre y canibaliza el SEO—. La pregunta de control antes de crear un L4 es siempre la misma: «¿esta página tiene algo que sus hermanas no?». Si la respuesta es no, la variante vive como selector dentro del L3, no como URL aparte. Y cuando sí existe, el canonical declara honestamente su relación con las hermanas para que el catálogo no se canibalice.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Definición"
+        title="¿Qué es el nivel L4 · Sub-detalle?"
+        desc="La hoja más profunda del árbol: la sub-ficha o variante que cuelga de un L3 cuando una entidad se subdivide (un producto con colores, una categoría con sub-categorías, un servicio con planes). Lleva migas de tres niveles (Inicio › Sección › Categoría › Item). Es opcional: la mayoría de los sitios —este incluido— se resuelve en tres niveles; el L4 aparece solo en catálogos que lo necesitan."
+        body={[
+          'El L4 es el nivel hoja: lo más profundo a lo que se puede bajar. Aparece cuando una entidad L3 tiene variantes que merecen página propia —un casco en cinco colores con foto distinta cada uno, una consultoría en tres planes con alcance distinto, una ciudad con micro-zonas—. Cada hoja detalla UNA variante; el L3 padre presenta la entidad y sus opciones.',
+          'Es el único nivel opcional y el más delicado. Crear L4 sin contenido propio genera thin content que penaliza; por eso la regla es estricta —solo se baja a L4 cuando cada hoja aporta algo que sus hermanas no—. Este sitio, por ejemplo, mayormente para en L3 (productos y servicios son fichas directas); el L4 está documentado aquí como el patrón para cuando el catálogo crezca.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Función e importancia"
+        title="¿Para qué sirve?"
+        desc="Tres trabajos, todos condicionados a que la hoja aporte contenido propio: capturar la cola más larga del SEO (la búsqueda ultra-específica de máxima intención de compra), cerrar la conversión de la variante exacta (el visitante ya sabe qué quiere) y organizar catálogos grandes sin saturar el L3. Mal usado, hace lo contrario: thin content que dispersa autoridad."
+        body={[
+          'La función primaria del L4 es capturar la cola más larga: donde el L3 rankea por «producto marca X», el L4 rankea por «producto marca X color amarillo talla L». Poquísimo volumen por término, pero la intención de compra más alta del sitio —quien busca así ya decidió—. Una sub-ficha con foto y specs propias captura esa búsqueda casi 100% convertible.',
+          'La secundaria es cerrar la conversión de la variante exacta (galería del color correcto, specs del modelo, CTA del SKU) y la terciaria es organizar catálogos grandes (repartir 40 variantes en hojas en lugar de saturar el L3). Pero las tres dependen de una condición: que cada hoja aporte contenido propio. Sin eso, el L4 es thin content que canibaliza al padre. La función y el riesgo son la misma decisión.',
+        ]}
+      />
+      <div class="bene">
+        {beneficios.map((b) => (
+          <article class="bene__card">
+            <h3 class="bene__title">{b.titulo}</h3>
+            <p class="bene__desc">{b.desc}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3) ¿QUÉ LLEVA? — Anatomía (6 piezas) + árbol ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Anatomía"
+        title="¿Qué lleva por dentro?"
+        desc="Seis piezas: migas de tres niveles, contexto del padre/selector de variante, galería y specs específicas (el contenido que la diferencia), schema de variante + canonical (datos sin duplicar), CTA fuerte de conversión, y cross-link a hermanas. La pieza crítica es la 3: si la hoja no tiene contenido propio, no debería existir como L4."
+        body={[
+          'La sub-ficha hereda la estructura del L3 pero con foco en la decisión final y en su relación con las hermanas. La 1 (migas de tres niveles) la ubica en lo más profundo. La 2 (contexto/selector) la ata al padre. La 3 (galería + specs específicas) es su razón de existir —contenido propio o no hay L4—. La 4 (schema + canonical) declara sus datos sin duplicar. La 5 (CTA fuerte) cierra. La 6 (cross-link) reparte lateralmente.',
+          'La diferencia con el L3 es el énfasis: el L3 agota un tema; el L4 cierra una variante y la sitúa entre sus hermanas. Por eso el selector de variante y el canonical son piezas propias del nivel —no aparecen en los superiores—. Y por eso la regla de oro vive aquí: el L4 solo se justifica si cada hoja aporta algo único.',
+        ]}
+      />
+      <ol class="piezas">
+        {piezas.map((p) => (
+          <li class="pieza">
+            <span class="pieza__n" aria-hidden="true">{p.n}</span>
+            <div class="pieza__body">
+              <h3 class="pieza__nombre">{p.nombre}</h3>
+              <p class="pieza__que">{p.que}</p>
+              <p class="pieza__dato"><span class="pieza__dato-label">SSoT:</span> <code>{p.dato}</code></p>
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      <GuiaNota titulo="El árbol completo · L4 es la hoja (y a veces no hace falta)" archivo="docs/NIVELES.md · src/pages/productos/[...slug].astro">
+        <p>
+          El L4 es el final del árbol. En esta plantilla el catálogo para en <strong>L3</strong>
+          (<a href="/productos">/productos</a> → <a href="/productos/equipo-base">/productos/equipo-base</a>);
+          el L4 entraría si un producto necesitara variantes con contenido propio. Antes de crearlo,
+          la pregunta de control: <em>«¿esta hoja tiene algo que sus hermanas no?»</em>.
+        </p>
+        <div class="arbol" aria-hidden="true">
+          <div class="arbol__l arbol__l--1"><b>L1</b><span>/ — Inicio</span></div>
+          <div class="arbol__l arbol__l--2"><b>L2</b><span>/productos — Índice</span></div>
+          <div class="arbol__l arbol__l--3"><b>L3</b><span>/productos/casco — Ficha</span></div>
+          <div class="arbol__l arbol__l--4"><b>L4</b><span>/productos/casco/amarillo — Variante</span></div>
+        </div>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 4) VARIANTES — GaleriaDisenos + DisenoCard ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Otros diseños y aplicaciones"
+        title="Tipos de sub-detalle"
+        desc="Seis formas de subdividir un L3: variante de producto (color/talla/modelo), sub-categoría (categoría dentro de categoría), plan de servicio (básico/pro/enterprise), sub-zona (colonia dentro de ciudad), versión/edición y bundle/combo. Todos son L4 —la hoja más profunda— y todos comparten la misma regla: existir solo si aportan contenido propio."
+        body={[
+          'El nivel no cambia, lo que se subdivide sí. Un producto se parte por atributo (color, talla); una sección, por sub-taxonomía; un servicio, por plan; una zona, por micro-zona; un producto versionado, por edición; una promoción, por bundle. Reconocer qué se subdivide define qué pieza resalta —selector de swatches, sub-índice, tabla de planes, mapa hiperlocal—.',
+          'Cada tipo carga el mismo riesgo en distinta dosis. El más peligroso es la sub-zona (el contenido local duplicado entre colonias es spam que penaliza); el más natural es la variante de producto con foto propia. En todos, la decisión es la misma: ¿esta hoja aporta algo único? Si no, vive como selector en el L3, no como URL aparte.',
+        ]}
+      />
+
+      <GaleriaDisenos ariaLabel="Seis tipos de sub-detalle (nivel L4)">
+        {/* 0 · Variante de producto */}
+        <DisenoCard {...disenos[0]}>
+          <div class="lv">
+            <div class="lv__crumb">… › Casco › Amarillo</div>
+            <i class="lv__gal"></i>
+            <div class="lv__swatches"><span class="lv__sw lv__sw--on"></span><span class="lv__sw"></span><span class="lv__sw"></span></div>
+            <span class="lv__btn">Comprar este color</span>
+          </div>
+        </DisenoCard>
+        {/* 1 · Sub-categoría */}
+        <DisenoCard {...disenos[1]}>
+          <div class="lv lv--subcat">
+            <div class="lv__crumb">… › Cascos › Dieléctricos</div>
+            <div class="lv__grid"><i></i><i></i><i></i><i></i></div>
+          </div>
+        </DisenoCard>
+        {/* 2 · Plan de servicio */}
+        <DisenoCard {...disenos[2]}>
+          <div class="lv lv--plan">
+            <div class="lv__crumb">… › Consultoría › Pro</div>
+            <div class="lv__plan"><b>Plan Pro</b><span class="lv__price">$$</span></div>
+            <div class="lv__feats"><span></span><span></span><span></span></div>
+            <span class="lv__btn">Contratar</span>
+          </div>
+        </DisenoCard>
+        {/* 3 · Sub-zona */}
+        <DisenoCard {...disenos[3]}>
+          <div class="lv lv--zona">
+            <div class="lv__crumb">… › CDMX › Polanco</div>
+            <div class="lv__map"></div>
+            <div class="lv__warn">contenido local único</div>
+          </div>
+        </DisenoCard>
+        {/* 4 · Versión */}
+        <DisenoCard {...disenos[4]}>
+          <div class="lv lv--ver">
+            <div class="lv__crumb">… › App › v2.0</div>
+            <div class="lv__chiprow"><span class="lv__chip lv__chip--on">v2.0</span><span class="lv__chip">v1.0</span></div>
+            <div class="lv__log"><span></span><span></span><span></span></div>
+          </div>
+        </DisenoCard>
+        {/* 5 · Bundle */}
+        <DisenoCard {...disenos[5]}>
+          <div class="lv lv--bundle">
+            <div class="lv__crumb">… › Kits › Básico</div>
+            <div class="lv__combo"><i></i><i class="lv__plus">+</i><i></i><i class="lv__plus">+</i><i></i></div>
+            <span class="lv__btn">Comprar kit</span>
+          </div>
+        </DisenoCard>
+      </GaleriaDisenos>
+
+      <GuiaNota titulo="El tipo correcto · y la regla común a todos" archivo="src/pages/*/[...slug].astro · src/content.config.ts">
+        <p>
+          Las seis son <strong>nivel L4</strong> (la hoja más profunda); cambia qué se subdivide.
+          Todas comparten la regla: <strong>existir solo si aportan contenido propio</strong>. La más
+          riesgosa es la <em>4 (sub-zona)</em> —el contenido local duplicado penaliza—; la más
+          natural, la <em>1 (variante con foto propia)</em>. Si la hoja no se diferencia, vive como
+          selector en el L3.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 5) RESPONSIVE Y MÓVIL — 4 patrones con MarcoMovil + Receta ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="La sub-ficha, en el teléfono"
+        desc="Cuatro patrones reales: migas de tres niveles con colapso fuerte (la ruta más larga del sitio), selector de variante táctil (swatches ≥44px con estado claro), galería con swipe (scroll-snap sin JS) y CTA/añadir sticky en la zona del pulgar. El L4 es donde se cierra la compra en móvil: la acción debe estar siempre a un pulgar de distancia."
+        body={[
+          'El L4 lleva la ruta más larga (cuatro nodos), así que en móvil el colapso de migas es el más agresivo: solo Inicio + «…» + la página actual, con la estructura completa en el marcado para SEO. El selector de variante —lo que más se toca— usa swatches de ≥44px con estado seleccionado claro (anillo, no solo color, por daltonismo) y la galería se recorre con swipe (scroll-snap, cero JavaScript).',
+          'El detalle decisivo es el cierre: la sub-ficha cierra una compra, así que el CTA de la variante seleccionada se ancla al borde inferior (precio + botón siempre visibles mientras se lee, con safe-area iOS). El visitante bajó cuatro niveles porque sabe qué quiere —la barra de acción persistente le da comprar sin buscar el botón—.',
+        ]}
+      />
+
+      <div class="pats">
+        {/* 1 · Migas */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Las migas de tres niveles colapsan fuerte en móvil, dejando Inicio y la página actual">
+              <div class="lm lm--migas">
+                <span class="lm__crumbs"><i class="lm__cr">Inicio</i><i>›</i><i class="lm__cr">…</i><i>›</i><i class="lm__cr lm__cr--now">Variante</i></span>
+                <b class="lm__h">Casco · Amarillo</b>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · Migas de tres niveles con colapso fuerte</h3>
+            <p class="pat__desc">El L4 lleva la ruta más larga (<code>Inicio › Sección › Categoría › Item</code>). En móvil se colapsan TODOS los intermedios dejando <strong>Inicio</strong>, un «…» y la página actual. La estructura completa sigue en el marcado (SEO + accesibilidad); solo se oculta lo del medio visualmente.</p>
+            <Receta titulo="CSS · migas de tres niveles colapsables" lang="css" code={recetaMigasMov} />
+          </div>
+        </article>
+
+        {/* 2 · Selector */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="El selector de variante usa swatches de al menos 44px con estado seleccionado claro">
+              <div class="lm lm--sel">
+                <i class="lm__gal"></i>
+                <span class="lm__lbl">Color</span>
+                <div class="lm__sw-row"><span class="lm__sw lm__sw--on"></span><span class="lm__sw"></span><span class="lm__sw"></span><i class="lm__ruler">44px</i></div>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · Selector de variante táctil</h3>
+            <p class="pat__desc">El selector de color/talla es lo que más se toca: cada opción es un objetivo de <code>≥44px</code> con estado seleccionado claro —<strong>anillo</strong>, no solo color, para daltonismo (WCAG 1.4.1)—. Cambiar de variante actualiza galería, specs y CTA sin recargar.</p>
+            <Receta titulo="CSS · swatches táctiles con estado" lang="css" code={recetaSelectorMov} />
+          </div>
+        </article>
+
+        {/* 3 · Galería swipe */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="La galería de la variante se recorre con swipe usando scroll-snap, sin JavaScript">
+              <div class="lm lm--gal">
+                <div class="lm__strip"><i></i><i></i><i></i></div>
+                <span class="lm__dots"><b class="lm__dot lm__dot--on"></b><b class="lm__dot"></b><b class="lm__dot"></b></span>
+                <i class="lm__swipe">↔ swipe</i>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · Galería con swipe (sin JavaScript)</h3>
+            <p class="pat__desc">La galería de la variante se recorre con el pulgar: scroll horizontal con <code>scroll-snap-type: x mandatory</code> para que cada foto quede centrada. Cero JavaScript, cero librería de carrusel —solo CSS nativo—. Cada variante muestra SUS fotos, no las genéricas del padre.</p>
+            <Receta titulo="CSS · galería swipe con scroll-snap" lang="css" code={recetaGaleriaMov} />
+          </div>
+        </article>
+
+        {/* 4 · Sticky add */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="El CTA de compra se ancla al borde inferior, siempre visible, con safe-area iOS">
+              <div class="lm lm--add">
+                <div class="lm__page"><span class="lm__p"></span><span class="lm__p"></span><span class="lm__p lm__p--sm"></span></div>
+                <div class="lm__bar"><span class="lm__price">$1,290</span><span class="lm__btn lm__btn--solid">Comprar</span><i class="lm__safe"></i></div>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">4 · CTA / añadir sticky en la zona del pulgar</h3>
+            <p class="pat__desc">La sub-ficha cierra una compra: en móvil la barra de acción (precio + botón de la variante seleccionada) se ancla al borde inferior, siempre visible mientras se lee, con <code>min-height: 48px</code> y <code>env(safe-area-inset-bottom)</code>. El visitante decidido compra sin buscar el botón.</p>
+            <Receta titulo="CSS · barra de compra sticky" lang="css" code={recetaStickyMov} />
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 6) ¿DÓNDE VA? — la posición del L4 ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Posición en la jerarquía"
+        title="¿Dónde va en el sitio?"
+        desc="En la hoja del árbol: cuelga de un L3 (que cuelga de un L2, que cuelga de la home). Es el nivel más profundo, con migas de tres niveles. Pero su lugar más importante es condicional: solo existe cuando aporta contenido propio. En esta plantilla el árbol para en L3; el L4 es el patrón documentado para cuando el catálogo lo justifique."
+        body={[
+          'El L4 ocupa el fondo del árbol: /productos/casco/amarillo cuelga de /productos/casco, que cuelga de /productos, que cuelga de /. Lleva migas de tres niveles (Inicio › Sección › Categoría › Item) y es la única hoja que reparte sobre todo lateralmente —entre variantes hermanas— además de hacia arriba. En el grafo de datos emite el Product/Service de la variante, con canonical a la principal si comparten contenido.',
+          'Su posición real, sin embargo, es una decisión, no una obligación. La mayoría de los sitios (este incluido) se resuelve en tres niveles; el L4 solo aparece donde un catálogo grande tiene variantes con contenido propio. Crearlo «porque sí» añade clics y thin content. Documentarlo aquí da el patrón listo para el día que el catálogo crezca —sin bajar a L4 antes de tiempo—.',
+        ]}
+      />
+      <GuiaNota titulo="El árbol del sitio · L4 es la hoja (condicional)" archivo="src/pages/*/[...slug].astro · src/components/Breadcrumbs.astro">
+        <p>
+          <strong>L1 (/)</strong> → <strong>L2</strong> (<code>/productos</code>) → <strong>L3</strong>
+          (<code>/productos/casco</code>) → <strong>L4</strong> (<code>/productos/casco/amarillo</code>).
+          La hoja cuelga de la ficha y lleva migas de tres niveles. Recuerda: el árbol baja a L4 solo
+          cuando cada hoja aporta contenido propio. Vuelve a <a href="/niveles/l1-inicio">L1 · Inicio</a>
+          para cerrar el recorrido por los cuatro niveles.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 7) CÓMO ESTÁ CONSTRUIDO — 2 recetas ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Capa técnica"
+        title="Cómo está construido"
+        desc="Dos formas: ruta anidada (src/pages/<seccion>/[categoria]/[item].astro, una URL por variante con contenido propio) o variantes en el frontmatter del L3 (un selector, sin URLs nuevas, cuando no merecen indexarse). Lleva migas de tres niveles + canonical anti-duplicado + schema de variante (regla B3). El getStaticPaths filtra las variantes sin contenido propio."
+        body={[
+          'La arquitectura del L4 tiene una decisión técnica en su centro: ¿URL propia o selector? Si la variante tiene contenido propio que merece indexarse, una ruta anidada genera su página (getStaticPaths filtrando las que SÍ aportan). Si no, las variantes viven en el frontmatter del L3 como un selector que cambia galería/specs/CTA sin crear URLs. La regla decide: contenido propio → L4; sin él → selector en L3.',
+          'Dos detalles técnicos críticos del nivel: el canonical (que apunta a la principal cuando las hojas comparten contenido, para no canibalizar) y el schema de variante (Product con color/size/sku, agrupable en ProductGroup, un emisor por página, regla B3). La receta A muestra las dos formas de modelar; la B, el canonical + schema que hacen seguro tener muchas hojas parecidas sin que el catálogo se canibalice.',
+        ]}
+      />
+      <div class="recetas">
+        <Receta titulo="A · Ruta anidada vs. variantes en el frontmatter" lang="astro" code={recetaEstructura} />
+        <Receta titulo="B · Canonical + schema de variante (anti-duplicado, B3)" lang="astro" code={recetaCanonical} />
+      </div>
+    </div>
+  </section>
+
+  {/* ── 8) BUENAS PRÁCTICAS (sí/no) ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Buenas prácticas"
+        title="Qué hacer y qué evitar"
+        desc="Siete hábitos que hacen del L4 una hoja útil que captura la cola larga y cierra la compra; siete errores que lo convierten en thin content que canibaliza al padre y penaliza el sitio. El L4 es el nivel más fácil de hacer mal: la mitad de las reglas son sobre cuándo NO crearlo."
+        body={[
+          'La diferencia entre un L4 que vende y uno que hunde el SEO es una sola pregunta aplicada con disciplina: «¿esta hoja aporta algo que sus hermanas no?». De ahí salen los siete sí (contenido propio, migas de tres niveles, canonical honesto, contexto del padre, galería específica, conversión directa, cross-link derivado) y los siete no (thin content, sin canonical, profundidad por completar, hoja sin contexto, galería duplicada, cierre exploratorio, cross-link hardcodeado).',
+          'Los sí son hábitos de contenido propio + SEO seguro + conversión. Los no son la tentación más cara del sistema: crear URLs «porque se puede», que parecen más SEO y son lo contrario. Léelos en pares —y, ante la duda, no bajes a L4: quédate en L3 con un selector—.',
+        ]}
+      />
+      <div class="bp">
+        <div class="bp__col bp__col--si">
+          <h3 class="bp__title bp__title--si">Sí</h3>
+          <ul class="bp__list">{sis.map((t) => <li>{t}</li>)}</ul>
+        </div>
+        <div class="bp__col bp__col--no">
+          <h3 class="bp__title bp__title--no">No</h3>
+          <ul class="bp__list">{nos.map((t) => <li>{t}</li>)}</ul>
+        </div>
+      </div>
+
+      <GuiaNota titulo="L4 cierra la serie Niveles" archivo="docs/NIVELES.md · src/lib/niveles.ts">
+        <p>
+          Esta ficha cierra la serie «Niveles del sitio»: <a href="/niveles/l1-inicio">L1 · Inicio</a> →
+          <a href="/niveles/l2-indice">L2 · Índice</a> → <a href="/niveles/l3-ficha">L3 · Detalle</a> →
+          L4 · Sub-detalle. Cuatro niveles, un molde. El cierre se deriva de <code>NIVELES</code> con
+          <code>siblingsNiveles('l4-variante')</code>. Vuelve al <a href="/niveles">índice de la serie</a>
+          para ver los cuatro juntos.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 9) FAQ — preguntas frecuentes del nivel (FAQPage único, regla B3) ── */}
+  <FAQAccordion items={faqs} title="Preguntas frecuentes · el nivel L4" emitSchema />
+
+  {/* ── 10) Cross-linking interno (hub-and-spoke) ── */}
+  <RelatedLinks
+    title="Cierra el recorrido"
+    desc="El nivel de arriba, la raíz y los módulos que arman una hoja."
+    links={[
+      { label: 'L3 · Detalle', href: '/niveles/l3-ficha', desc: 'El nivel de arriba: la ficha padre' },
+      { label: 'L1 · Inicio', href: '/niveles/l1-inicio', desc: 'Vuelve a la raíz del recorrido' },
+      { label: 'Módulo · Tarjeta de producto', href: '/modulos/product-card', desc: 'La card que lleva a la variante' },
+      { label: 'Módulo · Migas de pan', href: '/modulos/breadcrumbs', desc: 'El rastro de tres niveles del L4' },
+    ]}
+    limit={4}
+  />
+
+  {/* ── Cierre: menú de navegación full-width (siblingsNiveles SSoT) ── */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando los niveles" />
+</PageLayout>
+
+<style>
+  /* Estructura (tokens.css = fuente única; scoped por página) */
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* ── Anatomía (piezas) ── */
+  .piezas { display: grid; gap: var(--sp-5); margin: var(--sp-6) 0 0; padding: 0; list-style: none; }
+  .pieza { display: grid; grid-template-columns: 48px 1fr; gap: var(--sp-4); align-items: start; padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .pieza__n { display: grid; place-items: center; width: 48px; height: 48px; border-radius: var(--radius-md); background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-black); font-size: 1.25rem; }
+  .pieza__nombre { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pieza__que { margin: 0 0 var(--sp-3); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pieza__dato { margin: 0; font-size: var(--text-xs); color: var(--c-ink-2); }
+  .pieza__dato-label { font-weight: var(--weight-bold); color: var(--c-primary-dark); text-transform: uppercase; letter-spacing: .06em; margin-right: .35em; }
+  .pieza__dato code { font-family: ui-monospace, Menlo, monospace; font-size: .95em; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .1em .4em; color: var(--c-primary-dark); word-break: break-word; }
+
+  /* ── Árbol (GuiaNota) ── */
+  .arbol { display: grid; gap: 5px; margin-top: var(--sp-4); }
+  .arbol__l { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: var(--radius-sm); background: var(--c-white); border: 1px solid var(--c-border); font-size: var(--text-sm); color: var(--c-ink-2); }
+  .arbol__l b { display: grid; place-items: center; width: 26px; height: 22px; border-radius: 5px; background: var(--c-primary); color: #fff; font-size: 11px; font-weight: 700; }
+  .arbol__l--2 { margin-left: 18px; }
+  .arbol__l--3 { margin-left: 36px; }
+  .arbol__l--4 { margin-left: 54px; border-color: var(--c-primary); }
+
+  /* ── Beneficios ── */
+  .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .bene { grid-template-columns: repeat(3, 1fr); } }
+  .bene__card { padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .bene__title { margin: 0 0 var(--sp-3); font-family: var(--font-heading); font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--c-ink); line-height: var(--leading-snug); }
+  .bene__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Recetas ── */
+  .recetas { display: grid; gap: var(--sp-5); margin-top: var(--sp-6); }
+
+  /* ── Buenas prácticas (sí/no) ── */
+  .bp { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 900px) { .bp { grid-template-columns: 1fr 1fr; } }
+  .bp__col { padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .bp__title { margin: 0 0 var(--sp-4); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-bold); }
+  .bp__title--si { color: #16a34a; }
+  .bp__title--no { color: #dc2626; }
+  .bp__list { margin: 0; padding-left: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-3); }
+  .bp__list li { font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Patrones móviles (.pats / .pat) ── */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pat__desc code { font-family: ui-monospace, Menlo, monospace; font-size: .85em; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
+
+  /* ── Mockups galería de tipos de L4 (.lv = l4 variant) ── */
+  .lv { display: flex; flex-direction: column; gap: 6px; min-height: 100%; padding: 10px; background: var(--c-surface); border-radius: 6px; font-size: 8px; line-height: 1.2; color: var(--c-ink-2); }
+  .lv__crumb { font-size: 7px; color: var(--c-ink-2); background: var(--c-white); border: 1px solid var(--c-border); border-radius: 4px; padding: 2px 5px; align-self: flex-start; }
+  .lv__gal { height: 50px; border-radius: 5px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .lv__swatches, .lv__sw-row { display: flex; gap: 5px; align-items: center; }
+  .lv__sw { width: 16px; height: 16px; border-radius: 999px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .lv__sw--on { outline: 2px solid var(--c-primary); outline-offset: 2px; background: var(--c-primary); }
+  .lv__btn { display: grid; place-items: center; min-height: 20px; padding: 4px 8px; border-radius: 4px; background: var(--c-primary); color: #fff; font-size: 8px; font-weight: 700; margin-top: auto; }
+  .lv__grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
+  .lv__grid i { height: 28px; border-radius: 4px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .lv__plan { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-radius: 4px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); color: #fff; }
+  .lv__plan b { color: #fff; font-size: 10px; font-weight: 800; }
+  .lv__price { font-style: normal; font-weight: 800; }
+  .lv__feats { display: grid; gap: 3px; }
+  .lv__feats span { height: 7px; border-radius: 2px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .lv__map { height: 40px; border-radius: 4px; background: linear-gradient(135deg, #cfe8d4, #a7d3b0); }
+  .lv__warn { font-size: 7px; text-align: center; padding: 3px; border-radius: 4px; background: #FEF3C7; color: #92400E; }
+  .lv__chiprow { display: flex; gap: 4px; }
+  .lv__chip { font-style: normal; font-size: 7px; padding: 2px 7px; border-radius: 99px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .lv__chip--on { background: var(--c-primary); color: #fff; border-color: var(--c-primary); }
+  .lv__log { display: grid; gap: 3px; }
+  .lv__log span { height: 7px; border-radius: 2px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .lv__combo { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 6px; }
+  .lv__combo i { width: 22px; height: 22px; border-radius: 4px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .lv__plus { background: none !important; width: auto !important; height: auto !important; font-style: normal; font-weight: 800; color: var(--c-ink-2); }
+
+  /* ── Mockups patrones móviles (.lm = l4 móvil) ── */
+  .lm { display: flex; flex-direction: column; gap: 7px; padding: 12px 10px; min-height: 100%; font-size: 8px; line-height: 1.3; color: var(--c-ink-2); position: relative; }
+  .lm__crumbs { display: flex; gap: 3px; align-items: center; flex-wrap: nowrap; }
+  .lm__cr { font-style: normal; font-size: 7px; padding: 2px 5px; border-radius: 4px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .lm__cr--now { color: #fff; background: var(--c-primary); border-color: var(--c-primary); }
+  .lm__h { color: var(--c-ink); font-size: 12px; font-weight: 800; letter-spacing: -.02em; }
+  .lm__gal { display: block; height: 56px; border-radius: 6px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .lm__lbl { font-size: 8px; font-weight: 700; color: var(--c-ink); }
+  .lm__sw-row { display: flex; gap: 6px; align-items: center; }
+  .lm__sw { width: 22px; height: 22px; border-radius: 999px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .lm__sw--on { outline: 2px solid var(--c-primary); outline-offset: 2px; background: var(--c-primary); }
+  .lm__ruler { font-style: normal; font-size: 7px; font-weight: 700; color: #fff; background: var(--c-primary); padding: 1px 4px; border-radius: 4px; }
+  .lm__strip { display: flex; gap: 4px; overflow: hidden; }
+  .lm__strip i { flex: 0 0 70%; height: 50px; border-radius: 5px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .lm__dots { display: flex; gap: 4px; justify-content: center; }
+  .lm__dot { width: 6px; height: 6px; border-radius: 999px; background: var(--c-border); }
+  .lm__dot--on { background: var(--c-primary); }
+  .lm__swipe { font-style: normal; font-size: 7px; color: var(--c-primary-dark); align-self: center; }
+  .lm__page { display: flex; flex-direction: column; gap: 5px; }
+  .lm__p { display: block; height: 5px; border-radius: 2px; background: var(--c-border); }
+  .lm__p--sm { width: 55%; }
+  .lm__bar { position: absolute; bottom: 0; left: 0; right: 0; display: flex; align-items: center; gap: 8px; padding: 8px 10px 12px; background: #fff; border-top: 1px solid var(--c-border); box-shadow: 0 -8px 18px rgba(0,0,0,.08); }
+  .lm__price { font-style: normal; font-size: 11px; font-weight: 800; color: var(--c-ink); }
+  .lm__btn { display: grid; place-items: center; min-height: 30px; border-radius: 6px; font-size: 9px; font-weight: 700; }
+  .lm__btn--solid { flex: 1; background: var(--c-primary); color: #fff; }
+  .lm__safe { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); height: 4px; width: 30%; background: #000; border-radius: 2px; opacity: .35; }
+</style>

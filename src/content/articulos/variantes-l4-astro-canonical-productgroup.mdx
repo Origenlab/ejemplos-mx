@@ -1,0 +1,169 @@
+---
+title: "Variantes (L4) en Astro: canonical y ProductGroup"
+description: "Cómo modelar el nivel más profundo (L4) en Astro: rutas anidadas o variantes en frontmatter, canonical anti-duplicado y ProductGroup, sin generar thin content."
+category: "guias"
+heroImage: "/images/articulos/variantes-l4-astro-canonical-productgroup.avif"
+pubDate: 2026-06-21
+author: "Ejemplos.mx"
+tags: ["astro", "seo", "schema", "canonical", "arquitectura", "ecommerce"]
+seoTitle: "Variantes L4 en Astro: canonical y schema"
+seoDescription: "Guía técnica del L4 en Astro: rutas anidadas o selector en frontmatter, canonical anti-canibalización y ProductGroup; crear hoja solo si aporta contenido."
+---
+
+Un e-commerce nos llegó con un problema curioso: había publicado 5,400 páginas y su tráfico orgánico había bajado. La causa era una decisión que sonaba razonable: habían generado una URL por cada variante de cada producto —color, talla, acabado—, así que un producto con seis colores y cinco tallas producía treinta páginas casi idénticas, con la misma descripción y, salvo el color del nombre, el mismo contenido. Google las clasificó como contenido duplicado de baja calidad, dejó de rastrear la mayoría y bajó la confianza en el sitio entero. Consolidamos: las variantes que no aportaban contenido propio volvieron a ser un selector dentro de la ficha del producto, y dejamos URL solo a las pocas que tenían foto y especificaciones distintas. El sitio pasó de 5,400 a 900 páginas y el tráfico se recuperó por encima del punto de partida en dos meses. Menos URLs, más SEO.
+
+Esa es la advertencia del nivel 4 (L4), el más profundo: la sub-ficha o variante que cuelga de una ficha cuando una entidad se subdivide. Esta guía lo modela en Astro con cuidado: cuándo merece una ruta propia y cuándo es un selector, las rutas anidadas con `getStaticPaths`, el `canonical` que evita la canibalización, el `ProductGroup` que agrupa variantes, y por qué la mayoría de los sitios —incluido el de esta plantilla— se resuelve en L3 sin bajar a L4. Es para quien construye catálogos grandes en Astro 6 y quiere profundidad sin thin content.
+
+## Por qué este patrón existe
+
+El L4 existe porque algunas entidades se subdividen de verdad: un producto con variantes que merecen página propia (cada color con su foto y sus specs), una categoría con sub-categorías, un servicio con planes, una ciudad con micro-zonas. Cuando esa subdivisión aporta contenido distinto, darle una URL captura búsquedas ultra-específicas (la cola más larga) y cierra la conversión de la variante exacta. El problema es que la subdivisión es tentadora incluso cuando NO aporta contenido distinto, y ahí nace el thin content: páginas casi idénticas que diluyen la autoridad del padre y compiten entre sí.
+
+La historia del SEO tiene cicatrices de esto. La actualización Panda de Google (2011) penalizó masivamente sitios con contenido superficial y duplicado generado a escala —justo el patrón de «una URL por variante sin contenido propio»—. El criterio no ha cambiado: Google premia páginas que aportan valor único y desconfía de las que multiplican URLs sin multiplicar valor. Por eso el L4 es el único nivel que se construye con una pregunta de freno antes que con entusiasmo: «¿esta hoja tiene algo que sus hermanas no?». Si la respuesta es no, no es un L4: es un selector.
+
+## Contexto
+
+El L4 lleva la ruta más larga del sitio —`Inicio › Sección › Categoría › Item`, migas de tres niveles— porque es la hoja. Y es el único nivel opcional: la home, el índice y la ficha existen en casi todo sitio de negocio; el L4 aparece solo cuando un catálogo lo justifica. Este sitio de plantilla, por ejemplo, se resuelve en L3: productos y servicios son fichas directas. El L4 está documentado como el patrón listo para cuando el catálogo crezca, no como un nivel obligatorio.
+
+La decisión central del L4 es técnica y editorial a la vez: ¿URL propia o selector dentro de la ficha? Una variante con contenido propio (la foto del color real, las specs de ese modelo, búsqueda y compra por separado) merece URL. Una variante que solo cambia un atributo y comparte todo lo demás vive mejor como selector —swatches de color, opciones de talla— dentro de la ficha del producto, sin crear páginas nuevas. Confundirlas es lo que produce los catálogos de miles de páginas duplicadas.
+
+## Implementación paso a paso
+
+Cuando la variante SÍ merece URL, se modela con una ruta anidada. `getStaticPaths` genera una página por variante, pero solo para las que tienen contenido propio —el filtro es la defensa contra el thin content—.
+
+```astro
+---
+// src/pages/productos/[categoria]/[producto].astro — L4 con contenido propio.
+import { getCollection } from 'astro:content'
+
+export async function getStaticPaths() {
+  const productos = await getCollection('productos')
+  return productos.flatMap((p) =>
+    (p.data.variantes ?? [])
+      .filter((v) => v.contenidoPropio)   // ← la regla: nada de thin content
+      .map((v) => ({
+        params: { categoria: p.data.categoria, producto: `${p.id}-${v.slug}` },
+        props: { entry: p, variante: v },
+      }))
+  )
+}
+const { entry, variante } = Astro.props
+---
+
+{/* Migas de TRES niveles: bisabuelo (home), abuelo (sección), padre (ficha). */}
+<PageLayout
+  title={`${entry.data.title} — ${variante.nombre}`}
+  pageType="page" schemaType="Product"
+  breadcrumbs={[
+    { label: 'Productos', href: '/productos' },
+    { label: entry.data.title, href: `/productos/${entry.id}` },
+    { label: variante.nombre },
+  ]}
+>
+  {/* galería + specs ESPECÍFICAS de la variante */}
+</PageLayout>
+```
+
+El `canonical` es la pieza que hace seguro tener variantes parecidas. Si una hoja comparte casi todo el contenido con la principal, su `‹link rel="canonical"›` apunta a la principal (o al producto padre) para que Google concentre la señal y no canibalice. Si la variante sí tiene contenido propio, su canonical apunta a sí misma:
+
+```astro
+---
+const principal = `/productos/${entry.id}`        // la ficha L3 padre
+const esCasiIdentica = !variante.contenidoPropio
+const canonical = esCasiIdentica ? principal : Astro.url.pathname
+---
+{/* PageLayout pone el ‹link rel="canonical"› en el head desde esta prop. */}
+{/* Schema: Product de la variante (color/size/sku), agrupable en un */}
+{/* ProductGroup. Un emisor por página (regla B3): sin duplicar el */}
+{/* Organization del layout ni el ItemList del índice. */}
+```
+
+## Tabla comparativa
+
+La decisión URL-contra-selector se resuelve por contenido y por intención de búsqueda.
+
+| Caso | Solución | Schema | Canonical |
+|---|---|---|---|
+| Variante con foto y specs propias | URL (L4) | `Product` en `ProductGroup` | A sí misma |
+| Variante que solo cambia un atributo | Selector en la ficha L3 | El del producto | N/A |
+| Sub-categoría con muchos hijos | URL (sub-índice) | `ItemList` | A sí misma |
+| Variante casi idéntica publicada | Consolidar o `canonical` al padre | — | Al padre |
+
+### `ProductGroup` para variantes que sí existen
+
+Cuando varias variantes con URL pertenecen al mismo producto, `ProductGroup` de schema.org las agrupa: declara el producto base y lista sus variantes como `Product` con el atributo que las distingue (`color`, `size`, `sku`). Eso le dice a Google que son variantes de lo mismo, no productos independientes que compiten. Es el modelo correcto para un catálogo con variantes reales, y evita que el buscador las trate como duplicados.
+
+## Patrones avanzados
+
+**Filtro de contenido propio en `getStaticPaths`.** La línea `filter((v) => v.contenidoPropio)` es la diferencia entre un catálogo sano y uno de miles de páginas thin. Solo se generan rutas para variantes que aportan; las demás viven como selector. Documenta ese flag en el frontmatter de la entrada como parte del modelo de datos, no como un parche.
+
+**Canonical condicional.** No todas las variantes llevan el mismo canonical: las que aportan apuntan a sí mismas; las casi idénticas, al padre. Un canonical mal puesto (todas al padre, o todas a sí mismas sin merecerlo) o canibaliza o duplica. La lógica vive en una sola expresión derivada del flag de contenido propio.
+
+**Selector accesible sin URL.** Cuando la variante es un selector dentro de la ficha (no un L4), el selector de color/talla debe ser accesible: opciones con área táctil de al menos 44 píxeles, estado seleccionado marcado con algo más que color (un anillo o borde, para daltonismo, WCAG 2.2 SC 1.4.1), y cambio de galería/specs sin recargar. Un selector bien hecho evita la mitad de los L4 innecesarios.
+
+## Edge cases y debugging
+
+**Thin content a escala.** El error del e-commerce del inicio: generar una URL por variante sin contenido propio. Síntoma: cientos o miles de páginas casi idénticas, caída de rastreo y de tráfico. Solución: consolidar con selector y `canonical`, reservando URL para las pocas variantes que se diferencian.
+
+**Bucle de canonical.** Si la variante A canonicaliza a B y B a A, o si una página canonicaliza a una que tiene `noindex`, Google se confunde y puede ignorar ambas. El canonical debe apuntar siempre a una página indexable y final (la principal o sí misma), nunca encadenado.
+
+**Sub-zonas duplicadas (doorway pages).** El L4 más riesgoso es la sub-zona local (colonia dentro de ciudad): si el contenido es el mismo cambiando el nombre del lugar, son *doorway pages*, penalizadas explícitamente por Google Search Central. Cada sub-zona necesita contenido real propio o no debe existir.
+
+**Navegación facetada infinita.** Filtros combinables (color + talla + precio + marca) pueden generar millones de URLs facetadas. Decide qué combinaciones merecen indexarse (esas con su contenido) y bloquea el resto con `noindex` o reglas de rastreo, o el catálogo se ahoga en su propia combinatoria.
+
+## Performance y a11y con números reales
+
+El L4 hereda el cuidado de la ficha y suma lo suyo: la galería de la variante se recorre con swipe usando `scroll-snap` nativo (cero JavaScript), el selector de variante cumple el área táctil de 44 píxeles (WCAG 2.2 SC 2.5.5) con estado no dependiente solo del color (SC 1.4.1), y las migas de tres niveles se colapsan en móvil dejando «Inicio» y la página actual, con la cadena completa en el marcado para SEO y accesibilidad (SC 2.4.8). La imagen de la variante cuida el LCP igual que cualquier ficha. Como todo en Astro, el HTML es estático y el INP se mantiene bajo 200 ms.
+
+## Casos donde NO usar este patrón
+
+La mayoría de los sitios no necesita L4, y este es el mensaje central de la guía. Si las variantes no se diferencian de verdad, son un selector, no páginas. Si el catálogo es pequeño, el L4 añade clics y complejidad sin SEO que lo justifique. Si la subdivisión es solo para «verse más completo», es thin content esperando a pasar. El L4 se gana cuando cada hoja aporta contenido propio que se busca por separado; en cualquier otro caso, quédate en L3. La profundidad no es una meta: es un costo que solo se paga cuando rinde.
+
+## Checklist de implementación
+
+- Crear L4 solo si la hoja aporta contenido propio (foto/specs/datos únicos).
+- Variantes sin contenido propio → selector dentro de la ficha L3, no URL.
+- Ruta anidada `[categoria]/[producto]` con `getStaticPaths` filtrando por contenido propio.
+- `canonical` condicional: a sí misma si aporta, al padre si es casi idéntica.
+- `ProductGroup` para agrupar variantes reales del mismo producto.
+- Migas de tres niveles (`Inicio › Sección › Categoría › Item`).
+- Schema de la variante una sola vez (B3); sin duplicar `Organization` ni `ItemList`.
+- Selector accesible: 44 px, estado no solo por color, sin recarga.
+- Navegación facetada con `noindex` en combinaciones que no aportan.
+- Sub-zonas locales con contenido real propio o no existir.
+
+## Preguntas frecuentes
+
+### ¿Cuándo creo un L4 y cuándo un selector?
+
+URL propia (L4) si la variante tiene contenido propio y se busca por separado. Selector dentro de la ficha si solo cambia un atributo y comparte todo lo demás. La pregunta de control: «¿esta hoja tiene algo que sus hermanas no?». Si no, es selector.
+
+### ¿Más URLs de variante mejoran el SEO?
+
+Casi siempre lo contrario. URLs sin contenido propio son thin content: Google las trata como duplicados, diluyen la autoridad del padre y dejan de rastrearse. La actualización Panda penalizó justo eso. Menos URLs con contenido sólido rinde más.
+
+### ¿Para qué sirve el canonical aquí?
+
+Para evitar la canibalización entre variantes parecidas. La hoja casi idéntica canonicaliza a la principal (o al padre) para que Google concentre la señal; la que aporta contenido canonicaliza a sí misma. Es lo que hace seguro tener variantes.
+
+### ¿Qué es `ProductGroup`?
+
+Un tipo de schema.org que agrupa las variantes de un producto, declarando el base y listando cada variante como `Product` con su atributo distintivo (`color`, `size`, `sku`). Le dice a Google que son variantes de lo mismo, no productos que compiten.
+
+### ¿Las sub-zonas locales (colonias) son seguras?
+
+Son el L4 más riesgoso. Si el contenido es el mismo cambiando el nombre del lugar, son doorway pages penalizadas por Google. Cada sub-zona necesita contenido real propio; si no puedes diferenciarlas, quédate en la ficha de ciudad (L3) con `areaServed`.
+
+### ¿Este sitio usa L4?
+
+No. El catálogo de esta plantilla se resuelve en L3 (productos y servicios son fichas directas). El L4 está documentado como patrón para cuando el catálogo crezca y aparezcan variantes con contenido propio, para no bajar de nivel antes de tiempo.
+
+### ¿Cómo evito la explosión de URLs facetadas?
+
+Decide qué combinaciones de filtros merecen indexarse (esas, como URLs reales con su contenido) y bloquea el resto con `noindex` o reglas de rastreo. Sin esa decisión, filtros combinables generan millones de URLs que ahogan el catálogo.
+
+## Sigue leyendo
+
+- [Nivel L4 · Sub-detalle: la hoja más profunda, solo cuando hace falta](/niveles/l4-variante) — la ficha que documenta el nivel y sus tipos.
+- [Cuándo crear un L4 (y cuándo no): thin content](/blog/cuando-crear-l4-thin-content-arquitectura) — el lado estratégico de la decisión.
+- [Los 4 niveles de un sitio: de la raíz a la hoja](/blog/niveles-de-un-sitio-l1-l4-arquitectura-informacion) — la tesis que conecta los cuatro niveles.
+- Fuente externa: [Google Search Central — Contenido duplicado y canonical](https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls) y [schema.org — ProductGroup](https://schema.org/ProductGroup).

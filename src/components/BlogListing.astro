@@ -1,0 +1,77 @@
+---
+// ============================================================================
+// BlogListing.astro — Cuerpo del listado del blog (contenido + sidebar + paginación).
+// ----------------------------------------------------------------------------
+// Pieza COMPARTIDA por /blog (página 1) y /blog/pagina/<n> (resto): así el listado
+// se ve y se comporta igual en todas las páginas sin duplicar markup. Renderiza
+// la rejilla de tarjetas (CategoryCard con imagen ilustrativa del pool), la barra
+// de paginación y el sidebar (BlogSidebar). El <slot/> permite inyectar contenido
+// extra SOLO en la página 1 (p. ej. la GuiaNota del sidebar).
+//
+// PROPS
+//   articulos → artículos de la PÁGINA actual (ya rebanados). CollectionEntry[].
+//   current   → número de página actual (1-based).
+//   total     → total de páginas.
+//   sidebar   → datos del sidebar (de blogSidebarData()).
+// ============================================================================
+import type { CollectionEntry } from 'astro:content'
+import CategoryCard from '@components/CategoryCard.astro'
+import BlogSidebar from '@components/BlogSidebar.astro'
+import PaginationNav from '@components/PaginationNav.astro'
+import { blogImage } from '@lib/blogImages'
+import { CAT_LABEL, type SidebarData } from '@lib/blog'
+
+interface Props {
+  articulos: CollectionEntry<'articulos'>[]
+  current: number
+  total: number
+  sidebar: SidebarData
+}
+const { articulos, current, total, sidebar } = Astro.props
+---
+
+<div class="blog">
+  <div class="blog__main">
+    <slot />
+    <div class="grid">
+      {articulos.map((a, i) => (
+        <CategoryCard
+          label={a.data.title}
+          href={`/blog/${a.id}`}
+          image={blogImage(a.id)}
+          imageAlt={a.data.title}
+          badge={CAT_LABEL[a.data.category] ?? a.data.category}
+          blurb={a.data.description}
+          ctaLabel="Leer artículo"
+          index={i}
+        />
+      ))}
+    </div>
+
+    <PaginationNav current={current} total={total} />
+  </div>
+
+  <div class="blog__aside">
+    <BlogSidebar
+      categorias={sidebar.categorias}
+      temas={sidebar.temas}
+      posts={sidebar.posts}
+      enlaces={sidebar.enlaces}
+      cta={sidebar.cta}
+    />
+  </div>
+</div>
+
+<style>
+  /* Una columna en móvil; contenido + sidebar en escritorio. */
+  .blog { display: grid; grid-template-columns: 1fr; gap: var(--sp-6); margin-top: var(--sp-6); }
+  .blog__main { min-width: 0; } /* evita desbordes en X del grid de tarjetas */
+
+  .grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
+  @media (min-width: 560px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+
+  @media (min-width: 1024px) {
+    .blog { grid-template-columns: minmax(0, 1fr) 20rem; gap: var(--sp-8); align-items: start; }
+    .blog__aside { position: sticky; top: calc(var(--header-height, 72px) + var(--sp-4)); }
+  }
+</style>

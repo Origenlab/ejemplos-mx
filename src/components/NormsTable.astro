@@ -1,0 +1,118 @@
+---
+// ============================================================================
+// NormsTable.astro — Respaldo normativo (tabla NOM + NFPA).
+// ----------------------------------------------------------------------------
+// Tabla de normas que respaldan el equipamiento, con su alcance y a quién aplica.
+// Vende CUMPLIMIENTO: el comprador no busca un cilindro, busca pasar la inspección
+// de Protección Civil / STPS. Las NFPA se rotulan como REFERENCIA técnica, no como
+// ley federal (rigor = autoridad). Contenido normativo verificado.
+// Encabezado vía SectionHeading (duo). ORIGEN del patrón: PROYECTORED NormasIndex.
+// ============================================================================
+import SectionHeading from './SectionHeading.astro';
+
+interface Norm {
+  norma: string;
+  alcance: string;
+  aplica: string;
+}
+interface Props {
+  eyebrow?: string;
+  title: string;
+  titleAccent?: string;
+  desc?: string;
+  body?: string[];
+  rows: Norm[];
+  /** Encabezados de columna (3). Default orientado a normas; sobreescribe para otro vertical. */
+  columns?: [string, string, string];
+  note?: string;
+}
+const {
+  eyebrow = 'Respaldo normativo',
+  title,
+  titleAccent,
+  desc,
+  body = [],
+  rows,
+  columns = ['Norma / estándar', 'Alcance', 'Aplica a'],
+  note,
+} = Astro.props;
+---
+
+<section class="norms">
+  <div class="container">
+    <SectionHeading
+      layout="duo"
+      eyebrow={eyebrow}
+      title={title}
+      titleAccent={titleAccent}
+      desc={desc}
+      body={body}
+    />
+
+    <div class="tbl-wrap" role="region" aria-label="Normas y estándares aplicables" tabindex="0">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th scope="col">{columns[0]}</th>
+            <th scope="col">{columns[1]}</th>
+            <th scope="col">{columns[2]}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((n) => (
+            <tr>
+              <td><strong>{n.norma}</strong></td>
+              <td>{n.alcance}</td>
+              <td>{n.aplica}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    {note && <p class="norms__note">{note}</p>}
+  </div>
+</section>
+
+<style>
+  .container {
+    max-width: var(--container-max);
+    margin-inline: auto;
+    padding-inline: var(--container-px);
+  }
+  .norms { padding: var(--section-py) 0; background: var(--c-white); }
+
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--c-border); border-radius: var(--radius-md); background: var(--c-surface); }
+  .tbl-wrap:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; }
+  .tbl { width: 100%; min-width: 640px; border-collapse: collapse; font-size: var(--text-sm); }
+  .tbl thead th {
+    text-align: left;
+    background: var(--c-surface);
+    color: var(--c-ink);
+    font-family: var(--font-heading);
+    font-weight: var(--weight-bold);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding: var(--sp-3) var(--sp-4);
+    border-bottom: 1px solid var(--c-border);
+    white-space: nowrap;
+  }
+  .tbl tbody td {
+    padding: var(--sp-3) var(--sp-4);
+    border-bottom: 1px solid var(--c-border);
+    color: var(--c-ink-2);
+    line-height: var(--leading-normal);
+    vertical-align: top;
+  }
+  .tbl tbody tr:last-child td { border-bottom: none; }
+  .tbl tbody td strong { color: var(--c-primary); white-space: nowrap; }
+
+  .norms__note {
+    margin: var(--sp-5) 0 0;
+    max-width: 78ch;
+    font-size: var(--text-sm);
+    color: var(--c-muted);
+    line-height: var(--leading-relaxed);
+  }
+</style>

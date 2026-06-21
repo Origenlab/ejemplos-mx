@@ -1,0 +1,134 @@
+---
+title: "Los 4 niveles de un sitio: de la raíz a la hoja"
+description: "La arquitectura de información de un sitio de negocio en cuatro niveles —inicio, índice, ficha, variante—: qué hace cada uno, cómo se enlazan y cuándo usarlos."
+category: "guias"
+heroImage: "/images/articulos/niveles-de-un-sitio-l1-l4-arquitectura-informacion.avif"
+pubDate: 2026-06-21
+author: "Ejemplos.mx"
+tags: ["astro", "arquitectura", "seo", "contenido", "estrategia", "jerarquia"]
+seoTitle: "Los 4 niveles de un sitio: raíz a la hoja"
+seoDescription: "Arquitectura de información en 4 niveles (L1 inicio, L2 índice, L3 ficha, L4 variante): rol, migas, schema y SEO de cada uno, y cómo se enlazan."
+---
+
+La pregunta que más nos repiten quienes empiezan un sitio no es «¿qué color uso?» ni «¿qué framework?», sino una más básica y más difícil: «¿qué páginas debe tener?». Y casi siempre la responden mal por el mismo motivo: piensan en páginas sueltas —«necesito una de inicio, una de productos, una de contacto»— en lugar de pensar en niveles. Un sitio no es una pila de páginas independientes; es un árbol con profundidad, y cada página ocupa un nivel que define su trabajo, su contenido, sus migas de pan y su papel en el SEO. Cuando un sitio se piensa por niveles, dejan de aparecer las preguntas eternas («¿esto va en la home o en su propia página?», «¿pongo migas aquí?», «¿qué schema emito?»): la respuesta la da el nivel.
+
+Esta es la tesis que conecta el sistema. A lo largo de ocho artículos hemos desmenuzado cada nivel de un sitio de negocio —su lado técnico en Astro y su lado estratégico—; este texto los reúne en un solo mapa. Veremos los cuatro niveles —L1 inicio, L2 índice de sección, L3 ficha de detalle, L4 sub-detalle—, qué hace cada uno, cómo se enlazan entre sí (el patrón hub-and-spoke), qué schema emite cada cual sin duplicar (la regla B3), y cómo decidir cuántos niveles necesita tu sitio. Es el plano de la casa antes de discutir los muebles.
+
+## Por qué pensar un sitio por niveles
+
+Pensar por páginas sueltas escala mal. Cada página nueva plantea las mismas preguntas desde cero, y sin un marco que las responda, las respuestas terminan siendo inconsistentes: una sección lleva migas y otra no, un producto vive en la home y otro en su página, un schema se duplica aquí y falta allá. El visitante percibe esa inconsistencia como desorden, y el buscador como falta de estructura. Pensar por niveles cambia la pregunta de «¿qué hago con esta página?» a «¿de qué nivel es esta página?», y el nivel trae la respuesta empacada: su contenido, su profundidad de migas, su plantilla y su schema.
+
+La idea no es nueva. La arquitectura de información como disciplina —ordenar el contenido para que la gente lo encuentre— viene de Richard Saul Wurman en los años ochenta y se formalizó para la web con Rosenfeld y Morville («Information Architecture for the World Wide Web», 1998). Su aporte central sigue vigente: los sitios son jerarquías, y la jerarquía debe reflejar cómo la gente busca y decide, no cómo está organizada internamente la empresa. Los cuatro niveles de esta serie son esa jerarquía aplicada a un sitio de negocio: de lo más general (la marca) a lo más específico (la variante).
+
+## El mapa: de la raíz a la hoja
+
+El árbol tiene cuatro profundidades. **L1**, la raíz, es la home: una sola página, en la URL raíz, que presenta el negocio y reparte el tráfico. **L2**, el índice de sección, lista los hijos de una rama (`/productos`, `/servicios`, `/blog`) y orienta. **L3**, la ficha de detalle, agota una entidad concreta (un producto, un servicio, un artículo) y convierte. **L4**, el sub-detalle, es la hoja: la variante o sub-ficha que aparece solo cuando una entidad se subdivide con contenido propio. Cada nivel cuelga del anterior: los L2 son hijos de la home, los L3 de un L2, los L4 de un L3.
+
+La señal más visible del nivel son las migas de pan, que crecen con la profundidad: el L1 no lleva ninguna (es la raíz, no tiene padre); el L2 lleva una (`Inicio › Sección`); el L3, dos (`Inicio › Sección › Item`); el L4, tres (`Inicio › Sección › Categoría › Item`). Si dudas en qué nivel está una página, cuenta sus migas: te dicen su profundidad exacta.
+
+## L1 · Inicio: presentar y repartir
+
+La home es la página más visitada y la de más autoridad, y hace dos trabajos: causar la primera impresión que decide si el visitante se queda, y repartirlo hacia la sección correcta. No agota ningún tema —para eso están las fichas—; presenta y distribuye. Es la única sin migas de pan, y la página de marca donde vive el `Organization` del grafo de datos. Su métrica técnica clave es el LCP por debajo de 2.5 segundos; su métrica de negocio, cuánta gente sigue desde ella hacia una sección útil.
+
+El detalle de cómo construirla rápido y clara está en [Anatomía de una home en Astro: hero, LCP y velocidad](/blog/home-astro-anatomia-hero-lcp), y la estrategia de qué poner y qué no, en [La home: primera impresión y reparto de tráfico](/blog/home-primera-impresion-distribucion-trafico). La ficha que documenta el nivel a fondo es [L1 · Inicio](/niveles/l1-inicio).
+
+## L2 · Índice de sección: orientar y distribuir
+
+El índice es la antesala de las fichas: explica de qué va una rama y lista sus hijos como tarjetas escaneables. Lleva migas de un nivel y es la página pilar del SEO de su sección —rankea por el término amplio de categoría y reparte autoridad a sus fichas mediante el patrón hub-and-spoke—. Su contenido se genera de una colección (no se hardcodea), y emite un único `ItemList` con la lista de hijos; las tarjetas no emiten schema propio.
+
+La implementación data-driven está en [Índices de sección en Astro: getCollection e ItemList](/blog/indice-de-seccion-astro-getcollection-itemlist), y la estrategia de página pilar, en [Páginas pilar: hub-and-spoke y SEO de categoría](/blog/pagina-pilar-hub-and-spoke-seo-categorias). La ficha del nivel es [L2 · Índice de sección](/niveles/l2-indice).
+
+## L3 · Detalle: agotar y convertir
+
+La ficha es donde se decide. Recibe al visitante que ya eligió —el tráfico de mayor intención del sitio, la cola larga— y le da todo lo que necesita para decir que sí, sin remitirlo a otra página. Lleva migas de dos niveles y es la hoja del grafo: emite el schema específico de su entidad (`Product`, `Service`, `Article`), una sola vez. En Astro se genera con una ruta dinámica que produce una página por entrada de una colección.
+
+El cómo técnico está en [Fichas de detalle en Astro: rutas dinámicas y schema](/blog/ficha-detalle-astro-rutas-dinamicas-schema), y la estrategia de conversión, en [Fichas L3: long-tail, intención y conversión](/blog/fichas-long-tail-conversion-intencion). La ficha del nivel es [L3 · Detalle](/niveles/l3-ficha).
+
+## L4 · Sub-detalle: la hoja condicional
+
+El L4 es el nivel más profundo y el único opcional. Aparece cuando una entidad se subdivide en variantes con contenido propio —un producto con colores que tienen foto y specs distintas, una sub-categoría, un plan de servicio—. Lleva migas de tres niveles y se construye con una pregunta de freno: «¿esta hoja tiene algo que sus hermanas no?». Si la respuesta es no, no es un L4: es un selector dentro de la ficha. Crear hojas sin contenido propio genera thin content que canibaliza al padre y daña el dominio entero.
+
+La mecánica (rutas anidadas, `canonical`, `ProductGroup`) está en [Variantes (L4) en Astro: canonical y ProductGroup](/blog/variantes-l4-astro-canonical-productgroup), y el criterio de decisión, en [Cuándo crear un L4 (y cuándo no): thin content](/blog/cuando-crear-l4-thin-content-arquitectura). La ficha del nivel es [L4 · Sub-detalle](/niveles/l4-variante).
+
+## El esquema de datos por nivel
+
+Una de las ventajas de pensar por niveles es que el grafo de datos estructurados se reparte solo, sin duplicados. Cada nivel emite lo suyo, una sola vez (la regla B3 del proyecto: un único emisor por página). El L1 emite `Organization` y `WebSite` (la identidad de la marca, desde el layout base). El L2 emite `ItemList` o `CollectionPage` (la lista de hijos, desde el grid padre). El L3 emite `Product`, `Service` o `Article` (el detalle de la entidad, la hoja del grafo). El L4, cuando existe, emite el schema de la variante con su `canonical`.
+
+El error que esta jerarquía previene es el schema duplicado: dos `Organization` porque la home lo metió a mano y el layout también, o veinte `Product` porque cada tarjeta del índice emitió el suyo. Cuando cada nivel sabe qué le toca emitir, el grafo del sitio queda limpio, bien jerarquizado y sin las advertencias de los validadores. La arquitectura de páginas y la arquitectura de datos son la misma arquitectura.
+
+## El enlazado: hub-and-spoke y migas
+
+Los niveles no son silos; están tejidos. La autoridad entra al sitio sobre todo por la home (L1) y por las páginas con enlaces externos, y baja siguiendo los enlaces internos: la home enlaza a los índices, los índices a las fichas, las fichas a sus variantes. En sentido inverso, las migas de pan devuelven señal hacia arriba: cada ficha enlaza a su índice y a la home, cada índice a la home. Ese flujo bidireccional —el patrón hub-and-spoke— concentra autoridad en los pilares (la home, los índices) y la distribuye a las hojas (fichas, variantes).
+
+El anchor text es el vehículo de ese reparto. Cada enlace lleva el nombre real de su destino —«Consultoría de desarrollo web», no «ver más»—, porque ese texto le dice al buscador de qué trata la página enlazada y orienta al visitante. Un sitio bien enlazado por niveles, con anchor text honesto, le transmite a Google una estructura clara: «esto es una rama, estos son sus hijos, esta es la entidad concreta». Esa claridad es lo que hace que el sitio rankee a la vez por términos amplios (en los índices) y específicos (en las fichas).
+
+## Tabla maestra de los cuatro niveles
+
+| Nivel | Ruta | Migas | Schema | Término / intención |
+|---|---|---|---|---|
+| **L1 · Inicio** | `/` | Ninguna | `Organization` + `WebSite` | Marca / navegacional |
+| **L2 · Índice** | `/seccion` | Una | `ItemList` | Categoría / exploratoria |
+| **L3 · Ficha** | `/seccion/item` | Dos | `Product` / `Service` / `Article` | Específico / transaccional |
+| **L4 · Variante** | `/seccion/cat/item` | Tres | Variante + `canonical` | Ultra-específico / decisión |
+
+## Cómo decidir cuántos niveles necesita tu sitio
+
+No todo sitio necesita los cuatro. La mayoría de los sitios de negocio se resuelve en tres: home, índices de sección y fichas. El L4 se añade solo cuando un catálogo tiene variantes que se buscan y se compran por separado y tienen contenido propio. Un sitio muy pequeño puede vivir incluso con dos niveles (home + fichas) si las secciones no justifican un índice; aunque entonces pierde las páginas pilar que rankean por categoría. La regla: usa tantos niveles como tu contenido y tu manera de ser buscado justifiquen, ni más ni menos. Añadir profundidad «por completar» es el error que produce thin content; quitarla de más deja oportunidades de SEO sin capturar.
+
+La prueba práctica es mirar cómo busca tu cliente. Si busca por categoría, necesitas índices (L2) fuertes. Si busca por modelo o atributo específico, necesitas fichas (L3) ricas. Si busca por variante exacta y esa variante tiene algo propio que decir, justifica un L4. La arquitectura sigue a la demanda de búsqueda, no al organigrama interno ni al deseo de tener muchas páginas.
+
+## Errores comunes de arquitectura
+
+El primero es **la home que lo hace todo**: una portada que intenta agotar cada tema en lugar de repartir, y termina infinita. El segundo es **el índice hardcodeado**: una página de catálogo escrita a mano que se queda vieja y sirve enlaces muertos. El tercero es **la ficha teaser**: un detalle que no detalla y remite a un formulario genérico, perdiendo el tráfico mejor calificado. El cuarto, el más caro, es **el L4 por entusiasmo**: miles de variantes sin contenido propio que hunden el dominio en thin content. Todos comparten una raíz: no respetar el trabajo del nivel. Cuando cada página hace lo que su nivel pide —presentar, orientar, agotar o, con cuidado, subdividir—, estos errores no aparecen.
+
+## Checklist de arquitectura
+
+- Piensa el sitio por niveles, no por páginas sueltas.
+- L1 (home): presenta y reparte; sin migas; `Organization` único; LCP por debajo de 2.5 s.
+- L2 (índice): lista hijos data-driven; migas de un nivel; `ItemList` único; página pilar por categoría.
+- L3 (ficha): agota el tema y convierte; migas de dos niveles; schema específico único; cola larga.
+- L4 (variante): solo con contenido propio; migas de tres niveles; `canonical` anti-duplicado.
+- Cada nivel emite su schema una sola vez (regla B3); el grafo queda sin duplicados.
+- Enlazado hub-and-spoke: la autoridad baja por enlaces, sube por migas; anchor text real.
+- Usa tantos niveles como justifiquen tu contenido y tu manera de ser buscado.
+
+## Preguntas frecuentes
+
+### ¿Por qué pensar en niveles y no en páginas sueltas?
+
+Porque el nivel responde de antemano las preguntas que cada página plantea: qué contenido lleva, cuántas migas, qué plantilla y qué schema. Pensar por páginas sueltas produce inconsistencia (una sección con migas y otra sin); pensar por niveles produce un sitio coherente que el visitante y el buscador entienden.
+
+### ¿Cómo sé en qué nivel está una página?
+
+Cuenta sus migas de pan: el L1 no lleva ninguna (es la raíz), el L2 lleva una, el L3 dos, el L4 tres. La profundidad de las migas es la profundidad del nivel.
+
+### ¿Todo sitio necesita los cuatro niveles?
+
+No. La mayoría se resuelve en tres (home, índices, fichas). El L4 se añade solo cuando hay variantes con contenido propio que se buscan por separado. Un sitio muy pequeño puede vivir con dos. Usa los niveles que tu contenido y tu manera de ser buscado justifiquen.
+
+### ¿Qué schema emite cada nivel?
+
+El L1 emite `Organization` y `WebSite`; el L2, `ItemList`; el L3, `Product`/`Service`/`Article`; el L4, el de la variante con su `canonical`. Cada uno una sola vez (regla B3). Así el grafo queda sin duplicados y bien jerarquizado.
+
+### ¿Cómo se reparte la autoridad SEO entre niveles?
+
+Entra por la home y las páginas con enlaces externos, y baja por los enlaces internos (home → índices → fichas → variantes). Las migas la devuelven hacia arriba. Ese flujo hub-and-spoke concentra fuerza en los pilares y la distribuye a las hojas; el anchor text real dirige el reparto.
+
+### ¿Cuál es el error de arquitectura más caro?
+
+Crear L4 (o cualquier página) sin contenido propio, «para tener más páginas». Eso genera thin content que canibaliza y puede penalizar el dominio entero. La profundidad es un costo que solo se paga cuando rinde; ante la duda, menos niveles.
+
+### ¿Dónde encaja Astro en todo esto?
+
+Astro materializa la jerarquía con Content Collections (los datos por nivel), rutas dinámicas (fichas y variantes desde colecciones), un layout que emite el schema correcto por nivel, y HTML estático que mantiene el rendimiento. La arquitectura de información se traduce casi uno a uno en la estructura de archivos del proyecto.
+
+### ¿Por dónde empiezo a aplicar esto a mi sitio?
+
+Por el mapa: lista tus páginas y asígnale a cada una su nivel (cuenta las migas). Si dos páginas pelean el mismo término, revisa si una debería ser índice y la otra ficha. Si tienes miles de variantes, aplica la pregunta de control. El plano antes que los muebles.
+
+## Sigue leyendo
+
+- [L1 · Inicio](/niveles/l1-inicio) · [L2 · Índice de sección](/niveles/l2-indice) · [L3 · Detalle](/niveles/l3-ficha) · [L4 · Sub-detalle](/niveles/l4-variante) — las cuatro fichas que documentan cada nivel a fondo.
+- [Índice de los niveles del sitio](/niveles) — la serie completa, con los cuatro niveles como tarjetas.
+- [Anatomía de una home en Astro](/blog/home-astro-anatomia-hero-lcp) y [Fichas de detalle en Astro](/blog/ficha-detalle-astro-rutas-dinamicas-schema) — los dos lados técnicos más densos del sistema.
+- Fuente externa: Rosenfeld & Morville, «Information Architecture for the World Wide Web» (O'Reilly), y [Google Search Central — Site structure](https://developers.google.com/search/docs/fundamentals/get-started).
