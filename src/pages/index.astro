@@ -21,8 +21,8 @@ import ContactForm from "@components/ContactForm.astro";
 import GuiaNota from "@components/GuiaNota.astro";
 import MarcoMovil from "@components/MarcoMovil.astro";
 import Receta from "@components/Receta.astro";
-import { SITE, KEYWORDS, NAV, SERVICES, WA_MESSAGES, SHOWCASE, MODULOS, waUrl } from "@config/site";
-import { MODULE_CARD_META } from "@lib/modules";
+import { SITE, KEYWORDS, NAV, SERVICES, WA_MESSAGES, MODULOS, waUrl } from "@config/site";
+import { MODULE_CARD_META, MODULE_AFONDO, moduleGallery } from "@lib/modules";
 import { buildKeywordTitle, buildKeywordDescription, metaAudit } from "@lib/seo";
 
 // ── WhatsApp: SIEMPRE vía waUrl() (regla D4, nunca número hardcodeado) ──
@@ -94,100 +94,10 @@ const malDesc =
   "Plantilla web astro: la mejor plantilla web astro. Diseño web astro y página web astro. Plantilla web astro para todo tu sitio web astro.";
 const metaMal = metaAudit(KEYWORDS, malTitle, malDesc);
 
-// ── Detalle de la PRIMERA categoría (módulo "categoría a fondo" + galería) ──
-// Amplía la 1.ª tarjeta del catálogo (SHOWCASE[0]). El título y la imagen
-// principal salen de SHOWCASE para no duplicar; los párrafos, los puntos clave y
-// la galería se definen aquí, junto al resto del contenido demo de la home.
-const cat0 = SHOWCASE[0];
-const cat0Detalle = {
-  eyebrow: "La categoría a fondo",
-  body: [
-    "Esta es la primera tarjeta del catálogo vista por dentro. Una buena imagen de categoría no es decoración: es lo primero que mira el visitante y, en menos de un segundo, le confirma si está en el lugar correcto. Por eso conviene una foto real —no un genérico de banco— que muestre el producto o servicio tal como es y que pese poco para no hacer esperar.",
-    "El texto alternativo (el atributo alt) es su pareja invisible: describe en una frase qué se ve, con la palabra clave de la categoría incluida con naturalidad. Ayuda a quien navega con lector de pantalla y da contexto a quien, por una conexión lenta, no alcanza a ver la foto. Si además fijas su ancho y alto, el hueco queda reservado y la página no «salta» mientras carga.",
-  ],
-  points: [
-    "Foto real y propia, nunca un genérico de banco de imágenes",
-    "Peso optimizado (AVIF/WebP) para que cargue al instante",
-    "Texto alternativo descriptivo, con la palabra clave incluida",
-    "Ancho y alto fijos para que la maqueta no salte al cargar",
-  ],
-  gallery: {
-    main: { src: cat0.image, alt: "Imagen principal de la categoría, optimizada y con su texto alternativo" },
-    thumbs: [
-      { src: "/images/showcase/jerarquia-titulos-seo-pagina-web.avif", alt: "Segunda toma de la categoría dentro de la jerarquía de la página" },
-      { src: "/images/showcase/texto-venta-contenido-markdown.avif", alt: "Detalle del texto de venta que acompaña a la categoría" },
-    ],
-  },
-};
-
-// ── Detalle de la SEGUNDA categoría (mismo módulo, galería alternada con reverse) ──
-const cat1 = SHOWCASE[1];
-const cat1Detalle = {
-  eyebrow: "La categoría a fondo",
-  body: [
-    "El título es el letrero de la tarjeta: en dos o tres palabras le dice al visitante —y al buscador— de qué trata esta categoría. Va como H3 porque respeta el orden de la página: un solo H1 en el hero, los H2 abren cada sección y los H3 nombran cada tarjeta. Ese escalonado no es capricho, es el índice que la gente y los lectores de pantalla siguen para ubicarse sin perderse.",
-    "Para que funcione, nómbralo con la palabra clave de la categoría, no con un nombre interno ni un juego de palabras: claro, corto y fácil de escanear de un vistazo. Mantén un nivel por escalón —no saltes de H2 a H4— y evita repetir el mismo título en varias tarjetas. Un buen título se entiende fuera de contexto: si alguien lo lee solo, sabe exactamente a dónde llega.",
-  ],
-  points: [
-    "Va como H3, respetando H1 (hero) → H2 (sección) → H3 (tarjeta)",
-    "Nombrado con la palabra clave de la categoría",
-    "Claro, corto y fácil de escanear de un vistazo",
-    "Sin saltos de nivel ni títulos repetidos entre tarjetas",
-  ],
-  gallery: {
-    main: { src: cat1.image, alt: "El título de la categoría como H3 dentro de la jerarquía de la página" },
-    thumbs: [
-      { src: "/images/showcase/imagen-optimizada-avif-sitio-web.avif", alt: "Relación del título con la imagen de la categoría" },
-      { src: "/images/showcase/enlaces-internos-navegacion-web.avif", alt: "El título enlazando con las subcategorías de la categoría" },
-    ],
-  },
-};
-
-// ── Detalle de la TERCERA categoría (mismo módulo idéntico) ──
-const cat2 = SHOWCASE[2];
-const cat2Detalle = {
-  eyebrow: "La categoría a fondo",
-  body: [
-    "El texto de venta es ese párrafo corto bajo el título: una o dos frases que convierten una categoría en una razón para entrar. Su trabajo es unir tres cosas —el beneficio concreto, la palabra clave de la categoría y una señal de confianza— sin que se note el esfuerzo. No describe lo obvio («aquí hay productos»); responde la pregunta que el visitante trae en la cabeza: ¿esto me sirve y por qué contigo?",
-    "El truco está en la concreción: un dato verificable —«instalación el mismo día», «garantía de un año», «más de 3 000 clientes»— pesa más que cualquier elogio, y conviene cerrar con una señal de confianza: años en el oficio, una certificación, una reseña. Apunta a 120–160 caracteres: ni folleto ni telegrama, lo justo para que se entienda de un vistazo y dé ganas de entrar.",
-  ],
-  points: [
-    "Une beneficio + palabra clave + señal de confianza",
-    "Escrito para la persona, no para el buscador",
-    "La palabra clave entra natural, nunca apilada",
-    "120–160 caracteres: corto y fácil de escanear",
-  ],
-  gallery: {
-    main: { src: cat2.image, alt: "Ejemplo del texto de venta de una categoría bajo su título" },
-    thumbs: [
-      { src: "/images/showcase/imagen-optimizada-avif-sitio-web.avif", alt: "El texto de venta junto a la imagen de la categoría" },
-      { src: "/images/showcase/enlaces-internos-navegacion-web.avif", alt: "El texto de venta y los enlaces a las subcategorías" },
-    ],
-  },
-};
-
-// ── Detalle de la CUARTA categoría (mismo módulo idéntico) ──
-const cat3 = SHOWCASE[3];
-const cat3Detalle = {
-  eyebrow: "La categoría a fondo",
-  body: [
-    "Al final de cada tarjeta van los atajos: enlaces a las subcategorías con texto real —«Línea profesional», «Accesorios», «Refacciones»— y un solo botón que lleva a la categoría completa. No son decoración: le dan al visitante el camino exacto a lo que busca sin obligarlo a volver al menú, y de paso tejen los enlaces internos que conectan la categoría con sus páginas hijas.",
-    "La clave está en el texto del enlace: que diga a dónde lleva, no «clic aquí» ni «ver». Usa el nombre real de la subcategoría —es lo que la persona reconoce y lo que da contexto a la navegación—. Cierra con un único botón claro, sin tres llamadas compitiendo entre sí: una acción principal por tarjeta. Cuando todo apunta al mismo lugar, el visitante avanza sin dudar.",
-  ],
-  points: [
-    "Enlaces con el texto real de cada subcategoría",
-    "Atajo directo a lo que el visitante busca",
-    "Conectan la categoría con sus páginas hijas",
-    "Un solo botón claro, sin acciones que compitan",
-  ],
-  gallery: {
-    main: { src: cat3.image, alt: "Ejemplo de enlaces a subcategorías y botón de una categoría" },
-    thumbs: [
-      { src: "/images/showcase/jerarquia-titulos-seo-pagina-web.avif", alt: "Los enlaces a subcategorías bajo el título de la categoría" },
-      { src: "/images/showcase/texto-venta-contenido-markdown.avif", alt: "Los enlaces y el botón al cierre del texto de venta" },
-    ],
-  },
-};
+// El bloque «categorías a fondo» de la home muestra ahora los MISMOS 15 módulos
+// que la vitrina de arriba (no las 4 categorías del catálogo): el copy vive en
+// MODULE_AFONDO y la galería en moduleGallery() (src/lib/modules.ts, SSoT),
+// compartidos con el índice /modulos.
 
 // ── Sobre la empresa (módulo de confianza: qué/cómo + cifras) ──
 // Contenido DEMO de la plantilla-guía. En un sitio real: cifras REALES (nunca
@@ -446,7 +356,7 @@ const faqs: { question: string; answer: string }[] = [
        ORDEN CANÓNICO del index: Hero → SectionMenu → cards de secciones. Esta
        vitrina va SIEMPRE justo debajo del menú del hero. Cada categoría se presenta
        como producto: imagen + texto + atajos a subcategorías + CTA. Data-driven
-       desde SHOWCASE (site.ts). */}
+       desde MODULOS (site.ts). */}
   <section class="section section--surface">
     <div class="container">
       <SectionHeading
@@ -539,45 +449,34 @@ const faqs: { question: string; answer: string }[] = [
     </div>
   </section>
 
-  {/* ═══ 2b) CATEGORÍAS A FONDO — PRIMERO todos los módulos, luego TODAS las guías ═══
-       Cada categoría se amplía con el MISMO CategoryDetail (info izq · galería der),
-       diseño IDÉNTICO, sin zig-zag. Datos desde SHOWCASE[i] + catNDetalle (arriba).
-       La secuencia es: módulos arriba, todas las guías agrupadas al final. */}
+  {/* ═══ 2b) CADA MÓDULO, POR DENTRO — los MISMOS 15 módulos, ahora «a fondo» ═══
+       Cada módulo se amplía con el MISMO CategoryDetail (info izq · galería der),
+       diseño IDÉNTICO, sin zig-zag. Data-driven: el copy vive en MODULE_AFONDO y la
+       galería en moduleGallery() (lib/modules.ts, SSoT) — los MISMOS que el índice
+       /modulos. Loop sobre modulosHome: 1 bloque por módulo, en el mismo orden. */}
   <section class="section">
     <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Por dentro"
+        title="Cada módulo, por dentro"
+        desc="La vitrina de arriba te dice qué es cada pieza; aquí la abrimos. Mismo formato para todas: qué resuelve, de qué partes se compone y en qué te fijas al construirla."
+        body={[
+          "Es el MISMO bloque «a fondo» del catálogo —información a la izquierda, galería a la derecha, idéntico para cada módulo—. Reusar el patrón es, otra vez, la lección: el sitio se arma con piezas que ya existen.",
+          "Son los mismos módulos que ves arriba como tarjetas, abiertos uno por uno con la misma estructura. El copy y la galería salen de una sola fuente (MODULE_AFONDO en lib/modules.ts), compartida con el índice /modulos.",
+        ]}
+      />
       <div class="afondo">
-        <CategoryDetail
-          eyebrow={cat0Detalle.eyebrow}
-          title={cat0.label}
-          body={cat0Detalle.body}
-          points={cat0Detalle.points}
-          cta={{ label: "Ver la categoría", href: cat0.href }}
-          gallery={cat0Detalle.gallery}
-        />
-        <CategoryDetail
-          eyebrow={cat1Detalle.eyebrow}
-          title={cat1.label}
-          body={cat1Detalle.body}
-          points={cat1Detalle.points}
-          cta={{ label: "Ver la categoría", href: cat1.href }}
-          gallery={cat1Detalle.gallery}
-        />
-        <CategoryDetail
-          eyebrow={cat2Detalle.eyebrow}
-          title={cat2.label}
-          body={cat2Detalle.body}
-          points={cat2Detalle.points}
-          cta={{ label: "Ver la categoría", href: cat2.href }}
-          gallery={cat2Detalle.gallery}
-        />
-        <CategoryDetail
-          eyebrow={cat3Detalle.eyebrow}
-          title={cat3.label}
-          body={cat3Detalle.body}
-          points={cat3Detalle.points}
-          cta={{ label: "Ver la categoría", href: cat3.href }}
-          gallery={cat3Detalle.gallery}
-        />
+        {modulosHome.map((m, i) => (
+          <CategoryDetail
+            eyebrow="El módulo a fondo"
+            title={m.label}
+            body={MODULE_AFONDO[m.slug].body}
+            points={MODULE_AFONDO[m.slug].points}
+            cta={{ label: `Ver el módulo ${m.label}`, href: m.href }}
+            gallery={moduleGallery(m.slug, m.label, i)}
+          />
+        ))}
       </div>
     </div>
   </section>
@@ -586,19 +485,21 @@ const faqs: { question: string; answer: string }[] = [
      real se eliminan (son material de la plantilla-guía). */}
   <section class="band">
     <div class="container">
-      <GuiaNota titulo="Componente CategoryDetail (categoría a fondo)" archivo="src/components/CategoryDetail.astro · src/pages/index.astro">
+      <GuiaNota titulo="Componente CategoryDetail (el módulo a fondo)" archivo="src/components/CategoryDetail.astro · src/lib/modules.ts">
         <p>
-          Cada módulo de arriba amplía UNA categoría con el <strong>mismo</strong>
+          Cada módulo de arriba se abre con el <strong>mismo</strong>
           <code>CategoryDetail</code>: 2 columnas con la <strong>información
           detallada</strong> a la izquierda (título, párrafos, puntos clave y CTA) y
           una <strong>galería</strong> a la derecha (una imagen grande y dos debajo).
-          Refuerza la categoría o servicio antes de que el visitante entre a su página.
+          Lo amplía antes de que el visitante entre a su página de módulo.
         </p>
         <p>
-          Es una instancia por categoría y <strong>todas son idénticas</strong> (info
-          izquierda · galería derecha, sin alternar): el título y la imagen principal
-          salen de <code>SHOWCASE[i]</code> y el resto —párrafos, puntos y galería— de
-          su objeto <code>catNDetalle</code> en esta misma página. En móvil se apila.
+          Es una instancia por módulo y <strong>todas son idénticas</strong> (info
+          izquierda · galería derecha, sin alternar). Data-driven desde
+          <code>MODULOS</code> (site.ts): el título es el <code>label</code>, el copy
+          sale de <code>MODULE_AFONDO</code> y la galería de <code>moduleGallery()</code>
+          —ambos en <code>src/lib/modules.ts</code> (SSoT), compartidos con el índice
+          <code>/modulos</code>—. En móvil se apila.
         </p>
       </GuiaNota>
     </div>
