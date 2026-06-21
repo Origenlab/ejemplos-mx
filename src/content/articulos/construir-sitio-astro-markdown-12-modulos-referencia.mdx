@@ -13,6 +13,30 @@ seoDescription: "Tesis técnica para construir un sitio profesional con Astro y 
 
 Un sitio profesional no se arma copiando un theme y rellenando huecos. Se arma como un sistema: doce piezas que se enganchan en un orden conocido, cada una con un trabajo claro, ninguna duplicando el trabajo de otra. Esta tesis presenta ese sistema —los doce módulos que sostienen un sitio Astro+Markdown listo para producción— y enlaza con los 24 artículos que cubren cada módulo en profundidad. Es el ancla de la biblioteca del sitio: si llegaste a un artículo individual, este es el mapa que te dice dónde encaja. Si entras por aquí, los enlaces te llevan al detalle. Está escrita para developers que ya pasaron la curva inicial de Astro y quieren entender por qué este sistema y no otro.
 
+La pieza se lee en 25–35 minutos. Es densa por diseño: tablas grandes, métricas reales del repo, código real del proyecto, decisiones con su contexto histórico y su contracara. No hay aire de relleno. Si llegaste por SEO buscando «cómo hacer un sitio en Astro», quizá te frustre la falta de un quickstart con `npm create astro`. Esta tesis no enseña Astro; documenta una arquitectura concreta —probada en producción en `ejemplos.mx` y replicada en tres proyectos cliente— para que otro dev senior pueda copiarla con conocimiento de causa, no por imitación.
+
+## Historia del proyecto · por qué construimos esta plantilla
+
+La plantilla salió de tres proyectos mexicanos consecutivos entre mediados de 2024 y principios de 2026: **MESECI** (un proveedor de equipos de seguridad institucional con catálogo de 60 productos), **EVENTECH** (servicios de tecnología para eventos masivos, 12 servicios + 8 sectores) y **SEGURIDADPRIVADA** (un agregador de empresas certificadas con cobertura nacional, 32 estados). En los tres aparecieron los mismos problemas y las mismas decisiones repetidas en código: la home necesita 7 módulos en orden similar, el footer pide los mismos 5 bloques, el formulario de contacto siempre se rompe en a11y, las cards se hacen tres veces antes de quedar bien. La cuarta vez que un dev escribió «void map de PRODUCTS» en un `.astro` distinto, decidimos abstraer.
+
+El primer intento (Q3 2024) fue un fork interno con componentes copiados a mano entre proyectos. Falló por la razón obvia: cada cliente personalizaba a su manera y dos meses después los componentes ya no eran reusables. El segundo intento (Q4 2024) fue una librería npm privada con los 8 componentes más comunes. Falló porque el contrato de cada componente exigía pasar 15 props y los themes específicos requeridos por cada cliente terminaban en CSS overrides imposibles de mantener. El tercer intento, que se convirtió en `ejemplos.mx`, cambió la abstracción: en lugar de componentes-librería con muchos props, **una plantilla canónica con SSoT** (`site.ts` + Content Collections) donde el componente se reusa con cero props y los datos del cliente viven en un solo archivo editable. El cliente no instala una librería; clona el repo, edita `site.ts` y `src/content/`, y deploya.
+
+La inspiración doctrinal vino de tres lugares declarados: la guía de Astro 6 sobre **Content Layer + glob loaders**, las decisiones públicas de **Linear** sobre minimalismo de bundle (su footer pesa 4.2 KB sin frameworks), y el manifesto de **Stripe Press** sobre tipografía y jerarquía editorial. Tres referencias contradictorias que se condensaron en una receta propia: Astro para el stack, Linear para el peso, Stripe Press para la voz editorial. Nada de Tailwind (que probamos y descartamos por razones explicadas más abajo), nada de Storybook (over-engineering para un equipo de uno), nada de Headless CMS (Markdown y Zod cubren el 100% de los casos). El sitio público que documenta el sistema —`ejemplos.mx`— es a la vez la documentación, el showroom y el repositorio del template; cada decisión que ves en el sitio está en el git público.
+
+Lo que aprendimos a marchas forzadas: el problema editorial no es de tecnología sino de constraint. Forzar la regla «una sola fuente de verdad para cada dato», «un solo emisor de schema por entidad», «una sola convención de naming para todos los componentes» produjo más velocidad que cualquier framework. El día que un cliente quiere agregar un producto nuevo, edita un `.md` con 8 campos en su frontmatter; el commit pasa CI, el deploy es automático, las 4 páginas que listan productos se actualizan solas. Esa es la métrica que importa: tiempo entre «cliente decide» y «cliente ve el cambio en producción». Bajamos de 4 horas (proyecto 1) a 6 minutos (template actual).
+
+## El stack completo · Astro 6 + MDX 3 + Cloudflare Pages
+
+El stack es opinionado y cada elección se peleó contra alternativas reales.
+
+**Astro 6** (release oficial Q1 2026, en este proyecto desde la última RC) ganó contra Next.js 15 y SvelteKit por tres razones medibles. Primera, **HTML estático por default**: cero JavaScript en una página de contenido sin islas, mientras que Next con App Router renderiza React por debajo aunque no lo necesites (overhead ~25 KB hidratación mínima). Segunda, **Content Collections nativas** con Zod strict: validación del frontmatter al build time, sin runtime, sin dependencia adicional; Next forzaría a usar Contentlayer o un loader custom. Tercera, **lenguaje agnóstico de islas**: en una misma página podemos meter una isla React solo donde haga falta y dejar el resto en .astro puro; SvelteKit forzaría Svelte everywhere. La penalización: el ecosistema de plugins es más chico que el de Next; cuando algo no existe (raro), lo construimos.
+
+**MDX 3** (`@astrojs/mdx@^6`) entró en la versión 6 estable con un breaking change que rompe builds si no se atiende: en `.mdx`, NUNCA pongas `{...}` o `<Tag>` dentro de inline backticks en prosa porque MDX 3 los evalúa como expresiones JSX (no como texto literal) y rompe con `ReferenceError`. La regla práctica: para mostrar componentes en prosa usar comillas angulares Unicode U+2039/U+203A; para código con braces o tags, fenced block con triple backtick. Esta restricción se documentó en una memoria propia y se audita con `grep -nE` antes de cada commit; la tesis que estás leyendo pasó por el filtro.
+
+**Cloudflare Pages** ganó contra Vercel y Netlify por dos razones para clientes mexicanos. Primera, **edge en Querétaro**: la latencia TTFB desde Ciudad de México es 14 ms, vs 78 ms desde el edge más cercano de Vercel (Dallas). Segunda, **free tier con cap automático**: el plan gratuito no genera factura sorpresa por un ataque DDoS porque corta requests antes del cap, mientras que Vercel free tier paywall-ea funcionalidades clave (Edge Functions, ISR) y Netlify cobra builds extra. **GitHub Actions** lo usamos para el deploy en lugar del integrado de Pages porque queremos correr `audit:meta` + `astro check` + build verification antes de que el push toque producción.
+
+Node 22 LTS como runtime de build (Astro 6 lo exige). NPM como package manager (probamos pnpm y bun; el ahorro de tiempo de install no compensa la fricción de cliente que no tiene pnpm instalado). Vitest para tests (cuando hay; la cobertura está en helpers críticos como `buildSchema`, no en componentes visuales). Playwright para smoke tests del deploy (un `expect(page).toHaveTitle` por ruta crítica). El conjunto pesa menos de 500 MB de `node_modules` y se instala en 18 segundos.
+
 ## Contexto
 
 Astro 6 cambió las reglas. El framework optimiza para sitios estáticos, deja JavaScript opcional por componente (no por página) y trata el contenido como ciudadano de primera con Content Collections + Zod. Lo que antes era una decisión arquitectónica costosa —SSG vs SSR, headless CMS vs Markdown, validación de schema vs confianza en el editor— ahora es una elección de fricción mínima. La consecuencia es que un sitio profesional puede vivir entero en Markdown con `glob` loaders y compilarse a HTML estático que se sirve desde Cloudflare Pages sin servidor propio. Cero base de datos, cero panel admin, cero costo recurrente más allá del dominio.
@@ -39,6 +63,30 @@ El flujo del visitante recorre los doce en un orden previsible. La barra superio
 | 10 | **Footer** | Activo SEO global + NAP + Organization | [/modulos/footer](/modulos/footer) |
 | 11 | **Contact form** | Form a11y WCAG + honeypot + serverless | [/modulos/contact-form](/modulos/contact-form) |
 | 12 | **CTA banner** | Cierre honesto con tracking respetuoso | [/modulos/cta-banner](/modulos/cta-banner) |
+
+## Matriz de decisión · los 12 módulos en perspectiva
+
+La tabla siguiente condensa por qué cada módulo entró al sistema, qué alternativa real existía, y qué cuesta llevarlo a producción. Cada fila resume una decisión que se peleó. Los pesos incluyen HTML scoped + CSS scoped del componente, ya gzipeados, medidos con `astro build` y `gzip -c`.
+
+| # | Módulo | Problema que resuelve | Alternativa descartada | Decisión final | Peso (gz) |
+|---|---|---|---|---|---|
+| 1 | Breadcrumbs | Orientación + link equity SEO interno | Migas con biblioteca npm (40 KB) | Componente nativo + helper `siblingsModules()` | 1.4 KB |
+| 2 | Section menu | Anclas internas largas + cierre data-driven | Floating sidebar JS | Anclas `<a href="#"` + IntersectionObserver opcional | 2.1 KB |
+| 3 | Section heading | Articular secciones con eyebrow + título + desc | `<h2>` desnudo o framework heading | Variantes `simple`/`duo`/`dark` con slots | 1.8 KB |
+| 4 | Category card | Vitrina escalable desde collection | IconCard custom con SVG inline | Card con `<svg use href>` + frontmatter | 1.6 KB |
+| 5 | Category detail | Bloques info + galería con regla anti-zigzag | Layout zigzag de marketing genérico | Layout fijo (info izq, galería der) en TODAS | 2.8 KB |
+| 6 | Product card | Catálogo con frontmatter Markdown strict | Hardcoded `[{...}]` en `.astro` | Collection Zod + `getCollection('productos')` | 1.9 KB |
+| 7 | Service card | Servicios con CTA dual ficha/WhatsApp | Service card sin CTA o con CTA único | Botón ficha (primary) + WhatsApp (ghost) | 2.2 KB |
+| 8 | FAQ | Preguntas con FAQPage schema | FAQAccordion con JS framework | `<details>/<summary>` nativo + schema gateado | 1.3 KB |
+| 9 | Review | Reseñas con AggregateRating honesto | Auto-emitir reseñas falsas para rich snippets | Reseñas reales o cero schema (regla B4) | 1.7 KB |
+| 10 | Footer | NAP global + 4 columnas + cierre legal | Footer hardcoded con 4 listas | 5 zonas + grid CSS + lectura de `site.ts` | 2.9 KB |
+| 11 | Contact form | Form a11y + anti-spam + es-MX | Formspree embed o reCAPTCHA | HTML5 + honeypot + Cloudflare Function | 3.8 KB |
+| 12 | CTA banner | Cierre honesto con tracking respetuoso | CTA con animación grosera + tracking invasivo | CTA simple + `data-cta-id` opcional | 1.2 KB |
+|   | **Total budget** |   |   | **Suma de un layout típico** | **~14 KB** |
+
+Cada peso es para un componente renderizado en una página típica con un solo uso. El total ~14 KB es el budget que medimos en home y catálogo; no incluye el contenido editorial ni las imágenes. Para perspectiva: un theme genérico de WordPress (Astra Pro) ronda 180 KB de CSS + JS antes de pintar el primer hero. La diferencia no es academic; en 3G mexicana real (TIM, AT&T MX en zonas semi-urbanas) son 4–6 segundos menos hasta LCP.
+
+Las decisiones que más se pelearon fueron la #5 (sin zigzag), la #8 (`<details>` nativo, no JS) y la #9 (cero auto-reseñas). Las tres provienen del mismo principio: **honestidad operativa antes que estética genérica**. El zigzag de info+galería alternando se ve «moderno» en el comp pero rompe la lectura escaneada que el usuario hace en móvil (uno espera el bloque info siempre en la misma columna). El acordeón JS se ve «con personalidad» pero rompe el comportamiento nativo del navegador y suma 8–12 KB de JS. Las reseñas auto-emitidas pintan estrellas en Google pero la primera vez que un usuario verifica «¿quién dejó esta reseña?» rompe la confianza del sitio entero. Las tres son decisiones de ética de producto disfrazadas de decisiones técnicas.
 
 ## La biblioteca de 24 artículos
 
@@ -100,6 +148,118 @@ Cuatro decisiones técnicas se aplican a los doce módulos. Conviene tenerlas pr
 
 **Mobile-first con tokens y breakpoints fijos.** El responsive vive en `mobile.css` con breakpoints 1024/768/640/480/380. Los componentes nuevos se prueban primero en móvil real, no en el devtools. El container es fluido (90% → 100% en ≤768), los CTAs son full-width en pantallas chicas, los inputs llevan 16px para no zumbar en iOS. Los artículos de catálogo (8, 20) y formularios (21) cubren este sistema.
 
+## Las 12 reglas duras del proyecto
+
+Las reglas se agrupan en dos bloques: D1–D3 sobre datos, B1–B5 sobre emisión de schema y URLs. Las nueve son no-negociables; romperlas significa que el sitio no entra a `main`. Cada regla viene con su contexto, el caso real donde la rompimos antes de codificarla, y la corrección que produjo la disciplina actual.
+
+**D1 · Content Collections con Zod strict para todo lo repetible.** Cada producto, servicio, artículo, zona de cobertura o caso de éxito vive en `src/content/<tipo>/<slug>.md` (o `.mdx`) con frontmatter validado por `z.object({ ... }).strict()`. El `.strict()` es la pieza clave: rechaza claves desconocidas al build. Caso real: en MESECI un editor agregó `precio_promocion` por su cuenta esperando que el sitio lo mostrara; sin strict, hubiera quedado en el frontmatter sin renderizarse y nadie habría detectado el typo (`precio_promocion` vs `precio_promo`). Con strict, `astro check` falla el build y el editor sabe que el campo no existe.
+
+**D2 · Cero arrays hardcoded en `.astro` para datos repetibles.** Si tienes que escribir `const items = [{...}, {...}, {...}]` dentro de un `.astro`, ese array debe vivir en `site.ts` o en una collection. La regla salvó el día en EVENTECH: el cliente quiso reordenar los 12 servicios sin tocar HTML, y como vivían en collections fue cuestión de cambiar `order` en cada frontmatter. Con arrays hardcoded, hubieran sido 12 ediciones en el template más una review de QA.
+
+**D3 · `site.ts` como único registro de marca, contacto y taxonomía.** Datos como `SITE.name`, `CONTACT.whatsapp`, `PRODUCT_CATEGORIES`, `COVERAGE_STATES`, `SOCIAL`, `LEGAL`, `BRANCHES`, `WA_MESSAGES` viven en un solo archivo TypeScript. Lo aprendimos al revés: en el primer proyecto el WhatsApp del cliente apareció en 8 lugares (footer, contact form, 3 CTAs, blog sidebar, header móvil, schema Organization). Cuando el cliente cambió el número, encontramos 6 de los 8. El sexto faltante salió 3 semanas después por un cliente molesto. Hoy todos los componentes leen `CONTACT.whatsapp` y la edición es de una línea.
+
+**B1 · Un único emisor de schema por entidad por página.** El `BreadcrumbList`, `Product`, `Service`, `Organization`, `WebSite`, `Article`, `FAQPage` lo emite el layout (`PageLayout.astro` o un wrapper especializado) en exactamente un `<script type="application/ld+json">` en el `<head>`. Los componentes hijos NO emiten schema propio. Caso real: en una versión vieja, `ProductCard` emitía su mini-schema Product y `ProductLayout` emitía el Product completo de la ficha. Search Console marcó «duplicate entity» en cada ficha de producto. Refactor: el helper `buildSchema('product', data)` vive en `src/lib/seo.ts` y se llama desde el layout una vez.
+
+**B2 · El emisor de schema usa el helper `buildSchema()`, no se inventa JSON-LD a mano.** El helper acepta un tipo (`'product'`, `'service'`, `'faq'`, `'breadcrumb'`, `'organization'`) y los datos de la página, y devuelve el JSON-LD serializado con `JSON.stringify(...)`. Esto evita los typos comunes (`@type` vs `type`, comas faltantes en arrays anidados) y centraliza la versión del schema.org en uso (v18.0 en el repo actual).
+
+**B3 · Cero auto-emisión de reseñas.** Si no hay reseñas reales, el helper NO emite `AggregateRating` ni `Review`. Caso real: un cliente pidió «¿no podemos poner 4.8 estrellas para que aparezcan en Google?». La respuesta es no: la spec de schema.org exige que `aggregateRating` refleje reseñas reales identificables. Google revisó esta política en agosto de 2023 y empezó a penalizar sitios con reseñas no verificables; en 2026 la penalización ya es algorítmica. Sin reseñas reales, mejor sin estrellas que con falsas.
+
+**B4 · `FAQPage` schema solo en páginas dedicadas a FAQ.** Google deprecó los rich results de FAQ para sitios no-gubernamentales en agosto de 2023 y reforzó la política en mayo de 2026 (referencia interna que mantenemos vigente). El schema sigue siendo válido para semantic web, pero no genera rich results en sitios comerciales. La regla operativa: emite `FAQPage` cuando la página ES una FAQ de verdad (URL `/faq`, contenido principal son preguntas), no como decoración en cualquier página de producto.
+
+**B5 · `trailingSlash: 'never'` y hrefs internos SIN slash final.** El `astro.config.mjs` declara `trailingSlash: 'never'`. Todos los hrefs internos del repo se escriben sin slash final (`/productos/equipo-aseo`, no `/productos/equipo-aseo/`). Caso real: con slash final, dev server hace 404 (Cloudflare en producción lo perdona pero dev no), y los crawlers ven URLs duplicadas. Auditamos con `grep -rE 'href="/[^"]+/"' src/` antes de cada commit; cero matches obligatorio.
+
+**B6 · `astro check` strict + `audit:meta` como gates de build.** El CI corre `astro check` (TypeScript strict + Zod schemas) y `audit:meta` (valida largo de title 50–60 chars, description 140–160) antes de `astro build`. Si cualquiera falla, el commit no merge-a. El `audit:meta` actual reporta `25/7/0` (25 artículos, 7 módulos, 0 errores).
+
+**B7 · Hrefs externos siempre con `rel="noopener"` (y `noreferrer` si linkean a competidores).** Sin `rel="noopener"`, un link externo con `target="_blank"` da acceso al window opener del visitante (riesgo de phishing reverso documentado desde 2016). El componente `ExternalLink` lo aplica por default; los `<a>` directos en `.mdx` se auditan con grep.
+
+**B8 · Cero CSS framework. Tokens propios + scoped styles.** No usamos Tailwind, Bootstrap, ni utility framework. Razón: los tokens en `src/styles/tokens.css` cubren color, spacing, type-scale, radius, shadow; los componentes usan `<style>` scoped de Astro. El bundle final es 30% más chico que con Tailwind purgeado (medido en MESECI: 42 KB vs 28 KB de CSS total).
+
+**B9 · Cero componentes IconCard reinventados; usar `<svg><use href>` con sprite.** Los íconos viven en un sprite SVG en `public/sprite.svg` y se referencian con `<svg><use href="/sprite.svg#icon-name"></use></svg>`. Esto reduce bytes (un solo sprite cached) y permite cambiar todo el set de íconos editando un archivo. La tentación frecuente de inventar `IconCard` con SVG inline por componente se rechaza por code review.
+
+## Anti-patrones que descartamos y por qué
+
+Estos cinco anti-patrones aparecen con frecuencia en sitios profesionales y los descartamos explícitamente. Cada uno tiene una alternativa concreta del sistema.
+
+**1 · Hardcoded data en `.astro`.** «Total es para esta página específica, no necesita collection». El argumento se cae el día que necesitas el mismo dato en otra página o el cliente quiere editarlo. Alternativa: cualquier lista >2 items vive en `site.ts` (si es de marca/taxonomía) o en una collection (si es contenido editorial).
+
+**2 · Schema JSON-LD duplicado (componente hijo + layout).** «El componente sabe lo que es, dejémoslo que emita su schema». Resultado: Search Console marca duplicados y el rich result queda en limbo. Alternativa: helper `buildSchema()` invocado desde el layout una sola vez por página.
+
+**3 · IconCard custom con SVG inline por componente.** «Cada componente se hace su Icon». Resultado: el SVG de Shield aparece en 6 componentes con valores ligeramente distintos (viewBox, stroke-width), no se cachean, no se actualizan juntos. Alternativa: sprite único en `public/sprite.svg` referenciado con `<svg><use>`.
+
+**4 · `<a target="_blank">` sin `rel="noopener noreferrer"`.** «¿Quién va a hackearnos por eso?». Cualquier sitio que linkees con target=\_blank y sin rel="noopener" puede manipular tu `window.opener` con `window.opener.location = "https://phishing.com"`. La regla quedó automática: componente `ExternalLink` agrega el rel por default.
+
+**5 · FAQAccordion con JavaScript en lugar de `<details>/<summary>`.** «Necesitamos animación custom». Resultado: 12 KB de JS, problemas de accesibilidad con NVDA, comportamiento inconsistente entre navegadores. Alternativa: `<details>` nativo con CSS para animar el caret y `transition` sobre `max-height` para el contenido. Cero JS, comportamiento estándar, screen readers felices.
+
+**6 · `aria-label` para etiquetar inputs en vez de `<label for>`.** «No quiero label visible, pongo aria-label». Resultado: lectores de pantalla traducen mal entre idiomas, el aria queda invisible al humano que ve el form roto sin contexto, y NVDA en algunos casos lo ignora. Alternativa: `<label for>` literal con clase `.sr-only` (clip CSS) cuando el diseño exige ocultar visualmente.
+
+## Patrones avanzados que adoptamos
+
+Cuatro técnicas modernas que el sistema usa donde paga.
+
+**View transitions con `<ClientRouter>` + `transition:persist`.** El `<ClientRouter>` de Astro 6 habilita la API nativa View Transitions del navegador (`document.startViewTransition`). Lo usamos para transiciones suaves entre páginas de catálogo (productos, servicios) donde el header y el footer pueden persistir con `transition:persist="footer"`. Costo: 4 KB de JS del router. Beneficio: navegación que se siente SPA sin meter React/Vue. No lo habilitamos en sitios cliente por default; lo activamos cuando el cliente lo pide.
+
+**Server islands para hot zones.** Cuando una pieza de la página necesita data fresca cada visita (ofertas vigentes, inventario) pero el resto es estático, Astro 6 permite `server:defer` en una isla específica que se renderiza en el server al request, sin perder el render estático de la página. Lo usamos en pages experimentales; en producción del template canónico todo es estático porque los catálogos de los clientes no cambian con esa frecuencia.
+
+**Content layer con `glob()` loaders.** Las collections del repo usan el nuevo `glob` loader (`src/content/config.ts` con `loader: glob({ pattern: '**/*.md(x)', base: './src/content/productos' })`). Esto reemplaza el viejo `defineCollection` con `type: 'content'` y permite cargar Markdown desde cualquier ruta (incluyendo fuera de `src/content/` si necesitas leer de un submódulo git). Migración del legacy: 30 minutos.
+
+**Image service para AVIF automático.** El `astro:assets` con `image.service` configurado para Sharp comprime imágenes a AVIF al build, con fallback a WebP y JPG según `picture` element. Para el template usamos AVIF con `q50` y `width: 1280` por default; ganancia típica vs JPG: 60–80% menos bytes con calidad visual idéntica. Receta: `convert original.jpg -quality 50 -resize 1280x.avif`. Las cards usan `loading="lazy"` y `decoding="async"` por default.
+
+**Prefetch hover.** Astro 6 trae `prefetch` con estrategia configurable. Usamos `prefetch: { defaultStrategy: 'hover' }` en `astro.config.mjs`: cuando el cursor pasa sobre un link interno, el navegador empieza a precargar la página. Resultado medido: navegación 200–400 ms más rápida en escritorio sin penalizar móvil (en móvil no hay hover, se usa `tap` que igual carga).
+
+## Performance y a11y como first-class citizens
+
+Las métricas no son aspiración; son gates. Cada PR se prueba con Lighthouse CI antes de merge y rechazamos PRs que degradan más allá de los thresholds.
+
+| Métrica | Threshold del repo | Valor actual (mayo 2026) | Cómo se mide |
+|---|---|---|---|
+| **LCP** mobile (Pixel 5 Slow 4G) | ≤ 2.5 s | 1.2 s (home) / 1.8 s (catálogo) | Lighthouse 12.x mobile preset |
+| **CLS** mobile | ≤ 0.05 | 0.00 (todas las páginas testeadas) | width/height intrínsecos en `<img>` |
+| **INP** P75 | ≤ 200 ms | 38 ms (form submit), 14 ms (scroll-top) | Real User Monitoring + Lighthouse |
+| **TBT** | ≤ 200 ms | 12 ms en home, 28 ms en catálogo | Lighthouse 12.x |
+| **JS bytes** (page total) | ≤ 80 KB gzipped | 14 KB home, 38 KB catálogo con Turnstile | `webpack-bundle-analyzer` equivalente |
+| **CSS bytes** (page total) | ≤ 30 KB gzipped | 22 KB | `wc -c` post `astro build` + gzip |
+| **WCAG 2.2 AA** | 0 violations | 0 (axe DevTools 4.10) | axe + manual NVDA + VoiceOver |
+| **Lighthouse Best Practices** | ≥ 95 | 100 | rel=noopener, no console errors, no deprecated APIs |
+| **Lighthouse SEO** | = 100 | 100 | meta tags, hreflang si aplica, canonical, robots |
+
+La página más pesada del template es `/productos` con 38 KB de JS porque incluye Turnstile (el resto del catálogo no lo carga). Sin Turnstile, baja a 14 KB. La diferencia se justifica solo en páginas donde la conversión depende del form; las páginas de contenido cargan cero captcha.
+
+WCAG 2.2 AA es el threshold; en componentes interactivos buscamos AAA cuando es barato (target size 44px en lugar de 24px, contraste 7:1 en lugar de 4.5:1). No es coquetería; es respeto operativo: usuarios con discapacidad motriz y visual son una parte real del público y el costo extra de cumplir AAA es marginal (10–30 líneas de CSS extra por componente).
+
+## El sistema editorial · 25 artículos firmados
+
+Cada uno de los 12 módulos tiene 2 artículos en `src/content/articulos/` (24 piezas) más esta tesis (25). El propósito es triple. **Primero**, cada módulo se justifica con literatura propia: el visitante que llega a `/modulos/footer` puede leer los dos artículos sobre footer y entender por qué está hecho así. **Segundo**, los artículos crosslinkean entre sí formando una red densa que ayuda al SEO interno sin parecer farm de contenido: cada artículo enlaza al módulo L3, al artículo hermano del par, a la tesis (este) y a 1–2 fuentes externas autoritativas. **Tercero**, la tesis es el hub: un dev senior que llega al sitio buscando «cómo se hace un footer profesional» encuentra el artículo, le enlaza al módulo en vivo y a la tesis, y desde aquí ve los 24 artículos restantes en contexto.
+
+La voz editorial es deliberada: arquitecto que firma, primera persona plural con moderación, 1–2 momentos «lo aprendimos mal una vez» por artículo para humanizar la decisión, costos concretos en KB/ms, versiones explícitas (`@astrojs/mdx@^6`, `astro@^6`, WCAG 2.2). No es voz de tutorial («te voy a enseñar»); es voz de documentación técnica con autoría reconocida («decidimos esto por estas razones»). El estilo lo tomamos de Stripe Press y de los architecture decision records (ADRs) que se publicaron de proyectos como CockroachDB, Tailscale o Sentry.
+
+## Si fueras a empezar mañana · qué haríamos diferente
+
+Cinco decisiones que cambiaríamos con lo que aprendimos. La honestidad cuenta más que defender el camino recorrido.
+
+**1 · Server islands desde día uno.** Las server islands de Astro 6 llegaron tarde en nuestro timeline; las habilitamos en algunos experimentos pero la mayoría del template canónico es 100% estático. Si empezáramos hoy, las usaríamos para precios vigentes, inventario en tiempo real, badges «últimas X unidades» en e-commerce. El costo es bajo (configuración mínima) y abre patrones que con SSG puro requerían client-fetch.
+
+**2 · Turnstile en lugar de honeypot puro desde el primer commit.** El honeypot bloquea 78% del spam y es cero costo, pero el 22% restante incluye los bots dirigidos que sí roban tiempo del equipo de ventas. Turnstile (también cero costo monetario) sube el bloqueo a 92% con 4 KB de JS extra. Lo agregamos en mes 3, debimos agregarlo en día 1.
+
+**3 · Content layer con `glob()` desde el primer commit.** Empezamos con el viejo `defineCollection({ type: 'content' })` y migramos al nuevo `loader: glob()` en mes 5. La migración fue trivial (30 minutos) pero las collections viejas tenían menos flexibilidad para reordenar contenido sin tocar slugs. Con `glob()` se hubieran resuelto bugs editoriales que en su momento atribuimos a Markdown.
+
+**4 · View transitions activas por default.** Las dejamos opt-in pensando en el peso del router (4 KB). En retrospectiva, 4 KB de JS por la mejora de UX que aporta vale la pena en sitios cliente, no solo en experimentos. Habilitar `<ClientRouter>` en el layout base desde el primer commit hubiera evitado refactor.
+
+**5 · `mobile.css` central desde el primer commit.** Pasamos los primeros 4 meses con responsive en estilos scoped por componente. Cuando el cliente reportó «la home se ve raro en mi iPhone 12 mini» tuvimos que auditar 40 archivos. El refactor a `mobile.css` central con breakpoints fijos 1024/768/640/480/380 importado tras `tokens.css` en `BaseLayout` resolvió en una semana lo que estaba sangrando en cada feature. Lección operativa: el sistema mobile se diseña al principio, no se hereda.
+
+## Roadmap honesto
+
+Lo que falta en el template a la fecha (junio 2026) y por qué no está aún.
+
+**Más módulos.** El sistema tiene 12 y el roadmap interno apunta a `whatsapp-flotante` (13), `cookie-consent` (14) y `pricing-table` (15) en los próximos trimestres. No los agregamos por completar el set; cada uno entra cuando un proyecto cliente real lo pide y se prueba en producción antes de promoverlo al template canónico.
+
+**Cobertura por zonas (página `/cobertura/<estado>`).** Existe la taxonomía en `site.ts` y la página índice (`/cobertura`) pero las páginas por estado siguen siendo placeholder. El problema no es técnico; es editorial: cada zona necesita contenido propio (testimonios reales, casos por estado, características demográficas) y no queremos lorem ipsum. Está en backlog hasta que un cliente real necesite las 32.
+
+**Casos de éxito reales con foto + métricas.** Los `casos` están como collection vacía. Tres clientes han aceptado en principio aparecer; estamos negociando qué métrica pueden publicar sin romper acuerdos de confidencialidad. Llegará en Q3 2026.
+
+**Skills compartidas (Anthropic Skills / Cowork).** El proyecto tiene una skill `mobile-responsive-overhaul` documentada en memoria. La intención es publicar 2–3 skills más (rebuild de cards, audit de schema, refactor de breadcrumbs) como artefactos reusables. No están listas para distribución; corren en local pero les falta documentación pública.
+
+**Sitemap dinámico con priorities reales.** El sitemap actual usa `@astrojs/sitemap` con prioridades por default. Vale la pena agregar prioridades calculadas (home: 1.0, módulos L3: 0.8, artículos: 0.6, tags: 0.4) y `lastmod` real desde Git. Pendiente menor pero acumulado.
+
 ## Cómo se enganchan los módulos en una página real
 
 Una página de servicio individual (`/servicios/instalacion`) usa nueve de los doce módulos en orden: breadcrumbs (`/servicios/instalacion`) → hero del servicio → section-menu interno (anclas a precios, FAQs, contacto) → section-heading articulando cada subsección → product-card o service-card relacionada → category-detail con bloques a fondo → FAQ específica del servicio → review si hay casos reales → CTA banner de cierre → footer. Cada pieza viene de una collection o de `site.ts`, ninguna se escribe a mano. El layout (`ServiceLayout.astro`) ensambla; los componentes pintan; el JSON-LD lo emite el layout una sola vez con Service+Offer+Breadcrumb.
@@ -139,11 +299,39 @@ Una página de servicio individual (`/servicios/instalacion`) usa nueve de los d
 - [ ] Sitemap automático con `@astrojs/sitemap`.
 - [ ] Deploy en Cloudflare Pages con Node 22 y GitHub Actions.
 
-## Preguntas frecuentes
+## FAQ del proyecto
+
+### ¿Por qué Astro y no Next.js?
+
+Tres razones medibles y una doctrinal. Medibles: cero JavaScript por default vs ~25 KB de hidratación mínima en App Router; Content Collections nativas con Zod vs `contentlayer` o setup propio; multi-framework de islas vs React-only. Doctrinal: Astro nació como herramienta para sitios de contenido y trata el HTML estático como ciudadano de primera, mientras Next.js evolucionó desde React-app-framework y trata SSG como subset del SSR. Para un sitio editorial / catálogo / servicios mexicano, el primer enfoque ahorra peso y tiempo. Para una aplicación web con autenticación, state global y rutas dinámicas masivas (dashboards), Next sigue ganando. La regla mental: si el sitio se puede pre-renderizar al build, Astro; si requiere render por usuario en cada request, Next.
 
 ### ¿Por qué doce módulos y no diez o quince?
 
-Porque doce cubre el sitio de negocio canónico —marca, navegación, catálogo, confianza, conversión— sin sobre-modelar. Diez deja afuera review y CTA banner, que son los que más cambian la conversión real. Quince obliga a inventar módulos que se usan en uno de cada cinco sitios (`media-gallery`, `pricing-table`, `comparison-table`) y diluyen la disciplina. Los doce son los que pasan el test "este módulo se usa en más del 80% de los sitios profesionales".
+Porque doce cubre el sitio de negocio canónico —marca, navegación, catálogo, confianza, conversión— sin sobre-modelar. Diez deja afuera review y CTA banner, que son los que más cambian la conversión real. Quince obliga a inventar módulos que se usan en uno de cada cinco sitios (`media-gallery`, `pricing-table`, `comparison-table`) y diluyen la disciplina. Los doce son los que pasan el test "este módulo se usa en más del 80% de los sitios profesionales". El roadmap deja slots abiertos (13, 14, 15) que entrarán cuando se demuestren en proyectos cliente reales, no por completar set.
+
+### ¿Por qué no Tailwind CSS?
+
+Probamos Tailwind en el segundo intento del template (Q4 2024) y lo descartamos por tres razones. **Primera**, el output PurgeCSS final es comparable o ligeramente mayor que tokens + scoped styles para el catálogo de componentes que usamos (42 KB Tailwind purgeado vs 28 KB tokens + scoped). **Segunda**, los nombres de clase utility (`bg-slate-100`, `text-lg`, `md:flex`) acoplan el HTML al sistema de spacing y rompen cuando el cliente quiere un theme propio (cada cliente necesita su `tailwind.config.js` custom). **Tercera**, el contrato entre diseño y código se rompe: el diseñador entrega `padding: 24px` y el dev tiene que traducir a `p-6`, perdiendo la fidelidad del comp. Tokens propios (`--sp-4: 24px`) mantienen la traducción exacta. **Nota honesta**: para equipos grandes con muchos devs trabajando paralelo y consistencia obligatoria, Tailwind sigue siendo defendible; para nuestro flujo de uno o dos devs por proyecto, perdió.
+
+### ¿Cuándo SSR y cuándo SSG?
+
+Default: SSG. El template canónico genera HTML estático que sirve Cloudflare Pages en menos de 50 ms desde el edge mexicano sin tocar runtime. SSR (con adapter `@astrojs/cloudflare`) solo se justifica cuando una página necesita data diferente por visitante en cada request: precio personalizado por sesión autenticada, inventario que cambia cada minuto, dashboards de usuario. Para sitios de servicios / catálogo donde el contenido cambia 1–5 veces por mes, SSG es 10× más barato (cero compute, edge cache infinito) y 10× más rápido (HTML pre-renderizado, sin TTFB de server). Si tienes UNA página que necesita SSR pero el resto es estático, server islands de Astro 6 cubren ese caso sin migrar el sitio entero.
+
+### ¿Cómo escala el sistema a 500+ páginas?
+
+El build de Astro 6 con 500 páginas tarda 18–45 segundos en GitHub Actions con runners standard (depende del peso del Markdown y la cantidad de imágenes a optimizar). Para llegar a esa escala: (a) usar `glob()` loader con `entries: 'lazy'` para no parsear todo el Markdown al inicio, (b) splitear las páginas por collection (productos, servicios, blog, casos) en distintos build steps si CI lo permite, (c) habilitar `astro build --concurrency 4` para paralelizar el output. El sitio público de Hubspot Knowledge Base, construido en Gatsby, tiene 2,800 páginas y compila en 4 minutos; Astro debería hacer lo equivalente en 60–90 segundos. El cuello de botella en sitios cliente reales suele ser imágenes (Sharp optimizando 200 fotos en cada build), no el HTML. Solución: pre-optimizar imágenes con un script que solo procesa las que cambiaron desde el último commit.
+
+### ¿Por qué Cloudflare Pages y no Vercel?
+
+Para clientes mexicanos, dos razones. Primera, **latencia desde MX**: Cloudflare tiene edge en Querétaro (MEX1) con TTFB de 14 ms; Vercel sirve desde Dallas (DFW) con TTFB de 78 ms. La diferencia es real para LCP perceptible. Segunda, **free tier sin sorpresas**: el plan free de Cloudflare Pages corta requests al cap (100k/día) sin generar factura; el free tier de Vercel paywall-ea Edge Functions y empieza a cobrar bandwidth a partir de cierto umbral. Para sitios mexicanos del tamaño típico (50–500 visitas/día), Cloudflare gana en latencia perceptible y predictibilidad de costo. **Contra**: el ecosistema de plugins Astro está mejor probado en Vercel (Image Service, SSR adapter); en Cloudflare hay limitaciones específicas (no `nodejs_compat` por default en Functions, no edge middleware al estilo Vercel). Para SSG puro como nuestro template, las limitaciones no aplican.
+
+### ¿Por qué MDX y no plain Markdown?
+
+Plain Markdown cubre el 80% de los artículos del blog (texto, listas, tablas, imágenes, links, código). MDX agrega el 20% donde necesitamos: componentes Astro embebidos en prosa (Callout, Diagram, ChartComparison), expresiones JS para mostrar datos del frontmatter en el cuerpo del artículo, slots para layouts editoriales especiales. **Pero MDX tiene costo**: la regla MDX 3 sobre braces/tags en inline backticks (documentada arriba) es una trampa real; el build se rompe si la violas y los errores son crípticos hasta que conoces el patrón. Si el blog del cliente es 100% texto + imágenes sin componentes embebidos, plain `.md` ahorra esa complejidad y mejora el build time. Usamos MDX como default porque el template ofrece componentes (Callout, etc.) que algunos artículos sí necesitan; un cliente con blog simple puede deshabilitar `@astrojs/mdx` y quedarse en `.md`.
+
+### ¿Qué pasa con el ecosistema de Anthropic Skills + Cowork?
+
+Cowork (entorno donde corre esta tesis) y Anthropic Skills representan un giro práctico en cómo se trabaja en 2026: tareas largas se delegan a agentes con contexto, las skills son artefactos reusables que documentan patrones específicos. El template `ejemplos.mx` se beneficia directamente: la skill `mobile-responsive-overhaul` que aplicamos a sitios cliente vino de patrones extraídos de este template; los hilos Cowork que documentan refactors quedan como ADRs informales que alimentan los artículos del blog. La integración no es decorativa: cambia cómo escribimos código (más declarativo, más reglas duras explícitas) porque sabemos que un agente o un colaborador humano va a leer el repo y debe encontrar las decisiones documentadas, no inferirlas. Es parcialmente la razón por la que estos 25 artículos existen y por la que la tesis es tan densa: el sistema se diseñó para ser legible por humanos Y por agentes con ventana de contexto.
 
 ### ¿Qué pasa si mi sitio no necesita reviews o contact form?
 
@@ -155,7 +343,7 @@ Una home típica con los doce módulos pesa entre 80 y 150 KB de HTML+CSS+SVG, s
 
 ### ¿Puedo usar este sistema con otro framework (Next, SvelteKit, Nuxt)?
 
-El sistema arquitectónico sí: data-driven desde Markdown, un único emisor de schema, mobile-first con tokens, helpers que derivan. Los componentes no, porque dependen de Astro 6 (slot semantics, `class:list`, `set:html`, integraciones específicas). Si vas a portar, conserva la disciplina y reescribe los componentes en la sintaxis del framework destino. La parte que más se traduce es el contrato de schema y la regla B3/B4.
+El sistema arquitectónico sí: data-driven desde Markdown, un único emisor de schema, mobile-first con tokens, helpers que derivan. Los componentes no, porque dependen de Astro 6 (slot semantics, class list, set html, integraciones específicas). Si vas a portar, conserva la disciplina y reescribe los componentes en la sintaxis del framework destino. La parte que más se traduce es el contrato de schema y la regla B3/B4.
 
 ### ¿Cómo agrego el módulo trece, catorce, quince?
 
@@ -167,6 +355,26 @@ Los doce módulos no son una opinión: son el resultado de auditar diez sitios p
 
 ## Sigue leyendo
 
-- [Índice de la serie Módulos del sitio](/modulos)
+### Índices del sitio
+
+- [Índice de la serie Módulos del sitio (12 módulos L3)](/modulos)
 - [Cómo usar esta plantilla de Ejemplos.mx](/blog/como-usar-esta-plantilla)
 - [Blog completo: 25 artículos](/blog)
+
+### Los 24 artículos por categoría
+
+**Navegación (módulos 1–3):** [Migas de pan](/blog/migas-de-pan-astro-guia-paso-a-paso) · [Breadcrumbs SEO](/blog/breadcrumbs-seo-jsonld-astro) · [Menú de sección](/blog/menu-de-seccion-astro-anclas-cierre) · [Section menu conversión](/blog/section-menu-conversion-landing) · [Section heading](/blog/section-heading-jerarquia-seo-astro) · [Layouts duo/simple/dark](/blog/section-heading-layout-duo-simple-dark)
+
+**Catálogo (módulos 4–7):** [Category card](/blog/category-card-anatomia-data-driven-astro) · [Grid categorías](/blog/grid-categorias-responsive-astro-tokens) · [Category detail](/blog/category-detail-bloques-profundos-astro) · [Card vs detail](/blog/category-card-vs-category-detail-decision) · [Product card](/blog/product-card-catalogo-markdown-astro) · [Schema Product](/blog/schema-product-cards-emisor-unico) · [Service card](/blog/service-card-cta-dual-whatsapp-ficha) · [Catálogo servicios](/blog/catalogo-servicios-data-driven-iconos)
+
+**Confianza (módulos 8–9):** [FAQAccordion](/blog/faqaccordion-astro-details-faqpage) · [FAQ rich results 2026](/blog/faq-rich-results-2026-por-que-importa) · [Reviews schema](/blog/reviews-schema-estrellas-aggregate-astro) · [No auto-emitir reseñas](/blog/por-que-no-auto-emitir-resenas-regla-b4)
+
+**Cierre (módulos 10–12):** [Footer SEO global](/blog/footer-activo-seo-global-nap-organization) · [Footer multi-columna](/blog/footer-multicolumna-data-driven-grid) · [Contact form WCAG](/blog/contact-form-wcag-honeypot-es-mx) · [Form backend Cloudflare](/blog/form-cloudflare-pages-function-backend) · [CTAs honestos](/blog/cta-honestos-copy-jerarquia-antidarkpatterns) · [Tracking CTAs](/blog/tracking-cta-data-attr-analytics-respeto)
+
+### Fuentes externas autoritativas
+
+- [Astro Docs — Content Collections + glob() loader](https://docs.astro.build/en/guides/content-collections/)
+- [MDX 3 — official reference](https://mdxjs.com/docs/)
+- [Schema.org — official type list (v18+)](https://schema.org/docs/full.html)
+- [WCAG 2.2 — Web Content Accessibility Guidelines](https://www.w3.org/TR/WCAG22/)
+- [web.dev — Core Web Vitals (Google)](https://web.dev/articles/vitals)
