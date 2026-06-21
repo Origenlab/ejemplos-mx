@@ -1,0 +1,1008 @@
+---
+// ============================================================================
+// /modulos/cta-banner — PÁGINA DEL MÓDULO «CTA banner».
+// ----------------------------------------------------------------------------
+// DUODÉCIMO L3 — cierre simbólico de la serie /modulos/* (topbar · header ·
+// breadcrumbs · hero · section-menu · section-heading · category-card ·
+// category-detail · product-card · service-card · faq · review · footer ·
+// contact-form · cta-banner). MISMO molde (docs/MODULOS.md §2): 10 secciones,
+// Hero sin CTAs, SectionHeading layout="duo", anatomía mapeada 1:1 al
+// componente real, galería de 6 variantes (REAL/EXTENSIÓN), 4 patrones
+// móviles con MarcoMovil + Receta, 3 recetas de uso, sí/no destilados del
+// flujo entero (anti dark-patterns canónicos en CTAs), cierre con
+// siblingsModules('cta-banner').
+//
+// PARTICULARIDADES DE ESTE MÓDULO (cierre del flujo):
+//
+//   1) EL BANNER ES EL ÚLTIMO HANDSHAKE. A diferencia del footer (que reparte
+//      el mapa entero del sitio), el CTA banner pide UNA cosa al cierre de la
+//      sección: cotizar, contactar, ver catálogo. Por eso lleva 1 acción
+//      primaria y, a lo más, 1 secundaria — nunca tres opciones competidoras.
+//
+//   2) REGLA B3 — CERO SCHEMA DESDE EL BANNER. PotentialAction/Action puede
+//      tener sentido a nivel Organization (WhatsApp como canal del negocio),
+//      pero el emisor canónico es organizationSchema() vía buildSchema()
+//      desde BaseLayout. El componente NO emite JSON-LD propio. Si la página
+//      padre necesita declarar una acción específica, el lugar es el grafo
+//      base, no el banner.
+//
+//   3) ANTI DARK-PATTERNS — §6 destila el aprendizaje del flujo entero. No
+//      hay contadores falsos de urgencia, no hay escasez fabricada, no hay
+//      confirmshaming en el botón secundario, no hay copy que mienta sobre
+//      qué pasa al hacer clic. La honestidad del CTA es factor de marca.
+//
+// CROSS-LINKS EXPLÍCITOS (cierre de la serie):
+//   - /modulos/contact-form  → cuando el CTA lleva a formulario.
+//   - /modulos/footer        → el CTA pre-footer es el primo cercano.
+//   - /modulos/section-menu  → cuándo cierre = menú vs banner (decisión).
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import CTABanner from '@components/CTABanner.astro'
+import { PRESET_GENERAL, PRESET_CATEGORIA, PRESET_CONTACTO } from '@config/cta-presets'
+import { WA_MESSAGES, waUrl } from '@config/site'
+import { siblingsModules } from '@lib/modules'
+
+// Menú de cierre — derivado de MODULOS (SSoT) con siblingsModules: índice de
+// la serie + dos vecinos en estado 'listo' + home. Requiere que site.ts tenga
+// cta-banner en estado 'listo' (se hace en este commit).
+const cierreItems = siblingsModules('cta-banner')
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), sub: 'Respuesta inmediata', external: true }
+
+// ── Anatomía: las 5 PIEZAS reales del CTABanner.astro ───────────────────────
+// Mapean 1:1 con las props del componente y los nodos del template.
+const piezas = [
+  {
+    n: 1,
+    nombre: 'Heading (h2) — la pregunta del cierre',
+    que: 'El encabezado del banner: una pregunta o promesa breve, en h2 (el banner aparece dentro del flujo de página, donde ya hubo h1 en el hero). Tamaño tipográfico clamp(1.375rem, 2.5vw, 1.875rem), font-weight 800, letter-spacing -.03em. Lleva id="cta-banner-heading" y la sección se conecta con aria-labelledby para que el lector de pantalla anuncie el bloque entero como una región de llamada a la acción.',
+    dato: 'props.heading: string · <h2 id="cta-banner-heading"> · <section aria-labelledby="cta-banner-heading">',
+  },
+  {
+    n: 2,
+    nombre: 'Descripción opcional — qué pasa al hacer clic',
+    que: 'Una frase de apoyo bajo el heading que aclara la promesa: cómo responden, en cuánto tiempo, sin compromiso. max-width 58ch para evitar líneas largas, font-size .9375rem. Opcional: si no llega la prop, el banner queda solo con heading + botones (formato más urgente, menos contexto). Para landings de campaña va sin desc; para cierres profesionales con la desc, gana confianza.',
+    dato: 'props.desc?: string · <p class="cta-banner__desc"> · max-width 58ch',
+  },
+  {
+    n: 3,
+    nombre: 'btns[] — el array de botones tipados',
+    que: 'Hasta 2 botones por banner (más rompe la jerarquía). Cada botón es BtnDef = { label, href, icon?, primary?, external? }. icon admite 6 valores ("wa" · "arrow" · "phone" · "catalog" · "info" · "quote") que pintan un <svg> inline (cero peticiones extra). primary=true → fondo sólido (ghost si false). external=true → target="_blank" + rel="noopener noreferrer" (obligatorio para wa.me y enlaces externos). Cero hardcoding del número de WhatsApp: cada btn.href con icon="wa" se construye con waUrl(WA_MESSAGES.x) en cta-presets.ts (regla D4).',
+    dato: 'props.btns: BtnDef[] · waUrl(WA_MESSAGES.cotizacion) · ICONS map con 6 SVGs inline',
+  },
+  {
+    n: 4,
+    nombre: 'badge opcional — la línea de confianza',
+    que: 'Microcopy bajo los botones: «Respuesta rápida», «Asesoría sin costo», «Sin compromiso». Va con un <svg> de escudo inline (escudo=trust signal universal), font-size .75rem, letter-spacing .01em. Color tenue (opacidad reducida sobre el fondo del banner). NO compite con los botones — los acompaña: cuando el visitante duda sobre clicar, el badge baja la fricción percibida con honestidad (la promesa debe sostenerse).',
+    dato: 'props.badge?: string · <p class="cta-banner__badge"> · <svg> escudo inline',
+  },
+  {
+    n: 5,
+    nombre: 'variant + centered — la cara visual',
+    que: 'Dos props deciden el aspecto: variant: "red" | "dark" | "light" (red = fondo sólido --color-red para CTAs principales; dark = gradiente 155° con overlay radial para alta intensidad; light = gris claro con borde top/bottom para inline en sección--surface). centered: boolean reordena el inner a column con text-align:center (default false → desktop side-by-side heading|botones). Las tres variantes son REAL del componente actual; cada una tiene su contexto de aplicación (§4).',
+    dato: 'props.variant?: "red" | "dark" | "light" (default "red") · props.centered?: boolean',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Un solo handshake — el cierre que pide UNA cosa, no tres',
+    desc: 'A diferencia del footer (que reparte el mapa entero del sitio), el CTA banner se enfoca en una sola acción. La regla operativa: 1 botón primario + a lo más 1 ghost que da escape al visitante indeciso. Tres botones competidores reparten la atención y bajan la conversión; uno solo, con copy claro y enlace honesto, la sube. El componente lo permite (btns[] admite 1-2 entradas) pero el sistema de presets ya viene calibrado: PRESET_GENERAL lleva WhatsApp + ver catálogo, PRESET_CONTACTO solo WhatsApp. La disciplina vive en cta-presets.ts, no en cada página.',
+  },
+  {
+    titulo: 'Cero hardcoding — presets en SSoT, mensajes por intención',
+    desc: 'El número de WhatsApp NUNCA se escribe en una página. Vive en CONTACT.whatsapp de site.ts y se consume vía waUrl(WA_MESSAGES.x) (regla D4). Cada mensaje pre-armado por intención (cotizar, productos, servicios, blog, contacto, urgente) vive en WA_MESSAGES — el lead llega con contexto, el asesor entra en materia, y subes la calidad del primer reply. Los presets (PRESET_GENERAL, PRESET_CATEGORIA, PRESET_CONTACTO) componen heading + desc + btns[] + badge + variant; las páginas solo importan el preset y montan el banner. Cambias el copy de una vez, se propaga al sitio entero.',
+  },
+  {
+    titulo: 'Honestidad del copy — anti dark-patterns por diseño',
+    desc: 'El CTA banner es el módulo más vulnerable a dark-patterns: contadores falsos de urgencia, escasez fabricada, confirmshaming en el botón secundario, copy que miente sobre qué pasa al hacer clic. Este sistema los rechaza por diseño (ver §6 + docs/MODULOS.md §6.4). El verbo del botón es imperativo y concreto («Cotizar por WhatsApp», no «Click aquí»); el badge dice lo que el negocio puede sostener («Respuesta rápida», no «Solo hoy»); el ghost es neutro («Ver catálogo», no «No, prefiero perder dinero»). La honestidad del CTA es factor de marca: a corto plazo subes conversión inflando urgencia; a mediano, quemas confianza.',
+  },
+]
+
+const sis = [
+  'Usa verbo imperativo + objeto concreto en el label del botón: «Cotizar por WhatsApp», «Ver catálogo completo», «Hablar con un asesor», «Solicitar cotización». El verbo en imperativo (no infinitivo «cotizar») le dice al visitante exactamente qué hará al clicar; el objeto concreto evita la ambigüedad de «Click aquí» / «Más info» / «Enviar». Regla operativa: ≤32 caracteres por label, idealmente ≤24 — los botones largos rompen la jerarquía visual y se cortan en móvil.',
+  'Mantén UNA acción primaria por banner. El componente permite hasta 2 btns[]: 1 primary (fondo sólido, la conversión que quieres) + 1 ghost (escape para el indeciso, sin competir visualmente). Tres botones reparten la atención y bajan la conversión medible. Si necesitas tres caminos, no es un CTA banner — es un SectionMenu (ver /modulos/section-menu). El banner pide UNA cosa, el menú reparte.',
+  'Construye CADA enlace de WhatsApp con waUrl(WA_MESSAGES.x). El número vive en CONTACT.whatsapp de site.ts y se formatea solo con waUrl() (regla D4 — NO hardcodear wa.me/<número>). Los mensajes pre-armados viven en WA_MESSAGES por intención (cotizar, productos, servicios, blog, urgente). Cambias el número una vez en site.ts y se propaga al banner, al header, al footer, al flotante, al formulario. Cero divergencia, cero búsqueda-y-reemplazo.',
+  'Centraliza el copy de los CTAs en cta-presets.ts. La página padre NO escribe heading + desc + btns[] a mano — importa PRESET_GENERAL, PRESET_CATEGORIA o PRESET_CONTACTO y lo monta como spread (<CTABanner {...PRESET_GENERAL} />). Resultado: el banner es coherente entre páginas, el copy se ajusta en UN archivo, y agregar un preset nuevo (PRESET_BLACK_FRIDAY, PRESET_NEWSLETTER) no requiere editar componentes. Los presets son SSoT del cierre de cada tipo de página.',
+  'Garantiza foco visible nítido. El componente ya pinta :focus-visible con outline 2px sólido + outline-offset 3px (blanco sobre variant red/dark, rojo sobre variant light). NUNCA pongas outline:none sin un reemplazo visible (sombra, borde grueso, fondo distinto). Un visitante que navega por teclado debe ver claramente dónde está parado. Es WCAG 2.4.7 (Focus Visible) + 2.4.11 (Focus Not Obscured) AAA — barato de cumplir, caro de violar.',
+  'Respeta prefers-reduced-motion y forced-colors. El componente actual no anima nada agresivo (solo transición de .18s en hover de botones), pero si añades una animación de entrada del banner (fade-in, slide-up), guárdala detrás de @media (prefers-reduced-motion: no-preference). Y verifica el modo «forced-colors» de Windows (alto contraste): el botón debe seguir siendo distinguible aunque el SO fuerce su paleta. Patrón mínimo: forced-color-adjust: auto + outline obligatorio en focus.',
+  'Variante contextual: la apertura coincide con el tono de la página. PRESET_GENERAL (variant="red") cierra la home y landings de producto/servicio — fondo sólido de marca, alta intensidad. PRESET_CATEGORIA (variant="dark") cierra fichas L4 de producto/categoría — gradiente oscuro premium. PRESET_CONTACTO (variant="light") cierra páginas de contacto, blog y legales — gris claro con bordes, baja intensidad. NO uses la misma variante en TODAS las páginas: el sistema pierde jerarquía. Tres variantes = tres registros, una sola voz.',
+]
+const nos = [
+  'NO uses contadores de urgencia falsos («Termina en 02:34:18», «Solo 3 cupos hoy»). Si el tiempo no es real (no hay end_date documentado en el catálogo), es un dark-pattern del manual: degrada la confianza, viola el principio de transparencia del CSS UX Guidelines, y en MX+EU puede tipificar publicidad engañosa (LFPC art. 32-bis + Directive 2005/29/EC). El visitante de hoy reconoce el truco; el de mañana no vuelve.',
+  'NO fabriques escasez («¡Solo quedan 2!», «1 persona viendo ahora mismo»). Mismo razonamiento que arriba: si el dato no es real y verificable, es manipulación. La escasez REAL (stock final de un producto, sesiones limitadas de un servicio) se comunica con honestidad y data — un campo en el frontmatter del producto, una cuenta server-side. La fabricada es marketing tóxico que tu sistema rechaza por diseño (ver docs/MODULOS.md §6.4).',
+  'NO uses confirmshaming en el botón secundario («No gracias, prefiero seguir perdiendo dinero»). El ghost es para dar escape al visitante indeciso, no para humillarlo si no convierte. Copy neutro y honesto: «Ver catálogo», «Seguir leyendo», «Volver al inicio». El confirmshaming sube clicks a corto plazo y quema marca a mediano; los visitantes que lo soportan una vez no vuelven, y el copy se vuelve meme en redes (búscalo: «r/assholedesign»). El sistema lo prohíbe.',
+  'NO escribas copy de botón que mienta sobre qué pasa al hacer clic. «Descargar gratis» que abre un formulario de 8 campos no es descargar gratis: es lead magnet. «Hablar con un asesor» que lleva a un autoresponder no es hablar con asesor: es ticket. La regla dura: el verbo del botón es lo que pasa, sin sorpresa. Si el clic abre WhatsApp, dice «Cotizar por WhatsApp», no «Comenzar ahora». Si el clic lleva a un form, dice «Solicitar cotización», no «Acceder». La honestidad del label es la diferencia entre un banner que convierte y uno que quema lista.',
+  'NO emitas JSON-LD desde el banner (Action, PotentialAction, ContactPoint duplicado). El emisor canónico de la entidad y sus canales es organizationSchema() en lib/seo.ts, invocado por buildSchema() desde BaseLayout una sola vez por página (regla B3). Si declaras un Action desde el banner, duplicas el grafo, Google se confunde y los validadores marcan error. Si la página padre necesita declarar una acción específica del CTA (típicamente WhatsApp como canal), agrégala al contactPoint del Organization, no al markup del banner.',
+  'NO hardcodees el número de WhatsApp en el href de un botón. Regla D4: el número vive UNA sola vez en CONTACT.whatsapp de site.ts, y cada enlace se construye con waUrl(WA_MESSAGES.<intencion>). Hardcodear «https://wa.me/525500000000» en un btn.href te garantiza desincronización el día que el cliente cambia el número (y lo va a cambiar). El día del cambio: 1 línea de edit en site.ts, cero búsqueda-y-reemplazo, cero números viejos sobreviviendo en alguna landing.',
+  'NO uses 3+ botones competidores en un mismo banner. La jerarquía visual se rompe, el ojo se reparte, la conversión baja. Tres caminos = SectionMenu, no CTA banner (ver /modulos/section-menu). El banner pide UNA cosa. Si la página realmente tiene tres CTAs igualmente importantes (típico en home con 3 propuestas de valor), repártelos en 3 banners contextuales a lo largo del scroll, no en uno solo con 3 botones — cada banner pide su cosa en su sección, sin canibalizar la siguiente.',
+]
+
+// ── 6 VARIANTES (REAL/EXTENSIÓN) ─────────────────────────────────────────────
+// La galería pinta una réplica CSS de cada layout con clases .ctv (cta variant)
+// + modificador. Las primeras son configuraciones REALES (props/presets ya
+// existentes); las últimas son EXTENSIÓN (requieren agregar prop, slot o
+// componente hermano).
+const disenos = [
+  {
+    nombre: '1 · Canónica red — heading + desc + 2 botones (REAL · PRESET_GENERAL)',
+    tag: 'Home · Landing de producto/servicio · Cierre principal del sitio',
+    desc: 'La cara natural del componente: variant="red" (fondo sólido --color-red con overlay radial sutil), heading + desc + btns[] de 2 (WhatsApp primary + Ver catálogo ghost) + badge de confianza. Es lo que pinta PRESET_GENERAL hoy, importado desde @config/cta-presets. Aplica a la home, landings de campaña principal y cierres de páginas comerciales (productos, servicios, cobertura). Alta intensidad: ocupa la atención del visitante con la voz de marca.',
+  },
+  {
+    nombre: '2 · Solo botón primario — single CTA sin ghost (REAL · btns[] de 1)',
+    tag: 'Landing focal · Funnel · Cierre de página de contacto',
+    desc: 'REAL del componente sin modificar: pasar btns con 1 entrada (solo WhatsApp primary) en lugar de 2. Es PRESET_CONTACTO (variant="light") cuando el cierre exige una sola acción sin escape (la página de contacto ya es el escape). En variant="red" o "dark" sube la urgencia: «¿Listo para empezar?» + botón único. Reduce la fricción de decisión a cero, sube la conversión cuando la página padre ya hizo el trabajo de venta.',
+  },
+  {
+    nombre: '3 · Variante dark — gradiente premium (REAL · PRESET_CATEGORIA)',
+    tag: 'Ficha L4 de producto/categoría · Cierre de servicios premium',
+    desc: 'REAL: variant="dark" con gradiente linear-gradient(155deg, #0C0C0C → #180A0D → #0C0C0C) + overlay radial del color de marca al 20%. Tono premium, alta intensidad pero menos «marca explícita». Es PRESET_CATEGORIA hoy (heading «¿Listo para cotizar?», desc consultiva, btns[] WhatsApp + ghost a /contacto, badge «Asesoría técnica sin costo»). Aplica al cierre de fichas L4 de producto, categorías premium y servicios B2B donde el rojo sólido se siente demasiado retail.',
+  },
+  {
+    nombre: '4 · Variante light inline — sección--surface (REAL · PRESET_CONTACTO)',
+    tag: 'Cierre de contacto · Blog · Páginas legales · Cierre suave',
+    desc: 'REAL: variant="light" con fondo --color-gray-50 + border-top/bottom. Baja intensidad — el banner se integra al flujo sin gritar. Es PRESET_CONTACTO hoy (heading «¿Tienes dudas?», desc empática, 1 botón WhatsApp, badge «Sin compromiso de compra»). Aplica a páginas de contacto (donde el form ya hizo el trabajo), cierres de blog (no rompen el ritmo lector), legales (privacidad, términos). El patrón canónico para .section--surface del flujo.',
+  },
+  {
+    nombre: '5 · Con badge de urgencia honesta (EXTENSIÓN · prop urgencyBadge)',
+    tag: 'Campaña con plazo REAL · Cupo limitado VERIFICABLE · Lanzamiento',
+    desc: 'EXTENSIÓN: el badge actual es decorativo («Respuesta rápida», «Sin compromiso»). Para campañas con plazo o cupo REAL (no fabricado), agregar prop urgencyBadge?: { text, expiresAt?: ISODate } que pinta un chip con ícono de reloj y, opcionalmente, cuenta regresiva server-driven. REGLA DURA: la urgencia debe ser verificable. Si el plazo es inventado o el cupo es ficticio, es dark-pattern (ver §6 y docs/MODULOS.md §6.4) y el sistema lo rechaza. Honestidad o nada.',
+  },
+  {
+    nombre: '6 · Sticky bottom-bar móvil (EXTENSIÓN · prop sticky="mobile")',
+    tag: 'Landing pages · Funnel agresivo · Mobile-first · Campaña paga',
+    desc: 'EXTENSIÓN: en móvil, el banner vive plegado en una barra fija en la zona del pulgar (bottom: 0, safe-area-inset-bottom respetada) con el botón primario expandido full-width. En escritorio se renderiza normal en su sección. Requiere prop sticky?: "mobile" | "always" | false (default false) + position:fixed + transform de aparición tras scroll de 30% de viewport. Patrón de landings de campaña paga donde la conversión móvil es la métrica única. Cuidado: rompe la zona limpia del visitante; usar SOLO si la página entera está dedicada a UNA conversión.',
+  },
+]
+
+// ── 4 patrones móviles — strings que pinta <Receta>. Código aplicable
+//    al componente real o overrides limpios. ──
+const recetaStackMov = `/* MÓVIL · STACK A UNA COLUMNA + BOTONES FULL-WIDTH
+   El componente ya es mobile-first progresivo:
+   - default (≥901px):   inner row, heading|botones side-by-side
+   - tablet (≤900px):    inner column, text-align:center
+   - móvil  (≤560px):    btns flex-direction:column, cada .cta-btn full-width
+
+   En el teléfono, cada botón pasa a ancho 100% para garantizar
+   superficie tappable cómoda y para que el ojo no tenga que elegir
+   horizontalmente entre dos opciones del mismo peso. Cero JS,
+   solo media queries del componente. */
+
+@media (max-width: 900px) {
+  .cta-banner__inner {
+    flex-direction: column;
+    text-align: center;
+  }
+  .cta-banner__actions { align-items: center; }
+  .cta-banner__btns    { justify-content: center; }
+  .cta-banner__desc    { max-width: 100%; }
+}
+
+@media (max-width: 560px) {
+  .cta-banner       { padding: 3.5rem 0; }
+  .cta-banner__btns { flex-direction: column; width: 100%; }
+  .cta-btn          { justify-content: center; width: 100%; min-height: 48px; }
+}`
+
+const recetaTouch = `/* MÓVIL · TOUCH TARGET ≥44×44 PX EN LOS BOTONES (WCAG SC 2.5.5)
+   Los botones del banner llevan padding .8125rem 1.625rem,
+   font-size .9375rem y display:inline-flex con gap. El cálculo:
+   padding-vertical 13px*2 + line-height ~22px = ~48px de altura.
+   En móvil reforzamos con min-height: 48px literal para que la
+   superficie tappable no dependa del cálculo de padding (que
+   puede variar si la marca usa una font con altura distinta).
+
+   Apple HIG: 44pt = 44 CSS px en iOS. WCAG 2.2 SC 2.5.5 AA
+   enhanced: 44×44 px de superficie de toque mínima. Cumplir
+   esto baja errores de tap en 20-30% (Material Design 3 study). */
+
+@media (max-width: 1024px) {
+  .cta-btn {
+    min-height: 48px;     /* > 44 px de margen */
+    padding: .9em 1.4em;  /* superficie generosa */
+  }
+
+  /* Realce táctil al tap (visual feedback al tocar). */
+  .cta-btn {
+    -webkit-tap-highlight-color: rgba(255, 255, 255, .15);
+  }
+  .cta-banner--light .cta-btn {
+    -webkit-tap-highlight-color: rgba(196, 30, 36, .12);
+  }
+}`
+
+const recetaSticky = `/* MÓVIL · STICKY BOTTOM-BAR (EXTENSIÓN del componente)
+   La variante 6 de la galería. En móvil, el banner se ancla al
+   borde inferior del viewport con position:fixed, respeta
+   safe-area-inset-bottom (notch + home-bar de iOS), y deja
+   el botón primario full-width para que el pulgar lo alcance
+   sin moverse de la zona natural.
+
+   Cuidado: rompe la lectura del scroll porque ocupa
+   permanentemente el borde inferior. Usar SOLO en landings
+   dedicadas a UNA conversión (campañas pagas), nunca en
+   páginas de catálogo o blog donde el visitante explora. */
+
+@media (max-width: 768px) {
+  .cta-banner[data-sticky="mobile"] {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: var(--sp-4) var(--sp-3);
+    /* Safe-area iOS — respeta notch + home indicator */
+    padding-bottom: calc(var(--sp-4) + env(safe-area-inset-bottom, 0));
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, .12);
+    z-index: 40;        /* sobre el flotante de WhatsApp */
+  }
+
+  .cta-banner[data-sticky="mobile"] .cta-banner__heading,
+  .cta-banner[data-sticky="mobile"] .cta-banner__desc,
+  .cta-banner[data-sticky="mobile"] .cta-banner__badge {
+    display: none;     /* en sticky solo se ve el botón primario */
+  }
+
+  .cta-banner[data-sticky="mobile"] .cta-btn { width: 100%; }
+}`
+
+const recetaA11y = `/* TODOS los formatos · FOCO VISIBLE + REDUCED-MOTION + FORCED-COLORS
+   Tres reglas de accesibilidad que el componente cumple por default
+   y NO se deben desactivar:
+
+   1. :focus-visible — outline visible cuando el usuario navega
+      por teclado (Tab), invisible cuando clica con mouse. Es la
+      diferencia entre dejar un anillo permanente molesto y dejar
+      al usuario de teclado huérfano. NUNCA outline:none sin
+      reemplazo.
+
+   2. prefers-reduced-motion — respeta la preferencia del SO.
+      Para alguien con vestíbulo sensible, una animación brusca
+      del banner al aparecer puede causar náusea. La regla: si
+      animas, gatea con @media (prefers-reduced-motion: no-preference).
+
+   3. forced-colors — modo alto contraste de Windows. El usuario
+      fuerza la paleta del SO y el botón debe seguir siendo
+      distinguible. forced-color-adjust: auto deja que el SO
+      tome el control de los colores; el outline en focus
+      sigue dibujándose porque viene de un currentColor o
+      ButtonText nativo. */
+
+/* 1 · Foco visible AA — ya en el componente */
+.cta-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+.cta-banner--light .cta-btn:focus-visible {
+  outline-color: var(--color-red, #C41E24);
+}
+
+/* 2 · Reduced motion — gatea cualquier animación añadida */
+@media (prefers-reduced-motion: no-preference) {
+  .cta-banner {
+    animation: cta-fade-in .4s ease-out;
+  }
+}
+@keyframes cta-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 3 · Forced colors — Windows alto contraste */
+@media (forced-colors: active) {
+  .cta-btn {
+    forced-color-adjust: auto;
+    border: 1px solid ButtonText;
+  }
+  .cta-btn:focus-visible {
+    outline: 2px solid Highlight;
+  }
+}`
+
+// ── 3 RECETAS DEL «CÓMO ESTÁ CONSTRUIDO» ─────────────────────────────────────
+// (A) uso básico con preset · (B) data-driven desde frontmatter ·
+// (C) tracking vía data-cta-id (no invasivo, no en id).
+const recetaUso = `---
+// A · USO BÁSICO · importar preset + montar componente.
+// El patrón canónico del sitio: la página padre NO escribe heading +
+// desc + btns[] a mano. Importa el preset que corresponde al tipo de
+// página y lo monta con spread. El copy y los enlaces de WhatsApp viven
+// en cta-presets.ts (SSoT); cada btn de WhatsApp se construye con
+// waUrl(WA_MESSAGES.x) — NUNCA un wa.me/<numero> hardcodeado (regla D4).
+import CTABanner from '@components/CTABanner.astro'
+import { PRESET_GENERAL, PRESET_CATEGORIA, PRESET_CONTACTO } from '@config/cta-presets'
+---
+
+{/* Cierre de home / landing comercial · alta intensidad de marca */}
+<CTABanner {...PRESET_GENERAL} />
+
+{/* Cierre de ficha L4 producto / categoría · tono dark premium */}
+<CTABanner {...PRESET_CATEGORIA} />
+
+{/* Cierre de contacto / blog / legal · variant light, baja intensidad */}
+<CTABanner {...PRESET_CONTACTO} />
+
+{/* Para un override puntual: spread + extender campo a campo */}
+<CTABanner {...PRESET_GENERAL} heading="¿Listo para tu próximo proyecto?" />`
+
+const recetaDataDriven = `---
+// B · DATA-DRIVEN · CTA por categoría desde frontmatter.
+// Patrón para fichas L4 (producto/categoría/servicio) donde el copy
+// del banner cambia por entry: el frontmatter del .md/.mdx declara
+// cta?: { heading, desc?, ctaLabel?, ctaMessageKey? } y la página
+// construye el preset a partir de ahí. Si el frontmatter no declara
+// cta, se usa el fallback canónico (PRESET_CATEGORIA).
+import CTABanner from '@components/CTABanner.astro'
+import { PRESET_CATEGORIA } from '@config/cta-presets'
+import { waUrl, WA_MESSAGES } from '@config/site'
+import { getEntry } from 'astro:content'
+
+const entry = await getEntry('productos', Astro.params.slug)
+const ctaFrontmatter = entry?.data.cta
+
+// Compón el preset desde el frontmatter; cae a PRESET_CATEGORIA si falta.
+const ctaProps = ctaFrontmatter
+  ? {
+      heading: ctaFrontmatter.heading,
+      desc: ctaFrontmatter.desc ?? PRESET_CATEGORIA.desc,
+      btns: [
+        {
+          label: ctaFrontmatter.ctaLabel ?? 'Cotizar por WhatsApp',
+          href: waUrl(WA_MESSAGES[ctaFrontmatter.ctaMessageKey ?? 'cotizacion']),
+          icon: 'wa',
+          primary: true,
+          external: true,
+        },
+        { label: 'Ver catálogo', href: '/productos', icon: 'catalog' },
+      ],
+      badge: PRESET_CATEGORIA.badge,
+      variant: 'dark',
+    }
+  : PRESET_CATEGORIA
+---
+
+<CTABanner {...ctaProps} />
+
+{/* Resultado: cada ficha de producto puede tener su CTA específico
+    («Solicitar cotización de Casco Marca X») sin que la página
+    edite el componente. Frontmatter del .mdx:
+
+    ---
+    title: Casco profesional
+    cta:
+      heading: ¿Cotizar este casco?
+      desc: Mándanos tu cantidad y te respondemos con precio y plazo.
+      ctaLabel: Cotizar este modelo
+      ctaMessageKey: productos
+    ---
+*/}`
+
+const recetaTracking = `---
+// C · TRACKING VIA data-cta-id · no invasivo, NO en id, NO en class.
+// El tracking de eventos (GA4, Plausible, Cloudflare Web Analytics)
+// se hace por atributo data-*, no por id (el id es identificador del
+// DOM, no canal de telemetría) ni por class (la class es presentación).
+//
+// La página padre PUEDE envolver el banner con un wrapper que escuche
+// clicks delegados sobre [data-cta-id] y los reporte al proveedor.
+// El componente NO emite eventos por sí mismo (sin acoplar telemetría
+// al componente de presentación).
+import CTABanner from '@components/CTABanner.astro'
+import { waUrl, WA_MESSAGES } from '@config/site'
+
+const btnsConTracking = [
+  {
+    label: 'Cotizar por WhatsApp',
+    href: waUrl(WA_MESSAGES.cotizacion),
+    icon: 'wa',
+    primary: true,
+    external: true,
+  },
+  { label: 'Ver catálogo', href: '/productos', icon: 'catalog' },
+]
+---
+
+{/* Wrapper de tracking: data-cta-id identifica el cierre por página.
+    Un script de page-leve listener delegado captura el click y lo
+    envía a tu proveedor (Plausible/GA4/CFA). Cero PII, cero cookies. */}
+<div data-cta-id="home-cierre-principal">
+  <CTABanner
+    heading="¿Listo para empezar?"
+    desc="Tu próximo proyecto, a un mensaje de distancia."
+    btns={btnsConTracking}
+    variant="red"
+  />
+</div>
+
+<script>
+  // Tracking delegado · NO emite PII, solo el id del CTA + URL.
+  document.addEventListener('click', (e) => {
+    const target = (e.target as HTMLElement).closest('[data-cta-id]')
+    if (!target) return
+    const ctaId = target.getAttribute('data-cta-id')
+    const link  = (e.target as HTMLElement).closest('a')?.getAttribute('href') ?? ''
+
+    // Plausible Custom Events (sin cookies, sin PII):
+    if (typeof window.plausible === 'function') {
+      window.plausible('CTA Click', { props: { id: ctaId, href: link } })
+    }
+    // Equivalente GA4 sin id PII:
+    // gtag('event', 'cta_click', { cta_id: ctaId, link_url: link })
+  })
+</script>`
+---
+
+<PageLayout
+  title="CTA banner: cierre que convierte, sin dark-patterns"
+  description="Módulo CTA banner: 3 variantes (red, dark, light), 3 presets canónicos, waUrl() para WhatsApp. Cero schema, foco AA, anti dark-patterns."
+  pageType="page"
+  guia={false}
+  breadcrumbs={[{ label: 'Módulos', href: '/modulos' }, { label: 'CTA banner' }]}
+>
+  <Hero
+    badge="Módulo del sitio · CTA banner"
+    title="El CTA banner:"
+    accent="el cierre que pide una sola cosa y la pide bien"
+    subtitle="La franja de llamada a la acción que cierra cada sección: un heading breve, una descripción de apoyo, hasta 2 botones tipados (con íconos SVG inline y enlaces de WhatsApp armados con waUrl()) y un badge opcional de confianza. Tres variantes de fondo (red sólido, dark gradiente, light gris) y tres presets canónicos (general, categoría, contacto) en cta-presets.ts cubren el cierre de cualquier página del sitio sin reescribir copy."
+    descRight={[
+      'Esta página no es una ficha técnica: es el cierre simbólico de la serie de doce módulos. Qué problema resuelve y por qué un CTA banner profesional pide UNA sola cosa (no tres) con copy honesto que dice exactamente lo que pasa al hacer clic, de qué cinco piezas se compone (heading h2 con id para aria-labelledby, descripción opcional, btns[] tipados con 6 íconos inline, badge de confianza, variant + centered), cómo se comporta en el teléfono (stack progresivo a una columna, botones full-width a 48 px, sticky bottom-bar opcional con safe-area iOS, foco visible y forced-colors) y, al final, cómo está construido —desde los presets en cta-presets.ts hasta la receta de tracking no invasivo con data-cta-id—.',
+      'Con tres particularidades que separan al banner del resto de los módulos del flujo. Primera: no emite JSON-LD propio (regla B3 dura). Action / PotentialAction puede tener sentido a nivel Organization (WhatsApp como canal del negocio), pero el emisor canónico es organizationSchema() en lib/seo.ts vía buildSchema() en BaseLayout una sola vez por página. El componente es presentación, no SEO. Segunda: cero hardcoding del número de WhatsApp (regla D4) — cada btn.href con icon "wa" se construye con waUrl(WA_MESSAGES.x), la SSoT vive en CONTACT.whatsapp de site.ts y los mensajes pre-armados por intención en WA_MESSAGES. Tercera: el copy se rige por reglas anti dark-patterns destiladas del flujo entero (docs/MODULOS.md §6.4) — sin contadores falsos, sin escasez fabricada, sin confirmshaming, sin labels que mientan sobre el destino. La honestidad del CTA es factor de marca, no opción.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Definición"
+        title="¿Qué es el módulo CTA banner?"
+        desc="La franja de cierre que pide UNA acción al final de una sección o página: heading + descripción opcional + uno o dos botones tipados + badge opcional. Componente único (CTABanner.astro) con 3 variantes visuales y 3 presets temáticos (cta-presets.ts) que cubren home/categoría/contacto. Cero schema, cero hardcoding del número de WhatsApp (regla D4), cero copy duplicado en páginas."
+        body={[
+          'El CTA banner (CTABanner.astro) es el módulo de conversión final del sistema: la franja que aparece al cierre de una sección o página para pedir UNA cosa concreta — cotizar, contactar, ver el catálogo, hablar con un asesor — sin las distracciones del header (mapa del sitio) o el footer (taxonomía completa). A diferencia del SectionMenu (que reparte hacia varios destinos), el banner se enfoca en UNA acción primaria y, a lo más, una secundaria que da escape al visitante indeciso.',
+          'Su API es deliberadamente pequeña: 5 props (heading, desc?, btns?, badge?, variant?, centered?) y un array tipado de botones (BtnDef = { label, href, icon?, primary?, external? }) con 6 íconos SVG inline (wa · arrow · phone · catalog · info · quote) que cubren el catálogo completo de iconografía del cierre. El copy NO se escribe en cada página — vive centralizado en cta-presets.ts (3 presets canónicos hoy: PRESET_GENERAL, PRESET_CATEGORIA, PRESET_CONTACTO) y cada página importa el preset que corresponde a su tipo. Los enlaces de WhatsApp se construyen UNA sola vez con waUrl(WA_MESSAGES.x) en el preset (regla D4); las páginas solo montan el componente con spread.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Función e importancia"
+        title="¿Para qué sirve?"
+        desc="Hace tres trabajos a la vez, todos críticos: convierte la atención del visitante en una acción concreta sin las opciones competidoras del header/footer (un solo handshake), centraliza el copy de cierre del sitio entero en presets de SSoT (cero divergencia entre páginas), y aplica por diseño reglas anti dark-patterns que protegen la marca a mediano plazo (honestidad del label, urgencia verificable o ninguna, ghost neutro sin confirmshaming)."
+        body={[
+          'Su función primaria es de conversión: el banner es el último intento de mover al visitante a la acción antes de que cierre la pestaña. La regla operativa del sistema — UN botón primario, a lo más UNO ghost — sale de literatura UX (Nielsen Norman, CXL Institute, Baymard Institute) y de pruebas A/B documentadas: tres botones competidores reparten la atención y bajan la conversión medible en 20-40%; uno solo con copy claro la sube. El componente lo permite (btns[] admite hasta 2 entradas razonablemente) y los presets ya vienen calibrados así.',
+          'Su función secundaria es de coherencia: el copy del cierre vive en cta-presets.ts, no en cada página. PRESET_GENERAL cierra home y landings comerciales (heading «¿Necesitas una cotización?», 2 botones), PRESET_CATEGORIA cierra fichas L4 (heading «¿Listo para cotizar?», tono consultivo), PRESET_CONTACTO cierra contacto/blog/legales (heading empático, 1 botón). Cambiar el copy de cierre de TODO el sitio = editar UN archivo. Y la terciaria es de marca: las reglas anti dark-patterns que viven en §6 y docs/MODULOS.md §6.4 (sin contadores falsos, sin escasez fabricada, sin confirmshaming, label honesto) protegen la marca a mediano plazo. A corto plazo, un timer falso sube clicks; a mediano, quema lista. El sistema rechaza esos patrones por diseño.',
+        ]}
+      />
+      <div class="bene">
+        {beneficios.map((b) => (
+          <article class="bene__card">
+            <h3 class="bene__title">{b.titulo}</h3>
+            <p class="bene__desc">{b.desc}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3) ¿QUÉ LLEVA? — Anatomía con las 5 piezas + ejemplo en vivo ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Anatomía"
+        title="¿Qué lleva por dentro?"
+        desc="Cinco piezas en orden estricto: heading h2 con id para aria-labelledby, descripción opcional max-width 58ch, btns[] de hasta 2 botones tipados con 6 íconos SVG inline, badge opcional con escudo de confianza, variant + centered como cara visual. Cada ficha cita exactamente la prop o el atributo HTML real del componente — esta sección es el contrato del CTABanner.astro al desnudo."
+        body={[
+          'El componente no es un bloque genérico: cinco piezas con responsabilidades claras. La 1 (heading h2) es el ancla semántica — lleva id="cta-banner-heading" y la sección se conecta con aria-labelledby para anunciar la región completa al lector de pantalla. La 2 (desc opcional) da contexto cuando hace falta y desaparece cuando no — para landings urgentes va sin desc, para cierres consultivos con desc gana confianza. La 3 (btns[]) es el corazón del módulo: array tipado, 6 íconos inline, máximo 2 entradas por banner. La 4 (badge) es el trust signal final — promesa sostenible, nunca inflada. La 5 (variant + centered) es la cara visual — tres registros (red, dark, light) para los tres contextos del sitio.',
+          'Cada pieza tiene su SSoT explícita en la columna «dato» de la ficha. Sin magia: si quieres entender de dónde sale algo, lee el dato; si quieres modificarlo, edita la prop del componente o el preset en cta-presets.ts. El componente presenta lo que recibe — la inteligencia vive en los presets, no en el .astro.',
+        ]}
+      />
+      <ol class="piezas">
+        {piezas.map((p) => (
+          <li class="pieza">
+            <span class="pieza__n" aria-hidden="true">{p.n}</span>
+            <div class="pieza__body">
+              <h3 class="pieza__nombre">{p.nombre}</h3>
+              <p class="pieza__que">{p.que}</p>
+              <p class="pieza__dato"><span class="pieza__dato-label">SSoT:</span> <code>{p.dato}</code></p>
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      <GuiaNota titulo="Ejemplo en vivo · los 3 presets canónicos, montados en orden" archivo="src/components/CTABanner.astro · src/config/cta-presets.ts">
+        <p>
+          Las tres variantes que renderizan a continuación son las
+          configuraciones <strong>REALES</strong> del componente con sus
+          presets correspondientes. Son las mismas 3 que cierran las
+          páginas del sitio: <code>PRESET_GENERAL</code> (home/landing
+          comercial) · <code>PRESET_CATEGORIA</code> (ficha L4
+          producto/servicio) · <code>PRESET_CONTACTO</code> (contacto,
+          blog, legales). Si el componente o un preset se rompe, este
+          bloque lo refleja a la vista del visitante de esta guía
+          (<em>eat-your-own-dog-food</em>).
+        </p>
+      </GuiaNota>
+    </div>
+    <div class="vivo">
+      <CTABanner {...PRESET_GENERAL} />
+    </div>
+    <div class="vivo vivo--gap">
+      <CTABanner {...PRESET_CATEGORIA} />
+    </div>
+    <div class="vivo vivo--gap">
+      <CTABanner {...PRESET_CONTACTO} />
+    </div>
+  </section>
+
+  {/* ── 4) VARIANTES — GaleriaDisenos + DisenoCard ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Otros diseños y aplicaciones"
+        title="Variantes del CTA banner"
+        desc="Seis configuraciones: cuatro salen del componente actual con props/presets existentes (REAL) y dos requieren extender el componente (EXTENSIÓN). Cada réplica pinta el layout en miniatura con clases .ctv (cta variant) + modificador y deja claro qué se reordena o agrega."
+        body={[
+          'El banner admite variantes sin perder identidad: cambia la intensidad (red sólido vs dark premium vs light suave), el número de botones (2 con escape vs 1 focal), la urgencia (badge decorativo vs urgencia honesta verificable) y la posición (inline en sección vs sticky en zona del pulgar). El componente actual cubre las cuatro primeras como REAL (los tres presets canónicos + btns[] de 1); las dos últimas son EXTENSIÓN documentada con condiciones.',
+          'Cada variante tiene su contexto de aplicación: home/landing → PRESET_GENERAL, ficha L4 premium → PRESET_CATEGORIA, contacto/blog/legales → PRESET_CONTACTO, página focal sin escape → solo botón primario, campaña con plazo REAL → badge de urgencia honesta, landing dedicada a una conversión → sticky bottom-bar móvil. Reusar el mismo componente con presets distintos es la lección del sistema — el banner NO es seis componentes, es uno con seis caras.',
+        ]}
+      />
+
+      <GaleriaDisenos ariaLabel="Seis variantes del módulo CTA banner">
+        {/* 0 · Canónica red — heading + desc + 2 botones */}
+        <DisenoCard {...disenos[0]}>
+          <div class="ctv ctv--red">
+            <div class="ctv__row">
+              <div class="ctv__text">
+                <b class="ctv__h">¿Necesitas cotización?</b>
+                <span class="ctv__d"></span><span class="ctv__d ctv__d--sm"></span>
+              </div>
+              <div class="ctv__actions">
+                <div class="ctv__btns">
+                  <span class="ctv__btn ctv__btn--solid">WhatsApp</span>
+                  <span class="ctv__btn ctv__btn--ghost">Catálogo</span>
+                </div>
+                <span class="ctv__badge"><i class="ctv__shield" aria-hidden="true">◆</i> Respuesta rápida</span>
+              </div>
+            </div>
+          </div>
+        </DisenoCard>
+        {/* 1 · Solo botón primario */}
+        <DisenoCard {...disenos[1]}>
+          <div class="ctv ctv--red ctv--centered">
+            <div class="ctv__col">
+              <b class="ctv__h">¿Listo para empezar?</b>
+              <span class="ctv__d"></span>
+              <span class="ctv__btn ctv__btn--solid ctv__btn--big">Cotizar por WhatsApp</span>
+              <span class="ctv__badge"><i class="ctv__shield" aria-hidden="true">◆</i> Sin compromiso</span>
+            </div>
+          </div>
+        </DisenoCard>
+        {/* 2 · Variante dark — gradiente premium */}
+        <DisenoCard {...disenos[2]}>
+          <div class="ctv ctv--dark">
+            <div class="ctv__row">
+              <div class="ctv__text">
+                <b class="ctv__h">¿Listo para cotizar?</b>
+                <span class="ctv__d"></span><span class="ctv__d ctv__d--sm"></span>
+              </div>
+              <div class="ctv__actions">
+                <div class="ctv__btns">
+                  <span class="ctv__btn ctv__btn--solid">WhatsApp</span>
+                  <span class="ctv__btn ctv__btn--ghost">Contacto</span>
+                </div>
+                <span class="ctv__badge"><i class="ctv__shield" aria-hidden="true">◆</i> Asesoría sin costo</span>
+              </div>
+            </div>
+          </div>
+        </DisenoCard>
+        {/* 3 · Variante light — sección--surface */}
+        <DisenoCard {...disenos[3]}>
+          <div class="ctv ctv--light">
+            <div class="ctv__row">
+              <div class="ctv__text">
+                <b class="ctv__h ctv__h--ink">¿Tienes dudas?</b>
+                <span class="ctv__d ctv__d--ink"></span>
+              </div>
+              <div class="ctv__actions">
+                <span class="ctv__btn ctv__btn--solid-red">WhatsApp</span>
+                <span class="ctv__badge ctv__badge--ink"><i class="ctv__shield" aria-hidden="true">◆</i> Sin compromiso</span>
+              </div>
+            </div>
+          </div>
+        </DisenoCard>
+        {/* 4 · Con badge de urgencia honesta (EXTENSIÓN) */}
+        <DisenoCard {...disenos[4]}>
+          <div class="ctv ctv--red">
+            <div class="ctv__row">
+              <div class="ctv__text">
+                <span class="ctv__urgency"><i aria-hidden="true">⏱</i> Cierra cupo el 30 de junio</span>
+                <b class="ctv__h">Cohorte de julio · cupo final</b>
+                <span class="ctv__d"></span>
+              </div>
+              <div class="ctv__actions">
+                <span class="ctv__btn ctv__btn--solid">Reservar lugar</span>
+                <span class="ctv__badge"><i class="ctv__shield" aria-hidden="true">◆</i> Plazo verificable</span>
+              </div>
+            </div>
+          </div>
+        </DisenoCard>
+        {/* 5 · Sticky bottom-bar móvil (EXTENSIÓN) */}
+        <DisenoCard {...disenos[5]}>
+          <div class="ctv ctv--sticky">
+            <div class="ctv__phone">
+              <div class="ctv__content"><span class="ctv__line"></span><span class="ctv__line ctv__line--sm"></span><span class="ctv__line"></span></div>
+              <div class="ctv__stickybar">
+                <span class="ctv__btn ctv__btn--solid ctv__btn--full">Hablar con un asesor</span>
+              </div>
+            </div>
+          </div>
+        </DisenoCard>
+      </GaleriaDisenos>
+
+      <GuiaNota titulo="REAL vs EXTENSIÓN · 4 variantes hoy, 2 requieren extender el componente" archivo="src/components/CTABanner.astro · src/config/cta-presets.ts">
+        <p>
+          Las variantes <strong>1–4</strong> son configuraciones <strong>REALES</strong> hoy: la
+          <em>1 (canónica red)</em> es <code>PRESET_GENERAL</code>; la <em>2 (solo botón)</em> es
+          un <code>btns[]</code> de 1 entrada (lo hace <code>PRESET_CONTACTO</code>); la
+          <em>3 (dark)</em> es <code>PRESET_CATEGORIA</code>; la <em>4 (light inline)</em> es
+          <code>PRESET_CONTACTO</code> en sección <code>--surface</code>.
+        </p>
+        <p>
+          Las variantes <strong>5 (urgencia honesta)</strong> y <strong>6 (sticky bottom-bar
+          móvil)</strong> son <strong>EXTENSIONES</strong>: requieren agregar props
+          (<code>urgencyBadge?: &#123; text, expiresAt? &#125;</code> y <code>sticky?: 'mobile' | 'always' |
+          false</code>) al componente. La extensión 5 viene con una <strong>regla dura</strong>
+          de honestidad (ver §6 + <code>docs/MODULOS.md §6.4</code>): el plazo debe ser
+          verificable, no fabricado. La 6 rompe el flujo de scroll y solo se usa en landings
+          dedicadas a UNA conversión.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 5) RESPONSIVE Y MÓVIL — 4 patrones con MarcoMovil + Receta ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="El banner, en el teléfono"
+        desc="Cuatro patrones reales: stack progresivo del inner (row → column al ≤900, btns column-full-width al ≤560), touch target ≥48 px en los botones (WCAG SC 2.5.5), sticky bottom-bar opcional con safe-area iOS y zona del pulgar, foco visible + prefers-reduced-motion + forced-colors. CSS puro, cero JavaScript."
+        body={[
+          'El banner es más simple que el footer en responsive — pero los detalles importan. El patrón canónico es mobile-first progresivo: el componente ya nace con inner flex side-by-side (heading|botones), reflowea a column con text-align:center al ≤900px, y al ≤560px los btns pasan a column-full-width con min-height 48px para que el pulgar los alcance. Cero media queries añadidas — todo vive en el style scoped del componente.',
+          'A eso se suman dos detalles que pocos banners cubren: la extensión sticky bottom-bar móvil (cuando la landing está dedicada a UNA conversión y la zona del pulgar es la única que importa, con safe-area-inset-bottom respetada para no chocar con el home indicator de iOS) y la triada de accesibilidad: :focus-visible nítido sobre las tres variantes (outline 2px blanco sobre red/dark, rojo sobre light), prefers-reduced-motion respetado (cualquier animación añadida debe estar gateada), forced-colors compatible (Windows alto contraste no rompe el botón).',
+        ]}
+      />
+
+      <div class="pats">
+        {/* 1 · Stack progresivo + botones full-width */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="El banner baja a una columna en el teléfono; los botones se apilan full-width">
+              <div class="ctm ctm--stack">
+                <b class="ctm__h">¿Necesitas cotización?</b>
+                <span class="ctm__d"></span><span class="ctm__d"></span>
+                <span class="ctm__btn ctm__btn--solid">Cotizar por WhatsApp</span>
+                <span class="ctm__btn ctm__btn--ghost">Ver catálogo</span>
+                <span class="ctm__badge">◆ Respuesta rápida</span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · Stack progresivo + botones full-width</h3>
+            <p class="pat__desc">El componente ya es mobile-first progresivo: <code>flex-direction: row</code> en ≥901, <code>column + center</code> en ≤900, <code>btns column + width:100%</code> en ≤560. Cero media queries añadidas — viven en el <code>style</code> scoped del componente. Cada botón pasa a ancho 100% con <code>min-height: 48px</code> para garantizar superficie tappable (WCAG SC 2.5.5).</p>
+            <Receta titulo="CSS · stack progresivo del componente actual" lang="css" code={recetaStackMov} />
+          </div>
+        </article>
+
+        {/* 2 · Touch target ≥44×44 */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Botones con superficie de toque generosa, mínimo 44×44 px (Apple HIG, WCAG SC 2.5.5)">
+              <div class="ctm ctm--touch">
+                <b class="ctm__h">¿Listo para empezar?</b>
+                <span class="ctm__btn ctm__btn--solid ctm__btn--measured">Cotizar por WhatsApp <i class="ctm__ruler">48px</i></span>
+                <span class="ctm__btn ctm__btn--ghost ctm__btn--measured">Ver catálogo <i class="ctm__ruler">48px</i></span>
+                <span class="ctm__hint">tap target visible</span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · Touch target ≥44×44 px (Apple HIG · WCAG 2.5.5)</h3>
+            <p class="pat__desc">El umbral viene de Apple HIG (44 pt) y WCAG 2.2 AA enhanced (44 CSS px). El componente sobrepasa el mínimo con <code>min-height: 48px</code> + <code>padding: .9em 1.4em</code>. Cumplirlo baja errores de tap en 20-30% (Material Design 3 study) y reduce la fricción en visitantes con motricidad reducida, dedos grandes o uso con guantes.</p>
+            <Receta titulo="CSS · touch target ≥48 px + realce táctil" lang="css" code={recetaTouch} />
+          </div>
+        </article>
+
+        {/* 3 · Sticky bottom-bar + safe-area iOS (EXTENSIÓN) */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="El banner se ancla al borde inferior con safe-area iOS, ocupando la zona del pulgar">
+              <div class="ctm ctm--sticky">
+                <div class="ctm__page"><span class="ctm__line"></span><span class="ctm__line"></span><span class="ctm__line ctm__line--sm"></span><span class="ctm__line"></span></div>
+                <div class="ctm__sticky">
+                  <span class="ctm__btn ctm__btn--solid ctm__btn--full">Hablar con un asesor</span>
+                  <i class="ctm__safe" aria-hidden="true"></i>
+                </div>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · Sticky bottom-bar con safe-area iOS (EXTENSIÓN)</h3>
+            <p class="pat__desc">EXTENSIÓN del componente: la prop <code>sticky?: 'mobile'</code> ancla el banner al borde inferior con <code>position: fixed</code> + <code>env(safe-area-inset-bottom)</code> para respetar el home indicator de iOS. La zona del pulgar (Thumb Zone UX) es la franja inferior del viewport — botón ahí = menos esfuerzo de alcance. CUIDADO: rompe el flujo de scroll. Solo en landings dedicadas a UNA conversión.</p>
+            <Receta titulo="CSS · sticky bottom-bar + safe-area iOS" lang="css" code={recetaSticky} />
+          </div>
+        </article>
+
+        {/* 4 · Foco visible + reduced-motion + forced-colors */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Foco visible nítido con outline 2px y compatibilidad con prefers-reduced-motion y forced-colors">
+              <div class="ctm ctm--a11y">
+                <b class="ctm__h">¿Tienes dudas?</b>
+                <span class="ctm__btn ctm__btn--solid ctm__btn--focused">Cotizar</span>
+                <span class="ctm__hint">:focus-visible · 2px outline</span>
+                <span class="ctm__chip">prefers-reduced-motion ✓</span>
+                <span class="ctm__chip">forced-colors ✓</span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">4 · Foco visible + reduced-motion + forced-colors</h3>
+            <p class="pat__desc">El componente ya pinta <code>:focus-visible</code> con outline 2px sólido + offset 3px (blanco sobre red/dark, rojo sobre light). NUNCA <code>outline:none</code> sin reemplazo. Cualquier animación añadida debe estar gateada con <code>@media (prefers-reduced-motion: no-preference)</code>. El modo <strong>forced-colors</strong> de Windows (alto contraste) requiere <code>forced-color-adjust: auto</code> + outline en focus para que el botón siga siendo distinguible aunque el SO fuerce su paleta.</p>
+            <Receta titulo="CSS · accesibilidad de foco, motion y colors" lang="css" code={recetaA11y} />
+          </div>
+        </article>
+      </div>
+
+      <GuiaNota titulo="El responsive del banner vive en el componente; los presets viven en cta-presets.ts" archivo="src/components/CTABanner.astro · src/config/cta-presets.ts">
+        <p>
+          Todo el responsive del banner está en el <code>&lt;style&gt;</code> scoped del componente
+          —ningún breakpoint depende de <code>mobile.css</code>—. Es por diseño: el banner es lo
+          bastante autocontenido como para mover su responsive consigo mismo. Cero JS, cero
+          dependencias, solo CSS Grid/Flex nativo + media queries de tres cortes (900 / 560 / 768
+          para sticky).
+        </p>
+        <p>
+          Lo que vive aparte (en <code>cta-presets.ts</code>) es el <strong>copy</strong>: los
+          tres presets canónicos (<code>PRESET_GENERAL</code>, <code>PRESET_CATEGORIA</code>,
+          <code>PRESET_CONTACTO</code>) componen <code>heading + desc + btns[] + badge + variant</code>
+          una sola vez para todo el sitio. Cambiar el copy del cierre de TODAS las páginas =
+          editar un solo archivo. SSoT del cierre.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 6) ¿DÓNDE VA? — el banner en el flujo de cada página ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Posición en el layout"
+        title="¿Dónde va en la página?"
+        desc="Al cierre de cada página (antes del footer) cuando la página tiene una intención comercial clara, o al cierre de una sección cuando la página alterna varios temas. NO sustituye al SectionMenu (que reparte hacia varios destinos) — convive con él: si la página tiene UN cierre comercial fuerte, va el banner; si tiene varias rutas de navegación útiles, va el menú; si tiene ambas necesidades, primero el banner (conversión) y debajo el menú (mapa)."
+        body={[
+          'La posición canónica: justo antes del Footer (que aparece en TODAS las páginas, montado por PageLayout). El banner cierra UNA conversión específica; el footer reparte el mapa entero del sitio. Hay tres patrones operativos: (a) banner + footer (cierre comercial fuerte: home, landings, fichas L4 producto/servicio), (b) SectionMenu + footer (cierre exploratorio: páginas guía como /modulos/* — ver el cierre de esta misma página), (c) banner + SectionMenu + footer (página larga con conversión fuerte Y mapa útil: típicamente la home).',
+          'La decisión NO la toma el componente — la toma el editor de la página. Las guías de los módulos cierran con SectionMenu (siblingsModules) porque el visitante de una guía explora la serie; las páginas comerciales cierran con CTABanner porque el visitante quiere cotizar. Cross-link explícito: el banner es el primo cercano del cierre pre-footer (ver /modulos/footer, banda CTA pre-footer = una variante del CTA banner dentro del Footer.astro) y del formulario de contacto (ver /modulos/contact-form, cuando el CTA primario va a un form en lugar de a WhatsApp).',
+        ]}
+      />
+      <GuiaNota titulo="Cuándo banner vs menú vs banner+menú · decisión por página" archivo="src/components/CTABanner.astro · src/components/SectionMenu.astro">
+        <p>
+          <strong>Banner solo</strong> — la página tiene UN cierre comercial claro y el visitante
+          ya recorrió el contenido. Ejemplos: home (cierre con <code>PRESET_GENERAL</code>),
+          ficha L4 producto (<code>PRESET_CATEGORIA</code>), página de cobertura/ciudad
+          (<code>PRESET_GENERAL</code> contextualizado). El visitante pide UNA cosa al cierre,
+          el banner la pide.
+        </p>
+        <p>
+          <strong>SectionMenu solo</strong> — la página es exploratoria y el cierre repartir hacia
+          varios destinos siguientes útiles. Ejemplos: guías de módulos /modulos/* (cierre con
+          <code>siblingsModules('&lt;slug&gt;')</code> — ver el cierre de esta misma página),
+          índices de catálogo, blog post (siguiente artículo + tag + categoría).
+        </p>
+        <p>
+          <strong>Banner + SectionMenu</strong> — página larga con conversión fuerte Y mapa útil:
+          típicamente la home y landings comerciales con varios CTAs secundarios. Orden:
+          primero el banner (conversión), debajo el menú (mapa). NUNCA al revés — el visitante
+          decide acción primero, exploración después.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 7) CÓMO ESTÁ CONSTRUIDO — 3 recetas ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Capa técnica"
+        title="Cómo está construido"
+        desc="El componente vive en src/components/CTABanner.astro y los presets en src/config/cta-presets.ts. Cero JSON-LD desde el componente (regla B3 — Action/PotentialAction lo cubre organizationSchema en el grafo base). Cero hardcoding del número de WhatsApp (regla D4 — waUrl(WA_MESSAGES.x) en los presets). Tres recetas cubren el espectro de uso: A uso básico con preset, B data-driven desde frontmatter de fichas L4, C tracking no invasivo con data-cta-id."
+        body={[
+          'La arquitectura es estricta: el componente solo presenta (5 props tipadas, 0 cálculos internos, 0 dependencias). Los presets son SSoT del copy de cierre (cta-presets.ts: PRESET_GENERAL, PRESET_CATEGORIA, PRESET_CONTACTO; cada uno compone heading + desc + btns[] + badge + variant una sola vez para todo el sitio). El número de WhatsApp vive UNA vez en CONTACT.whatsapp + WA_MESSAGES de site.ts; cada btn de WhatsApp se construye con waUrl(WA_MESSAGES.<intencion>) — regla D4 dura, sin excepciones. Esa separación es lo que mantiene el banner estable y data-driven a escala del sitio entero.',
+          'Las tres recetas cubren el camino completo del uso real: A muestra el patrón canónico (importar preset + montar con spread), B muestra cómo el frontmatter de una ficha L4 puede sobrescribir el preset por entry (cuando cada producto/servicio quiere su propio copy de CTA), y C muestra el patrón de tracking no invasivo (data-cta-id en un wrapper + listener delegado a nivel de página, sin acoplar telemetría al componente). Sobre el schema: NO se emite desde el banner — el ContactPoint del WhatsApp vive en organizationSchema().contactPoint y se declara una sola vez (regla B3).',
+        ]}
+      />
+      <div class="recetas">
+        <Receta titulo="A · Uso básico con preset canónico" lang="astro" code={recetaUso} />
+        <Receta titulo="B · Data-driven desde frontmatter de ficha L4" lang="astro" code={recetaDataDriven} />
+        <Receta titulo="C · Tracking no invasivo con data-cta-id" lang="astro" code={recetaTracking} />
+      </div>
+    </div>
+  </section>
+
+  {/* ── 8) BUENAS PRÁCTICAS (sí/no) — destila el aprendizaje del flujo entero ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Buenas prácticas"
+        title="Qué hacer y qué evitar"
+        desc="Siete hábitos que mantienen al banner como activo de conversión honesto y mantenible; siete errores que lo degradan a dark-pattern, fuente de divergencia o vector de spam de schema. Esta sección es el cierre simbólico del flujo entero — destila las reglas duras de los 12 módulos en el componente más sensible al daño de marca: el botón de cierre."
+        body={[
+          'La diferencia entre un CTA que convierte sostenido y uno que quema lista en tres campañas es disciplinaria: copy honesto, preset centralizado, UN botón primario, foco visible AA, anti dark-patterns por diseño, tracking en data-* (nunca en id), variante contextual (no doorway). Cada regla viene de un caso real visto en sitios mexicanos: timers que reinician al recargar, escasez ficticia con número inventado, ghost con confirmshaming pasivo-agresivo, hrefs a WhatsApp hardcodeados que sobreviven al cambio de número del cliente.',
+          'Los sí son hábitos de SSoT + honestidad de copy. Los no son tentaciones que parecen subir conversión a corto plazo y queman marca a mediano. Léelos juntos — cada par sí/no apunta al mismo problema desde dos ángulos. Esta lista es la destilación del flujo de doce módulos: lo que aprendimos sobre cómo NO romper el sistema al cierre de cada página.',
+        ]}
+      />
+      <div class="bp">
+        <div class="bp__col bp__col--si">
+          <h3 class="bp__title bp__title--si">Sí</h3>
+          <ul class="bp__list">{sis.map((t) => <li>{t}</li>)}</ul>
+        </div>
+        <div class="bp__col bp__col--no">
+          <h3 class="bp__title bp__title--no">No</h3>
+          <ul class="bp__list">{nos.map((t) => <li>{t}</li>)}</ul>
+        </div>
+      </div>
+
+      <GuiaNota titulo="El cierre del flujo · serie de 12 módulos completa" archivo="docs/MODULOS.md §8">
+        <p>
+          Con este módulo se cierra la serie <strong>«Módulos del sitio»</strong> — doce L3
+          publicados con el mismo molde (topbar, header, breadcrumbs, hero, section-menu,
+          section-heading, category-card, category-detail, product-card, service-card, faq,
+          review, footer, contact-form, cta-banner). Las reglas duras destiladas viven en
+          <code>docs/MODULOS.md</code> §6 (B3 emisor único, B4 self-reviews gate, casing del
+          Hero, audit:meta gate, NAP consistency, §6.3 a11y forms, §6.4 anti dark-patterns
+          CTAs).
+        </p>
+        <p>
+          El siguiente paso para evolucionar el template no es agregar módulos — es resolver
+          deudas técnicas abiertas (NAP P1, migrar primera ola a <code>siblingsModules</code>,
+          extensión de presets para newsletter/black-friday). Ver <code>docs/MODULOS.md §8</code>.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── Cierre: menú de navegación full-width (siblingsModules SSoT) ── */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+</PageLayout>
+
+<style>
+  /* Estructura (tokens.css = fuente única; scoped por página) */
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* ── Anatomía (piezas) ── */
+  .piezas { display: grid; gap: var(--sp-5); margin: var(--sp-6) 0 0; padding: 0; list-style: none; }
+  .pieza { display: grid; grid-template-columns: 48px 1fr; gap: var(--sp-4); align-items: start; padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .pieza__n { display: grid; place-items: center; width: 48px; height: 48px; border-radius: var(--radius-md); background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-black); font-size: 1.25rem; }
+  .pieza__nombre { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pieza__que { margin: 0 0 var(--sp-3); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pieza__dato { margin: 0; font-size: var(--text-xs); color: var(--c-ink-2); }
+  .pieza__dato-label { font-weight: var(--weight-bold); color: var(--c-primary-dark); text-transform: uppercase; letter-spacing: .06em; margin-right: .35em; }
+  .pieza__dato code { font-family: ui-monospace, Menlo, monospace; font-size: .95em; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .1em .4em; color: var(--c-primary-dark); word-break: break-word; }
+
+  /* ── Beneficios ── */
+  .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .bene { grid-template-columns: repeat(3, 1fr); } }
+  .bene__card { padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .bene__title { margin: 0 0 var(--sp-3); font-family: var(--font-heading); font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--c-ink); line-height: var(--leading-snug); }
+  .bene__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Recetas (sección «Cómo se construye») ── */
+  .recetas { display: grid; gap: var(--sp-5); margin-top: var(--sp-6); }
+
+  /* ── Buenas prácticas (sí/no) ── */
+  .bp { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 900px) { .bp { grid-template-columns: 1fr 1fr; } }
+  .bp__col { padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .bp__title { margin: 0 0 var(--sp-4); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-bold); }
+  .bp__title--si { color: #16a34a; }
+  .bp__title--no { color: #dc2626; }
+  .bp__list { margin: 0; padding-left: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-3); }
+  .bp__list li { font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+
+  /* ── Ejemplo en vivo (3 presets canónicos) ── */
+  .vivo { margin-top: var(--sp-6); }
+  .vivo--gap { margin-top: var(--sp-4); }
+
+  /* ── Patrones móviles (.pats / .pat) ── */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pat__desc code { font-family: ui-monospace, Menlo, monospace; font-size: .85em; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
+
+  /* ── Mockups galería de variantes (.ctv = cta variant, escritorio) ── */
+  .ctv { display: flex; flex-direction: column; min-height: 100%; padding: 10px; border-radius: 6px; font-size: 9px; line-height: 1.2; color: rgba(255,255,255,.8); }
+  .ctv--red { background: linear-gradient(180deg, #C41E24 0%, #9B0D22 100%); }
+  .ctv--dark { background: linear-gradient(155deg, #0C0C0C 0%, #180A0D 55%, #0C0C0C 100%); }
+  .ctv--light { background: #F9FAFB; border: 1px solid #E4E4E7; color: var(--c-ink); }
+  .ctv__row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .ctv__col { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 0; }
+  .ctv--centered .ctv__row { flex-direction: column; align-items: center; text-align: center; }
+  .ctv__text { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .ctv__h { color: #fff; font-size: 11px; font-weight: 800; letter-spacing: -.02em; }
+  .ctv__h--ink { color: var(--c-ink); }
+  .ctv__d { display: block; height: 4px; width: 90%; background: rgba(255,255,255,.18); border-radius: 2px; }
+  .ctv__d--sm { width: 65%; }
+  .ctv__d--ink { background: var(--c-border); }
+  .ctv__actions { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
+  .ctv--centered .ctv__actions { align-items: center; }
+  .ctv__btns { display: flex; gap: 5px; }
+  .ctv__btn { display: grid; place-items: center; padding: 4px 9px; height: 22px; border-radius: 4px; font-size: 8px; font-weight: 700; white-space: nowrap; }
+  .ctv__btn--solid { background: #fff; color: #C41E24; }
+  .ctv--dark .ctv__btn--solid { background: #fff; color: #C41E24; }
+  .ctv__btn--solid-red { background: #C41E24; color: #fff; }
+  .ctv__btn--ghost { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.35); }
+  .ctv--light .ctv__btn--ghost { color: var(--c-ink-2); border: 1px solid var(--c-border); }
+  .ctv__btn--big { padding: 6px 14px; height: 28px; font-size: 9px; }
+  .ctv__btn--full { width: 100%; height: 30px; }
+  .ctv__badge { display: inline-flex; align-items: center; gap: 4px; font-size: 7px; color: rgba(255,255,255,.55); font-weight: 500; }
+  .ctv__badge--ink { color: var(--c-ink-2); }
+  .ctv__shield { font-style: normal; font-size: 7px; opacity: .9; }
+  .ctv__urgency { display: inline-flex; align-items: center; gap: 4px; font-size: 7px; font-weight: 700; color: #FFE066; text-transform: uppercase; letter-spacing: .05em; }
+
+  /* Sticky mockup */
+  .ctv--sticky { background: var(--c-surface); padding: 0; position: relative; min-height: 130px; }
+  .ctv__phone { position: relative; height: 130px; padding: 10px; }
+  .ctv__content { display: flex; flex-direction: column; gap: 6px; }
+  .ctv__line { display: block; height: 4px; width: 92%; background: var(--c-border); border-radius: 2px; }
+  .ctv__line--sm { width: 65%; }
+  .ctv__stickybar { position: absolute; bottom: 6px; left: 6px; right: 6px; padding: 6px 8px; background: #C41E24; border-radius: 4px; box-shadow: 0 -4px 12px rgba(0,0,0,.15); }
+
+  /* ── Mockups patrones móviles (.ctm = cta móvil) ── */
+  .ctm { display: flex; flex-direction: column; gap: 6px; padding: 14px 10px; min-height: 100%; background: #C41E24; font-size: 8px; line-height: 1.2; color: rgba(255,255,255,.85); }
+  .ctm--touch { background: #C41E24; }
+  .ctm--a11y { background: #C41E24; gap: 5px; }
+  .ctm__h { color: #fff; font-size: 11px; font-weight: 800; letter-spacing: -.02em; margin-bottom: 2px; }
+  .ctm__d { display: block; height: 4px; width: 88%; background: rgba(255,255,255,.18); border-radius: 2px; margin-bottom: 2px; }
+  .ctm__btn { display: grid; place-items: center; padding: 8px 10px; min-height: 32px; border-radius: 5px; font-size: 9px; font-weight: 700; }
+  .ctm__btn--solid { background: #fff; color: #C41E24; }
+  .ctm__btn--ghost { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.35); }
+  .ctm__btn--full { width: 100%; }
+  .ctm__btn--measured { position: relative; padding-right: 30px; }
+  .ctm__ruler { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-style: normal; font-size: 7px; font-weight: 700; color: #fff; background: rgba(255,255,255,.22); border-radius: 3px; padding: 1px 4px; }
+  .ctm__btn--focused { box-shadow: 0 0 0 2px #fff, 0 0 0 5px rgba(255,255,255,.4); }
+  .ctm__badge { font-size: 7px; color: rgba(255,255,255,.6); }
+  .ctm__hint { font-size: 7px; color: rgba(255,255,255,.55); font-style: italic; margin-top: 2px; }
+  .ctm__chip { display: inline-block; font-size: 7px; padding: 2px 6px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22); border-radius: 99px; color: rgba(255,255,255,.8); width: fit-content; }
+
+  /* Sticky patrón móvil */
+  .ctm--sticky { background: var(--c-surface); color: var(--c-ink-2); padding: 0; position: relative; }
+  .ctm__page { display: flex; flex-direction: column; gap: 6px; padding: 10px; }
+  .ctm__page .ctm__line { display: block; height: 4px; width: 90%; background: var(--c-border); border-radius: 2px; }
+  .ctm__page .ctm__line--sm { width: 65%; }
+  .ctm__sticky { position: absolute; bottom: 0; left: 0; right: 0; padding: 8px 10px 12px; background: #fff; border-top: 1px solid var(--c-border); box-shadow: 0 -8px 18px rgba(0,0,0,.08); }
+  .ctm__safe { display: block; height: 4px; width: 30%; background: #000; border-radius: 2px; margin: 6px auto 0; opacity: .35; }
+</style>
