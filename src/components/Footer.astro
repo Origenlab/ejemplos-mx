@@ -11,7 +11,7 @@
 // transición (las listas de enlaces cambian de color al instante).
 import {
   SITE, CONTACT, BRANCHES, PRODUCT_CATEGORIES, SERVICES, SECTORS,
-  COVERAGE_STATES, SOCIAL, LEGAL, waUrl, telUrl, WA_MESSAGES,
+  COVERAGE_STATES, MODULOS, SOCIAL, LEGAL, waUrl, telUrl, WA_MESSAGES,
 } from '@config/site'
 
 interface Cert { label: string; title?: string }
@@ -182,6 +182,18 @@ const ARROW = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" strok
         </ul>
       </nav>
 
+      <!-- Módulos (serie L3) — data-driven desde MODULOS (SSoT). Muestra hasta 12
+           módulos en estado 'listo' (los 'proximo' no enlazan = sin 404). -->
+      <nav class="footer__col" aria-label="Módulos del sitio">
+        <h3 class="footer__col-heading"><span class="footer__col-heading-accent" aria-hidden="true"></span>Módulos</h3>
+        <ul class="footer__nav-list" role="list">
+          <li><a href="/modulos" class="footer__nav-link footer__nav-link--all">Ver todos los módulos<Fragment set:html={ARROW} /></a></li>
+          {MODULOS.filter((m) => m.estado === 'listo').slice(0, 12).map((m) => (
+            <li><a href={m.href} class="footer__nav-link">{m.label}</a></li>
+          ))}
+        </ul>
+      </nav>
+
       <!-- Empresa -->
       <nav class="footer__col" aria-label="Empresa">
         <h3 class="footer__col-heading"><span class="footer__col-heading-accent" aria-hidden="true"></span>Empresa</h3>
@@ -281,7 +293,7 @@ const ARROW = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" strok
 
   /* ---------- 2) CUERPO ---------- */
   .footer__body { padding: 3.5rem 0 3rem; }
-  .footer__grid { display: grid; grid-template-columns: minmax(280px, 1.6fr) repeat(4, 1fr); gap: 3rem 2.25rem; align-items: start; max-width: var(--container-max, 1400px); margin-inline: auto; padding-inline: var(--container-px, 1.5rem); }
+  .footer__grid { display: grid; grid-template-columns: minmax(260px, 1.4fr) repeat(5, 1fr); gap: 3rem 1.75rem; align-items: start; max-width: var(--container-max, 1400px); margin-inline: auto; padding-inline: var(--container-px, 1.5rem); }
 
   /* Marca */
   .footer__logo { display: inline-flex; align-items: center; gap: .55rem; text-decoration: none; margin-bottom: 1.1rem; }
@@ -358,7 +370,8 @@ const ARROW = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" strok
   .footer__top:focus-visible { outline: 2px solid var(--ft-accent-2); outline-offset: 2px; }
 
   /* ---------- RESPONSIVE ---------- */
-  @media (max-width: 1100px) {
+  @media (max-width: 1280px) {
+    /* 5 cols → 3 cols + marca full-width; suficiente aire para Productos · Servicios · Cobertura · Módulos · Empresa repartidos en 2 filas. */
     .footer__grid { grid-template-columns: 1fr 1fr 1fr; gap: 2.5rem 2rem; }
     .footer__brand { grid-column: 1 / -1; max-width: 620px; }
   }

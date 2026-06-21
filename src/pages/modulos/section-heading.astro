@@ -597,6 +597,7 @@ const recetaReorder = `/* MÓVIL · INVERTIR EL ORDEN EN STACK (extensión)
           'Vive SIEMPRE dentro del .container central (90 % del ancho, max-width acotado). A diferencia de la franja del menú —que va full-width—, el encabezado respeta el ancho del cuerpo: pertenece al texto, no al chrome. Y se monta sobre la sección padre (.section o .section--surface), que es quien aporta el padding vertical y el color de fondo alternado.',
         ]}
       />
+      <p class="rl">Módulos cercanos: <a href="/modulos/hero">hero</a> (el H1 único de arriba), <a href="/modulos/section-menu">menú de secciones</a> (la franja full-width entre hero y cuerpo) y <a href="/modulos/breadcrumbs">migas de pan</a> (la barra que precede al primer encabezado en internas).</p>
     </div>
   </section>
 
@@ -682,6 +683,11 @@ const recetaReorder = `/* MÓVIL · INVERTIR EL ORDEN EN STACK (extensión)
   .section { padding: var(--sp-8) 0; }
   .section--surface { background: var(--c-surface); }
   @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* Related-links inline · interlinking natural entre L3. */
+  .rl { margin: var(--sp-5) 0 0; font-size: var(--text-sm); color: var(--c-ink-2); line-height: var(--leading-relaxed); }
+  .rl a { color: var(--c-primary); text-decoration: underline; text-underline-offset: 2px; }
+  .rl a:hover { color: var(--c-primary-dark); }
 
   /* ── Beneficios ── */
   .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }

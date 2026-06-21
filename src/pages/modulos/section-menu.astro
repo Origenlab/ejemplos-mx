@@ -628,6 +628,7 @@ const recetaSticky = `/* SCROLL · STICKY BAJO EL HEADER (extensión opcional)
           'A diferencia del resto del sitio, esta franja va FULL-WIDTH (100 % del viewport, sin contenedor central). Es una decisión visual: si la dejaras dentro del container del 90 %, parecería un elemento más del cuerpo; al borde, el ojo la lee como continuación del hero. Y, salvo el patrón sticky de la sección anterior, no es fija: se desplaza con el contenido. En la home aparece dos veces —arriba bajo el hero, abajo como cierre/interlinking—; en otras páginas, basta con una.',
         ]}
       />
+      <p class="rl">Módulos cercanos: <a href="/modulos/hero">hero</a> (lo que viene encima), <a href="/modulos/category-card">tarjeta de categoría</a> (la vitrina que aparece debajo) y <a href="/modulos/cta-banner">CTA banner</a> (el mismo patrón al cierre de la página).</p>
     </div>
   </section>
 
@@ -712,6 +713,11 @@ const recetaSticky = `/* SCROLL · STICKY BAJO EL HEADER (extensión opcional)
   .section { padding: var(--sp-8) 0; }
   .section--surface { background: var(--c-surface); }
   @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* Related-links inline · interlinking natural entre L3. */
+  .rl { margin: var(--sp-5) 0 0; font-size: var(--text-sm); color: var(--c-ink-2); line-height: var(--leading-relaxed); }
+  .rl a { color: var(--c-primary); text-decoration: underline; text-underline-offset: 2px; }
+  .rl a:hover { color: var(--c-primary-dark); }
 
   /* ── Beneficios ── */
   .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }

@@ -384,7 +384,7 @@ const recetaAbrirMov = `/* MÓVIL · TODOS ABIERTOS POR DEFECTO (extensión)
 ---
 
 <PageLayout
-  title="Las Preguntas frecuentes — el acordeón que resuelve objeciones"
+  title="Las Preguntas frecuentes — el acordeón que cierra dudas"
   description="Módulo FAQ: acordeón nativo <details>/<summary>, schema FAQPage centralizado en lib/seo.ts (regla B3), con caveat de mayo 2026 sobre rich results."
   pageType="page"
   guia={false}
@@ -736,6 +736,7 @@ const recetaAbrirMov = `/* MÓVIL · TODOS ABIERTOS POR DEFECTO (extensión)
           'Lo que NO hace la FAQ, por diseño: no es para anuncios, no es para precios, no es para fichas de producto. Si la «respuesta» es un párrafo largo, mejor un artículo de blog enlazado desde la respuesta; si es una tabla de comparativas, mejor un grid en otra sección. La FAQ es para dudas CONVERSACIONALES cortas (2–4 líneas máximo). Para casos compuestos —FAQ a la izquierda + formulario a la derecha, como el home—, el modo <code>bare</code> permite incrustar el acordeón dentro de una columna sin que el componente meta su propia <code>&lt;section&gt;</code> centrada.',
         ]}
       />
+      <p class="rl">Módulos cercanos al cierre: <a href="/modulos/review">reseñas</a> (la prueba social que viene antes), <a href="/modulos/cta-banner">CTA banner</a> (lo que sigue), <a href="/modulos/contact-form">formulario de contacto</a> (el patrón FAQ + form) y <a href="/modulos/footer">footer</a> (donde aterriza el visitante después).</p>
     </div>
   </section>
 
@@ -855,6 +856,11 @@ const recetaAbrirMov = `/* MÓVIL · TODOS ABIERTOS POR DEFECTO (extensión)
   .section { padding: var(--sp-8) 0; }
   .section--surface { background: var(--c-surface); }
   @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* Related-links inline · interlinking natural entre L3. */
+  .rl { margin: var(--sp-5) 0 0; font-size: var(--text-sm); color: var(--c-ink-2); line-height: var(--leading-relaxed); }
+  .rl a { color: var(--c-primary); text-decoration: underline; text-underline-offset: 2px; }
+  .rl a:hover { color: var(--c-primary-dark); }
 
   /* ── Beneficios ── */
   .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }

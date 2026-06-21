@@ -845,12 +845,13 @@ const recetaCTAMov = `/* MÓVIL · STACK + CTA AL CIERRE (default + acción del 
         layout="duo"
         eyebrow="Posición"
         title="¿Dónde se coloca?"
-        desc="Casi siempre DESPUÉS del catálogo o de los servicios y ANTES del FAQ + CTA banner. Resuelve la duda «¿le funcionó a alguien como yo?» justo cuando el visitante ya entendió la oferta pero antes de pedir cotización. Hoy se usa en la home (4 testimonios después del bloque de servicios) y, en sitios reales, conviene también dentro de ServiceLayout/ProductLayout para reforzar la entidad reviewada."
+        desc="Casi siempre DESPUÉS del catálogo o de los servicios y ANTES del FAQ y del CTA banner. Resuelve la duda «¿le funcionó a alguien como yo?» justo cuando el visitante ya entendió la oferta pero antes de pedir cotización. Hoy se usa en la home (4 testimonios después del bloque de servicios) y, en sitios reales, conviene también dentro de ServiceLayout/ProductLayout para reforzar la entidad reviewada."
         body={[
           'A diferencia del Hero (uno por página al inicio) o el FAQ (uno por página al cierre), las reseñas aparecen en bloque (3–6 cards) y SIEMPRE en una posición intermedia —después del contenido principal pero antes del cierre—. Esa posición no es casual: la prueba social funciona en el momento de máxima resistencia, cuando ya hay deseo y antes de la acción. Demasiado arriba (encima del catálogo) parece autopromoción; demasiado abajo (después del CTA) llega tarde.',
           'Lo que NO hace la reseña, por diseño: no reemplaza al catálogo (las cards de catálogo venden, las reseñas validan), no se usa como decoración (3–6 cards reales son mejores que 20 inventadas), y no acepta foto del cliente por default (avatar con iniciales mantiene la coherencia del grid). Para casos compuestos —prueba social + CTA al cierre, como un cierre con acción—, el patrón móvil 4 (stack + CTA full-width) deja la sección rematada con un solo paso siguiente.',
         ]}
       />
+      <p class="rl">Módulos cercanos: <a href="/modulos/faq">FAQ</a> (resuelve dudas justo después), <a href="/modulos/cta-banner">CTA banner</a> (el cierre que convierte) y <a href="/modulos/category-card">tarjeta de categoría</a> (el catálogo que las reseñas validan).</p>
     </div>
   </section>
 
@@ -980,6 +981,11 @@ const recetaCTAMov = `/* MÓVIL · STACK + CTA AL CIERRE (default + acción del 
   .section { padding: var(--sp-8) 0; }
   .section--surface { background: var(--c-surface); }
   @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* Related-links inline · interlinking natural entre L3 (sin gold-plating). */
+  .rl { margin: var(--sp-5) 0 0; font-size: var(--text-sm); color: var(--c-ink-2); line-height: var(--leading-relaxed); }
+  .rl a { color: var(--c-primary); text-decoration: underline; text-underline-offset: 2px; }
+  .rl a:hover { color: var(--c-primary-dark); }
 
   /* ── Beneficios ── */
   .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }

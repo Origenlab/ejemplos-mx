@@ -560,6 +560,7 @@ const recetaColapsado = `<!-- MIGAS MUY PROFUNDAS · colapsar el medio con «…
           'No van en la home: ahí no hay nivel superior y serían ruido. Tampoco encima del header o intercaladas con el contenido: su sitio es la franja entre el chrome y el cuerpo, donde el ojo ya las espera. En esta plantilla, basta con que la página pase la prop <code>breadcrumbs</code> al layout: si está, se pinta la barra y se emite el BreadcrumbList; si no, ninguno de los dos aparece —cero ruido en páginas que no las necesitan—.',
         ]}
       />
+      <p class="rl">Módulos cercanos en el chrome: <a href="/modulos/header">header</a> (la barra justo encima), <a href="/modulos/topbar">topbar</a> (la franja utilitaria del tope) y <a href="/modulos/section-heading">encabezado de sección</a> (el primer título dentro del contenido).</p>
     </div>
   </section>
 
@@ -642,6 +643,11 @@ const recetaColapsado = `<!-- MIGAS MUY PROFUNDAS · colapsar el medio con «…
   .section { padding: var(--sp-8) 0; }
   .section--surface { background: var(--c-surface); }
   @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* Related-links inline · interlinking natural entre L3. */
+  .rl { margin: var(--sp-5) 0 0; font-size: var(--text-sm); color: var(--c-ink-2); line-height: var(--leading-relaxed); }
+  .rl a { color: var(--c-primary); text-decoration: underline; text-underline-offset: 2px; }
+  .rl a:hover { color: var(--c-primary-dark); }
 
   /* ── Beneficios ── */
   .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
