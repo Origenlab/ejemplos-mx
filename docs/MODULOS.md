@@ -432,9 +432,57 @@ La serie L3 se complementa con **una biblioteca de 25 artículos MDX en `src/con
 
 ### Estado
 
-- 25/25 artículos publicados (24 modulares + tesis), 4 commits en `main`.
-- Build 125 páginas OK (`/blog/<slug>/`, `/blog/categoria/<cat>/`, `/blog/tag/<tag>/`).
+- 25/25 artículos publicados y **expandidos al estándar v2** (24 modulares + tesis), 8 commits en `main` (4 publicación + 4 expansión).
+- Build 126 páginas OK (`/blog/<slug>/`, `/blog/categoria/<cat>/`, `/blog/tag/<tag>/`).
 - `audit:meta` OK (los `.mdx` no son páginas Astro; el gate corre sobre `src/pages/`).
+- **Palabras totales del corpus:** ~116,978 (promedio ~4,679 por artículo; tesis 8,217).
+
+---
+
+## 10. Estándar editorial v2 — "referencia industrial firmada"
+
+Aplicado a los 25 artículos en la **fase expansión editorial (2026-06-21)**, 4 commits (`f69c53d` · `ee9eb62` · `8ad7b1a` · `459d8c0`) que llevaron el corpus de ~60,400 a ~117,000 palabras (+94.6%). Esta es la rúbrica que cualquier artículo nuevo del blog debe cumplir desde aquí en adelante.
+
+### Voz
+
+Autor experto que firma, no manual genérico. Cada artículo debe leerse como columna de Smashing Magazine / web.dev / Stripe Press escrita por alguien que de verdad implementó esto en producción. Primera persona plural con moderación ("lo aprendimos cuando..."). 1-2 momentos "lo aprendimos mal una vez" por artículo. Costos concretos en KB/ms. Versiones explícitas (`@astrojs/mdx@^6`, `astro@^6`, schema.org v18.0, Lighthouse 12.x). Trade-offs honestos.
+
+### Estructura por artículo (mínimo)
+
+1. **Hook narrativo con métrica concreta** en los primeros 2 párrafos — escenario real (auditoría de cliente, refactor en producción, conversión perdida). NO definición seca.
+2. **Sección "Por qué este patrón existe"** con contexto histórico/técnico citado (W3C, NN/g, Polaris, Stripe Press, schema.org versionado, caniuse, jurisprudencia FTC/CNIL/AGCM/Profeco/INAI cuando aplique).
+3. **Implementación canónica** con código real.
+4. **≥4 tablas operativas:** antes/después con Core Web Vitals · comparativa A vs B vs C · decision matrix · trade-offs honestos.
+5. **Patrones avanzados** (3 técnicas pro).
+6. **Edge cases y debugging** — 3-5 casos que las docs no cubren (Safari iOS safe-area-inset, Android barra URL retráctil, view transitions con `transition:persist`, slug inválido en `reference()`, content layer cache stale).
+7. **Performance y a11y con números reales** — Lighthouse 12.x sobre Pixel 5 Slow 4G. WCAG 2.2 SC concretos (1.3.1, 1.4.3, 1.4.10, 1.4.13, 2.3.3, 2.4.4, 2.4.7, 2.4.8, 2.4.11, 2.5.5, 3.2.2). No "cumple WCAG" — cita el SC y cómo.
+8. **Casos donde NO usar este patrón** con alternativas concretas.
+9. **Checklist accionable** 8-12 ítems operativos y medibles.
+10. **FAQ 5-7 preguntas profundas** — comparativas honestas con Next.js Suspense / SvelteKit / Stripe / Linear / Vercel / Shopify Polaris; internals de Astro 6 (server islands, view transitions, content layer, prerender, image service).
+11. **Cierre con enlaces curados:** L3 + hermano + tesis + **1-2 fuentes externas autoritativas** (WCAG 2.2 SC, schema.org, web.dev, NN/g, MDN, Google Search Central, Stripe Style Guide, WAI-ARIA APG, Brad Frost).
+
+### Tesis maestra — trato especial
+
+Meta: **6,000-8,000 palabras** (actual 8,217). Secciones obligatorias: Historia del proyecto · Stack completo (Astro 6 + MDX 3 + Cloudflare Pages) · Matriz de decisión 12×6 módulos · 12 reglas duras D1-D3 + B1-B9 · Anti-patrones descartados · Patrones avanzados · Performance/a11y como gates · Sistema editorial 25 artículos · "Si empezáramos mañana" (honestidad final) · Roadmap honesto · FAQ ampliado 8-12 preguntas.
+
+### MDX 3 safety — reglas duras (descubrimientos de esta fase)
+
+- NUNCA poner `{`, `}`, `<TagDesconocido>` dentro de inline backticks en prosa — MDX 3 los evalúa como JSX y rompe build con `ReferenceError`. Backslash NO escapa.
+- **NUEVO (descubierto en Ola 5):** incluso `` `<5ms` `` o `` `<90` `` (angle bracket + dígito o letra sin tag) rompe build con `Unexpected character`. Convertir a "menos de 5" o fenced block.
+- Componentes en prosa: usar `‹Tag›` (U+2039/U+203A) o sin angle brackets.
+- Código con braces/tags: fenced block (```` ``` ````).
+- Nested backticks PROHIBIDOS.
+
+### Cross-linking (v2)
+
+Cada artículo cierra con 4 bloques: L3 del módulo · artículo hermano del par · tesis · **1-2 fuentes externas autoritativas** (nuevo en v2).
+
+### Gate operativo (pre-commit)
+
+- `npm run audit:meta` debe pasar sin FAILs nuevos introducidos por el corpus
+- `npm run build` debe completar 126+ páginas sin error
+- Scan rápido (`grep -nE`) en `.mdx` modificados para detectar inline backticks con `<`/`{`/`}` en prosa
+- Cada artículo respeta límites Zod (`title` 10-70, `description` 70-160)
 
 ---
 
