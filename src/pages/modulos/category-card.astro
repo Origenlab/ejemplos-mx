@@ -336,12 +336,14 @@ const recetaDots = `/* MÓVIL · CARRUSEL CON DOTS (extensión opcional)
      });
    }, { threshold: 0.6 });
    cards.forEach((c) => io.observe(c)); */`
+import RelatedLinks from '@components/RelatedLinks.astro'
 ---
 
 <PageLayout
   title="La Tarjeta de categoría — la vitrina que entra por los ojos"
   description="Tarjeta de categoría: card de vitrina (imagen + alt, título H3, blurb, CTA), un componente reutilizado en todas las vitrinas, data-driven desde site.ts."
   pageType="page"
+  schemaType="TechArticle"
   guia={false}
   breadcrumbs={[{ label: 'Módulos', href: '/modulos' }, { label: 'Tarjeta de categoría' }]}
 >
@@ -748,6 +750,18 @@ const recetaDots = `/* MÓVIL · CARRUSEL CON DOTS (extensión opcional)
 
   {/* Cierre */}
   <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+
+  {/* Cross-linking interno (B6 PROYECTORED): 3 enlaces curados al final de la página. */}
+  <RelatedLinks
+    title="Continúa explorando"
+    desc="Otros módulos del flujo que encajan con éste."
+    links={[
+      { label: 'Category Detail', href: '/modulos/category-detail', desc: 'El detalle profundo: la card de catálogo se ABRE aquí.' },
+      { label: 'Product Card', href: '/modulos/product-card', desc: 'El primo de producto: misma forma, otra taxonomía.' },
+      { label: 'Section Heading', href: '/modulos/section-heading', desc: 'El título que precede al grid de cards.' },
+    ]}
+    limit={3}
+  />
 </PageLayout>
 
 <style>

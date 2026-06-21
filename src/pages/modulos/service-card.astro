@@ -23,6 +23,7 @@
 // La card queda presentación pura; las recetas lo explican sin re-emitir schema.
 // ============================================================================
 import PageLayout from '@layouts/PageLayout.astro'
+import RelatedLinks from '@components/RelatedLinks.astro'
 import Hero from '@components/Hero.astro'
 import SectionHeading from '@components/SectionHeading.astro'
 import SectionMenu from '@components/SectionMenu.astro'
@@ -399,6 +400,7 @@ const recetaStickyCta = `/* MÓVIL · STACK A ANCHO COMPLETO + CTA STICKY (exten
   title="La tarjeta de servicio — la cara breve del catálogo"
   description="Tarjeta de servicio: card breve del catálogo (ícono o imagen + badge + título + CTA), data-driven desde la collection servicios, sin schema propio."
   pageType="page"
+  schemaType="TechArticle"
   guia={false}
   breadcrumbs={[{ label: 'Módulos', href: '/modulos' }, { label: 'Tarjeta de servicio' }]}
 >
@@ -896,6 +898,18 @@ const recetaStickyCta = `/* MÓVIL · STACK A ANCHO COMPLETO + CTA STICKY (exten
 
   {/* Cierre */}
   <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+
+  {/* Cross-linking interno (B6 PROYECTORED): 3 enlaces curados al final de la página. */}
+  <RelatedLinks
+    title="Continúa explorando"
+    desc="Otros módulos del flujo que encajan con éste."
+    links={[
+      { label: 'Product Card', href: '/modulos/product-card', desc: 'El hermano de productos: mismo patrón, otro contexto.' },
+      { label: 'Contact Form', href: '/modulos/contact-form', desc: 'El CTA natural después del servicio: contactar.' },
+      { label: 'CTA Banner', href: '/modulos/cta-banner', desc: 'Llamado a la acción para cerrar la página de servicio.' },
+    ]}
+    limit={3}
+  />
 </PageLayout>
 
 <style>

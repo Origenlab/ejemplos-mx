@@ -752,6 +752,68 @@ export function articleSchema(a: ArticleData) {
   };
 }
 
+/* ════════════════════════════════════════════════════════════════════════════
+ * TechArticle — opt-in para páginas técnicas (manuales, documentación, L3).
+ * ────────────────────────────────────────────────────────────────────────────
+ * Espejo del patrón faqSchema() / reviewSchema() / contactPointSchema():
+ * función PURA, sin side effects. Se activa solo si la página declara
+ * pageType: 'techArticle' (o el alias schemaType en PageLayout).
+ *
+ * Por qué TechArticle y no Article:
+ *   - Article es el tipo del blog (artículos editoriales con autor humano).
+ *   - TechArticle (subtipo de Article) describe contenido técnico/documental
+ *     —reference docs, how-tos, descripciones de componentes—. Encaja con las
+ *     páginas /modulos/* que documentan piezas del sistema, no «posts».
+ *
+ * CAVEAT (alineado con faqSchema · mayo 2026): Google retiró los rich results
+ * de FAQ/HowTo y reduce la visibilidad de la mayoría de los snippets para
+ * sitios sin autoridad de marca. TechArticle sigue siendo útil para:
+ *   - search.gov / Bing / DuckDuckGo (que aún lo usan)
+ *   - Google Discover y experiencias AI (Gemini, SGE)
+ *   - desambiguar el tipo de contenido frente al crawler.
+ * Es opt-in por diseño: activarlo NO mejora el ranking por sí solo, pero deja
+ * la página correctamente tipada para el día que vuelvan los rich results.
+ */
+export type TechArticleData = {
+  headline: string;
+  description?: string;
+  datePublished: string;       // ISO 8601 (yyyy-mm-dd o full)
+  dateModified?: string;
+  author?: string;
+  image?: string;
+  proficiencyLevel?: 'Beginner' | 'Intermediate' | 'Expert';
+  path?: string;               // ruta canónica para @id/url; si se omite, el nodo va sin @id
+};
+
+/**
+ * TechArticle — para páginas técnicas (docs, módulos, manuales).
+ * publisher / isPartOf apuntan al grafo base por @id (consolidación de entidades).
+ *
+ * Uso:
+ *   import { techArticleSchema } from '@lib/seo'
+ *   const node = techArticleSchema({
+ *     headline: 'Topbar — anatomía y uso',
+ *     datePublished: '2026-06-21',
+ *   })
+ */
+export function techArticleSchema(input: TechArticleData): Record<string, unknown> {
+  const url = input.path ? absUrl(input.path) : undefined;
+  return {
+    '@type': 'TechArticle',
+    ...(url ? { '@id': `${url}#techarticle`, url, mainEntityOfPage: { '@type': 'WebPage', '@id': url } } : {}),
+    headline: input.headline,
+    ...(input.description ? { description: input.description } : {}),
+    datePublished: input.datePublished,
+    dateModified: input.dateModified ?? input.datePublished,
+    inLanguage: SITE.locale ?? 'es-MX',
+    author: input.author ? { '@type': 'Person', name: input.author } : { '@id': ORG_ID },
+    publisher: { '@id': ORG_ID },
+    isPartOf: { '@id': WEBSITE_ID },
+    ...(input.image ? { image: absImage(input.image) } : {}),
+    ...(input.proficiencyLevel ? { proficiencyLevel: input.proficiencyLevel } : {}),
+  };
+}
+
 export type FaqItem = { question: string; answer: string };
 
 /** FAQPage. Emítelo SOLO si las preguntas son visibles en la página. */
@@ -949,13 +1011,14 @@ export function reviewSchema(input: { items: Review[]; aggregate?: AggregateRati
  */
 const CTX = 'https://schema.org';
 
-export type PageType = 'home' | 'page' | 'category' | 'product' | 'service' | 'article' | 'directory' | 'faq';
+export type PageType = 'home' | 'page' | 'category' | 'product' | 'service' | 'article' | 'directory' | 'faq' | 'techArticle';
 
 export type SchemaData = {
   breadcrumbs?: Crumb[];          // si se pasa → se emite BreadcrumbList (1 vez)
   product?: ProductData;
   service?: ServiceData;
   article?: ArticleData;
+  techArticle?: TechArticleData;  // opt-in: emite TechArticle (docs/módulos)
   faqs?: FaqItem[];
   list?: { name: string; description: string; path: string; items: ListItem[]; areaServed?: string };
   areaServed?: string[];          // override de LocalBusiness en páginas de zona
@@ -986,6 +1049,12 @@ export function buildSchema(pageType: PageType, data: SchemaData = {}): object[]
     case 'article':
       if (data.article) out.push({ '@context': CTX, ...articleSchema(data.article) });
       break;
+    case 'techArticle':
+      // Convivencia: el nodo TechArticle se emite ABAJO (igual que FAQ),
+      // así puede acompañar a service/category sin pisarlos. Aquí solo
+      // marca el tipo «techArticle» para que og:type/SEO se ajusten si
+      // hace falta en el futuro. No-op intencional.
+      break;
     case 'category':
     case 'directory':
       if (data.list) out.push({ '@context': CTX, ...directorySchema(data.list) });
@@ -993,6 +1062,11 @@ export function buildSchema(pageType: PageType, data: SchemaData = {}): object[]
     case 'faq':
       break; // las FAQ se añaden abajo (también pueden acompañar a otros tipos)
   }
+
+  // TechArticle adicional (opt-in: convive con product/service/category si la
+  // página declara schemaData.techArticle). Patrón espejo de FAQ — un nodo
+  // tipado más, sin reemplazar el nodo principal del tipo de página.
+  if (data.techArticle) out.push({ '@context': CTX, ...techArticleSchema(data.techArticle) });
 
   // FAQ adicional (puede convivir con product/service si están visibles).
   if (data.faqs?.length) out.push({ '@context': CTX, ...faqSchema(data.faqs) });

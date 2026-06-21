@@ -357,12 +357,14 @@ const recetaAccordion = `/* MÓVIL · GALERÍA COLAPSABLE CON <details> (extensi
   details.cdetail__galwrap[open],
   details.cdetail__galwrap        { display: block; }
 }`
+import RelatedLinks from '@components/RelatedLinks.astro'
 ---
 
 <PageLayout
   title="La Categoría a fondo — bloque de dos columnas con galería"
   description="Categoría a fondo: bloque de 2 columnas (info + galería) que amplía una categoría. Componente reutilizado en home, módulos y servicios, sin zig-zag."
   pageType="page"
+  schemaType="TechArticle"
   guia={false}
   breadcrumbs={[{ label: 'Módulos', href: '/modulos' }, { label: 'Categoría a fondo' }]}
 >
@@ -866,6 +868,18 @@ const recetaAccordion = `/* MÓVIL · GALERÍA COLAPSABLE CON <details> (extensi
 
   {/* Cierre */}
   <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+
+  {/* Cross-linking interno (B6 PROYECTORED): 3 enlaces curados al final de la página. */}
+  <RelatedLinks
+    title="Continúa explorando"
+    desc="Otros módulos del flujo que encajan con éste."
+    links={[
+      { label: 'Category Card', href: '/modulos/category-card', desc: 'La card de catálogo que lleva a este detalle.' },
+      { label: 'Breadcrumbs', href: '/modulos/breadcrumbs', desc: 'Las migas que dicen «estás aquí, en esta categoría».' },
+      { label: 'FAQ', href: '/modulos/faq', desc: 'Preguntas comunes — encajan al final del detalle.' },
+    ]}
+    limit={3}
+  />
 </PageLayout>
 
 <style>

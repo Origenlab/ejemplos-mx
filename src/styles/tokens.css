@@ -146,3 +146,36 @@ img, picture, video, canvas { max-width: 100%; }
     --container-px: clamp(.85rem, 4vw, 1rem);
   }
 }
+
+/* ═════════════════════════════════════════════════════════════════════════════
+ * SKIP-LINK (accesibilidad — WCAG 2.4.1 Bypass Blocks).
+ * Lo emite BaseLayout justo después de <body>. Oculto fuera de pantalla hasta
+ * recibir foco (Tab desde el inicio); cuando se enfoca, baja al borde superior.
+ * Patrón canónico «oculto-hasta-foco» recomendado por WCAG/MDN: NO usar
+ * display:none (lo saca del orden de tab); el position negativo lo mantiene
+ * accesible al teclado y a lectores de pantalla.
+ * ═════════════════════════════════════════════════════════════════════════════ */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: var(--container-px, 1rem);
+  background: var(--c-ink);
+  color: var(--c-bg);
+  padding: var(--sp-2, .5rem) var(--sp-4, 1rem);
+  border-radius: var(--radius-md, 6px);
+  font-family: var(--font-body, system-ui);
+  font-size: var(--text-sm, .9rem);
+  font-weight: var(--weight-semibold, 600);
+  text-decoration: none;
+  z-index: 9999;
+  transition: top .15s ease-out;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  top: var(--sp-2, .5rem);
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skip-link { transition: none; }
+}

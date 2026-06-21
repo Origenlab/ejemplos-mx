@@ -51,15 +51,42 @@ export interface Props {
    * se muestra real (sin leyenda). El showcase de guías vive en el índice.
    */
   guia?: boolean;
+  /**
+   * Alias de conveniencia para activar TechArticle (opt-in).
+   * `schemaType="TechArticle"` → equivalente a pasar pageType="techArticle"
+   * y un schemaData.techArticle autoderivado (headline=title, fecha=hoy).
+   * Si la página ya pasa pageType o schemaData.techArticle, ESOS ganan; el
+   * alias solo rellena lo que falte. Patrón conservador para tipar las /modulos/*
+   * sin importar helpers en cada página. NO afecta el grafo base.
+   */
+  schemaType?: 'TechArticle';
 }
 
-const { breadcrumbs = [], guia = true, ...baseProps } = Astro.props;
+const { breadcrumbs = [], guia = true, schemaType, ...baseProps } = Astro.props;
+
+// ── schemaType → auto-derive de techArticle (conservador, no toca pageType) ──
+// El nodo TechArticle convive con cualquier pageType (se emite igual que FAQ
+// como nodo adicional en buildSchema). Si la página ya pasó schemaData.techArticle
+// con datos curados, NO los pisamos: el alias solo rellena cuando falta.
+const wantsTechArticle = schemaType === "TechArticle";
+const todayISO = new Date().toISOString().slice(0, 10);
+const autoTechArticle = wantsTechArticle && !(baseProps.schemaData?.techArticle)
+  ? {
+      techArticle: {
+        headline: baseProps.title ?? "",
+        path: Astro.url.pathname,
+        datePublished: todayISO,
+        dateModified: todayISO,
+      },
+    }
+  : {};
 
 // Las migas alimentan el BreadcrumbList del schema (lo emite buildSchema UNA
 // sola vez, B3 — el componente Breadcrumbs NO debe emitir su propio JSON-LD).
 // El componente visual usa { label, href }; el schema usa { name, path }.
 const schemaData: SchemaData = {
   ...(baseProps.schemaData ?? {}),
+  ...autoTechArticle,
   ...(breadcrumbs.length > 0
     ? {
         breadcrumbs: [

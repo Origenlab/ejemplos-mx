@@ -135,6 +135,77 @@ const node = reviewSchema({
 
 **Caveat mayo 2026 → presente.** Google solo pinta estrellas en la SERP para algunos tipos schema (Product, Recipe, Movie, Book). Para `LocalBusiness` y `Service`, el schema sigue siendo válido y útil para entender la entidad, pero **no esperes el efecto visual** de las amarillas. Bing y DuckDuckGo aún lo aprovechan.
 
+### 3.6 `GuiaNota.astro` — anotación didáctica «modo guía»
+
+Aside profesional que explica, **dentro del propio sitio**, qué hace cada bloque y dónde se edita. Es el callout sobrio que autoexplica cada sección del index. Único de la plantilla-guía: en un sitio de cliente se retira en bloque (no aporta a la conversión; es material de formación de Ejemplos.mx).
+
+| Prop | Tipo | Rol |
+|---|---|---|
+| `titulo` | `string` | Encabezado de la nota (qué se está explicando). |
+| `archivo` | `string?` | Ruta del archivo a editar, se muestra en monoespaciado. Opcional. |
+| `<slot/>` | — | La explicación en sí. Acepta texto/HTML. |
+
+Cuándo usarlo:
+
+- **Sí** — secciones del sitio-plantilla que necesitan autoexplicarse al usuario que está aprendiendo (anotaciones tipo «aquí pones X», «edita en Y»).
+- **Sí** — cualquier L3 de `/modulos/*` donde quieras una nota lateral didáctica sin sacar al lector del flujo.
+- **No** — para errores, alertas críticas o estados degradados. Esos requieren `<aside role="alert">` con jerarquía visual más fuerte. `GuiaNota` es deliberadamente sobria.
+- **No** — en sitios de cliente. La regla dura del kit es que `guia=false` en el chrome retira las anotaciones; en una plantilla productiva el componente sale por completo.
+
+Ejemplo de uso real en `/modulos/topbar`:
+
+```astro
+import GuiaNota from '@components/GuiaNota.astro'
+
+<GuiaNota titulo="Dato real, sin escribirlo dos veces" archivo="src/config/site.ts">
+  El número y el horario salen de <code>CONTACT</code>; el mensaje precargado de
+  WhatsApp, de <code>WA_MESSAGES</code>. Si cambias el horario aquí, se actualiza
+  en cada topbar del sitio sin tocar componentes.
+</GuiaNota>
+```
+
+Accesibilidad: emite `role="note"` + `aria-label="Guía: {titulo}"`. NO usar `role="alert"` (cambiaría la semántica a interrupción).
+
+### 3.7 `RelatedLinks.astro` — cross-linking interno (hub-and-spoke)
+
+Bloque al final de una página con 3-4 enlaces curados a páginas hermanas o relacionadas. Origen canónico: `PROYECTORED/src/components/sections/CategoriasRelacionadas.astro`. Es la pieza que distribuye **link equity** dentro del sitio y guía al usuario al siguiente paso natural (patrón canónico **B6** del ecosistema).
+
+| Prop | Tipo | Default | Rol |
+|---|---|---|---|
+| `title` | `string` | `'Explora también'` | Encabezado de la sección. |
+| `desc` | `string?` | — | Subtítulo opcional. |
+| `links` | `{ slug?, label, href, desc? }[]` | derivado de `PRODUCT_CATEGORIES` | Lista manual. Si se omite, se autopuebla con las categorías de producto y se excluye `current`. |
+| `current` | `string?` | `''` | Slug a excluir (la página actual, para no enlazarse a sí misma). |
+| `limit` | `number` | `4` | Cuántos enlaces pintar como máximo. |
+
+Cuándo usarlo:
+
+- **Sí** — al final de cualquier L3 (`/modulos/*`), L4 (ficha de producto/servicio) o página del blog. Cierra el flujo: «leíste esto, ahora mira esto otro».
+- **Sí** — en categorías que comparten taxonomía (`PRODUCT_CATEGORIES`, `SERVICES`, `COVERAGE_STATES`). El default excluye la actual automáticamente.
+- **No** — en la home o en páginas de conversión pura (`/contacto`, `/gracias`). Ahí la siguiente acción NO es leer otro contenido, es la conversión misma.
+- **No** — con más de 4 enlaces. Pasados los 4 deja de ser «curaduría» y se convierte en menú, lo que diluye el link equity y satura al lector.
+
+Regla de oro para los **labels**: usar el nombre real de la página de destino (es el anchor text que verá el crawler y el lector). Evitar genéricos como «Ver más», «Click aquí», «Continuar leyendo» — son penalizaciones de SEO y de UX a la vez.
+
+Ejemplo de uso real en `/modulos/footer`:
+
+```astro
+import RelatedLinks from '@components/RelatedLinks.astro'
+
+<RelatedLinks
+  title="Continúa explorando"
+  desc="Otros módulos del flujo que encajan con éste."
+  links={[
+    { label: 'Contact Form', href: '/modulos/contact-form', desc: 'El formulario de contacto que precede al footer.' },
+    { label: 'CTA Banner',   href: '/modulos/cta-banner',   desc: 'El pre-footer de conversión que sostiene al footer.' },
+    { label: 'Hero',         href: '/modulos/hero',         desc: 'El opening de la página — cierra el bucle con el inicio.' },
+  ]}
+  limit={3}
+/>
+```
+
+Accesibilidad: emite `<section aria-label={title}>` + `<ul role="list">`. Cada `<a class="rel__card">` tiene `:focus-visible` con outline de marca (`--c-primary`). El SVG de la flecha lleva `aria-hidden="true"` (decorativa).
+
 ---
 
 ## 4. Catálogo de variantes de topbar (escritorio)

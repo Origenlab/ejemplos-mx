@@ -382,12 +382,14 @@ const recetaCarrusel = `/* MÓVIL · CARRUSEL CON DOTS (extensión, mínimo JS)
    }, { threshold: 0.6 })
    document.querySelectorAll('.carrusel > *').forEach((el) => obs.observe(el))
 */`
+import RelatedLinks from '@components/RelatedLinks.astro'
 ---
 
 <PageLayout
   title="La Tarjeta de producto — la ficha breve del catálogo"
   description="Tarjeta de producto: card breve del catálogo (imagen 16:9 + badge + título + CTA), data-driven desde getCollection con anti-CLS y LCP priority por defecto."
   pageType="page"
+  schemaType="TechArticle"
   guia={false}
   breadcrumbs={[{ label: 'Módulos', href: '/modulos' }, { label: 'Tarjeta de producto' }]}
 >
@@ -880,6 +882,18 @@ const recetaCarrusel = `/* MÓVIL · CARRUSEL CON DOTS (extensión, mínimo JS)
 
   {/* Cierre */}
   <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+
+  {/* Cross-linking interno (B6 PROYECTORED): 3 enlaces curados al final de la página. */}
+  <RelatedLinks
+    title="Continúa explorando"
+    desc="Otros módulos del flujo que encajan con éste."
+    links={[
+      { label: 'Service Card', href: '/modulos/service-card', desc: 'La hermana de servicios: mismo patrón, otro contexto.' },
+      { label: 'Category Card', href: '/modulos/category-card', desc: 'Un nivel arriba: del producto a su categoría.' },
+      { label: 'FAQ', href: '/modulos/faq', desc: 'Preguntas frecuentes del catálogo y la ficha.' },
+    ]}
+    limit={3}
+  />
 </PageLayout>
 
 <style>

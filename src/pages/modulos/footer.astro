@@ -365,12 +365,14 @@ const node = organizationSchema()
     Si reescribes el formato en una página («(55) 0000-0000» en vez de
     «55 0000 0000»), Google detecta divergencia y baja la confianza
     local. UNA SSoT, tres consumidores leyendo de ella. */}`
+import RelatedLinks from '@components/RelatedLinks.astro'
 ---
 
 <PageLayout
   title="Footer pro: NAP, navegación, legales y volver arriba"
   description="Footer profesional: zona de cierre con NAP, navegación, CTA, redes, legales y volver arriba. Datos desde site.ts; schema en lib/seo.ts."
   pageType="page"
+  schemaType="TechArticle"
   guia={false}
   breadcrumbs={[{ label: 'Módulos', href: '/modulos' }, { label: 'Footer' }]}
 >
@@ -744,6 +746,18 @@ const node = organizationSchema()
 
   {/* ── Cierre: menú de navegación full-width (siblingsModules SSoT) ── */}
   <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+
+  {/* Cross-linking interno (B6 PROYECTORED): 3 enlaces curados al final de la página. */}
+  <RelatedLinks
+    title="Continúa explorando"
+    desc="Otros módulos del flujo que encajan con éste."
+    links={[
+      { label: 'Contact Form', href: '/modulos/contact-form', desc: 'El formulario de contacto que precede al footer.' },
+      { label: 'CTA Banner', href: '/modulos/cta-banner', desc: 'El pre-footer de conversión que sostiene al footer.' },
+      { label: 'Hero', href: '/modulos/hero', desc: 'El opening de la página — cierre el bucle con el inicio.' },
+    ]}
+    limit={3}
+  />
 </PageLayout>
 
 <style>

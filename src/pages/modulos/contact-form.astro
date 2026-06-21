@@ -474,12 +474,14 @@ export const onRequestPost: PagesFunction<{
 
   return Response.json({ ok: true });
 };`
+import RelatedLinks from '@components/RelatedLinks.astro'
 ---
 
 <PageLayout
   title="Formulario de contacto: WCAG 2.2, anti-spam y WhatsApp"
   description="Módulo ContactForm: accesibilidad WCAG 2.2, honeypot canónico, Turnstile, consentimiento LFPDPPP. Envío directo a WhatsApp con waUrl()."
   pageType="page"
+  schemaType="TechArticle"
   guia={false}
   breadcrumbs={[{ label: 'Módulos', href: '/modulos' }, { label: 'Formulario de contacto' }]}
 >
@@ -903,6 +905,18 @@ export const onRequestPost: PagesFunction<{
 
   {/* Cierre */}
   <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+
+  {/* Cross-linking interno (B6 PROYECTORED): 3 enlaces curados al final de la página. */}
+  <RelatedLinks
+    title="Continúa explorando"
+    desc="Otros módulos del flujo que encajan con éste."
+    links={[
+      { label: 'Footer', href: '/modulos/footer', desc: 'El cierre del sitio, con el ContactPoint del schema.' },
+      { label: 'CTA Banner', href: '/modulos/cta-banner', desc: 'El llamado a la acción que precede al formulario.' },
+      { label: 'Breadcrumbs', href: '/modulos/breadcrumbs', desc: 'El rastro de navegación que ubica al usuario.' },
+    ]}
+    limit={3}
+  />
 </PageLayout>
 
 <style>

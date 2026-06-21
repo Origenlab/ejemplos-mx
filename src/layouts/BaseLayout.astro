@@ -173,6 +173,14 @@ const jsonLd = buildSchema(pageType, schemaData);
   </head>
 
   <body>
+    {/*
+      Skip-link de accesibilidad (WCAG 2.4.1 Bypass Blocks).
+      Oculto hasta recibir foco (clase .skip-link en tokens.css). Apunta al
+      <main id="main-content"> que PageLayout renderiza siempre. Para páginas
+      que extienden BaseLayout directo (raras, p. ej. 404 técnicas) el target
+      puede faltar; no rompe nada — solo desperdicia el primer Tab.
+    */}
+    <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
     <slot />
   </body>
 </html>
