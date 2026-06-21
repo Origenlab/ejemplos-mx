@@ -20,7 +20,7 @@ La serie vive en una jerarquía de tres niveles. Es la misma lógica de profundi
 | **L2 — Módulos** | `/modulos` | `src/pages/modulos/index.astro` | El índice de la serie: explica qué es un módulo y lista todos (roadmap). | Inicio › Módulos |
 | **L3 — Módulo** | `/modulos/<slug>` | `src/pages/modulos/<slug>.astro` | La página de detalle de UNA pieza, a fondo. | Inicio › Módulos › <Módulo> |
 
-A la fecha (2026-06-20) hay **ocho** L3 publicados —`topbar`, `header`, `hero`, `breadcrumbs`, `section-menu`, `section-heading`, `category-card`, `category-detail`— con el mismo molde de 10 secciones. El L2 y el dropdown «Módulos» del Header se alimentan del array **`MODULOS`** en `src/config/site.ts` (SSoT): los de `estado: 'listo'` enlazan; los `'proximo'` se muestran como roadmap, sin enlace.
+A la fecha (2026-06-20) hay **trece** L3 publicados —`topbar`, `header`, `hero`, `breadcrumbs`, `section-menu`, `section-heading`, `category-card`, `category-detail`, `product-card`, `service-card`, `faq`, `review`, `footer`— con el mismo molde de 10 secciones. El L2 y el dropdown «Módulos» del Header se alimentan del array **`MODULOS`** en `src/config/site.ts` (SSoT): los de `estado: 'listo'` enlazan; los `'proximo'` se muestran como roadmap, sin enlace.
 
 **Convención de slug (regla dura)** — los slugs viven en **inglés y singular** (`section-menu`, `section-heading`, `category-card`, `category-detail`), aunque el `label` visible al usuario sea en español (`Menú de secciones`, `Encabezado de sección`, `Tarjeta de categoría`, `Categoría a fondo`). Slug = clave técnica + ruta; label = etiqueta humana en menús, breadcrumbs y headings. Nunca se mezclan.
 
@@ -106,6 +106,8 @@ Hay módulos que pueden acompañar JSON-LD propio (FAQ, reseñas, productos, ser
 | `faqSchema(items)` | Puro | `{ '@type': 'FAQPage', mainEntity: [...] }` | Lo invoca `buildSchema` cuando `data.faqs` existe; el componente puede emitirlo si `emitSchema=true` pero NUNCA ambos. |
 | `reviewSchema({ items, aggregate? })` | Puro | `{ aggregateRating: {...}, review: [...] }` (vacío si no hay reseñas válidas) | Compone el bloque listo para mergear en un nodo Product/Service. El componente `ReviewCard` **NO** acepta `emitSchema`: el gate B4 es global, no por componente. |
 | `emitReviews(reviews)` (interno) | Gateado por `SITE.allowSelfReviews` | Mismo shape que `reviewSchema()` | Usado dentro de `productSchema`/`serviceSchema`. Devuelve `{}` si el gate está apagado o si no hay reseñas válidas. |
+| `organizationSchema()` (alias de `orgSchema()`) | Puro | `{ '@type': 'Organization', '@id': '...', name, url, logo, contactPoint, sameAs? }` | Lo invoca `buildSchema` SIEMPRE (en todo `pageType`) como parte del `@graph` base. El componente `Footer.astro` **NO** lo emite. Renombrado a `organizationSchema` por coherencia con `localBusinessSchema` / `faqSchema` / `reviewSchema`; el nombre antiguo `orgSchema` sigue funcionando. |
+| `localBusinessSchema({ areaServed? })` | Puro | `{ '@type': 'LocalBusiness'|..., '@id': '...', name, address, geo, openingHours, ... }` | Lo invoca `buildSchema` SOLO si `SITE.business` está definido. Lleva el mismo NAP que `organizationSchema` (consistencia, ver §6.2). |
 
 Ejemplo canónico de uso de `reviewSchema()` (componer un nodo a mano):
 
@@ -179,6 +181,30 @@ Cuatro patrones, cada uno con preview en teléfono + receta comentada (Nielsen N
 
 Corre `npm run audit:meta` antes de cada commit a `main`. Falla si algún `<title>` excede 60 caracteres o alguna meta description excede 155. La implementación está en `scripts/audit-meta.mjs` y los límites son espejo de `META_TITLE_MAX` / `META_DESC_MAX` (y de `metaAuditBasic()`) en `src/lib/seo.ts` como SSoT. El script extrae estáticamente los atributos `title` y `description` del primer `<PageLayout>` de cada `.astro` de `src/pages/`; los valores dinámicos (`title={…}`) se marcan como `SKIP` y no aprueban ciegamente. Hoy NO se promueve a hook obligatorio del build (no se encadena con `astro build`) para no bloquear iteraciones rápidas en dev; sí se documenta como gate previo a `git push`.
 
+**Gotcha del extractor (visto en `footer.astro`):** el script hace `src.indexOf('<PageLayout')` sobre el texto crudo del archivo, así que si una receta del frontmatter (template literal pasado a `<Receta lang="astro" code={...} />`) contiene la cadena `<PageLayout title="…" description="…">`, el extractor agarra ESA como si fuera la del page. Resultado: title/description ridículamente cortos (3 chars cada uno por los `"..."`) pero marcados `OK` porque caben en 60/155. Solución canónica: en las recetas, NUNCA escribir el wrapper `<PageLayout ...>` literal — usar un bloque comentado (`{/* ... */}`) o describir el wrapper en prosa. Patrón verificado en `src/pages/modulos/footer.astro` (receta `recetaSchema`).
+
+### 6.2 Consistencia NAP (Name + Address + Phone)
+
+El SEO local depende de que el NAP del negocio sea **idéntico letra por letra** entre el Topbar, el Footer y el JSON-LD que emite `organizationSchema()` / `localBusinessSchema()`. Una divergencia de formato («55 0000 0000» vs «(55) 0000-0000» vs «+52 55 0000 0000») le dice a Google que hay dos entidades distintas con el mismo nombre, y baja la confianza del Knowledge Panel local.
+
+La SSoT canónica vive en `src/config/site.ts`, en tres bloques relacionados:
+
+| Campo SSoT | Consume | Formato |
+|---|---|---|
+| `CONTACT.phone` | Topbar (texto), Footer (texto) | Legible: `"55 0000 0000"` |
+| `CONTACT.phoneE164` / `CONTACT.phoneRaw` | `telUrl()` (`tel:` link), `organizationSchema.contactPoint.telephone` | E.164: `"+525500000000"` |
+| `CONTACT.whatsapp` | `waUrl()` (link `wa.me/...`) | E.164 sin `+`: `"525500000000"` |
+| `CONTACT.email` | Footer, `organizationSchema.contactPoint.email` | RFC 5322 |
+| `CONTACT.{street, city, state, postalCode}` | Footer (texto visible + Google Maps URL) | Texto en español, MX |
+| `SITE.business.address.{street, locality, region, postalCode, country}` | `localBusinessSchema.address` (JSON-LD) | Schema.org `PostalAddress` |
+| `SITE.organization.{name, legalName}` | Copyright del footer, `organizationSchema.name`/`legalName` | Razón comercial y razón social |
+
+**Regla dura:** UN componente nuevo NO hardcodea NAP. Lee de `CONTACT` / `SITE.organization` con el helper que corresponda (`telUrl()`, `waUrl()`, texto directo). Si necesitas un formato distinto al de la SSoT (p.ej. internacionalizar el teléfono), agrega un nuevo campo derivado a `CONTACT` o un nuevo helper a `lib/seo.ts` — pero la fuente sigue siendo una sola.
+
+**Deuda detectada (2026-06-20) — P1:** los campos `street/city/state/postalCode` (y `geo.lat/lng`) están DUPLICADOS textualmente entre `CONTACT.*` y `SITE.business.address.*`. Funcionalmente coinciden hoy, pero un editor distraído puede actualizar uno y olvidar el otro → divergencia silenciosa en el schema. **Mitigación pendiente:** consolidar `SITE.business.address` como derivado de `CONTACT.*` (computed) o documentar explícitamente que ambos se editan a la par. NO se resuelve en este commit (requiere decisión de Frank: ¿`SITE.business` lee de `CONTACT` o `CONTACT` lee de `SITE.business`?).
+
+**Decisión documentada (footer-pro-redesign):** `SITE.organization.sameAs = []` (vacío a propósito), aunque `SOCIAL` tenga 5 perfiles DEMO. La política: el footer puede MOSTRAR perfiles visualmente, pero el schema solo declara perfiles VERIFICADOS (con dueño confirmado). Para activar `sameAs`, copiar manualmente las URLs verificadas de `SOCIAL` al array.
+
 ---
 
 ## 7. Cómo añadir el próximo módulo (header, hero, menú, footer)
@@ -201,15 +227,17 @@ Corre `npm run audit:meta` antes de cada commit a `main`. Falla si algún `<titl
   - `/modulos/topbar` · `/modulos/header` · `/modulos/hero` (primera ola)
   - `/modulos/breadcrumbs` (`7280cb9`) · `/modulos/section-menu` (`9a37e10`) · `/modulos/section-heading` (`7a69533`) · `/modulos/category-card` (`6d7f4b2`) · `/modulos/category-detail` (`eae415c`) (segunda ola, slug inglés singular)
   - `/modulos/product-card` · `/modulos/service-card` · `/modulos/faq` (`692fec2`) · `/modulos/review` (tercera ola — cards de catálogo, FAQ con schema y reseñas con `reviewSchema()` puro en `lib/seo.ts`)
+  - `/modulos/footer` (cuarta ola — estándar elevado: activo SEO global, NAP consistency, `organizationSchema()` como alias canónico de `orgSchema`, hoja de impresión, eat-your-own-dog-food)
 - Kit reutilizable: `GaleriaDisenos`, `DisenoCard`, `MarcoMovil`, `Receta`, `GuiaNota`.
-- Helper SSoT del cierre: `siblingsModules('<slug>')` en `src/lib/modules.ts`. Consumido por **toda la segunda y tercera ola**; las 3 L3 de la primera ola (`topbar`, `header`, `hero`) aún hardcodean el cierre y deben migrarse cuando se toquen.
-- Helpers de schema reutilizables (ver §3.5): `faqSchema()`, `reviewSchema()` (puros) + `emitReviews()` (interno, gateado por `SITE.allowSelfReviews`). Regla B4 — anti self-serving reviews.
+- Helper SSoT del cierre: `siblingsModules('<slug>')` en `src/lib/modules.ts`. Consumido por **toda la segunda, tercera y cuarta ola**; las 3 L3 de la primera ola (`topbar`, `header`, `hero`) aún hardcodean el cierre y deben migrarse cuando se toquen.
+- Helpers de schema reutilizables (ver §3.5): `faqSchema()`, `reviewSchema()` (puros) + `emitReviews()` (interno, gateado por `SITE.allowSelfReviews`) + `organizationSchema()` (alias canónico de `orgSchema()`, emitido desde `buildSchema()` en TODA página). Regla B4 — anti self-serving reviews. Regla NAP — §6.2.
 - Migas de pan corregidas a ruta completa (componente antepone «Inicio»).
 - Gate **`npm run audit:meta`** activo (límites: title ≤60, description ≤155, espejo de `META_TITLE_MAX`/`META_DESC_MAX` en `lib/seo.ts`). Documentado en §6.1.
 
 **Pendiente:**
-- Publicar los L3 que faltan con el mismo molde (slug inglés singular): `cta-banner`, `formulario-contacto`, `footer`, `whatsapp-flotante`.
+- Publicar los L3 que faltan con el mismo molde (slug inglés singular): `cta-banner`, `formulario-contacto`, `whatsapp-flotante`.
 - Migrar `topbar.astro`, `header.astro`, `hero.astro` a `siblingsModules('<slug>')` cuando se toquen (hoy hardcodean el cierre).
+- Resolver deuda P1 NAP: campos duplicados entre `CONTACT.{street,city,...}` y `SITE.business.address.*` (§6.2). Decisión de Frank pendiente.
 - Por cada nuevo L3: correr `npm run audit:meta` antes del commit + `npm run build` en la Mac (valida también el resaltado Shiki de `<Code>`) antes de desplegar.
 
 ---

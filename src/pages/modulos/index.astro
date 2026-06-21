@@ -67,7 +67,7 @@ const MOD_META: Record<string, { image: string; chips: string[] }> = {
   'faq':                 { image: `${IMG}/articulos/guia-plantilla-astro-contenido-markdown.avif`, chips: ['Pregunta · summary tappable', 'Respuesta · admite HTML', 'Schema FAQPage opcional'] },
   'cta-banner':          { image: `${IMG}/servicios/soporte-mantenimiento-web-astro.avif`,         chips: ['Gancho', 'Botón', 'Cierre'] },
   'formulario-contacto': { image: `${IMG}/articulos/novedades-sistema-produccion-web-astro.avif`,  chips: ['Campos', 'Validación', 'WhatsApp'] },
-  'footer':              { image: `${IMG}/zonas/cobertura-desarrollo-web-ciudad-de-mexico.avif`,   chips: ['Marca', 'Enlaces', 'Legales'] },
+  'footer':              { image: `${IMG}/zonas/cobertura-desarrollo-web-ciudad-de-mexico.avif`,   chips: ['CTA + NAP + 4 cols + legales', 'Data-driven desde site.ts', 'Schema Organization en lib/seo.ts'] },
   'whatsapp-flotante':   { image: `${IMG}/showcase/imagen-optimizada-avif-sitio-web.avif`,         chips: ['Botón', 'Fijo', 'Mensaje'] },
 }
 
@@ -277,14 +277,14 @@ const AFONDO: Record<string, { body: string[]; points: string[] }> = {
   },
   'footer': {
     body: [
-      'El footer es el pie del sitio: el cierre que recoge lo que el visitante busca al final —contacto, enlaces a las secciones, horarios, legales—. Es la red de seguridad de la navegación: si alguien llegó hasta abajo sin encontrar algo, aquí lo encuentra.',
-      'Está organizado en zonas (un CTA pre-footer, la columna de marca, los enlaces por grupo, la certificación y la barra legal con «volver arriba»). Los datos —marca, contacto, redes, rutas legales— salen de site.ts, así que se actualizan una vez para todo el sitio.',
+      'El footer es el pie de TODAS las páginas del sitio: la red de seguridad de la navegación y, sobre todo, un activo de SEO global —cada enlace que vive aquí aparece en miles de URLs y reparte equity interno al sitio entero—. Cinco zonas en orden estricto: banda CTA pre-footer (último intento de conversión), cuerpo de marca + 4 columnas data-driven (Productos, Servicios+Sectores, Cobertura, Empresa), banda opcional de cumplimiento, barra inferior con copyright dinámico + legales + scroll-top, y la barra de acento decorativa.',
+      'Vive en un único componente que se monta UNA sola vez en PageLayout —cada página hereda el footer sin hacer nada—. La data llega íntegra de site.ts (CONTACT, PRODUCT_CATEGORIES, SERVICES, SECTORS, COVERAGE_STATES, BRANCHES, SOCIAL, LEGAL); el JSON-LD Organization vive en lib/seo.ts → organizationSchema() y lo emite UNA vez buildSchema desde BaseLayout (regla B3, un único emisor). El componente NO toca el grafo: es presentación, no SEO.',
     ],
     points: [
-      'Cierre con contacto, enlaces, horarios y legales',
-      'Red de seguridad: lo que no se encontró arriba, está aquí',
-      'Organizado en zonas (CTA, marca, enlaces, legal)',
-      'Datos desde site.ts: una edición, todo el sitio',
+      'Cinco zonas: CTA + cuerpo NAP + cumplimiento + barra inferior + acento',
+      'Activo SEO global: cada enlace aparece en miles de URLs (reparte equity)',
+      'NAP consistente entre Topbar, Footer y JSON-LD Organization (SSoT en CONTACT)',
+      'Schema Organization centralizado en lib/seo.ts; el componente NO emite JSON-LD',
     ],
   },
   'whatsapp-flotante': {

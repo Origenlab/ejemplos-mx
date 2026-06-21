@@ -248,7 +248,7 @@ export const MODULOS: readonly Modulo[] = [
   { slug: 'faq',                 label: 'Preguntas frecuentes',    href: '/modulos/faq',                 desc: 'El acordeón de dudas comunes, con esquema FAQ para SEO.', estado: 'listo' },
   { slug: 'cta-banner',          label: 'CTA banner',              href: '/modulos/cta-banner',          desc: 'La franja de llamada a la acción que cierra cada página.', estado: 'proximo' },
   { slug: 'formulario-contacto', label: 'Formulario de contacto',  href: '/modulos/formulario-contacto', desc: 'El formulario que convierte a WhatsApp sin fricción.', estado: 'proximo' },
-  { slug: 'footer',              label: 'Footer',                  href: '/modulos/footer',              desc: 'El pie del sitio: cierre, enlaces, legales y contacto.', estado: 'proximo' },
+  { slug: 'footer',              label: 'Footer',                  href: '/modulos/footer',              desc: 'El pie del sitio: cierre, enlaces, legales y contacto.', estado: 'listo' },
   { slug: 'whatsapp-flotante',   label: 'WhatsApp flotante',       href: '/modulos/whatsapp-flotante',   desc: 'El botón de WhatsApp siempre visible, fijo en una esquina.', estado: 'proximo' },
 ];
 
