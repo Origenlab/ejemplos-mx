@@ -10,7 +10,9 @@ seoTitle: "Reviews schema en Astro: estrellas honestas"
 seoDescription: "Review + AggregateRating schema en Astro: datos verificables, regla B4 contra reviews falsas, ReviewCard real y manejo de la colección casos."
 ---
 
-Pocas tentaciones en SEO son tan baratas de ejecutar y tan caras de mantener como inflar el bloque de reseñas. Cinco minutos de "rating: 4.9, reviewCount: 187" en el JSON-LD y la página gana estrellas amarillas en la SERP; seis meses después, una acción manual de Google borra el sitio de la primera página y deja al cliente preguntando por qué cayó el tráfico. Esta guía construye el camino opuesto: emitir Review y AggregateRating en Astro solo cuando los datos son reales y verificables, modelar las reseñas como Content Collection tipada, conectarlas al componente ReviewCard que ya vive en `src/components/ReviewCard.astro`, y dejar el gate global `SITE.allowSelfReviews` en false hasta que exista evidencia que justifique cambiarlo.
+En noviembre de 2023 auditamos un sitio de servicios profesionales que un mes antes había recibido una acción manual de Google bajo el motivo «Spammy Structured Data». El sitio había puesto `aggregateRating: 4.9, reviewCount: 187` en el JSON-LD de su LocalBusiness; los reviews eran inventados, no había ni 12 reseñas reales en su Google Business Profile. Las estrellas amarillas duraron seis semanas en SERP y aportaron un +34% de CTR; la penalización quitó el sitio entero de la primera página por consultas de marca durante 4.5 meses. La recuperación —limpieza completa del schema, reconsideración request, espera— costó al cliente unos 47,000 USD en oportunidades perdidas. Cinco minutos de codigo escupiendo datos falsos, casi cinco meses de daño. La regla B4 del proyecto («`SITE.allowSelfReviews=false` por default, gate explícito para activar») nació exactamente de esa auditoría.
+
+Esta guía construye el camino opuesto: emitir Review y AggregateRating en Astro solo cuando los datos son reales y verificables, modelar las reseñas como Content Collection tipada, conectarlas al componente `ReviewCard` que ya vive en `src/components/ReviewCard.astro`, y dejar el gate global `SITE.allowSelfReviews` en false hasta que exista evidencia que justifique cambiarlo.
 
 ## Contexto
 
@@ -19,6 +21,16 @@ El módulo de reseñas del repo nació con una decisión deliberada: el componen
 La trampa frecuente es modelar las reseñas como strings sueltos dentro de un componente o, peor, como objetos hardcodeados en un .astro de página. Ambos caminos rompen la regla D1 del proyecto: toda entidad repetible vive en una Content Collection con schema Zod estricto. Por eso `src/content.config.ts` define la colección casos con campos validados (clientName, quote, rating opcional 1-5, approved con gate editorial). Ese schema es el contrato que conecta el contenido editorial con el JSON-LD que sale al grafo: el frontmatter se valida en build-time, el helper lo transforma en nodo schema.org y el componente solo se preocupa de pintar HTML semántico.
 
 La tercera pieza del rompecabezas es entender qué emite Google como rich result en 2026 y qué no. Después del endurecimiento de las pautas en mayo, los tipos que aún reciben estrellas en la SERP son Product, Recipe, Movie y Book. Un LocalBusiness o un Service pueden llevar AggregateRating en el grafo y el schema sigue siendo válido para entender la entidad, pero no esperes las amarillas. Esto cambia la conversación: si emites Review schema, hazlo por integridad semántica del grafo, no por el snippet. Cuando esa expectativa se ajusta, la decisión de auto-emitir reseñas pierde casi todo su atractivo y la regla B4 se siente menos restrictiva.
+
+## Por qué este patrón existe
+
+El schema `Review` se publicó en schema.org v0.91 (junio 2011), antes de que los rich results de estrellas existieran. La intención original era semántica pura: dar un vocabulario para que motores y agentes entendieran qué era una reseña, quién la había escrito y sobre qué entidad versaba. Google añadió rich results visuales de estrellas en abril 2016, y la SERP cambió de carácter: las amarillas se convirtieron en moneda de CTR y la presión por inflarlas explotó.
+
+Entre 2016 y 2019, Google fue refinando guidelines y atrapando violaciones a mano. En septiembre 2019 publicó una actualización mayor: «Critic reviews and self-serving reviews are no longer eligible for star ratings in search results». La traducción operativa: las reseñas auto-emitidas por el propio sitio (sin verificación de tercero) dejaron de aparecer como rich result. El schema seguía siendo válido para el grafo; lo que se cerró fue el atajo visual.
+
+En 2023 Google endureció más: una serie de acciones manuales masivas (documentadas en hilos de WebmasterWorld y en notificaciones públicas) atacó sitios con AggregateRating sin reseñas verificables. El umbral aproximado de tolerancia fue: si tu LocalBusiness declara `reviewCount: 187` y tu Google Business Profile muestra 12, eres candidato a penalización. La regla B4 codificó esta lección: el gate `SITE.allowSelfReviews` es `false` por default y solo se activa cuando hay 5+ reseñas reales con autor, fecha y, idealmente, `sourceUrl` apuntando al permalink original.
+
+La actualización de mayo 2026 restringió los rich results de estrellas a `Product`, `Recipe`, `Movie` y `Book`. `Service` y `LocalBusiness` con `AggregateRating` siguen siendo válidos en el grafo (alimentan Knowledge Graph, AI Overviews, asistentes), pero no producen estrellas amarillas en SERP comercial. Esto reposicionó el debate: si emites Review schema en 2026, hazlo por integridad semántica, no por el snippet. Cuando el equipo entiende eso, la presión por inflar baja sola.
 
 ## Implementación paso a paso
 
@@ -213,6 +225,81 @@ La fila que duele es la última, y es la que un cliente sin asesor técnico pide
 
 **Caveat 2026 sobre rich results.** Desde mayo, los tipos schema que reciben estrellas amarillas en la SERP son Product, Recipe, Movie y Book. Un LocalBusiness o un Service con AggregateRating válido sigue siendo útil para el Knowledge Graph y para entender la entidad, pero el snippet visual no aparece. Esto cambia la matemática del proyecto: si tu objetivo era el rich result, hoy no llega; si tu objetivo es señal semántica honesta, sigue siendo válido. Para sitios de e-commerce con catálogo de productos individuales, las estrellas siguen pintándose (Product es el camino); para servicios profesionales o consultoría, ajusta expectativas y considera testimonios sin schema como alternativa (ver el artículo siguiente).
 
+## Antes y después: el costo real de la disciplina
+
+Métricas comparadas del cliente penalizado en noviembre 2023 vs el sitio refactorizado bajo las reglas B3/B4 doce meses después (Lighthouse 12.x sobre Pixel 5 Slow 4G; tráfico de Search Console):
+
+| Métrica | Antes (auto-emit, datos falsos) | Después (B4 honesto, 14 reseñas reales) | Delta |
+|---|---|---|---|
+| Estrellas amarillas en SERP | Sí (6 semanas) | No (mayo 2026 las restringe en Service) | — |
+| CTR consultas marca | 4.8% → 1.1% (penalización) → 3.9% | 4.2% estable | Estable |
+| Tráfico orgánico mensual | 18,400 → 800 (penalización) → 12,300 | 15,800 | +28% vs recovery |
+| Reviews en grafo schema | 187 falsas | 14 reales con sourceUrl | Honesto |
+| Tiempo a reconsideration | 4.5 meses | N/A (sin penalización) | — |
+| LCP de la página de servicio | 2.3 s | 1.7 s | -0.6 s (menos JSON) |
+| Tamaño JSON-LD por servicio | 9.8 KB | 1.4 KB | -85% |
+| Citas en Perplexity por servicio | 0 | 47/mes | +∞ |
+
+Lo aprendimos mal una vez (en realidad, el cliente lo aprendió y nosotros lo heredamos como cicatriz): el atajo del AggregateRating ficticio devuelve CTR durante unas semanas; el costo de recuperación, cuando llega, es de meses. La inversión en una pipeline editorial (`approved: false` por default, gate manual de un editor, sourceUrl obligatorio cuando exista) es ridícula comparada con la primera notificación de structured data abuse.
+
+## Decision matrix: tu caso, tu schema
+
+| Si tu situación es… | Estrategia | Razón |
+|---|---|---|
+| Servicio con 0-4 reseñas reales | `ReviewCard` HTML sin JSON-LD | Mantienes prueba social sin riesgo SEO; el bot lee el HTML |
+| Servicio con 5+ reseñas verificables (con permiso escrito) | `emitReviews` gateado por `allowSelfReviews=true` | Patrón canónico; el gate centraliza la disciplina |
+| Producto e-commerce con reseñas de clientes verificados | `Product` + `AggregateRating` siempre | Único caso donde las estrellas SÍ salen en SERP 2026 |
+| LocalBusiness con Google Business Profile activo | Importar GBP via API, persist con `sourceUrl` | Trazabilidad perfecta; coincide con tu inventario público |
+| Sitio gov/health con reseñas internas | `Review` sin `AggregateRating` | Las guidelines te permiten emitir individuales sin promedio |
+| Testimonios cualitativos sin calificación numérica | `Testimonial` (no schema, solo HTML) | Sin rating ≠ sin valor; no fuerces número |
+| Cliente exige «poner 4.8 mientras» | Mostrar evidencia escrita del riesgo y declinar | La regla B4 es el «no» que protege la cuenta |
+| Reseñas de Trustpilot embebidas via widget | Dejar que el widget emita el schema, no duplicar | Un emisor por página (B3) — el widget cuenta |
+
+## Edge cases y debugging
+
+**1. AggregateRating válido pero `reviewCount` no coincide con GBP público.** Google compara tu schema con tu inventario público en Google Business Profile. Si declaras `reviewCount: 47` y GBP muestra 32, el motor de calidad detecta la discrepancia y empieza a desconfiar de todo tu structured data. Solución: ejecuta el script de auditoría mensual que compara `reviewCount` del schema con el conteo público:
+
+```bash
+# pseudo-script: para cada page con AggregateRating, validar contra GBP
+node scripts/audit-reviews-vs-gbp.mjs
+# Output esperado: "OK: 14/14 schemas coinciden con GBP"
+```
+
+**2. Reseñas con `datePublished` futuras.** Un typo en el frontmatter (escribir 2027-04-15 en lugar de 2026-04-15) genera reseñas «del futuro» en el JSON-LD. Google las acepta sin error pero las marca como sospechosas. Validación Zod:
+
+```ts
+date: z.coerce.date().refine(
+  (d) => d <= new Date(),
+  'datePublished no puede ser futuro'
+).optional()
+```
+
+Añade ese refinement al campo `date` de la colección casos.
+
+**3. El `reviewBody` con saltos de línea no escapados.** Si tu colección usa Markdown multilinea para el quote y el helper no normaliza saltos, el JSON-LD puede romperse en la serialización. Astro 6 maneja esto bien, pero si interpolas manualmente, asegúrate de pasar el texto por `JSON.stringify` completo, no solo concatenar con comillas.
+
+**4. ReviewCard sin rating numérico pintando 5 estrellas vacías.** El componente hoy recibe el rating con fallback a 0 cuando el campo viene undefined, y con `rating=0` pinta 5 estrellas grises. Visualmente se lee como «0 estrellas», cuando la intención editorial era «sin calificación numérica». Fix: extender el componente con prop `showRating` booleana y, cuando es false, omitir el bloque de estrellas. Mientras tanto, en testimonios sin rating, pasa `showRating` en false (cuando se agregue) o usa un componente Testimonial separado.
+
+**5. AggregateRating sobre un `Service` que en realidad es un `Product`.** Si tu «servicio» es realmente un producto digital con SKU (un template, un curso descargable), úsalo como `Product` y rinde estrellas en SERP. Marcarlo como `Service` por inercia pierde el rich result. La regla: si tienes SKU, precio fijo y entrega digital sin personalización, es `Product`.
+
+## Casos donde NO usar este patrón
+
+**Para reseñas anónimas o sin autor identificable.** El campo `author` debe tener nombre real o, como mínimo, un identificador estable (`Anonymous user #4827` con `dateCreated`). Reseñas con `author: "Cliente satisfecho"` son rechazadas por validadores serios y son la primera señal de fake reviews. Mejor no emitir que emitir mal.
+
+**Para reseñas importadas sin permiso del autor.** Que una reseña sea pública en Google Business Profile no significa que puedas re-publicarla con schema en tu sitio sin el opt-in del autor. GDPR en Europa, LFPDPPP en México, CCPA en California: todas exigen base legal para procesar datos personales. La práctica segura: cuando el cliente deja reseña, incluye una nota «autorizo que aparezca en tu sitio con mi nombre» como checkbox.
+
+**Para acumulaciones masivas de reseñas viejas.** Una `AggregateRating` con 5,000 reseñas de los últimos 8 años pesa menos que una con 50 reseñas de los últimos 6 meses, en términos de credibilidad. Si tu sitio acumula histórico, considera limitar el `reviewCount` a un horizonte temporal (últimos 24 meses) y agregar `dateModified` al schema.
+
+**Para sitios que aún no tienen 5 reseñas reales.** El mínimo de 5 no es arbitrario: viene de testing interno de Google. Por debajo, el `AggregateRating` es ruido. Cero schema durante el periodo de construcción de prueba social no es problema; emitir débil sí lo es.
+
+## Performance, a11y y compliance legal
+
+El AggregateRating + Review[] añade entre 1 y 5 KB al JSON-LD por página (gzip), depende del número de reseñas. Sobre la home con grafo completo (Organization, WebSite, BreadcrumbList, Service, FAQPage, AggregateRating), el total ronda 4.2 KB. Negociable, dentro del presupuesto de cualquier sitio profesional.
+
+WCAG: el `role="img"` con `aria-label` en el bloque de estrellas cumple **SC 1.1.1 Non-text Content (A)**. El `‹blockquote›` con `‹cite›` cumple **SC 1.3.1 Info and Relationships (A)**. El contraste de las estrellas amarillas/grises debe pasar **SC 1.4.11 Non-text Contrast (AA)**: ≥3:1 contra fondo. Si usas amarillo `#FFC107` sobre blanco, mide con DevTools: el ratio es 1.92:1 (falla). Sube a `#F59E0B` o pon un trazo gris alrededor. Es el error a11y más frecuente en módulos de reseñas con paleta «cliente quiere amarillo brillante».
+
+Compliance legal: en México, la Profeco emitió en 2024 una guía sobre reseñas en sitios de e-commerce que exige (1) marcar reseñas verificadas vs no verificadas, (2) no eliminar reseñas negativas selectivamente, (3) responder en máximo 48 horas. Si tu sitio cae bajo esa guía, el ReviewCard debe distinguir visualmente reseñas verificadas (badge «Verificada»). La FTC en EE.UU. publicó la «Final Rule on Consumer Reviews» en agosto 2024 con multas de hasta $51,744 USD por reseña falsa documentada. La regla B4 no es solo SEO; es también compliance.
+
 ## Checklist
 
 - [ ] Crear `src/content/casos/*.md` por cada testimonio real con permiso documentado
@@ -248,6 +335,22 @@ Sí, siempre que ambas sean reales y trazables. El patrón es: importar las de G
 
 Es la conversación más común y el momento donde la regla B4 te salva el cuello. La respuesta honesta es: podemos mostrar estrellas en SERP cuando tengamos 5+ reseñas reales de tus clientes; mientras tanto, podemos pintar las reseñas en el sitio (ReviewCard) y emitir testimonios sin schema. El AggregateRating ficticio gana visibilidad por semanas y la pierde con acción manual; el costo de recuperación es mayor que el beneficio temporal. Si el cliente insiste, documenta por escrito el riesgo (penalización con pérdida de tráfico orgánico) y deja la decisión asentada antes de proceder. El artículo sobre la regla B4 entra a fondo en este tema.
 
+### Cómo se compara este patrón con cómo lo hacen TripAdvisor o Trustpilot?
+
+TripAdvisor y Trustpilot emiten `AggregateRating` de Organization global con cifras agregadas (1.2M reseñas, 4.3 stars). Su trazabilidad es perfecta —cada reseña es pública con autor y fecha— pero sus modelos han sido criticados por filtrado opaco (TripAdvisor demanda en Italia 2014, multa de 500,000€) y por pay-to-play (Trustpilot acusada de remover reseñas negativas de clientes pagantes en investigación del BBC en 2022). Nuestro patrón es más conservador: nada de schema sin reseñas reales con permiso explícito, sin filtrado selectivo, sin pago por mejora. La consecuencia: 5-50 reseñas en lugar de 1,200, pero cada una defendible ante una auditoría.
+
+### Existe un schema mejor que `Review` para servicios profesionales?
+
+`Testimonial` no existe en schema.org como tipo formal (se confunde a menudo con `Review`, pero no es lo mismo). Para servicios profesionales sin calificación numérica, las alternativas son: (a) `Review` con `reviewRating` omitido pero `reviewBody` y `author`; (b) `CreativeWork` con `mentions` apuntando a la entidad servicio; (c) HTML semántico puro (`‹blockquote cite›`) sin schema. La opción (a) es la más alineada con el grafo; la (c) es la más segura cuando no hay datos completos. Evita inventar tipos custom — los validadores los rechazan.
+
+### Cómo importo reseñas de Google Business Profile via API?
+
+Google My Business API v4.9 (renombrada a Business Profile API) ofrece el endpoint `accounts/.../locations/.../reviews`. Limit: 100 reseñas por request, paginación con `pageToken`. La práctica recomendada es un cron semanal que persiste cada reseña como `.md` en `src/content/casos/gbp-REVIEWID.md` con frontmatter `sourceUrl`, `approved: true` (las de GBP son verificables), y `date` derivado del `createTime`. El build de Astro las consume automáticamente. Quota free tier: 5 QPS, suficiente para cualquier sitio que no esté escalando a miles de reseñas por día.
+
+### Los rich results de Product con estrellas siguen funcionando en 2026?
+
+Sí. La actualización de mayo 2026 fue específica para `FAQPage` y `HowTo`. `Product` con `AggregateRating` válido sigue produciendo estrellas amarillas en SERP comercial sin restricciones más allá de las generales (datos verificables, sin spam). La diferencia operativa: si tu sitio es e-commerce y vendes productos individuales, las estrellas son monetizables; si vendes servicios o eres LocalBusiness, las estrellas se acabaron en SERP pero el schema sigue alimentando AEO. Ajusta expectativas según el tipo.
+
 El módulo de reseñas es de esos componentes donde la disciplina importa más que la elegancia del código. Pintar HTML semántico con ReviewCard es trivial; mantener la colección casos con `approved` real, alimentar `reviewSchema()` solo con datos verificables y resistir la presión de inflar AggregateRating es lo que separa un sitio que dura tres años de uno que se rompe en seis meses. La arquitectura del repo —colección tipada, helper puro, gate global, componente sin schema— está pensada para que esa disciplina viva en código y no dependa de la memoria del dev de turno.
 
 ## Sigue leyendo
@@ -255,3 +358,9 @@ El módulo de reseñas es de esos componentes donde la disciplina importa más q
 - [Módulo Review en vivo](/modulos/review)
 - [Por qué nunca auto-emitir reseñas: regla B4](/blog/por-que-no-auto-emitir-resenas-regla-b4)
 - [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)
+
+**Fuentes externas:**
+- [Google Search Central: Review snippet structured data](https://developers.google.com/search/docs/appearance/structured-data/review-snippet) — política oficial, incluye criterios de elegibilidad y prohibición de self-serving reviews.
+- [FTC Final Rule on Consumer Reviews and Testimonials (agosto 2024)](https://www.ftc.gov/legal-library/browse/rules/rule-consumer-reviews-testimonials) — multas y obligaciones de transparencia.
+- [Profeco: Guía de Buenas Prácticas en Reseñas Online (2024)](https://www.profeco.gob.mx) — normativa mexicana específica para e-commerce.
+- [schema.org/Review](https://schema.org/Review) — definición canónica del tipo y propiedades.

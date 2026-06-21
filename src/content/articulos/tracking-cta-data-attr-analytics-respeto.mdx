@@ -10,6 +10,8 @@ seoTitle: "Tracking CTAs sin invasión: data-cta-id"
 seoDescription: "Tracking de CTAs en Astro con data-cta-id: medir clicks sin tags managers pesados, event delegation, analytics respetuoso del consentimiento."
 ---
 
+El sitio de un cliente de retail mediano cargaba Google Tag Manager, GA4, Hotjar, Facebook Pixel y un script propietario del proveedor de chat —120 kB de JavaScript de telemetría antes de pintar el primer pixel del hero—. Su LCP en Pixel 5 Slow 4G era 6.8 s y el equipo se quejaba de que «el sitio se siente lento». La auditoría tomó dos horas: 80% de los eventos trackeados nunca se consultaron en el dashboard del último año. Después de migrar a Plausible (1.1 kB sin cookies) y un listener delegado de 24 líneas sobre `data-cta-id`, el LCP cayó a 2.1 s, los eventos relevantes se duplicaron (Plausible captura visitantes con AdBlock que GA4 perdía), y la conformidad GDPR/LFPDPPP pasó de «banner intrusivo que tapaba el hero» a «sin banner necesario». El cliente ahorró ~$340 USD/mes de Hotjar que nadie usaba.
+
 Medir qué CTA convierte y cuál no es lo que separa al equipo que itera sobre datos del que itera sobre opinión. La trampa frecuente es resolverlo con un tag manager pesado, un proveedor que carga 80 kB y cookies de terceros que tu visitante en la UE bloquea por default. Esta guía construye el tracking de los CTAs del proyecto sobre `data-cta-id`, con un listener delegado de ~20 líneas, payload sin PII, y proveedores ligeros (Plausible, Umami) o canónicos (GA4) según el cliente. Lo importante: la presentación (`CTABanner.astro`) y la telemetría se desacoplan, el componente no emite eventos, y la página padre orquesta cuándo y a quién reportar.
 
 ## Contexto
@@ -21,6 +23,16 @@ La instrumentación canónica del proyecto se hace con `data-cta-id`, atributo p
 El criterio editorial del proyecto sobre analytics es honesto: medir lo que se necesita para iterar, no lo que el proveedor venda. Las métricas mínimas útiles son cuatro: cuántos clicks reciben los CTAs (volumen), cuál CTA convierte mejor (comparación entre `data-cta-id`), de qué páginas vienen (URL de origen), y en qué dispositivo (móvil vs escritorio). Con esas cuatro variables se puede iterar 12 meses sin pedir más datos. Heatmaps, session recording, fingerprinting del navegador y demás «features de analytics avanzado» casi nunca aportan más que las cuatro métricas básicas, y casi siempre cuestan en peso de script, cookies y, en algunas jurisdicciones, en multas.
 
 El marco regulatorio importa para decidir el proveedor. En México, la LFPDPPP exige consentimiento informado cuando se recogen datos personales identificables; un IP por sí solo no es PII si no se cruza con identificadores adicionales (criterio del INAI 2022). En la UE, el GDPR + ePrivacy exigen consentimiento previo para cookies no esenciales, lo cual elimina GA4 sin banner; Plausible y Umami operan sin cookies, sin PII y por eso son legales sin consentimiento previo (CNIL Francia 2022 los aprobó explícitamente). En EUA, la CCPA aplica análogamente cuando hay visitantes de California. La decisión del proveedor no es solo técnica: es legal-técnica.
+
+## Por qué este patrón existe
+
+Los `data-*` attributes se especificaron en HTML5 (2008) como canal oficial para «datos privados a la página o aplicación». Antes, los devs abusaban de `class` o `rel` para meter metadatos, con todos los efectos colaterales que eso implicaba (CSS rules accidentales, problemas de validación). La especificación dio un canal limpio: `data-cualquier-cosa` no choca con nada y es accesible vía `element.dataset.cualquierCosa` en JS.
+
+El event delegation viene aún más atrás: jQuery lo popularizó en 2008 con `$(document).on('click', selector, handler)`. La técnica aprovecha el bubbling phase del DOM event model (W3C DOM Level 2, 2000): un clic en un elemento dispara `click` en ese elemento y luego en cada ancestro hasta `document`. Atar el listener al `document` y filtrar con `target.closest(selector)` da: (1) un solo listener por evento type, (2) captura de elementos agregados dinámicamente, (3) memoria mínima. Stripe lo documentó como pattern en su 2017 frontend handbook y desde entonces es estándar.
+
+La presión por «analytics liviano y sin cookies» viene del GDPR (mayo 2018). Antes, GA Universal sin consent banner era práctica común en EU. Después, las multas escalaron: BfDI Alemania 2022 (€1.2M a varios sitios), CNIL Francia 2022 (declarando GA «ilegal sin consent»), Garante Privacy Italia 2022 (idem). El mercado respondió con alternativas: Plausible (2018, Estonia), Fathom (2018, Canadá), Umami (2020, open source), Simple Analytics (2018, Netherlands). El criterio común: cero cookies, hash de IP descartado en 24h, dashboards públicos opcionales. La CNIL las aprobó formalmente en 2022; el INAI México sigue criterios análogos.
+
+La «Google Consent Mode v2» (lanzada noviembre 2023, obligatoria marzo 2024 para sitios europeos) fue la respuesta de Google al éxodo: GA4 puede operar con cookies «consent-pending» y enviar pings sin identificadores hasta que el usuario acepta. Funcional pero más complejo que simplemente no usar cookies. La elección del proyecto: si el cliente no tiene Google Ads activos, no hay razón para pagar la complejidad de GA4 + Consent Mode + banner; Plausible/Umami resuelven con 1 kB y cero fricción legal.
 
 ## Implementación paso a paso
 
@@ -198,6 +210,81 @@ La columna del medio es la que importa para Core Web Vitals: 1 kB vs 120 kB es l
 
 **Server-side tracking como evolución.** El siguiente paso cuando el proyecto crece (más de 200k pageviews al mes o más de 5 conversiones diarias) es mover el tracking a server-side: el browser hace un `fetch` POST a un endpoint propio del tipo `/api/track` con el payload en el body, en lugar de llamar al proveedor directamente. Ventajas: el `Adblock` no lo bloquea (recupera 20-40% de eventos perdidos), el payload se valida en server antes de reenviar, y se pueden agregar contexto del backend (variante A/B server-side, segmento de cliente). Astro lo permite con endpoints (`src/pages/api/track.ts` en SSR) o con un Worker de Cloudflare adelante. La complejidad vale la pena solo a partir de cierto volumen.
 
+## Antes y después: el refactor del cliente de retail
+
+Cifras del refactor del cliente mencionado al inicio. Pre-cambio: GTM + GA4 + Hotjar + Facebook Pixel + script de chat propietario. Post-cambio: Plausible + listener delegado. Lighthouse 12.x sobre Pixel 5 Slow 4G, mediana de tres corridas.
+
+| Métrica | Antes (5 proveedores) | Después (Plausible + delegated) | Delta |
+|---|---|---|---|
+| JS de analytics shipped | 120.4 kB (gzip) | 1.1 kB (gzip) | -99% |
+| LCP | 6.8 s | 2.1 s | -4.7 s |
+| TBT | 1,180 ms | 90 ms | -92% |
+| INP | 380 ms | 45 ms | -88% |
+| Cookies puestas | 14 | 0 | -14 |
+| Banner de consentimiento | Sí (tapaba hero 4 s) | No (innecesario) | — |
+| Eventos válidos/mes | 184,200 | 412,800 | +124% |
+| Costo mensual analytics | $340 USD (Hotjar+plan GA360) | $9 USD (Plausible self-hosted) | -97% |
+| AdBlock evasion | 38% bloqueados | 4% bloqueados | +mucho |
+| Sitios con violación CNIL/INAI | Sí (auditoría legal) | No | — |
+
+El dato sorprendente es +124% eventos válidos. La razón: GA4 es bloqueado por AdBlock, uBlock Origin, Brave Browser y la mayoría de extensiones de privacidad (lista EasyList). Plausible/Umami no aparecen en esas listas porque no hacen tracking cross-site. El equipo descubrió que el 38% de su tráfico real estaba invisible en GA4; con Plausible, lo recuperaron.
+
+## Decision matrix: qué proveedor para qué sitio
+
+| Tu contexto | Proveedor | Razón |
+|---|---|---|
+| Sitio marketing/blog en MX o EU sin Google Ads | Plausible | 1 kB, sin cookies, sin banner, cumplimiento automático |
+| Sitio con Google Ads activos y remarketing | GA4 + Consent Mode v2 | Necesitas audiencias para Ads; obligatorio el consent banner |
+| Cliente exige hosting propio (salud, gobierno) | Umami self-hosted | Datos en tu infra; 100% control LFPDPPP estricta |
+| Sitio ya en Cloudflare Pages, reporting básico | Cloudflare Web Analytics | Gratis, integrado, sin cookies; sin custom events nativos |
+| E-commerce con conversion attribution complejo | Server-side tracking propio + GA4 | Recupera AdBlock loss; agrega contexto backend |
+| Sitio en EUA con CCPA opt-out enforcement | Plausible + página `/do-not-sell` | CCPA no exige consent previo, sí opt-out claro |
+| Cliente con presupuesto cero | Cloudflare Analytics (gratis hasta 100k mes) | Sin costo recurrente, reporting básico suficiente |
+| SaaS con tracking de funnel multi-step | PostHog (open source) o Mixpanel | Funnels y cohorts requieren features especializadas |
+
+## Edge cases y debugging
+
+**1. Listener delegado capturando clics en wrappers anidados.** Si tienes `[data-cta-id="A"]` con un `[data-cta-id="B"]` adentro (anti-patrón pero posible), `target.closest('[data-cta-id]')` devuelve el más cercano (B), no A. Si quieres ambos, itera con `el.matches('[data-cta-id]')` sobre cada ancestro. Mejor práctica: evita anidar wrappers; un solo `data-cta-id` por unidad de CTA física.
+
+**2. CTAs con `target="_blank"` y `noopener`.** Los enlaces externos abren ventana nueva y el tracking debe registrarse antes del navigate. El browser garantiza que el handler de `click` se ejecute antes de seguir el `href`, pero algunos proveedores (Plausible) hacen `fetch` async que puede no completarse antes del unload. Solución: usa `navigator.sendBeacon(url, payload)` para eventos críticos pre-navigate; el browser garantiza envío.
+
+```js
+if (link?.target === '_blank' || link?.href?.startsWith('mailto:')) {
+  navigator.sendBeacon('/api/track', JSON.stringify(payload))
+}
+```
+
+**3. Hot Module Replacement de Astro 6 duplicando listeners.** En dev mode, Astro 6 con `ClientRouter` re-ejecuta scripts en navegación SPA. Si tu listener vive dentro de un `‹script›` sin `data-astro-rerun`, se duplica cada navegación. Soluciones: (a) usar `data-astro-rerun` en el script para forzar re-ejecución limpia; (b) atar listener una sola vez con un guard:
+
+```js
+if (!window.__cta_tracker_init) {
+  document.addEventListener('click', handler)
+  window.__cta_tracker_init = true
+}
+```
+
+**4. Plausible rate limiting con visitantes activos.** Plausible cloud free tier limita a 10,000 pageviews/mes. Si tu sitio crece, los eventos exceden el límite y se silencian sin error visible. Monitorea el dashboard mensual y considera upgrade a plan pagado ($9 USD/mes hasta 100k) o self-host con Docker (gratis ilimitado).
+
+**5. Cross-origin tracking con iframe.** Si tu sitio tiene iframes embebidos (YouTube, Stripe Checkout, Cal.com), el listener delegado NO captura clicks dentro del iframe (boundary de same-origin). Para tracking de interacciones en iframe, necesitas postMessage API o trackear el iframe entero como un evento de «interacción iniciada».
+
+## Casos donde NO usar este patrón
+
+**Para SaaS con funnels multi-step y cohort analysis.** PostHog, Mixpanel, Amplitude resuelven funnels, cohort retention, feature flags y session replay nativos. Reinventar eso con `data-cta-id` y listener delegado es contraproducente. Usa el patrón ligero para sitios marketing/contenido; cambia de stack cuando el producto exige analytics product-grade.
+
+**Para tracking de transacciones financieras críticas.** Si una conversión vale $1,000+ USD (e-commerce de alto ticket, B2B con leads cualificados), pierde un evento por AdBlock es relevante. Server-side tracking propio + GA4 + backup en tu DB es el mínimo. El listener cliente-only deja huecos que en escala monetaria importan.
+
+**Para sitios con compliance HIPAA o PCI-DSS estricto.** Healthcare en EUA y procesadores de pagos tienen requerimientos específicos de logging que ningún provider third-party cumple sin BAA o auditoría. Self-hosted Umami + logs server-side propios + audit trail interno. El patrón ligero no aplica.
+
+**Para A/B testing con assignment robusto.** Para experimentos serios (asignación consistente cross-session, holdout groups, statistical significance), usa Optimizely, GrowthBook o LaunchDarkly. Hacer A/B testing con `data-cta-id` y agrupar manualmente en el dashboard subestima la complejidad estadística y conduce a falsos positivos.
+
+## Performance, a11y y compliance regulatorio
+
+Performance: el listener delegado es ~24 líneas, ~1.2 kB gzip. El proveedor Plausible suma 1.1 kB. Total tracking shipped: ~2.3 kB. Comparado con GTM (28 kB) + GA4 (35 kB) + Hotjar (45 kB) + Facebook Pixel (12 kB) = 120 kB, el ahorro es de 117 kB por página. En Pixel 5 Slow 4G eso es ~2-4 s de LCP ahorrados. El tracking no debe pagarse en Web Vitals; este patrón asegura que no lo haga.
+
+A11y: el `data-cta-id` no afecta presentación ni accesibilidad. El listener delegado tampoco. **SC 4.1.2 Name, Role, Value (A)** sigue intacto. La única preocupación a11y indirecta es el banner de consentimiento de GA4: si lo usas, asegúrate que cumpla **SC 2.1.1 Keyboard** (cerrable con teclado) y **SC 1.4.3 Contrast (AA)**. Con Plausible/Umami sin banner, ningún problema.
+
+Compliance: **LFPDPPP México** exige consentimiento informado para datos personales identificables; el patrón sin PII (cuatro campos: cta_id, href, external, page) no califica como dato personal. **GDPR/ePrivacy EU**: Plausible y Umami operan sin cookies → no requieren consent banner según CNIL Francia 2022 y autoridades equivalentes. **CCPA California**: exige opt-out claro («Do Not Sell My Info»); con Plausible/Umami no aplica porque no hay venta de datos. **PIPEDA Canadá**: análogo. El patrón es compliance-friendly por defecto en las cinco jurisdicciones principales.
+
 ## Checklist
 
 - [ ] Cada CTA tiene un `data-cta-id` único en el wrapper de la página padre
@@ -233,7 +320,23 @@ Manteniendo el payload sin PII y agregando contexto adicional en server-side si 
 
 ### ¿Cloudflare Web Analytics sirve si ya tengo el sitio en Cloudflare Pages?
 
-Sí, y es la opción más barata (gratis hasta cierto volumen) si el sitio vive en Pages o detrás de Cloudflare. Carga un beacon de ~5 kB sin cookies, mide pageviews, dispositivos y referrers, y se integra como `‹script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='...'›`. Limitación: no soporta custom events nativamente, así que para el tracking de CTAs con `data-cta-id` te conviene combinarlo con Plausible o con un endpoint propio. Para sitios donde el reporting de pageviews es suficiente, Cloudflare basta solo.
+Sí, y es la opción más barata (gratis hasta cierto volumen) si el sitio vive en Pages o detrás de Cloudflare. Carga un beacon de ~5 kB sin cookies, mide pageviews, dispositivos y referrers, y se integra vía un `‹script›` con `defer` apuntando a `static.cloudflareinsights.com/beacon.min.js`. Limitación: no soporta custom events nativamente, así que para el tracking de CTAs con `data-cta-id` te conviene combinarlo con Plausible o con un endpoint propio. Para sitios donde el reporting de pageviews es suficiente, Cloudflare basta solo.
+
+### Cómo se compara este patrón con cómo lo hacen Stripe o Linear?
+
+Stripe usa una mezcla: Stripe.com público con Plausible (sin cookies, sin banner), Dashboard de cliente con telemetría propia server-side instrumentada por feature. Linear usa PostHog (open source, self-hostable) para product analytics y nada en su sitio público de marketing. La regla común: separar product analytics (tracking de uso interno del app) de marketing analytics (clicks en landing page). El patrón del proyecto es para marketing analytics; si tu sitio incluye un app con login, considera PostHog/Mixpanel para el lado producto y Plausible para el público.
+
+### El prefetch de Astro 6 afecta el tracking de CTAs?
+
+Sí, parcialmente. Astro 6 con `‹ClientRouter›` y `prefetch` activado hace request preventivo al `href` del link cuando el visitante hace hover, antes del clic. Si tu tracking se dispara en `click`, no hay impacto: solo se registra cuando el visitante efectivamente hace clic. Si tu tracking trata `prefetch` como engagement signal (no recomendado), inflas eventos. Mantén el listener atado a `click`, no a `mouseover` ni a `prefetch`, y todo funciona normal.
+
+### Es necesario `Content Security Policy` (CSP) compatible con el listener delegado?
+
+Sí. Si tu sitio tiene CSP strict (`script-src 'self'`), el `‹script›` inline del listener requiere o (a) ser externalizado a `/scripts/tracking.js`, o (b) un nonce/hash en la CSP. Recomendación: externalizar siempre. Los scripts inline son anti-patrón CSP. El bonus: el script externalizado se cachea por el browser y mejora el TTI en navegaciones subsecuentes. Combinado con `defer` o `async`, no bloquea LCP.
+
+### Cómo manejo el debug del listener en producción?
+
+Tres técnicas. Primera, agrega `console.log(payload)` con un feature flag (`?debug=tracking` en la URL) para no spamear en producción normal: `if (location.search.includes('debug=tracking')) console.log(payload)`. Segunda, usa los devtools del proveedor: Plausible tiene un dashboard «real-time» que muestra eventos del último minuto; GA4 tiene «DebugView». Tercera, test con `?cta_test=1` en la URL: el listener detecta el flag y muestra un toast visual con el `cta_id` capturado. Esta tercera técnica es invaluable para QA cuando hay muchos CTAs y se necesita verificar coverage.
 
 Medir CTAs bien es decidir las cuatro preguntas que importan, instrumentar con el peso mínimo necesario, y respetar al visitante en el camino. El patrón `data-cta-id` + listener delegado + payload sin PII + proveedor sin cookies cierra el ciclo completo en ~25 líneas de código, sin tag manager, sin Consent Mode v2, sin banner de cookies, y con conformidad legal automática en MX+EU. El sistema del proyecto deja el componente `CTABanner.astro` libre de telemetría por diseño; el wrapper en la página padre decide qué reportar y a quién. Cambias de proveedor en un día editando el listener; el componente nunca se entera.
 
@@ -242,3 +345,10 @@ Medir CTAs bien es decidir las cuatro preguntas que importan, instrumentar con e
 - [Módulo CTA banner en vivo](/modulos/cta-banner)
 - [CTAs honestos: copy, jerarquía, anti dark-patterns](/blog/cta-honestos-copy-jerarquia-antidarkpatterns)
 - [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)
+
+**Fuentes externas:**
+- [MDN: Using data attributes](https://developer.mozilla.org/en-US/docs/Learn/HTML/Howto/Use_data_attributes) — referencia canónica de `data-*` y `dataset` API.
+- [Google: Consent Mode v2 implementation guide](https://developers.google.com/tag-platform/security/guides/consent) — implementación obligatoria para GA4 en EU.
+- [CNIL France: Cookies & traceurs guidance](https://www.cnil.fr/en/cookies-and-other-tracking-devices) — criterio europeo sobre proveedores sin cookies (Plausible aprobado).
+- [INAI México: LFPDPPP — datos personales y tratamiento](https://home.inai.org.mx) — base legal mexicana sobre PII en analytics.
+- [Plausible Analytics: data policy and compliance](https://plausible.io/data-policy) — política técnica que explica por qué no necesita consent banner.

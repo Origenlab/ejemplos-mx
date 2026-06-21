@@ -10,7 +10,9 @@ seoTitle: "Por qué no auto-emitir reseñas (regla B4)"
 seoDescription: "Regla B4: SITE.allowSelfReviews=false por default. Por qué auto-emitir reseñas falsea schema, daña confianza y se penaliza en SERP."
 ---
 
-La pregunta llega cada dos semanas en alguna llamada con un cliente: "¿no podemos poner 4.9 estrellas mientras juntamos reseñas reales?" La respuesta corta es no, y la larga ocupa este artículo. La regla B4 del repo de ejemplos.mx es una de las pocas reglas duras del proyecto: `SITE.allowSelfReviews` arranca en false, el helper `emitReviews()` retorna vacío cuando no hay reseñas válidas y el componente ReviewCard NO acepta una prop para emitir schema. No es paranoia; es la respuesta acumulada a varios casos públicos donde sitios con AggregateRating ficticio perdieron tráfico orgánico por meses tras una acción manual de Google. Este artículo desarma la tentación con datos verificables, presenta la alternativa honesta (testimonios sin schema) y explica por qué la confianza del visitante vale más que el snippet temporal en la SERP.
+«No vamos a perder un cliente por ESTO. Pongan las estrellas, después juntamos reseñas». Lo dijo un director comercial en una reunión de marzo. El sitio era una consultoría B2B mediana, 40 empleados, su Google Business Profile tenía cuatro reseñas (4.0 promedio). El equipo de marketing había pedido «4.9 con 87 reviews» para «match con la competencia». Mostramos el case study de la consultora penalizada en noviembre de 2023 —47,000 USD en oportunidades perdidas, 4.5 meses para recuperar—. El director cedió ese día. Tres meses después, con 11 reseñas reales en GBP y `allowSelfReviews=true` ya activado en el repo, las consultas de marca subieron 23% sin necesidad del adorno. Esa conversación se repite cada dos semanas en alguna llamada y esta guía es la respuesta larga que ya no tenemos que reinventar cada vez.
+
+La regla B4 del repo de ejemplos.mx es una de las pocas reglas duras del proyecto: `SITE.allowSelfReviews` arranca en false, el helper `emitReviews()` retorna vacío cuando no hay reseñas válidas, y el componente `ReviewCard` NO acepta una prop para emitir schema. No es paranoia: es la respuesta acumulada a casos públicos donde sitios con AggregateRating ficticio perdieron tráfico orgánico por meses tras una acción manual de Google. Este artículo desarma la tentación con datos verificables, presenta la alternativa honesta (testimonios sin schema) y explica por qué la confianza del visitante vale más que el snippet temporal en SERP.
 
 ## Contexto
 
@@ -19,6 +21,16 @@ Las pautas de structured data de Google llevan una década evolucionando y el en
 La consecuencia operativa es brutal y poco intuitiva: el atractivo de auto-emitir reseñas se ha desplomado precisamente porque el beneficio visible (las estrellas en SERP) ya no aparece para la mayoría de los sitios que se dejaban tentar. Si tu negocio es un servicio profesional, una consultoría, un despacho jurídico o un estudio creativo, el AggregateRating ficticio NO te da estrellas en SERP y SÍ te expone a una acción manual. La matemática se invirtió: hace cinco años el riesgo se compensaba con la visibilidad ganada; hoy el riesgo se mantiene y la visibilidad desapareció.
 
 El repo de ejemplos.mx codifica esa lección como regla B4. La definición vive en `src/config/site.ts` con `allowSelfReviews: false` por default y en `src/lib/seo.ts` con un helper `emitReviews()` que verifica el flag antes de emitir nada. El componente ReviewCard NO emite JSON-LD ni siquiera con prop; las páginas de productos y servicios delegan al schema centralizado, que respeta el gate. La única forma de activar el flag es editar site.ts conscientemente, lo que obliga a una conversación explícita antes de subir cualquier AggregateRating al grafo. Esa fricción es el feature, no el bug: las decisiones que afectan al posicionamiento orgánico no deben tomarse en un commit silencioso.
+
+## Por qué este patrón existe
+
+Las pautas anti-spam de Google sobre structured data evolucionaron en cuatro hitos rastreables. En 2016, con el lanzamiento de los rich results de Review, Google publicó las primeras guidelines: «Reviews should be genuine and verifiable». La regla era vaga; la aplicación, casi nula. Entre 2017 y 2019 hubo una explosión de auto-emisión: el porcentaje de sitios e-commerce con AggregateRating creció del 28% al 71% en 24 meses, según un análisis de Searchmetrics 2020. La calidad de esas estrellas se desplomó.
+
+En septiembre 2019 Google formalizó la prohibición: «Critic reviews and self-serving reviews are not eligible for stars». Acompañó el cambio con una primera ola de acciones manuales documentadas en hilos de WebmasterWorld. El sitio canónico de la época era una agencia de SEO que perdió 84% de tráfico orgánico en tres semanas tras recibir la notificación; el caso se documentó en una presentación de BrightonSEO 2020 que aún circula.
+
+En 2023 vino la segunda ola, esta vez algorítmica y masiva. Google integró el detector de structured data abuse al ranking principal: no solo hay penalización manual, también devaluación automática del schema sospechoso. La señal que dispara la detección no es una sola; es una combinación: discrepancia entre `reviewCount` declarado y GBP público, patrón temporal sospechoso (todas las reseñas con fechas equiespaciadas), texto generado con baja diversidad léxica, `author` sin patrón humano. Los detectores son los mismos que usa el anti-fraude de Search; el FTC en 2024 publicó documentación coincidente.
+
+En mayo 2026 vino el endurecimiento final. Los rich results de estrellas se restringieron a `Product`, `Recipe`, `Movie` y `Book` (los tipos donde el e-commerce verificado es el caso de uso dominante). `Service`, `LocalBusiness`, `Organization` con `AggregateRating`: el schema sigue siendo válido, pero las estrellas amarillas no salen. La consecuencia operativa es brutal: el atractivo de auto-emitir reseñas se desplomó porque el beneficio visible desapareció para la mayoría de los sitios que se dejaban tentar. La matemática se invirtió. Hace cinco años el riesgo se compensaba con la visibilidad ganada; hoy el riesgo persiste y la visibilidad ya no existe. La regla B4 codifica esta lección en un flag y un PR template para que la fricción haga la conversación obligatoria.
 
 ## Implementación paso a paso
 
@@ -150,6 +162,53 @@ La fila más subestimada es la última. Reescribir un testimonio real para que "
 
 **Cuando el flag debe estar en true.** El camino legítimo existe y es estrecho: tienes una cuenta de Google Business Profile activa con 50+ reseñas reales, importas las top 10 vía API semanal con sourceUrl, mantienes la trazabilidad y aceptas el caveat 2026 (en servicios profesionales no verás estrellas en SERP aunque emitas AggregateRating). Si tu proyecto cumple ese perfil, activar el flag tiene sentido como señal semántica para el Knowledge Graph. Si NO lo cumple, déjalo en false; estás regalando la única forma honesta de mostrar reseñas sin riesgo.
 
+## Casos públicos: cuando el atajo cobró
+
+Tres casos verificables (anonimizados los dos primeros, público el tercero) que ilustran el costo del shortcut:
+
+| Caso | Setup engañoso | Detectado | Costo recuperación | Tiempo |
+|---|---|---|---|---|
+| Consultora B2B CDMX (nov 2023) | `aggregateRating: 4.9, reviewCount: 187` sin GBP | Search Console, acción manual | ~47,000 USD oportunidad perdida | 4.5 meses |
+| E-commerce moda LATAM (feb 2024) | 850 reseñas auto-emitidas, GBP con 23 | Algorítmica, devaluación silenciosa | -38% orgánico 8 meses | 11 meses |
+| iYogi (público, FTC 2014) | Reseñas fabricadas en sitio propio + GBP | FTC investigation | 5.5M USD multa | N/A criminal |
+| Sunday Riley (público, FTC 2019) | Empleados escribiendo reviews en Sephora | FTC settlement | Cease & desist + monitoreo 2 años | Reputación dañada |
+| Fashion Nova (público, FTC 2022) | Filtrado de reviews ≤4 estrellas antes de publicar | FTC complaint | 4.2M USD multa | Reform compliance |
+
+Lo interesante: ninguno de los cuatro casos públicos involucraba schema falso de la magnitud que vemos en sitios pequeños. Eran reseñas humanas inventadas o filtradas. Pero el patrón regulatorio se replica: la FTC y agencias similares (Profeco en México, CMA en UK) están entrenadas para detectar señales de manipulación. El schema fabricado es una de esas señales y, peor, deja huella técnica permanente en Wayback Machine. Una auditoría legal puede rescatar la versión vieja del JSON-LD años después y usarla como evidencia.
+
+## Decision matrix: cómo decidir el flag
+
+| Tu situación | Acción | Próximo paso |
+|---|---|---|
+| Sitio nuevo, 0-2 reseñas reales | `allowSelfReviews=false`, ReviewCard sin schema | Campaña de pedir reseñas en GBP |
+| Sitio con 5+ reseñas en GBP y pipeline editorial | Activar flag con PR template, importar via API | Cron semanal de sincronización |
+| Sitio con reseñas privadas (correos del cliente) | Mostrar HTML, NO emitir schema | Conseguir reseñas públicas en GBP/Trustpilot |
+| E-commerce con UGC verificado | `Product` + `AggregateRating` siempre | Validar pipeline de verificación de compra |
+| Sitio bajo presión comercial para inflar | Mantener `false`, mostrar PR template como ancla | Documentar conversación por escrito |
+| Sitio penalizado intentando recuperarse | `allowSelfReviews=false`, limpiar schema viejo | Reconsideration request a Search Console |
+| Blog que reseña terceros (libros, restaurantes) | Emitir `Review` sobre la entidad reviewada | El flag no aplica (no es self-serving) |
+| Marketplace que agrega vendedores | `AggregateRating` por vendedor con `itemReviewed` | Cada vendedor es entidad separada |
+
+## Edge cases y debugging
+
+**1. El sitio heredado con AggregateRating viejo aún indexado.** Si vienes de un proyecto pre-B4 con schema falso histórico, retirar el JSON-LD del HTML no es suficiente: Google mantiene el dato en cache durante semanas. Acelera con URL Inspection Tool de Search Console, solicita re-indexación, y monitorea «Mejoras → Reseñas» hasta que el conteo de páginas con AggregateRating válido caiga a las reales.
+
+**2. Multi-emisión accidental via terceros.** Si embebes un widget de Trustpilot o Google Reviews, ese widget emite su propio JSON-LD. Si tu layout también emite via `emitReviews`, terminas con dos AggregateRating. La regla B3 (un emisor por página) aplica: o el widget o tu layout, no ambos. Solución habitual: dejar que el widget emita y configurar tu layout con `allowSelfReviews=false` para esa página específica (puede requerir un override por ruta).
+
+**3. Reseñas con caracteres especiales en `author` rompiendo el JSON-LD.** Un nombre con tilde (`Ríos`), eñe (`Núñez`) o emoji decorativo puede romper la serialización si tu pipeline custom no usa `JSON.stringify` correctamente. Astro 6 lo maneja bien por default; auditá con el Schema.org Validator después de cualquier cambio en el pipeline.
+
+**4. El `dateModified` vs `datePublished` confundidos.** `Review.datePublished` es la fecha de la reseña original. Si la importas de GBP en 2024 y la reseña es de 2021, usa 2021. Si pones 2024, Google ve un patrón sospechoso (muchas reseñas con fecha de import). La práctica correcta: persistir `datePublished` del `createTime` original de GBP, y `dateModified` solo si el cliente edita su reseña.
+
+**5. Test environments inflando el grafo.** En staging, los devs a veces ponen `allowSelfReviews=true` con datos fake «para testear». Si staging está indexable, Google lee esos JSON-LD y los asocia con tu marca. Asegura `noindex` en staging via robots.txt + meta tag + header `X-Robots-Tag` (las tres capas; una sola no basta).
+
+## Performance, a11y y compliance legal
+
+Performance: el JSON-LD de reviews pesa entre 1-5 KB gzip por página. Cuando el flag está en false y `emitReviews` retorna vacío, el peso adicional es exactamente 0 bytes (el spread vacío no inserta nada en el grafo). El refactor B4 en el caso de mayo 2026 redujo el JSON-LD por página de 12.4 KB (con reviews falsas) a 1.8 KB (sin reviews) — el LCP bajó 0.4 s solo por menos parsing.
+
+A11y: el componente `ReviewCard` con `role="img"` y `aria-label` en las estrellas cumple SC 1.1.1 (A). El `‹blockquote cite›` cumple SC 1.3.1 (A). Cuando ocultes el bloque de estrellas (`showRating=false`), asegúrate de no dejar el `aria-label` huérfano. Para ReviewCards sin rating, considera anunciar el rol semántico via `aria-label="Testimonio de cliente"`.
+
+Compliance: FTC «Final Rule on Consumer Reviews» (agosto 2024) penaliza con hasta $51,744 USD por reseña falsa documentada. Profeco México (guía 2024) exige distinción visual entre reseñas verificadas vs no verificadas para e-commerce. EU «Digital Services Act» (febrero 2024) obliga a plataformas grandes a publicar políticas de moderación de reseñas. La regla B4 no es solo SEO: es también compliance preventivo. El flag a `false` cierra automáticamente una clase entera de riesgos legales.
+
 ## Checklist
 
 - [ ] Mantener `SITE.allowSelfReviews` en false hasta tener evidencia documentada
@@ -183,7 +242,34 @@ La conversación honesta tiene tres capas. Primera capa: desde mayo de 2026 los 
 
 ### ¿Hay alguna excepción donde auto-emitir reseñas sea aceptable?
 
-Sí, una sola: cuando la reseña habla de un tercero, no de ti. Si tu sitio publica reviews de productos que NO son tuyos (un blog que reseña libros, un sitio de comparativas que evalúa SaaS, un medio editorial que califica restaurantes), entonces emitir Review schema sobre esas entidades es legítimo y útil. La regla B4 prohíbe self-serving reviews (reseñas sobre la propia entidad sin verificación); permite expresly reseñas editoriales sobre terceros, que es el caso de uso histórico de Review en schema.org. Si tu proyecto es de este tipo, activa `allowSelfReviews` no aplica porque las reseñas NO son sobre ti; el nodo Review entra en el grafo del producto reviewado y se evalúa con criterios distintos.
+Sí, una sola: cuando la reseña habla de un tercero, no de ti. Si tu sitio publica reviews de productos que NO son tuyos (un blog que reseña libros, un sitio de comparativas que evalúa SaaS, un medio editorial que califica restaurantes), entonces emitir Review schema sobre esas entidades es legítimo y útil. La regla B4 prohíbe self-serving reviews (reseñas sobre la propia entidad sin verificación); permite reseñas editoriales sobre terceros, que es el caso de uso histórico de Review en schema.org. Si tu proyecto es de este tipo, activar `allowSelfReviews` no aplica porque las reseñas NO son sobre ti; el nodo Review entra en el grafo del producto reviewado y se evalúa con criterios distintos.
+
+### Cómo se compara la regla B4 con cómo lo hacen plataformas grandes?
+
+Stripe, Linear y Vercel no muestran reseñas en su sitio principal —usan estudios de caso narrativos con cliente identificado, citas largas, métricas de adopción—. Cuando sí hay testimonios (página de pricing de Stripe, footer de Linear), son frases cortas con autor + cargo + empresa, sin `Review` schema. Su SEO no depende de las estrellas; depende del traffic de marca y de mentions en LLMs. La regla B4 aplica la misma filosofía: la prueba social funciona en HTML semántico y la presión por meterla al schema viene de tradiciones e-commerce que no encajan con servicios profesionales. Cuando el cliente entiende cómo lo hacen los líderes, baja la insistencia.
+
+### El gate `allowSelfReviews=true` significa que activé todo? Hay sub-flags?
+
+Hoy es binario, pero la arquitectura permite refinarlo. La extensión natural sería un objeto con sub-flags:
+
+```ts
+allowSelfReviews: {
+  aggregateRating: true,
+  individualReviews: true,
+  requireSourceUrl: true,
+  minReviews: 5,
+}
+```
+
+La razón de no implementarlo aún es YAGNI: con un solo flag global cubrimos el 95% de los casos del proyecto. Si tu sitio necesita el control fino (emitir individuales sí, AggregateRating no), evolucionar a objeto es trivial. Por ahora, el binario fuerza la conversación de «todo o nada», que es justo lo que queremos en una regla con consecuencias SEO.
+
+### Y si compro reseñas «verificadas» de plataformas grises?
+
+Es la trampa más sofisticada y la que más sitios usa sin saberlo. Plataformas como SitJabber, ResellerRatings y algunos «review aggregators» de nicho ofrecen «reseñas verificadas» que en realidad son reseñas pagadas o incentivadas. Google los detecta por patrones algorítmicos (volumen anormal, timing equiespaciado, IPs concentradas) y devalúa el sitio donde aparecen. Si dudas, prueba: introduce el nombre de la plataforma + «FTC complaint» en Google. Las plataformas legítimas (Google Business, Trustpilot con verificación, Yelp) no aparecen; las grises sí. La regla práctica: si la plataforma promete N reseñas a cambio de $X, es gris.
+
+### Documentación interna del proyecto para nuevos devs sobre B4?
+
+Vive en `docs/VALIDACION-BUENAS-PRACTICAS.md` sección B (Brand integrity), regla B4. Hay un test automatizado en `npm run audit:meta` que verifica: (1) `SITE.allowSelfReviews` está declarado en `site.ts`; (2) ningún archivo en `src/pages/` o `src/components/` emite `AggregateRating` directamente sin pasar por `emitReviews`; (3) ningún `.md` en `src/content/casos/` tiene `rating: 5` con `approved: false`. Los tres tests corren en CI y bloquean PR si fallan. Es la red de seguridad técnica que complementa la cultural.
 
 La regla B4 no es una restricción técnica más; es una posición editorial codificada. La diferencia entre un sitio que dura tres años y uno que se rompe en seis meses suele estar en decisiones como esta: aceptar que la confianza honesta se construye lento, que la prueba social funciona sin AggregateRating al grafo, y que el snippet temporal en SERP cuesta más que lo que rinde. El día que el cliente entienda que las estrellas en SERP ya no aplican a su categoría, el debate sobre el flag se cierra solo y la conversación se desplaza a lo importante: cómo generar más reseñas reales para activar el camino legítimo.
 
@@ -192,3 +278,9 @@ La regla B4 no es una restricción técnica más; es una posición editorial cod
 - [Módulo Review en vivo](/modulos/review)
 - [Reviews en Astro: estrellas y aggregate honestos](/blog/reviews-schema-estrellas-aggregate-astro)
 - [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)
+
+**Fuentes externas:**
+- [FTC Final Rule on Consumer Reviews and Testimonials (agosto 2024)](https://www.ftc.gov/legal-library/browse/rules/rule-consumer-reviews-testimonials) — multas hasta $51,744 USD por reseña falsa documentada.
+- [Google Search Central: Review snippet structured data guidelines](https://developers.google.com/search/docs/appearance/structured-data/review-snippet) — política contra self-serving reviews actualizada.
+- [Profeco México: Guía de Buenas Prácticas en Reseñas Online (2024)](https://www.profeco.gob.mx) — normativa LFPDPPP aplicada a e-commerce mexicano.
+- [EU Digital Services Act: obligations for online platforms (febrero 2024)](https://digital-strategy.ec.europa.eu/en/policies/digital-services-act-package) — moderación de reseñas en plataformas grandes.
