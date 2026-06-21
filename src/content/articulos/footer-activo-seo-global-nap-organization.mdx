@@ -1,0 +1,175 @@
+---
+title: "Footer SEO global: NAP y schema Organization"
+description: "El footer como activo SEO global en Astro: NAP consistente, schema Organization único y por qué cada página debe servir la misma ficha de marca."
+category: "guias"
+heroImage: "/images/articulos/footer-activo-seo-global-nap-organization.avif"
+pubDate: 2026-05-04
+author: "Ejemplos.mx"
+tags: ["astro", "footer", "seo", "nap", "schema"]
+seoTitle: "Footer SEO: NAP + Organization en Astro"
+seoDescription: "Footer como activo SEO global en Astro: NAP en site.ts, schema Organization único emisor, sameAs y consistencia entre páginas."
+---
+
+El footer es el módulo más subestimado del sitio y, a la vez, el más caro de equivocarse. Aparece literal —el mismo bloque HTML, las mismas decenas de enlaces, el mismo teléfono— en cada URL que el crawler de Google rastrea: cien páginas significan cien firmas del mismo footer. Cuando el teléfono cambia de formato entre una página y otra, cuando el `Organization` se emite dos veces, cuando `sameAs` declara un Instagram inventado, el daño no es local: se multiplica por la cantidad de páginas del sitio. Esta guía aborda al footer como lo que realmente es —un activo SEO global— y reparte tres responsabilidades estrictas: consistencia NAP, emisor único de `Organization` y honestidad declarativa en `sameAs` y las rutas legales.
+
+## Contexto
+
+El footer ocupa un papel distinto al del header. El header lleva 4–5 ítems primarios (Productos, Servicios, Cobertura, Blog, Contacto): el camino que el visitante busca primero. El footer carga la red completa —catálogo por categoría, cobertura por estado, sectores cuando aplican, módulos del sitio, páginas legales, datos de contacto—. Para el visitante es el «mapa exhaustivo» de último recurso; para el bot es una matriz de enlaces internos que se imprime en cada URL y reparte equity al sitio entero. Esa frecuencia es justamente lo que lo convierte en activo: cada enlace nuevo que metes al footer recibe un voto desde cada página crawleable. Y cada enlace muerto se vuelve link rot multiplicado por N.
+
+Tres factores SEO se juegan ahí abajo, y los tres son globales por construcción. El primero es la **consistencia NAP**: Name + Address + Phone tienen que coincidir letra por letra entre el topbar, el bloque de contacto del footer y el `contactPoint.telephone` del `Organization`. Google trata las divergencias de formato («(55) 0000-0000» vs «55 0000 0000» vs «+52 5500000000») como señales de bajo cuidado y baja la confianza local del Knowledge Panel. El segundo es la **regla del emisor único**: el JSON-LD `Organization` debe emitirse desde un único lugar (B3 dura). Si el footer escupe su propio `Organization` y el layout también, terminas con dos nodos idénticos por `@id` y los validadores los marcan; Google los ignora. El tercero es la **honestidad de `sameAs`**: declarar perfiles sociales que no son tuyos —o que están abandonados— alimenta un knowledge graph erróneo que después es caro de corregir.
+
+La pieza que sostiene los tres es la SSoT en `site.ts`. Mientras todos los componentes lean de ahí (`CONTACT.phone`, `CONTACT.phoneE164`, `SITE.organization`, `SOCIAL`, `LEGAL`), la divergencia es imposible por construcción. El día que una página decide escribir el teléfono a mano, ahí empieza el problema.
+
+## Implementación paso a paso
+
+El patrón canónico se apoya en tres capas: la SSoT (`site.ts`), la función emisora (`lib/seo.ts → organizationSchema()`) y el layout base que la invoca una vez (`BaseLayout → buildSchema()`). El componente `Footer.astro` consume la SSoT visualmente y no toca el grafo. Esa separación es la que evita el duplicado.
+
+```ts
+// src/config/site.ts — SSoT del NAP y de la entidad Organization.
+// Todos los componentes y la capa SEO leen de aqui; ninguna pagina hardcodea.
+export const SITE = {
+  name: 'Ejemplos.mx',
+  brand: 'EJEMPLOS',
+  url: 'https://ejemplos.mx',
+  domain: 'ejemplos.mx',
+  organization: {
+    name: 'Ejemplos.mx',
+    legalName: 'Ejemplos.mx',
+    logo: '/images/brand/logo.svg',
+    foundingDate: '2024',
+    // sameAs SOLO con perfiles oficiales verificables. Vacio por default
+    // a proposito: no se declara un perfil falso en datos estructurados.
+    sameAs: [] as string[],
+  },
+} as const
+
+export const CONTACT = {
+  phone: '55 0000 0000',        // formato legible para mostrar
+  phoneE164: '+525500000000',   // E.164 con +, para tel: y para schema
+  phoneRaw:  '+525500000000',   // espejo E.164 que consume el JSON-LD
+  whatsapp:  '525500000000',    // E.164 sin +, lo exige wa.me
+  email:     'hola@ejemplos.mx',
+  street:    'Av. Demo 123, Col. Centro',
+  city:      'Ciudad de Mexico',
+  state:     'CDMX',
+  postalCode:'06000',
+  country:   'MX',
+} as const
+```
+
+Sobre esa SSoT vive `organizationSchema()`. Es una función pura: recibe nada, devuelve el nodo `Organization` listo para inyectarse en el `@graph`. Centralizar aquí significa que `contactPoint.telephone` sale de `CONTACT.phoneRaw` (no de un literal), `sameAs` sale de `SITE.organization.sameAs` (no de un array escondido en el componente) y el `@id` es estable entre páginas (mismo emisor → misma URL canónica con el fragmento `#organization`).
+
+```ts
+// src/lib/seo.ts — emisor unico del nodo Organization.
+import { SITE, CONTACT } from '@config/site'
+
+export function organizationSchema() {
+  return {
+    '@type': 'Organization',
+    '@id': `${SITE.url}/#organization`,
+    name: SITE.organization.name,
+    legalName: SITE.organization.legalName,
+    url: SITE.url,
+    logo: {
+      '@type': 'ImageObject',
+      '@id': `${SITE.url}/#logo`,
+      url: `${SITE.url}${SITE.organization.logo}`,
+    },
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: CONTACT.phoneRaw,    // E.164 sin formato visible
+      email: CONTACT.email,
+      contactType: 'customer service',
+      areaServed: 'MX',
+      availableLanguage: ['es-MX'],
+    },
+    // sameAs: SOLO perfiles oficiales verificados. Vacio si dudas.
+    sameAs: SITE.organization.sameAs,
+  }
+}
+```
+
+El consumo desde el layout es la pieza que cierra el círculo. `buildSchema()` arma el `@graph` con `WebSite`, `Organization` y —si aplica— `LocalBusiness`; `BaseLayout` lo serializa con un único `script type=application/ld+json` en el head. El footer no participa. Esa abstinencia es lo que blinda la regla del emisor único.
+
+```astro
+---
+// src/layouts/BaseLayout.astro — emision unica del @graph.
+import { buildSchema } from '@lib/seo'
+const graph = buildSchema('page', { faqs: data?.faqs, breadcrumbs })
+---
+<head>
+  <!-- ...meta, OG, canonical... -->
+  <script type="application/ld+json" set:html={JSON.stringify(graph)} />
+</head>
+<body>
+  <slot />
+  <Footer />   {/* el footer pinta el NAP; NO emite schema */}
+</body>
+```
+
+El bloque NAP que se ve en pantalla es un derivado de la misma SSoT: `CONTACT.phone` para mostrar, `telUrl()` (que envuelve `phoneE164`) para el `tel:`, `waUrl()` para WhatsApp. Tres consumidores, una sola fuente. El día que el cliente cambia de número, se edita `CONTACT.phone` y `CONTACT.phoneE164` en `site.ts` y se propaga al topbar, al footer, al `tel:` y al `contactPoint.telephone` del schema en el mismo commit.
+
+## Tabla comparativa
+
+| Patrón | Riesgo SEO | Recomendación |
+|---|---|---|
+| NAP hardcodeado en cada página | Divergencia de formato → Google detecta inconsistencia → baja confianza local | Forzar SSoT en `CONTACT`; cero literales del teléfono fuera de `site.ts` |
+| `Organization` emitido por footer y por layout | Doble nodo con mismo `@id` → validadores marcan error → Google ignora ambos | Un único emisor (B3): solo `BaseLayout → buildSchema()`; el footer NO emite |
+| `sameAs` con perfiles demo o no verificados | Knowledge graph erróneo, autoridad atribuida a otra cuenta, costo de corrección alto | `sameAs: []` por default; solo agregar perfiles con dueño confirmado |
+| Rutas legales rotas (`/privacidad`, `/cookies` vacías) | 404 multiplicado por N páginas; señal de descuido para crawler y para auditoría | Rutas placeholder publicadas con contenido mínimo válido antes del lanzamiento |
+| Año del copyright escrito a mano | Stale data visible: «© 2024» en 2026 = señal de sitio abandonado | `new Date().getFullYear()` en el componente; cero fechas calendáricas hardcodeadas |
+
+La fila central es la que más se equivoca en proyectos nuevos: un dev agrega un `script type=application/ld+json` al `Footer.astro` con buena intención («para reforzar el Organization»), sin saber que el layout ya lo emite. El resultado es un grafo con dos nodos `Organization` que comparten `@id`; los validadores marcan duplicado y Google deduplica por su cuenta, perdiendo control sobre cuál gana. El patrón canónico cierra el debate: el footer es presentación, el grafo es del layout.
+
+## Patrones avanzados
+
+**El `@id` estable es el pegamento del grafo entre páginas.** Cada nodo del JSON-LD lleva un `@id` que actúa como identidad global. Si el `Organization` se emite con `@id: "https://ejemplos.mx/#organization"` desde la home, las páginas internas DEBEN usar el mismo `@id` para que Google entienda que es la misma entidad. La función `organizationSchema()` lo construye a partir de `SITE.url`: cambia el dominio en `site.ts` y el `@id` se actualiza en todas las páginas a la vez. La trampa frecuente: cambiar `SITE.url` de `https://ejemplos.mx` a `https://www.ejemplos.mx` rompe la continuidad del `@id` y Google ve dos organizaciones distintas durante semanas. La política `trailingSlash: never` declarada en `site.ts` y replicada en `astro.config.mjs` es parte del mismo blindaje.
+
+**`sameAs` vacío como decisión, no como olvido.** El `SOCIAL` que pinta los iconos del footer y el `SITE.organization.sameAs` que alimenta el JSON-LD son arrays distintos por diseño. Los iconos se pueden mostrar visualmente (un Instagram que existe pero aún no está verificado por el cliente) mientras el `sameAs` permanece vacío hasta que se confirme propiedad. Esta separación quirúrgica permite cumplir con la presencia visual sin contaminar el knowledge graph. Cuando los perfiles sí están verificados, se duplica la URL: visualmente en `SOCIAL` para el ícono, semánticamente en `SITE.organization.sameAs` para el schema. La regla mnemotécnica: en duda, `sameAs: []`; mejor sin declarar que declarando mal.
+
+**Rutas legales placeholder con contenido real mínimo.** Los enlaces de `LEGAL` (`/privacidad`, `/terminos`, `/cookies`) aparecen en el footer de cada página. Dejarlos como `href: '#'` o llevarlos a páginas vacías es un anti-patrón doble: el visitante que los necesita (auditor de cumplimiento, regulador) no los encuentra; el crawler los marca como soft-404 y los reporta en Search Console. El patrón canónico publica las tres rutas con plantillas mínimas legalmente válidas (aviso de privacidad básico, términos de uso genéricos, política de cookies declarando las cookies que efectivamente usa el sitio) antes del lanzamiento. La SSoT de `LEGAL` en `site.ts` lista solo las rutas que existen; si una página legal aún no está escrita, se omite del array en lugar de servir un enlace muerto.
+
+**Consistencia NAP entre Topbar y Footer auditable con grep.** La forma operativa de blindar la regla es buscar el teléfono literal en el repo. Después de cualquier cambio de número, un `grep -rn "55 0000 0000" src/` debe arrojar exactamente una línea: la definición en `src/config/site.ts`. Si aparecen 2, 3 o 12 ocurrencias, hay literales hardcodeados que se desincronizarán al siguiente cambio. El mismo método aplica al correo (`CONTACT.email`) y al `@id` del `Organization`. Es una auditoría barata (30 segundos) que detecta el 90% de las inconsistencias antes de que lleguen a producción.
+
+## Checklist
+
+- [ ] `CONTACT.phone`, `phoneE164`, `phoneRaw` y `whatsapp` definidos una sola vez en `site.ts`
+- [ ] `grep` del teléfono literal devuelve UNA sola línea en `src/` (la definición en `site.ts`)
+- [ ] El footer NO emite `script type=application/ld+json`; el emisor único es `BaseLayout → buildSchema()`
+- [ ] `organizationSchema()` lee `contactPoint.telephone` de `CONTACT.phoneRaw`, no de un literal
+- [ ] `SITE.organization.sameAs` vacío hasta tener perfiles oficiales verificados (con dueño confirmado)
+- [ ] `SOCIAL` y `sameAs` mantenidos como arrays distintos por diseño (uno visual, otro semántico)
+- [ ] Rutas de `LEGAL` (privacidad, términos, cookies) publicadas con contenido mínimo válido antes del lanzamiento
+- [ ] Año del copyright generado con `new Date().getFullYear()`; cero fechas hardcodeadas en el JSX
+- [ ] `SITE.url` sin trailing slash y `astro.config.mjs` con `trailingSlash: 'never'`
+- [ ] `@id` del `Organization` validado con [Rich Results Test](https://search.google.com/test/rich-results) y aparece UNA sola vez por página
+
+## Preguntas frecuentes
+
+### ¿Por qué el footer no debería emitir el JSON-LD `Organization` aunque sea «el bloque que muestra el NAP»?
+
+Porque la regla del emisor único (B3) es la única forma de garantizar que el grafo no se duplique. Si el footer emite y el layout también, terminas con dos nodos `Organization` que comparten `@id` —los validadores los marcan, Google deduplica sin que tú decidas cuál gana—. El footer es presentación, el grafo es del layout. La separación de responsabilidades es la base del patrón. Si en algún momento necesitas que el footer emita schema (un caso límite muy raro), entonces el layout debe dejar de hacerlo: uno u otro, nunca los dos.
+
+### ¿Qué pasa si declaro un Instagram en `sameAs` que después resulta ser de otra empresa?
+
+Le estás diciendo a Google «este perfil es mío» y alimentas el knowledge graph con un dato falso. La corrección es lenta: hace falta que el dueño real del perfil reclame la entidad, que tu sitio retire la declaración, que Google recrawlee ambos y que el grafo se reconstruya. Mientras tanto, parte de la autoridad de tu marca se atribuye al perfil ajeno. La política `sameAs: []` por default existe justamente para evitar este escenario. Solo agregas un perfil al `sameAs` cuando puedes probar propiedad (acceso al perfil, dominio verificado, biografía con el sitio oficial).
+
+### ¿Cómo manejo el footer en una página que ya tiene su propio `Organization` (por ejemplo un microsite)?
+
+El microsite debería respetar el mismo emisor único: una sola función `organizationSchema()` para todo el dominio. Si el microsite vive bajo el mismo dominio (`/promociones/black-friday`), no necesita su propio `Organization`; el del `BaseLayout` ya cubre. Si el microsite vive bajo un dominio distinto (`promociones.ejemplos.mx`), entonces es otra entidad SEO y debe tener su propia configuración: su propio `site.ts`, su propio `organizationSchema()`. Nunca mezcles dos `Organization` con `@id` distintos en la misma página, y nunca dos con el mismo `@id` y contenido diferente.
+
+### ¿El bloque NAP del footer compite con el del topbar para el SEO local?
+
+No, porque ambos son derivados de la misma SSoT y muestran el mismo dato. Google lee la página, encuentra el teléfono varias veces (topbar, footer, JSON-LD), comprueba que es idéntico y refuerza la confianza. Si los formatos divergen, ahí sí hay competencia: el algoritmo no sabe cuál es el «correcto» y baja la confianza global. La ventaja de tener el NAP repetido (con formato idéntico) en topbar y footer es que el visitante lo encuentra sin scroll en cualquier punto del scroll, y el crawler lo refuerza en cada página. Es ventaja, no competencia, mientras la SSoT esté centralizada.
+
+### ¿Las páginas legales placeholder bastan para el lanzamiento o necesito redactarlas formalmente?
+
+Bastan para evitar el anti-patrón SEO (rutas que existen pero no sirven 404), pero NO bastan para cumplimiento legal real. Antes del lanzamiento comercial, el cliente debería pasar las plantillas por un abogado o usar un servicio especializado (Iubenda, Termly) que genere los textos según las cookies, los servicios de terceros y la jurisdicción aplicable. La regla del proyecto es: nunca dejar al footer enlazando a páginas vacías; nunca confundir «página publicada» con «contenido legal vigente». Son dos checkpoints separados, con dueños distintos.
+
+El footer es el lugar donde el sitio se compromete por escrito: nombre, dirección, teléfono, perfiles oficiales, rutas legales. Cada uno de esos compromisos se multiplica por la cantidad de páginas del sitio cada vez que el crawler pasa. Centralizar en `site.ts`, dejar que `lib/seo.ts` sea el único emisor del `Organization`, y mantener `sameAs` honesto convierte al pie de página en lo que debe ser: un activo SEO global que trabaja en silencio, sin pedir mantenimiento, durante años.
+
+## Sigue leyendo
+
+- [Módulo Footer en vivo](/modulos/footer)
+- [Footer multi-columna data-driven en Astro](/blog/footer-multicolumna-data-driven-grid)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

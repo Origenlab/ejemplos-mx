@@ -1,0 +1,194 @@
+---
+title: "Por qué nunca auto-emitir reseñas: regla B4"
+description: "La regla B4 del repo prohíbe auto-emitir AggregateRating y Review sin datos reales. Por qué la confianza honesta vale más que el snippet falso en Google."
+category: "guias"
+heroImage: "/images/articulos/por-que-no-auto-emitir-resenas-regla-b4.avif"
+pubDate: 2026-04-29
+author: "Ejemplos.mx"
+tags: ["review", "schema", "etica", "seo", "confianza"]
+seoTitle: "Por qué no auto-emitir reseñas (regla B4)"
+seoDescription: "Regla B4: SITE.allowSelfReviews=false por default. Por qué auto-emitir reseñas falsea schema, daña confianza y se penaliza en SERP."
+---
+
+La pregunta llega cada dos semanas en alguna llamada con un cliente: "¿no podemos poner 4.9 estrellas mientras juntamos reseñas reales?" La respuesta corta es no, y la larga ocupa este artículo. La regla B4 del repo de ejemplos.mx es una de las pocas reglas duras del proyecto: `SITE.allowSelfReviews` arranca en false, el helper `emitReviews()` retorna vacío cuando no hay reseñas válidas y el componente ReviewCard NO acepta una prop para emitir schema. No es paranoia; es la respuesta acumulada a varios casos públicos donde sitios con AggregateRating ficticio perdieron tráfico orgánico por meses tras una acción manual de Google. Este artículo desarma la tentación con datos verificables, presenta la alternativa honesta (testimonios sin schema) y explica por qué la confianza del visitante vale más que el snippet temporal en la SERP.
+
+## Contexto
+
+Las pautas de structured data de Google llevan una década evolucionando y el endurecimiento más relevante para reseñas llegó en dos olas. La primera, en 2019, prohibió explícitamente el "self-serving review content": un sitio NO puede emitir Review o AggregateRating sobre la propia entidad (el negocio, el servicio, la marca) cuando esas reseñas no vienen de fuentes verificables. La segunda, en mayo de 2026, redujo drásticamente los tipos schema que aún pintan estrellas en la SERP: hoy solo Product, Recipe, Movie y Book reciben rich snippet visual. Para LocalBusiness o Service, el schema sigue siendo válido para el Knowledge Graph y para entender la entidad, pero no esperes las estrellas amarillas.
+
+La consecuencia operativa es brutal y poco intuitiva: el atractivo de auto-emitir reseñas se ha desplomado precisamente porque el beneficio visible (las estrellas en SERP) ya no aparece para la mayoría de los sitios que se dejaban tentar. Si tu negocio es un servicio profesional, una consultoría, un despacho jurídico o un estudio creativo, el AggregateRating ficticio NO te da estrellas en SERP y SÍ te expone a una acción manual. La matemática se invirtió: hace cinco años el riesgo se compensaba con la visibilidad ganada; hoy el riesgo se mantiene y la visibilidad desapareció.
+
+El repo de ejemplos.mx codifica esa lección como regla B4. La definición vive en `src/config/site.ts` con `allowSelfReviews: false` por default y en `src/lib/seo.ts` con un helper `emitReviews()` que verifica el flag antes de emitir nada. El componente ReviewCard NO emite JSON-LD ni siquiera con prop; las páginas de productos y servicios delegan al schema centralizado, que respeta el gate. La única forma de activar el flag es editar site.ts conscientemente, lo que obliga a una conversación explícita antes de subir cualquier AggregateRating al grafo. Esa fricción es el feature, no el bug: las decisiones que afectan al posicionamiento orgánico no deben tomarse en un commit silencioso.
+
+## Implementación paso a paso
+
+El primer paso es entender el flag y dónde vive. No es una variable de entorno ni un toggle de runtime: es una constante en `site.ts` que se evalúa en build-time. Cambiarla requiere un PR, una revisión y un deploy.
+
+```ts
+// src/config/site.ts — gate global de la regla B4
+export const SITE = {
+  name: 'Ejemplos.mx',
+  url: 'https://ejemplos.mx',
+  // ...
+  // Regla B4: NO auto-emitir AggregateRating ni Review en JSON-LD sin
+  // reseñas reales y verificables de terceros (Google Business, Trustpilot).
+  // Cambiar a true SOLO con evidencia documentada y 5+ reseñas trazables.
+  allowSelfReviews: false,
+};
+```
+
+El segundo paso es el helper que respeta el gate. Vive en `lib/seo.ts` y se llama desde productSchema y serviceSchema. Si el flag está en false, retorna un objeto vacío y el grafo final no incluye ni AggregateRating ni Review. Importante: esto pasa silenciosamente, sin warning en consola, porque NO es un error. Es el comportamiento correcto en ausencia de evidencia.
+
+```ts
+// src/lib/seo.ts — emitReviews respeta SITE.allowSelfReviews
+import { SITE } from '@config/site';
+import { reviewSchema, type Review } from './reviews';
+
+export function emitReviews(items: Review[] = []): { aggregateRating?: object; review?: object[] } {
+  // Regla B4 explícita: gate global antes de hacer cualquier cosa.
+  if (!SITE.allowSelfReviews) return {};
+
+  // Si pasa el gate, exige mínimo de items reales para emitir AggregateRating.
+  const minCount = 5;
+  return reviewSchema({ items, minCount });
+}
+
+// Uso típico desde serviceSchema:
+// const node = {
+//   '@type': 'Service',
+//   name: data.service.name,
+//   ...emitReviews(data.service.reviews),   // spread vacío si gate=false
+// };
+```
+
+El tercer paso es la alternativa honesta: testimonios sin schema. Cuando no tienes reseñas verificables, no significa que tengas que esconder la prueba social. Significa que pintas el HTML semántico (ReviewCard con article + blockquote + cite) sin emitir JSON-LD. El visitante ve el testimonio, lo interpreta como prueba social, y el bot ve un bloque de testimonios sin pretensión de AggregateRating. Es la decisión correcta para 95% de los sitios nuevos.
+
+```astro
+---
+// src/pages/inicio.astro — testimonios SIN schema (default canónico)
+import PageLayout from '@layouts/PageLayout.astro';
+import ReviewCard from '@components/ReviewCard.astro';
+import { getCollection } from 'astro:content';
+
+// Cargar casos aprobados (gate editorial), sin importar si tienen rating.
+const casos = (await getCollection('casos', ({ data }) => data.approved && !data.draft))
+  .sort((a, b) => (b.data.date?.getTime() ?? 0) - (a.data.date?.getTime() ?? 0))
+  .slice(0, 3);
+---
+
+<PageLayout
+  title="Inicio"
+  description="Sitios Astro listos para producción."
+  pageType="home"
+  data={{
+    // NO pasamos reviews al layout: el grafo no emite AggregateRating.
+    // El HTML sigue mostrando los testimonios como prueba social honesta.
+  }}
+>
+  <section class="section section--surface">
+    <div class="container">
+      <h2>Lo que dicen nuestros clientes</h2>
+      <div class="reviews-grid">
+        {casos.map((c) => (
+          <ReviewCard
+            quote={c.data.quote}
+            name={c.data.clientName}
+            role={c.data.clientRole}
+            rating={c.data.rating ?? 0}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+</PageLayout>
+```
+
+El cuarto paso es el camino para activar el flag cuando exista evidencia. NO se hace cambiando el default en site.ts y olvidándolo; se hace con una checklist de evidencia y un PR con justificación documentada. La lista mínima: 5+ reseñas con autor identificado, fecha verificable, texto autorizado por escrito, y al menos la mitad con sourceUrl apuntando a Google Business Profile o equivalente.
+
+```yaml
+# .github/PULL_REQUEST_TEMPLATE/activar-self-reviews.md
+# Justificación para activar SITE.allowSelfReviews = true
+
+## Evidencia documentada
+- [ ] Hay 5+ reseñas reales en src/content/casos/*.md con approved: true
+- [ ] Al menos 3 tienen sourceUrl apuntando a una reseña pública verificable
+- [ ] Permiso por escrito archivado para cada testimonio sin sourceUrl
+- [ ] Los ratings son los reales (no normalizados a 5)
+- [ ] El cliente acepta el riesgo SEO documentado y firmó el cambio
+
+## Caveat acordado
+Sé que Google solo pinta estrellas en SERP para Product/Recipe/Movie/Book.
+Activar este flag NO me dará rich snippets en LocalBusiness/Service: solo
+emitirá el AggregateRating al grafo como señal semántica para el Knowledge
+Graph. Si esto cambia mi decisión, no abro el PR.
+
+## Reviewer
+@responsable-seo debe aprobar antes del merge.
+```
+
+## Tabla comparativa
+
+| Camino | Beneficio inmediato | Riesgo / costo a 12 meses |
+|---|---|---|
+| `allowSelfReviews=false` + ReviewCard sin schema | Cero riesgo SEO, prueba social honesta visible | Sin estrellas en SERP (que ya no aplican para servicios) |
+| `allowSelfReviews=true` con 5+ reseñas reales y sourceUrl | AggregateRating al grafo, integridad semántica | Mantenimiento: refresh semanal de fuentes externas |
+| AggregateRating hardcoded con valores ficticios | Estrellas en SERP por semanas (en categorías que aún las pintan) | Acción manual de Google, caída de tráfico orgánico, semanas para recuperar |
+| Comprar reseñas en plataformas grises | Volumen rápido de "reseñas" para llenar el grafo | Detección por patrones (timing, lenguaje, IPs), penalización en GBP y SERP |
+| Reescribir testimonios reales "para que suenen mejor" | Cita coherente con la voz de marca | Pérdida de credibilidad cuando el visitante detecta tono uniforme; texto pierde la fuerza del lenguaje del cliente |
+
+La fila más subestimada es la última. Reescribir un testimonio real para que "suene profesional" parece inofensivo y mata la prueba social: el visitante humano detecta inmediatamente cuando cuatro reseñas distintas tienen el mismo ritmo, la misma puntuación y los mismos giros del idioma. La fuerza de un testimonio real está en sus rarezas (modismos regionales, datos específicos, frases incompletas); pulirlas para que parezcan copy de marca devuelve a la página al inicio del problema: una reseña pulida es indistinguible de una inventada.
+
+## Patrones avanzados
+
+**La fricción del PR es deliberada.** Cambiar `allowSelfReviews` requiere editar site.ts, abrir PR, pasar review y deployar. Ese viaje, que dura horas o días, no es ineficiencia: es el espacio donde la decisión se discute. Si el flag fuera una variable de entorno o un toggle de dashboard, la presión comercial lo activaría sin conversación técnica. Al meterlo en código, la conversación es obligatoria. Es el mismo patrón que usan los feature flags críticos en infra: la fricción protege contra decisiones impulsivas. Cuando un cliente insiste en activar el gate sin evidencia, el PR template sirve como ancla: "aquí está la checklist, completémosla y abrimos el PR juntos".
+
+**El sourceUrl como blindaje contra auditorías.** Cuando emites Review con `url` apuntando al permalink original (Google Business Profile, Trustpilot, perfil LinkedIn del cliente), le das a Google una forma de verificar la reseña automáticamente. Si su crawler visita la sourceUrl y encuentra el mismo texto con la misma fecha y el mismo autor, la reseña pasa la auditoría. Si no encuentra nada, la marca como sospechosa y, si el patrón se repite, dispara la acción manual. La regla práctica: si una reseña no tiene sourceUrl, no debería entrar al `emitReviews()`. Para testimonios privados (correo del cliente con permiso), la alternativa es mostrarlos en el HTML sin emitir Review al grafo.
+
+**El `approved` editorial es la mejor defensa.** El campo `approved` en la colección casos no es solo un toggle de borrador. Es la línea editorial que separa "tengo este testimonio" de "este testimonio está listo para producción". El workflow saludable: el responsable comercial sube el .md con `approved: false` y los datos crudos; alguien con criterio editorial (idealmente no el dev) verifica que la cita sea textual, que el permiso esté archivado y que la fecha sea real; solo entonces cambia a `approved: true`. El filtro de getCollection sobre la colección casos —con un predicado que exige `approved: true`— garantiza que un caso no validado nunca llega al deploy. Esta separación de roles (comercial sube, editor aprueba, dev publica) es la que mantiene la integridad del inventario a lo largo del tiempo.
+
+**Testimonios sin schema NO son inferiores.** Existe el prejuicio de que "si no emites JSON-LD, no cuenta para SEO". Es falso. Google lee el HTML semántico (article + blockquote + cite) y entiende la prueba social. El AggregateRating al grafo es una señal adicional, no un requisito. Un sitio con 20 testimonios reales pintados en HTML sin schema tiene mejor SEO orgánico y mejor confianza del usuario que un sitio con AggregateRating ficticio. La diferencia visible (las estrellas en SERP) ya no aplica para servicios desde 2026. La diferencia invisible (la confianza acumulada y la ausencia de penalizaciones) es la que mueve la aguja a 12 meses.
+
+**Cuando el flag debe estar en true.** El camino legítimo existe y es estrecho: tienes una cuenta de Google Business Profile activa con 50+ reseñas reales, importas las top 10 vía API semanal con sourceUrl, mantienes la trazabilidad y aceptas el caveat 2026 (en servicios profesionales no verás estrellas en SERP aunque emitas AggregateRating). Si tu proyecto cumple ese perfil, activar el flag tiene sentido como señal semántica para el Knowledge Graph. Si NO lo cumple, déjalo en false; estás regalando la única forma honesta de mostrar reseñas sin riesgo.
+
+## Checklist
+
+- [ ] Mantener `SITE.allowSelfReviews` en false hasta tener evidencia documentada
+- [ ] No incluir `rating` ficticio en `src/content/casos/*.md`: si no hay calificación real, omitir el campo
+- [ ] Verificar que ningún uso del ReviewCard pase una prop `emitSchema` (no existe a propósito)
+- [ ] Auditar con grep que no haya AggregateRating hardcoded en .astro de páginas
+- [ ] Documentar el permiso escrito de cada testimonio en un drive interno
+- [ ] Usar `sourceUrl` siempre que la reseña venga de una fuente pública verificable
+- [ ] Mantener `approved: false` por default en nuevos casos hasta validación editorial
+- [ ] Antes de activar el flag, completar el PR template con checklist de evidencia
+- [ ] Conversar con el cliente el caveat 2026: estrellas en SERP solo para Product/Recipe/Movie/Book
+- [ ] Revisar Search Console mensualmente para detectar "structured data abuse" temprano
+
+## Preguntas frecuentes
+
+### ¿Qué pasa exactamente cuando Google detecta self-serving reviews?
+
+Llega una notificación a Search Console bajo "Acciones manuales" con el motivo "Structured data abuse". Las consecuencias prácticas son tres: el sitio pierde los rich results asociados a Review/AggregateRating (las estrellas amarillas desaparecen de la SERP donde aún aplicaban), pierde ranking en consultas competitivas durante semanas, y queda marcado en el algoritmo como "low-trust" en evaluaciones futuras. El proceso de reconsideración pide remover el schema falso, esperar un crawl completo y enviar reconsideration request. La recuperación toma entre 6 y 12 semanas en el mejor caso y los efectos en ranking pueden persistir meses después.
+
+### ¿Y si solo emito AggregateRating sin los Review individuales?
+
+Es peor. Un AggregateRating sin nodos Review que lo respalden es exactamente el patrón que Google marca como sospechoso: un promedio que sale de ninguna parte. El validador de Schema.org acepta el JSON-LD (técnicamente es válido) pero el algoritmo lo evalúa como señal débil. Si vas a emitir AggregateRating, emite también el `review[]` que lo soporta, con autor, fecha y texto. Si no puedes emitir el array de Review (porque no tienes 5+ reseñas reales), no emitas el AggregateRating tampoco. La consistencia interna del bloque es lo que le da peso.
+
+### ¿Puedo poner testimonios inventados "claramente ficticios" en el sitio?
+
+Técnicamente sí, éticamente no, y comercialmente es contraproducente. Los visitantes detectan testimonios genéricos casi de inmediato: nombres demasiado redondos ("Juan Pérez, CEO"), citas sin datos específicos ("excelente servicio, muy recomendado"), variedad uniforme de calificaciones. Cada testimonio falso erosiona la confianza del bloque completo: si UNO se percibe como inventado, los lectores asumen que TODOS lo son. Mejor 0 testimonios que inventados, mejor 3 reales que 8 dudosos. Y desde luego, sin schema: emitir Review para testimonios inventados es la combinación que dispara la acción manual.
+
+### Si el cliente exige las estrellas en SERP, ¿qué le digo?
+
+La conversación honesta tiene tres capas. Primera capa: desde mayo de 2026 los rich results de Review/AggregateRating se limitan a Product, Recipe, Movie y Book; si tu negocio es servicios, las estrellas NO van a aparecer aunque emitas schema válido. Segunda capa: si tu producto califica (e-commerce con catálogo individual), podemos emitir Product schema con AggregateRating cuando tengas 5+ reseñas reales con sourceUrl; mientras tanto, no. Tercera capa: el camino para acelerar la salida en SERP es generar reseñas reales (campaña de pedir reseñas a clientes satisfechos en GBP, no compradas), no inventarlas. Documenta esta conversación por escrito si el cliente insiste; la regla B4 te respalda y el PR template hace que la decisión sea trazable.
+
+### ¿Hay alguna excepción donde auto-emitir reseñas sea aceptable?
+
+Sí, una sola: cuando la reseña habla de un tercero, no de ti. Si tu sitio publica reviews de productos que NO son tuyos (un blog que reseña libros, un sitio de comparativas que evalúa SaaS, un medio editorial que califica restaurantes), entonces emitir Review schema sobre esas entidades es legítimo y útil. La regla B4 prohíbe self-serving reviews (reseñas sobre la propia entidad sin verificación); permite expresly reseñas editoriales sobre terceros, que es el caso de uso histórico de Review en schema.org. Si tu proyecto es de este tipo, activa `allowSelfReviews` no aplica porque las reseñas NO son sobre ti; el nodo Review entra en el grafo del producto reviewado y se evalúa con criterios distintos.
+
+La regla B4 no es una restricción técnica más; es una posición editorial codificada. La diferencia entre un sitio que dura tres años y uno que se rompe en seis meses suele estar en decisiones como esta: aceptar que la confianza honesta se construye lento, que la prueba social funciona sin AggregateRating al grafo, y que el snippet temporal en SERP cuesta más que lo que rinde. El día que el cliente entienda que las estrellas en SERP ya no aplican a su categoría, el debate sobre el flag se cierra solo y la conversación se desplaza a lo importante: cómo generar más reseñas reales para activar el camino legítimo.
+
+## Sigue leyendo
+
+- [Módulo Review en vivo](/modulos/review)
+- [Reviews en Astro: estrellas y aggregate honestos](/blog/reviews-schema-estrellas-aggregate-astro)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

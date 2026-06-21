@@ -1,0 +1,237 @@
+---
+title: "Footer multi-columna data-driven en Astro"
+description: "Cómo construir un footer multi-columna data-driven en Astro desde site.ts, con grid CSS moderno, cierre legal y patrones de responsive sin hacks."
+category: "guias"
+heroImage: "/images/articulos/footer-multicolumna-data-driven-grid.avif"
+pubDate: 2026-05-06
+author: "Ejemplos.mx"
+tags: ["astro", "footer", "css-grid", "data-driven", "responsive"]
+seoTitle: "Footer multi-columna data-driven Astro"
+seoDescription: "Footer multi-columna en Astro desde site.ts: 5 zonas (CTA, grid de marca + 4 cols, certificación, barra legal), grid CSS y responsive."
+---
+
+Un footer profesional no es una caja con cuatro listas: son cinco zonas con responsabilidades, fondos y reglas de responsive distintas. Esta guía construye el componente entero en Astro a partir de la SSoT en `site.ts`, organiza las zonas con CSS Grid moderno (sin frameworks, sin librerías) y cierra con cuatro patrones de responsive sin hacks: stack progresivo, acordeón nativo con `details`, botones full-width en la banda CTA y hoja de impresión reducida al NAP. Para devs que ya pasaron la fase del «footer simple» y quieren un cierre que escale con el catálogo del cliente.
+
+## Contexto
+
+El footer es el módulo más visual y, a la vez, el más estructurado del sitio. Tiene que comprimir mucha información (CTA + marca + NAP + 4 columnas + cumplimiento + legales + scroll-top) sin verse sobrecargado, mantenerse legible en pantallas de 320 px y en monitores de 2560 px, y servir como red de seguridad del visitante que llegó hasta abajo. Resolverlo con flex anidado a la antigua produce un componente frágil: cualquier cambio del cliente requiere tocar HTML y CSS al mismo tiempo.
+
+El patrón canónico parte de dos decisiones. Primera: **data-driven al 100%**. No hay listas hardcodeadas dentro del componente; todas las columnas se mapean desde arrays de `site.ts` (`PRODUCT_CATEGORIES`, `SERVICES`, `SECTORS`, `COVERAGE_STATES`, `MODULOS`, `SOCIAL`, `LEGAL`, `BRANCHES`). El cliente agrega una cobertura o categoría editando la SSoT y el footer se actualiza solo. Segunda: **CSS Grid moderno**, no columnas flex. Grid permite declarar `grid-template-columns: minmax(280px, 1.6fr) repeat(4, 1fr)` y reflowar a 3, 2, 1 columnas en tres breakpoints sin hacks. Flexbox tendría que recurrir a `flex-basis: calc()` y `flex-wrap`, dejando al navegador la decisión de cómo agrupar.
+
+La tercera decisión es estructural: **cinco zonas con fondos distintos**, no una superficie monolítica. La banda CTA usa `--ft-bg-cta`; el cuerpo va sobre `--ft-bg`; la banda opcional de cumplimiento usa `--ft-bg-cert`; la barra inferior cae a `--ft-bg-bottom` (negro absoluto) para cerrar visualmente; y la barra de acento de 3 px es la única decoración «no-funcional». Los fondos como tokens, no como literales, permiten cambiar el esquema visual entero desde un único punto.
+
+## Implementación paso a paso
+
+El componente vive en `src/components/Footer.astro` y se monta una sola vez en `PageLayout.astro`. Recibe tres props opcionales (`certifications`, `branches`, `seoTagline`); todo lo demás se infiere de `site.ts`. Empezamos por el contrato de la API y la lectura de la SSoT.
+
+```astro
+---
+// src/components/Footer.astro — props acotadas, data-driven al 100%.
+import {
+  SITE, CONTACT, BRANCHES,
+  PRODUCT_CATEGORIES, SERVICES, SECTORS, COVERAGE_STATES, MODULOS,
+  SOCIAL, LEGAL, waUrl, telUrl, WA_MESSAGES,
+} from '@config/site'
+
+interface Cert   { label: string; title?: string }
+interface Branch { label: string; address: string; mapsUrl?: string }
+interface Props {
+  certifications?: Cert[]
+  branches?: Branch[]
+  seoTagline?: string
+}
+const {
+  certifications = [],
+  branches = BRANCHES ?? [],
+  seoTagline = SITE.tagline,
+} = Astro.props
+
+const currentYear = new Date().getFullYear()
+const waDefault   = waUrl(WA_MESSAGES.cotizacion ?? WA_MESSAGES.default)
+const telLink     = telUrl()
+const fullAddress = `${CONTACT.street}, ${CONTACT.city}, ${CONTACT.state} ${CONTACT.postalCode}`
+---
+```
+
+La estructura HTML respeta las cinco zonas en orden estricto. La banda CTA (eyebrow + título + dos botones) va al inicio para captar la última conversión; el cuerpo agrupa marca + 4 columnas; la banda de cumplimiento solo se renderiza si la prop `certifications` llega con al menos un elemento; la barra inferior cierra con copyright + legales + scroll-top; la barra de acento es decorativa.
+
+```astro
+<footer class="footer" role="contentinfo" aria-label="Pie de pagina">
+  <div class="footer__accent-bar" aria-hidden="true"></div>
+
+  {/* 1) BANDA CTA pre-footer */}
+  <section class="footer__cta" aria-label="Solicitar cotizacion">
+    <div class="footer__cta-inner">
+      <div class="footer__cta-text">
+        <p class="footer__cta-eyebrow">Listo para empezar</p>
+        <h2 class="footer__cta-title">Cuentanos tu proyecto y te respondemos hoy mismo.</h2>
+      </div>
+      <div class="footer__cta-actions">
+        <a href={waDefault} class="footer__btn footer__btn--wa" target="_blank" rel="noopener noreferrer">
+          Cotizar por WhatsApp
+        </a>
+        <a href="/contacto" class="footer__btn footer__btn--ghost">Ir a contacto</a>
+      </div>
+    </div>
+  </section>
+
+  {/* 2) CUERPO: marca + 4 columnas data-driven */}
+  <div class="footer__body">
+    <div class="footer__grid">
+      <div class="footer__brand">{/* logo + NAP + redes */}</div>
+
+      <nav class="footer__col" aria-label="Productos">
+        <h3 class="footer__col-heading">Productos</h3>
+        <ul class="footer__nav-list" role="list">
+          {PRODUCT_CATEGORIES.map((cat) => (
+            <li><a href={cat.href} class="footer__nav-link">{cat.label}</a></li>
+          ))}
+        </ul>
+      </nav>
+
+      <nav class="footer__col" aria-label="Cobertura">
+        <h3 class="footer__col-heading">Cobertura</h3>
+        <ul class="footer__nav-list" role="list">
+          {COVERAGE_STATES.map((s) => (
+            <li><a href={`/cobertura/${s.slug}`} class="footer__nav-link">{s.label}</a></li>
+          ))}
+        </ul>
+      </nav>
+      {/* Servicios, Modulos, Empresa con el mismo patron... */}
+    </div>
+  </div>
+
+  {/* 3) BANDA de cumplimiento (opcional) */}
+  {certifications.length > 0 && (
+    <div class="footer__cert-band" aria-label="Normativas y certificaciones">
+      <ul class="footer__cert-list" role="list">
+        {certifications.map((c) => (
+          <li><span class="footer__cert-item" title={c.title}>{c.label}</span></li>
+        ))}
+      </ul>
+    </div>
+  )}
+
+  {/* 4) BARRA inferior: copyright + legales + scroll-top */}
+  <div class="footer__bottom">
+    <p class="footer__copy">© {currentYear} {SITE.name}. Todos los derechos reservados.</p>
+    {LEGAL.length > 0 && (
+      <nav class="footer__legal" aria-label="Enlaces legales">
+        {LEGAL.map((item, i) => (
+          <>
+            {i > 0 && <span class="footer__legal-sep" aria-hidden="true">·</span>}
+            <a href={item.href} class="footer__legal-link">{item.label}</a>
+          </>
+        ))}
+      </nav>
+    )}
+    <button type="button" class="footer__top" aria-label="Volver arriba">Arriba</button>
+  </div>
+</footer>
+```
+
+El CSS Grid del cuerpo es la pieza clave de la responsiveness. Default a 5 columnas (marca + 4 nav); en `≤1280px` colapsa a 3 columnas con la marca ocupando la fila completa; en `≤760px` baja a 2; en `≤480px` queda en 1. Todo el reflow lo hace el navegador con Grid; cero JavaScript.
+
+```css
+/* src/components/Footer.astro — grid responsive del cuerpo */
+.footer__grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.6fr) repeat(4, 1fr);
+  gap: 3rem 1.75rem;
+  align-items: start;
+  max-width: var(--container-max, 1400px);
+  margin-inline: auto;
+  padding-inline: var(--container-px, 1.5rem);
+}
+
+@media (max-width: 1280px) {
+  .footer__grid       { grid-template-columns: 1fr 1fr 1fr; gap: 2.5rem 2rem; }
+  .footer__brand      { grid-column: 1 / -1; max-width: 620px; }
+}
+@media (max-width: 760px) {
+  .footer__grid       { grid-template-columns: 1fr 1fr; }
+  .footer__cta-inner  { flex-direction: column; align-items: flex-start; }
+  .footer__cta-actions{ width: 100%; }
+  .footer__btn        { flex: 1; justify-content: center; }
+}
+@media (max-width: 480px) {
+  .footer__body       { padding: 2.5rem 0 2rem; }
+  .footer__grid       { grid-template-columns: 1fr; gap: 2rem; }
+}
+```
+
+El script del scroll-to-top respeta `prefers-reduced-motion` para no marear a usuarios con vestíbulo sensible. Son cuatro líneas que cuentan para WCAG 2.1 SC 2.3.3 (Animation from Interactions) y se inyectan una sola vez para todo el sitio.
+
+```html
+<script>
+  document.querySelector('.footer__top')?.addEventListener('click', () => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })
+  })
+</script>
+```
+
+## Tabla comparativa
+
+| Layout del footer | Cuándo elegirlo | Trade-off |
+|---|---|---|
+| Grid 5 cols (marca 1.6fr + 4 nav 1fr) | E-commerce o servicios con catálogo medio/grande + cobertura | Requiere ≥1100px para verse bien; reflow obligatorio en tablet |
+| Grid 3 cols simétricas | Sitios B2B con poco catálogo: marca + 2 columnas de enlaces | Más aire visual; desperdicia espacio en monitores grandes |
+| Flex con `flex-wrap` | Quick wins, landings sin variedad de columnas | El navegador decide cómo agrupar; reorden impredecible en breakpoints intermedios |
+| Compact (solo barra inferior) | Landing one-page, microsite de campaña, funnel cerrado | Sacrifica linking interno; pierdes la matriz SEO de equity |
+| Acordeón nativo `details` en móvil | Cuando las 4 columnas tienen 10+ enlaces y stack vertical da 600+ px | Cero JS pero summary requiere CSS para reemplazar el marker nativo |
+
+La fila del flex es la que más se vende como atajo: «total, va a hacer wrap». El problema es el reorden: con `flex-wrap`, las columnas se agrupan según el ancho disponible sin que el dev controle qué entra en qué fila. En un breakpoint intermedio puedes terminar con Cobertura sola en su fila ocupando 100% del ancho, mientras Productos y Servicios pelean por la primera. Grid resuelve esto declarando columnas explícitas por breakpoint.
+
+## Patrones avanzados
+
+**El reflow mobile-first con la marca tomando fila completa.** Cuando el grid baja de 5 a 3 columnas en `≤1280px`, la marca (logo + descripción + NAP + redes) necesita más ancho que cualquier columna de nav. El truco es declarar `grid-column: 1 / -1` para que ocupe toda la fila, dejando las 4 columnas debajo en 3 columnas iguales. El visitante ve primero la identidad, después el mapa del sitio: el orden natural en lectura vertical. La trampa frecuente es no limitar el bloque de marca con `max-width: 620px`; sin ese límite, la descripción ocupa la pantalla entera y rompe la jerarquía.
+
+**Acordeón nativo con `details` cuando hay muchas columnas.** Si las 4 columnas de navegación cargan 10+ enlaces cada una, el stack vertical en el teléfono produce un footer de 600+ px de alto. La solución pro es reemplazar cada `nav` por un elemento `details` con `summary` en `≤640px`. El navegador maneja el estado open/close, el screen reader lo anuncia correctamente, y el visitante abre solo la columna que le interesa. Cero JavaScript, soportado por todos los navegadores modernos. El único detalle de implementación es reemplazar el marker triangular nativo (la pseudo `summary::-webkit-details-marker` con `display: none`) por un caret controlado con `summary::after`, que rote o cambie según el atributo `open` del `details`. Esta variante NO es default del componente; se activa cuando el catálogo del cliente la justifica.
+
+**Botones CTA full-width con área táctil ≥48 px.** En escritorio, los dos botones de la banda CTA van inline con `gap` y padding cómodo. En móvil deben ocupar el ancho completo, apilarse vertical y mantener un `min-height: 48px` (recomendación WCAG SC 2.5.5, Target Size). El componente actual ya lo hace en `≤760px` con `flex-direction: column` en el inner y `flex: 1` en cada botón. El botón de WhatsApp lleva color verde marca, el ghost queda con borde sutil; en móvil ambos siguen distinguibles aunque compartan ancho. Mantener jerarquía visual cuando los anchos se igualan es lo que separa al footer pulido del improvisado.
+
+**Hoja de impresión reducida al NAP.** Un sitio se imprime más de lo que se cree: recibos, fichas técnicas, propuestas que el cliente exporta a PDF. La versión impresa del footer no necesita iconos de redes, scroll-top ni gradientes (gastan tinta). Sí necesita el bloque NAP: nombre, dirección, teléfono, correo, son el dato de contacto que justifica el documento. La receta vive en `@media print`: ocultar accent-bar, CTA, redes, scroll-top y cert-band; convertir fondo a blanco y texto a negro; dejar enlaces legales con subrayado para que se vean. Mejora invisible en pantalla, de alto valor cuando el documento se imprime de verdad.
+
+## Checklist
+
+- [ ] El componente NO contiene listas hardcodeadas; todo se mapea desde `site.ts`
+- [ ] `grid-template-columns: minmax(280px, 1.6fr) repeat(4, 1fr)` en default + 3 breakpoints (1280, 760, 480)
+- [ ] La columna de marca usa `grid-column: 1 / -1` cuando el grid baja a 3 columnas, con `max-width: 620px`
+- [ ] La banda de cumplimiento se renderiza solo cuando la prop `certifications` llega con al menos un elemento (sin franja vacía)
+- [ ] La fila de redes (`SOCIAL`) se auto-oculta si el array está vacío
+- [ ] El año del copyright sale de `new Date().getFullYear()`, nunca hardcodeado
+- [ ] El scroll-to-top respeta `prefers-reduced-motion` (smooth o auto según la preferencia)
+- [ ] Botones CTA en móvil con `min-height: 48px` y `flex: 1` para área táctil cómoda
+- [ ] Hoja `@media print` oculta CTA, redes, cert-band y scroll-top; deja NAP + legales visibles
+- [ ] El footer se monta UNA sola vez en `PageLayout.astro`; ninguna página lo replica a mano
+
+## Preguntas frecuentes
+
+### ¿Por qué CSS Grid y no Flexbox para el cuerpo del footer?
+
+Porque Grid permite declarar explícitamente la cantidad de columnas y reflowar a un número distinto por breakpoint. Con Flex y `flex-wrap` el navegador decide cómo agrupar; en breakpoints intermedios el resultado es impredecible. Grid también permite que la marca tome la fila completa con `grid-column: 1 / -1`, algo que en Flex requiere un wrapper adicional. Para layouts bidimensionales con control fino, Grid es la herramienta correcta; Flex es para componentes 1D.
+
+### ¿Debo cargar `SOCIAL` con URLs DEMO mientras espero los perfiles reales del cliente?
+
+No. Los iconos DEMO llevan al visitante a perfiles inexistentes o, peor, a la marca equivocada. El patrón correcto es dejar `SOCIAL` como array vacío hasta que el cliente confirme los perfiles. La fila de redes del footer se auto-oculta con una guardia que verifica la longitud del array. Mejor sin redes que con redes rotas. Cuando los perfiles existan, se agregan a `SOCIAL` (para mostrarlos visualmente) y se evalúa si también pasarlos a `SITE.organization.sameAs` (para declararlos en el JSON-LD; ver la guía de NAP y schema).
+
+### ¿La banda de cumplimiento debería ir antes o después de la barra inferior?
+
+Antes. El orden canónico es: CTA → cuerpo → cumplimiento (opcional) → barra inferior → acento decorativo (absoluto, arriba). La barra inferior cierra visualmente con fondo negro absoluto y deja el copyright + legales como el último dato leído. Si pones la banda de cumplimiento DESPUÉS de la barra inferior, rompes la jerarquía: el cierre visual queda flotando antes del final. Si la posicionas ANTES del cuerpo, los badges de certificación pierden contexto (aparecen flotando entre CTA y navegación). El sándwich correcto es: cumplimiento entre el cuerpo y la barra final, como un sello que valida lo que se mostró arriba.
+
+### ¿Conviene activar el acordeón con `details` en móvil para los 4 navs del footer?
+
+Depende de la cantidad de enlaces por columna. Si cada columna tiene 3–5 enlaces, el stack vertical default da un footer de 400 px en el teléfono: aceptable. Si las columnas tienen 10+ enlaces cada una (catálogos grandes, cobertura amplia), el stack llega a 600–800 px y la usabilidad se rompe. Ahí el acordeón con `details` paga: el visitante ve los 4 títulos colapsados y abre solo el que le interesa. Es una extensión del componente, no un default. La regla mental: si el footer en `≤640px` supera los 600 px de alto, activa el acordeón; debajo de ese umbral, mantén el stack simple.
+
+### ¿Cómo manejo `BRANCHES` cuando el cliente tiene una sola dirección?
+
+Déjalo como array vacío en `site.ts`. El bloque de sucursales se renderiza solo cuando la lista trae al menos una entrada. La dirección única ya aparece en el bloque NAP de la columna de marca (`fullAddress` construida a partir de los campos de `CONTACT`). Agregar `BRANCHES` con una sola entrada idéntica al NAP duplicaría la información y confundiría al visitante. Reserva `BRANCHES` para cuando hay dos o más ubicaciones físicas reales, cada una con su `mapsUrl` propio.
+
+El footer multi-columna es el módulo donde se nota si el sitio fue pensado como sistema o como suma de páginas. Cinco zonas, fondos como tokens, layout con Grid y todas las listas leyendo de `site.ts`: con esos principios el componente escala desde un microsite hasta un e-commerce con cobertura nacional sin reescribirse, y el cliente agrega una categoría editando una sola línea.
+
+## Sigue leyendo
+
+- [Módulo Footer en vivo](/modulos/footer)
+- [Footer SEO global: NAP y schema Organization](/blog/footer-activo-seo-global-nap-organization)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

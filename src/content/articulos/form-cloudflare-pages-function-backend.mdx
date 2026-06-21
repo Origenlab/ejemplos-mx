@@ -1,0 +1,261 @@
+---
+title: "Form backend con Cloudflare Pages Functions"
+description: "Del HTML nativo a Cloudflare Pages Function: backend pragmático para tu contact form Astro, sin servidor propio, con email transactional y rate-limit."
+category: "guias"
+heroImage: "/images/articulos/form-cloudflare-pages-function-backend.avif"
+pubDate: 2026-05-12
+author: "Ejemplos.mx"
+tags: ["astro", "contact-form", "cloudflare", "serverless", "backend"]
+seoTitle: "Form backend con Cloudflare Pages Function"
+seoDescription: "Contact form Astro + Cloudflare Pages Functions: handler POST, validación server-side, rate-limit con KV, email vía Resend, deploy sin servidor."
+---
+
+Llega el momento en que el formulario que abre WhatsApp ya no alcanza: el negocio crece, el equipo de ventas vive en correo, el CRM espera un webhook, hay que registrar el lead en una base, mandar un autoreply al cliente y notificar a tres direcciones internas. El instinto del dev sin experiencia serverless es montar un Express en una VM de DigitalOcean —y pagar 6 dólares al mes por un endpoint que se ejecuta 80 veces al mes—. La alternativa pragmática para sitios Astro en Cloudflare Pages: una Pages Function que vive en `functions/api/contacto.ts`, se ejecuta en el edge (más de 300 ciudades), arranca en frío en milisegundos y cuesta cero hasta los 100 mil requests/día. Esta guía construye ese handler de extremo a extremo —validación server-side espejo, rate-limit con KV, envío vía Resend, manejo de secretos— y conecta de vuelta al [componente accesible del artículo anterior](/blog/contact-form-wcag-honeypot-es-mx).
+
+## Contexto
+
+Cloudflare Pages Functions son archivos `.ts` o `.js` que viven en el directorio `functions/` del proyecto, paralelo a `src/`. Cada archivo se mapea automáticamente a una ruta —`functions/api/contacto.ts` responde en `/api/contacto`— y exporta handlers nombrados por método HTTP: `onRequestGet`, `onRequestPost`, `onRequestDelete`, etc. Por debajo son Workers de Cloudflare con bindings inyectados (KV, R2, D1, Durable Objects, secrets) accesibles vía `context.env`. El runtime es V8 isolates, no Node.js: la API es la de Web Standards (`Request`, `Response`, `fetch`, `crypto.subtle`, `URLSearchParams`), no la de `require('fs')`. Esto significa que muchas librerías de NPM diseñadas para Node fallan en Pages Functions —la regla mental: si la lib usa `Buffer`, `process`, `fs` o `path`, no funciona; si solo usa `fetch` y APIs Web, sí—.
+
+El segundo concepto a entender es **el binding**. Un binding es una referencia inyectada en `context.env` desde la configuración de Cloudflare —un KV namespace, un R2 bucket, una D1 database, un secret—. No se importan; se declaran en `wrangler.toml` o en el dashboard de Pages, y aparecen como propiedades tipadas del segundo argumento del handler. Para el contact form usamos dos: un KV namespace `RATE_LIMIT` (para contar envíos por IP) y secrets `TURNSTILE_SECRET` y `RESEND_KEY` (para verificar el captcha y mandar el correo). Los secrets se setean con `wrangler pages secret put` o desde el dashboard, nunca en código.
+
+El tercer concepto es **el modelo de costos**. El plan free de Cloudflare Pages incluye 100 mil requests por día a las Functions, 100 mil lecturas/escrituras al día por KV namespace, 10 GB de storage por R2 sin costo, y certificados SSL gratis. Para un sitio de servicios o e-commerce mexicano con 5–20 contactos por día, el formulario nunca sale del free tier. El paid tier ($5/mes) sube los límites a 10 millones de requests al día —suficiente para sitios con tráfico real—. Resend, el servicio de email transactional recomendado en esta guía, ofrece 3,000 emails al mes gratis y $20 por 50 mil al mes —comparado con SendGrid o Mailgun, el mejor pricing y la mejor DX en 2026—.
+
+## Implementación paso a paso
+
+El handler vive en `functions/api/contacto.ts` y ejecuta seis pasos en orden: lee el body POST, descarta bots por honeypot, verifica Turnstile, valida shape server-side espejo del cliente, aplica rate-limit con KV y manda el correo con Resend. Cada paso retorna una `Response` específica para que el cliente sepa qué pasó (200 OK, 400 validación, 429 rate-limit, 502 backend caído).
+
+```ts
+// functions/api/contacto.ts — handler completo
+interface Env {
+  TURNSTILE_SECRET: string
+  RATE_LIMIT: KVNamespace
+  RESEND_KEY: string
+  NOTIFY_TO: string  // ej. "hola@ejemplos.mx"
+  NOTIFY_FROM: string // ej. "no-reply@ejemplos.mx" (debe estar verificado en Resend)
+}
+
+export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+  // 1. Lee body como FormData (acepta multipart y urlencoded).
+  let data: FormData
+  try {
+    data = await request.formData()
+  } catch {
+    return Response.json({ ok: false, error: 'bad-request' }, { status: 400 })
+  }
+
+  // 2. HONEYPOT — si el campo oculto vino con valor, es bot. 200 OK silencioso.
+  if (String(data.get('website') || '').trim() !== '') {
+    return Response.json({ ok: true })
+  }
+
+  // 3. TURNSTILE — verificación server-side del token del widget.
+  const token = String(data.get('cf-turnstile-response') || '')
+  const ip = request.headers.get('CF-Connecting-IP') ?? ''
+  if (token) {
+    const verify = await fetch(
+      'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          secret: env.TURNSTILE_SECRET,
+          response: token,
+          remoteip: ip,
+        }),
+      },
+    ).then((r) => r.json() as Promise<{ success: boolean }>)
+    if (!verify.success) {
+      return Response.json({ ok: false, error: 'captcha' }, { status: 400 })
+    }
+  }
+
+  // 4. VALIDACIÓN SERVER-SIDE — espejo del cliente, NO se confía en el client.
+  const nombre = String(data.get('nombre') || '').trim()
+  const email = String(data.get('email') || '').trim()
+  const telefono = String(data.get('telefono') || '').trim()
+  const asunto = String(data.get('asunto') || '').trim()
+  const mensaje = String(data.get('mensaje') || '').trim()
+  const consent = data.get('consent') === 'on' || data.get('consent') === 'true'
+
+  if (!consent)
+    return Response.json({ ok: false, error: 'consent' }, { status: 400 })
+  if (nombre.length < 2 || nombre.length > 80)
+    return Response.json({ ok: false, error: 'nombre' }, { status: 400 })
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return Response.json({ ok: false, error: 'email' }, { status: 400 })
+  if (telefono && !/^[0-9]{10}$/.test(telefono))
+    return Response.json({ ok: false, error: 'telefono' }, { status: 400 })
+  if (mensaje.length < 20 || mensaje.length > 2000)
+    return Response.json({ ok: false, error: 'mensaje' }, { status: 400 })
+
+  // 5. RATE-LIMIT — 10 envíos / hora / IP usando KV.
+  const key = 'rl:' + ip
+  const count = Number((await env.RATE_LIMIT.get(key)) || '0')
+  if (count >= 10) {
+    return Response.json({ ok: false, error: 'rate-limit' }, { status: 429 })
+  }
+  await env.RATE_LIMIT.put(key, String(count + 1), { expirationTtl: 3600 })
+
+  // 6. ENVÍO de correo vía Resend.
+  const resp = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      authorization: 'Bearer ' + env.RESEND_KEY,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: env.NOTIFY_FROM,
+      to: env.NOTIFY_TO,
+      reply_to: email || undefined,
+      subject: 'Nuevo contacto: ' + nombre + (asunto ? ' — ' + asunto : ''),
+      text: [
+        'Nombre: ' + nombre,
+        'Email: ' + (email || '—'),
+        'Teléfono: ' + (telefono || '—'),
+        'Asunto: ' + (asunto || '—'),
+        'IP: ' + ip,
+        '',
+        mensaje,
+      ].join('\n'),
+    }),
+  })
+
+  if (!resp.ok) {
+    return Response.json({ ok: false, error: 'mail-failed' }, { status: 502 })
+  }
+
+  return Response.json({ ok: true })
+}
+```
+
+El primer paso crítico es **la configuración de bindings y secrets**. Los KV namespaces se crean con Wrangler CLI y se vinculan al proyecto Pages desde el dashboard (Settings → Functions → KV namespace bindings). Los secrets se setean con `wrangler pages secret put NOMBRE` o por dashboard. La separación entre variables públicas (vars) y secretos es importante: las vars terminan en el build y son visibles al cliente; los secrets viven solo en el runtime de la Function y nunca se exponen.
+
+```bash
+# Crear el KV namespace para rate-limit (una sola vez).
+npx wrangler kv namespace create RATE_LIMIT
+# → output: { binding = "RATE_LIMIT", id = "abc123..." }
+
+# Vincular el namespace al proyecto Pages (en wrangler.toml o por dashboard):
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT"
+# id = "abc123..."
+
+# Setear secrets (uno por uno, prompt interactivo).
+npx wrangler pages secret put TURNSTILE_SECRET --project-name ejemplos-mx
+npx wrangler pages secret put RESEND_KEY --project-name ejemplos-mx
+
+# Variables no-secretas (visibles en dashboard, también funcionan en env).
+# NOTIFY_TO y NOTIFY_FROM se pueden setear como Environment variables en Settings.
+```
+
+El segundo paso crítico es **la verificación de dominio en Resend**. Antes de mandar el primer correo desde `no-reply@ejemplos.mx`, hay que verificar el dominio en el dashboard de Resend agregando tres registros DNS: SPF (TXT con `v=spf1 include:_spf.resend.com -all`), DKIM (CNAME que apunta a Resend) y DMARC (TXT con política `quarantine` o `reject`). Sin estos tres, los correos terminan en spam de Gmail/Outlook —Resend rechaza el envío hasta que el dominio aparezca como verified—. El registro tarda 5 minutos a 48 horas en propagar, depende del DNS.
+
+El tercer paso crítico es **integrar el frontend con el backend**. El componente accesible del artículo anterior tiene `action="/api/contacto" method="POST"` por default. El JS de validación intercepta el submit, valida en cliente, y si todo OK hace POST al endpoint con el FormData en lugar de abrir WhatsApp. El handler responde JSON con `ok: true` o con `ok: false` más un código `error`, y el cliente pinta el mensaje correspondiente en el `role="status"`.
+
+```js
+// src/components/ContactForm.astro — adapter al backend serverless
+async function enviarServerless(form) {
+  const status = form.querySelector('.cform__status');
+  const submit = form.querySelector('.cform__submit');
+  submit.disabled = true;
+  status.textContent = 'Enviando…';
+
+  try {
+    const resp = await fetch('/api/contacto', {
+      method: 'POST',
+      body: new FormData(form),
+    });
+    const data = await resp.json();
+
+    if (data.ok) {
+      status.textContent = 'Gracias. Te respondemos en menos de 4 horas hábiles.';
+      form.reset();
+    } else if (data.error === 'rate-limit') {
+      status.textContent = 'Has enviado muchos mensajes. Intenta en una hora.';
+    } else if (data.error === 'captcha') {
+      status.textContent = 'No pudimos verificar que no eres un bot. Recarga la página.';
+    } else {
+      status.textContent = 'Error de validación: revisa los campos marcados.';
+    }
+  } catch (err) {
+    status.textContent = 'No pudimos enviar. Revisa tu conexión o escribe a hola@ejemplos.mx.';
+  } finally {
+    submit.disabled = false;
+  }
+}
+```
+
+## Tabla comparativa
+
+| Plataforma | Costo (sitio chico) | Cold start | DX para Astro |
+|---|---|---|---|
+| Cloudflare Pages Functions | $0 (100k req/día free) | < 5 ms (V8 isolates) | Nativo; `functions/` se autoroutea |
+| Vercel Serverless | $0 (100k req/mes free) | 100–800 ms (Node.js lambda) | Plugin oficial Astro |
+| Vercel Edge Functions | $0 (mismo cap) | 5–20 ms | Plugin oficial Astro |
+| Netlify Functions | $0 (125k req/mes free) | 200–1000 ms (Node.js) | Plugin Astro mantenido |
+| AWS Lambda + API Gateway | $0 hasta 1M req/mes | 200–3000 ms (depende runtime) | Setup manual + CDK |
+| VM propia (Hetzner, DO) | $4–6/mes fijo | Cero (siempre caliente) | Setup de servidor, certs, updates |
+| Email-only (Formspree, Basin) | $0–8/mes según volumen | N/A (POST a su endpoint) | Cero código backend |
+
+Pages Functions gana por tres razones contundentes para sitios mexicanos: cero cold start perceptible (los V8 isolates arrancan en menos de 5 ms vs los 200–800 ms de un Node.js lambda en frío), free tier suficiente para el 95% de los sitios de servicios, y deploy automático si el sitio Astro ya está en Cloudflare Pages (el push a `main` actualiza site y functions en el mismo build). Vercel Edge Functions es la segunda mejor opción si el sitio ya vive en Vercel; AWS Lambda solo se justifica si el resto de la infraestructura ya está en AWS y necesitas integración con SQS/DynamoDB/SES. Las plataformas email-only (Formspree, Basin) tienen sentido para MVPs sin equipo dev, pero pagas la falta de control: cero rate-limit personalizado, cero lógica condicional, cero integración con tu CRM.
+
+## Patrones avanzados
+
+**Manejo de errores tipificado.** El handler de arriba devuelve `error` como string corto (`'consent'`, `'nombre'`, `'rate-limit'`, `'captcha'`, `'mail-failed'`) en lugar de mensajes humanos. La razón: el mensaje humano lo arma el cliente con i18n local —puede estar en es-MX, en-US, pt-BR según la página—. El backend solo declara qué pasó; el frontend traduce. Esto también evita XSS reflejado (si el backend devolviera HTML, un atacante podría inyectar payloads). Como contrato: el campo `error` es un enum cerrado, máximo 20 caracteres ASCII, snake-case o kebab-case, documentado en el README del proyecto.
+
+**Rate-limit con ventana deslizante vs fijo.** El handler usa una ventana fija de 1 hora con `expirationTtl: 3600`: el contador se resetea cuando el TTL del KV expira. Es simple pero tiene un edge case: si el usuario hace 10 envíos a las 12:59 y 10 más a las 13:01, son 20 envíos en 2 minutos pero ambas ventanas son válidas (la del 12:00 expiró). Para rate-limit estricto se usa ventana deslizante: guardas timestamps de los últimos N envíos en KV (como JSON array) y filtras los menores a `now - 3600000` antes de contar. Más correcto pero 2 ops de KV por request en lugar de 1; el TTL fijo es suficiente para contact forms reales —los atacantes que hacen rotación de IPs no se detienen con ventana deslizante, los detienes con WAF rules de Cloudflare—.
+
+**Autoreply al cliente.** Después de devolver el éxito al cliente, encolar un segundo correo vía Resend al `email` del visitante con un acuse de recibo («Recibimos tu mensaje, te respondemos en menos de 4 horas hábiles»). Ojo: hacerlo solo si el cliente capturó email; si el flujo es WhatsApp-only sin email, no aplica. Y siempre desde un `from` con DKIM verificado —un autoreply en spam es peor que ningún autoreply, porque rompe la confianza del primer contacto—.
+
+**Almacenar el lead en D1 antes de mandar el correo.** D1 es la base SQLite serverless de Cloudflare, vinculable como binding. Para sitios donde el negocio quiere histórico de leads consultable, vale la pena agregar un paso de `INSERT INTO contactos` antes del envío de correo: si el correo falla, el lead no se pierde. Schema mínimo: `(id INTEGER PRIMARY KEY, created_at TEXT, nombre TEXT, email TEXT, telefono TEXT, mensaje TEXT, ip TEXT, user_agent TEXT, status TEXT)`. Una vista admin protegida por Cloudflare Access (zero-trust SSO) permite al equipo de ventas revisar los últimos N leads sin login propio.
+
+**Defensa en profundidad — WAF rules en Cloudflare.** Antes del handler hay otra capa: las WAF Custom Rules de Cloudflare. Una regla típica: bloquear POST a `/api/contacto` si el `User-Agent` contiene `curl|wget|python-requests|java/` (bots básicos), o si el país de origen está en una lista negra (depende del negocio), o si la IP está en la lista de Cloudflare Threat Intelligence. Estas reglas se ejecutan ANTES de que el request toque tu Function —ahorras ejecuciones y simplificas el handler—.
+
+**Idempotencia con request ID.** Si el cliente reintenta el submit por timeout (el `fetch` tardó más de 5 segundos), evita mandar dos correos. El patrón: el cliente genera un `Idempotency-Key` (UUID v4 random) por intento de envío y lo manda como header; el handler lo guarda en KV con TTL de 5 minutos y, si llega el mismo key dos veces, devuelve el mismo `ok: true` sin reprocesar. Es overkill para contact forms del 95% de los sitios pero crítico para forms de pago o transaccionales —si tu form crece a un upgrade de cotización con número de orden, este patrón salva—.
+
+## Checklist
+
+- [ ] Archivo en `functions/api/contacto.ts` (paralelo a `src/`, no dentro)
+- [ ] Handler exporta `onRequestPost` tipado con la interfaz `PagesFunction` y el env
+- [ ] KV namespace `RATE_LIMIT` creado con Wrangler y vinculado en dashboard
+- [ ] Secrets `TURNSTILE_SECRET` y `RESEND_KEY` configurados con `wrangler pages secret put`
+- [ ] Variables `NOTIFY_TO` y `NOTIFY_FROM` en Environment Variables del proyecto
+- [ ] Dominio verificado en Resend con SPF, DKIM y DMARC (esperar propagación DNS)
+- [ ] Honeypot verificado server-side antes que cualquier otra validación
+- [ ] Validación server-side espejo de la del cliente (nunca confiar en el client)
+- [ ] Rate-limit 10 envíos por IP por hora con `expirationTtl: 3600`
+- [ ] Errores devueltos como JSON con campos `ok` y `error` (enum corto), no HTML
+- [ ] `reply_to` con el email del visitante para que el equipo responda con un clic
+- [ ] Cliente hace `fetch` con `FormData`, pinta status en `role="status"` accesible
+- [ ] WAF Custom Rule en Cloudflare para bloquear User-Agents de bots básicos
+- [ ] Logs revisados al menos una vez por semana (dashboard de Pages → Functions)
+
+## Preguntas frecuentes
+
+### ¿Las Pages Functions corren en Node.js?
+
+No. Corren en V8 isolates con la API de Web Standards: `Request`, `Response`, `fetch`, `URL`, `URLSearchParams`, `crypto.subtle`, `TextEncoder`, `ReadableStream`. NO hay `require`, NO hay `fs`, NO hay `Buffer`, NO hay `process` (salvo `process.env` simulado en algunas versiones). La regla mental: si la librería usa solo APIs Web, funciona; si depende de módulos nativos de Node, falla. Para casos donde necesitas Node.js de verdad (procesar PDFs grandes, librerías legacy), Cloudflare ofrece el flag `nodejs_compat` que habilita polyfills, pero con overhead. Para un contact form jamás lo necesitas.
+
+### ¿Por qué Resend y no SendGrid o Mailgun?
+
+Tres razones prácticas en 2026. Primera, pricing: 3,000 emails/mes gratis vs 100/mes de SendGrid free (SendGrid removió el free tier generoso en 2023). Segunda, DX: la API de Resend es una sola llamada POST con JSON, sin SDK obligatorio, sin templates en su dashboard (los mandas como `text` o `html` desde tu código). Tercera, dominio compartido vs propio: Resend permite mandar desde `onboarding@resend.dev` durante el dev sin verificar dominio (útil para probar local); SendGrid exige verificación desde el primer envío. La alternativa equivalente es MailChannels (gratis para Cloudflare Workers), pero la DX de Resend es mejor.
+
+### ¿El handler debe validar TODO lo que validó el cliente?
+
+Sí, sin excepción. La validación cliente es UX —ayuda al humano a corregir antes de mandar— pero un atacante saltea el cliente con `curl -F` en cinco segundos. El backend debe revalidar: shape del body, longitudes, formato de email, formato de teléfono, presencia del checkbox de consentimiento, todo. Si el handler confía en que el cliente ya validó, eventualmente un atacante manda `mensaje=""` con `Content-Length: 0` y revienta tu cuota de Resend con basura. La regla: el cliente es la primera línea de defensa pero NUNCA la única.
+
+### ¿Qué pasa si Resend está caído?
+
+El handler devuelve `502` con error `mail-failed` y el cliente muestra «No pudimos enviar. Escribe a hola@ejemplos.mx». Para sitios donde la pérdida de un lead duele de verdad, hay dos defensas: primera, guardar el lead en D1 antes del envío de correo —si Resend cae, el lead queda persistido y un cron job reintenta cada 10 minutos—; segunda, configurar un fallback a un segundo provider (Mailgun o MailChannels) si el primero devuelve 5xx tres veces seguidas. Para un contact form normal de servicios mexicanos, el aviso al usuario con un email de backup es suficiente —Resend tiene 99.95% de uptime en su SLA—.
+
+### ¿Cómo testeo la Function en local?
+
+Con `wrangler pages dev`. El comando levanta un servidor local en `http://localhost:8788` que sirve el sitio Astro buildeado más las Functions con bindings reales (KV, secrets) tomados de `.dev.vars` (un `.env` específico para wrangler). Flujo típico: `npm run build` para generar `dist/`, `npx wrangler pages dev dist/ --kv RATE_LIMIT` para levantar el sitio + KV namespace local, y curl al endpoint para probar. Los secrets en local viven en `.dev.vars` (gitignored); los de producción en el dashboard. NO hay forma de probar Pages Functions con `astro dev` directamente —son dos servidores distintos—.
+
+El backend serverless cierra el círculo del módulo: el componente accesible del frontend manda su POST a una Function que vive en el edge, valida server-side, controla volumen con KV y delega el envío a Resend. Cero servidor que mantener, cero VPS que actualizar, cero certificados SSL que renovar —todo lo paga Cloudflare en el free tier hasta que el sitio crezca lo suficiente para justificar pagar—. El upgrade del componente WhatsApp-only al híbrido WhatsApp+backend es una sola línea en el handler de submit del cliente: cambias `window.open(wa.me/...)` por `fetch('/api/contacto', ...)` y el resto del componente —labels, focus, honeypot, consentimiento, validación HTML5 es-MX— se mantiene idéntico. Esa es la ventaja real de tener el frontend bien hecho desde el día uno.
+
+## Sigue leyendo
+
+- [Módulo Contact form en vivo](/modulos/contact-form)
+- [Contact form Astro: WCAG, honeypot y es-MX](/blog/contact-form-wcag-honeypot-es-mx)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

@@ -1,0 +1,244 @@
+---
+title: "Tracking de CTAs con data-cta-id, sin invasión"
+description: "Cómo medir clicks de CTAs en Astro con data-cta-id: instrumentación ligera, analytics respetuoso del usuario y reporting sin scripts pesados."
+category: "guias"
+heroImage: "/images/articulos/tracking-cta-data-attr-analytics-respeto.avif"
+pubDate: 2026-05-18
+author: "Ejemplos.mx"
+tags: ["astro", "cta-banner", "analytics", "tracking", "data-attr"]
+seoTitle: "Tracking CTAs sin invasión: data-cta-id"
+seoDescription: "Tracking de CTAs en Astro con data-cta-id: medir clicks sin tags managers pesados, event delegation, analytics respetuoso del consentimiento."
+---
+
+Medir qué CTA convierte y cuál no es lo que separa al equipo que itera sobre datos del que itera sobre opinión. La trampa frecuente es resolverlo con un tag manager pesado, un proveedor que carga 80 kB y cookies de terceros que tu visitante en la UE bloquea por default. Esta guía construye el tracking de los CTAs del proyecto sobre `data-cta-id`, con un listener delegado de ~20 líneas, payload sin PII, y proveedores ligeros (Plausible, Umami) o canónicos (GA4) según el cliente. Lo importante: la presentación (`CTABanner.astro`) y la telemetría se desacoplan, el componente no emite eventos, y la página padre orquesta cuándo y a quién reportar.
+
+## Contexto
+
+El componente `CTABanner.astro` del proyecto pinta un `‹section›` con `‹a class="cta-btn"›` adentro. No emite eventos por diseño: la telemetría es responsabilidad de la página padre, no del componente de presentación. La razón es arquitectónica: si el componente despachara `gtag()` o `plausible()` directamente, quedaría acoplado al proveedor de analytics del cliente, y cambiar de GA4 a Plausible exigiría tocar componentes. Con el contrato actual, el componente solo pinta HTML; el wrapper en la página decide qué reportar y a quién.
+
+La instrumentación canónica del proyecto se hace con `data-cta-id`, atributo personalizado HTML5 que sobrevive minificación, no rompe accesibilidad, no compite con `id` (identificador único del DOM) ni con `class` (presentación). Es un canal independiente para telemetría, exactamente como recomienda la spec de HTML Living Standard sección 3.2.6.6 («custom data attributes»). El listener delegado vive en la página padre o en un script global del layout; captura clicks que burbujean desde cualquier descendiente de un `[data-cta-id]` y reporta al proveedor configurado.
+
+El criterio editorial del proyecto sobre analytics es honesto: medir lo que se necesita para iterar, no lo que el proveedor venda. Las métricas mínimas útiles son cuatro: cuántos clicks reciben los CTAs (volumen), cuál CTA convierte mejor (comparación entre `data-cta-id`), de qué páginas vienen (URL de origen), y en qué dispositivo (móvil vs escritorio). Con esas cuatro variables se puede iterar 12 meses sin pedir más datos. Heatmaps, session recording, fingerprinting del navegador y demás «features de analytics avanzado» casi nunca aportan más que las cuatro métricas básicas, y casi siempre cuestan en peso de script, cookies y, en algunas jurisdicciones, en multas.
+
+El marco regulatorio importa para decidir el proveedor. En México, la LFPDPPP exige consentimiento informado cuando se recogen datos personales identificables; un IP por sí solo no es PII si no se cruza con identificadores adicionales (criterio del INAI 2022). En la UE, el GDPR + ePrivacy exigen consentimiento previo para cookies no esenciales, lo cual elimina GA4 sin banner; Plausible y Umami operan sin cookies, sin PII y por eso son legales sin consentimiento previo (CNIL Francia 2022 los aprobó explícitamente). En EUA, la CCPA aplica análogamente cuando hay visitantes de California. La decisión del proveedor no es solo técnica: es legal-técnica.
+
+## Implementación paso a paso
+
+### 1. Naming convention para `data-cta-id`
+
+El identificador debe ser estable, descriptivo y sin PII. La convención del proyecto: `‹contexto›-‹seccion›-‹variante›`, separado por guiones bajos, sin mayúsculas, sin caracteres especiales.
+
+```astro
+---
+// Convención · ejemplos canónicos del proyecto
+//   home-hero-primary          → CTA del hero de la home
+//   home-cierre-principal      → CTABanner del cierre de la home
+//   productos-card-{slug}      → click en card de producto (slug del producto)
+//   servicios-cierre-cotizar   → CTABanner del cierre del hub de servicios
+//   blog-articulo-cierre-leer  → CTA «sigue leyendo» de un articulo
+//   contacto-form-submit       → submit del form de contacto
+//
+// Anti-ejemplos · NO hacer
+//   cta1                       → opaco, no se puede leer en el dashboard
+//   homeHeroBtn1               → camelCase rompe consistencia con CSS
+//   /home#hero-cta             → ruta + ancla NO es id, es URL
+//   user-123-cta-home          → PII (id de usuario) prohibido en data-attr
+---
+
+<div data-cta-id="home-cierre-principal">
+  <CTABanner {...PRESET_GENERAL} />
+</div>
+```
+
+El identificador debe poder leerse en el dashboard de analytics seis meses después sin tener que consultar el código. `home-cierre-principal` se lee solo; `cta1` no. La regla operativa: si el dashboard requiere un glosario, la convención está mal.
+
+### 2. Wrapper del CTA con `data-cta-id` en la página
+
+El componente `CTABanner.astro` NO recibe el `data-cta-id` como prop: la página padre lo envuelve en un `‹div›` con el atributo. Esto preserva el desacople (el componente nunca sabe que está siendo medido) y permite envolver cualquier CTA del sistema con la misma técnica (botón del hero, link de un FAQ, submit de un form).
+
+```astro
+---
+// src/pages/index.astro — home con tracking en el cierre
+import PageLayout from '@layouts/PageLayout.astro'
+import CTABanner from '@components/CTABanner.astro'
+import { PRESET_GENERAL } from '@config/cta-presets'
+---
+
+<PageLayout title="Inicio" description="..." pageType="page">
+  {/* ... resto de la home ... */}
+
+  <div data-cta-id="home-cierre-principal">
+    <CTABanner {...PRESET_GENERAL} />
+  </div>
+</PageLayout>
+```
+
+El wrapper se puede aplicar también al botón del Hero, al CTA flotante, al submit del ContactForm. Cualquier elemento que contenga un `‹a›` o `‹button›` con destino accionable puede ir envuelto. La regla: un `data-cta-id` único por CTA físico, no por componente reusado.
+
+### 3. Listener delegado: 20 líneas, una sola vez por página
+
+El listener vive en un script del layout (`BaseLayout.astro`) o en un componente cargado al final del `‹body›`. Escucha todos los clicks del documento, filtra los que ocurren dentro de un `[data-cta-id]` y reporta al proveedor configurado. Cero hidratación: es un `‹script›` clásico sin tipo de módulo necesario.
+
+```html
+<!-- src/layouts/BaseLayout.astro — listener delegado al final del body -->
+<script>
+  // Tracking delegado · captura clicks burbujeados desde cualquier
+  // descendiente de [data-cta-id] y reporta al proveedor configurado.
+  // Cero PII, cero cookies (con Plausible/Umami).
+  document.addEventListener('click', (event) => {
+    const target = event.target
+    if (!(target instanceof Element)) return
+
+    const wrapper = target.closest('[data-cta-id]')
+    if (!wrapper) return
+
+    const ctaId = wrapper.getAttribute('data-cta-id')
+    const link = target.closest('a')
+    const href = link ? link.getAttribute('href') : ''
+    const isExternal = link ? link.target === '_blank' : false
+
+    const payload = {
+      cta_id: ctaId,
+      href: href,
+      external: isExternal,
+      page: location.pathname,
+    }
+
+    // 1 · Plausible · custom event sin cookies
+    if (typeof window.plausible === 'function') {
+      window.plausible('CTA Click', { props: payload })
+    }
+
+    // 2 · GA4 · custom event con gtag (requiere consentimiento previo)
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', 'cta_click', payload)
+    }
+
+    // 3 · Umami · custom event sin cookies
+    if (typeof window.umami === 'object') {
+      window.umami.track('cta-click', payload)
+    }
+  })
+</script>
+```
+
+Lo que el listener NO hace: no captura coordenadas del mouse, no graba la sesión, no fingerprint del navegador, no lee del localStorage del visitante. El payload se queda en cuatro campos: identificador del CTA, destino del clic, si es externo, y página de origen. Con esos cuatro datos se contestan las cuatro preguntas útiles del trimestre.
+
+### 4. Payload sin PII: la lista de lo que NO va
+
+La regla operativa: ningún identificador personal entra al payload. Si tienes sesión de usuario logueado, el `data-cta-id` no incluye el `userId`. Si conoces el correo, no va. Si tienes la sesión iniciada, el evento sale anónimo. Esto cubre cumplimiento con LFPDPPP (MX), GDPR (EU) y CCPA (US-CA) sin pedir consentimiento previo si el proveedor también es sin cookies.
+
+```ts
+// Lo que SÍ va al payload (no PII)
+type AllowedPayload = {
+  cta_id: string         // identificador del CTA
+  href: string           // destino del clic
+  external: boolean      // target _blank
+  page: string           // pathname de origen
+  device?: 'mobile' | 'tablet' | 'desktop'   // categoría, no fingerprint
+  variant?: 'red' | 'dark' | 'light'         // variante del componente
+}
+
+// Lo que NUNCA va al payload (PII directo o cuasi-PII)
+type ForbiddenPayload = {
+  userId: string          // id de usuario logueado
+  email: string           // correo del visitante
+  ip: string              // IP literal
+  sessionId: string       // id de sesión (cuasi-PII si se cruza)
+  fingerprint: string     // hash del navegador (cuasi-PII)
+  geoExact: string        // coordenadas GPS literales
+  utm_email: string       // tracking del newsletter con email plano
+}
+```
+
+Con `AllowedPayload`, el dashboard te dice qué CTA convierte mejor por página, dispositivo y variante; con `ForbiddenPayload` te metes en zona gris regulatoria sin ganar precisión analítica útil.
+
+## Tabla comparativa
+
+| Proveedor | Peso / cookies | Cuándo elegirlo |
+|---|---|---|
+| Plausible | ~1 kB · sin cookies | Default. Sitios marketing/blog en MX+EU sin banner de consentimiento |
+| Umami self-hosted | ~2 kB · sin cookies | Cliente exige hosting propio (LFPDPPP estricta, salud, gobierno) |
+| GA4 | ~45 kB · cookies + Google Signals | Cliente ya tiene Google Ads y necesita audiencias para remarketing |
+| Cloudflare Web Analytics | ~5 kB · sin cookies | Sitio ya en Cloudflare Pages; reporting básico gratis |
+| Matomo Cloud | ~30 kB · cookies opt-in | Cliente que exige conformidad GDPR estricta con consent banner |
+| Tag Manager + GA4 + Hotjar | ~120 kB · cookies múltiples | Casi nunca. Sumar 3 proveedores = sumar 3 puntos de falla |
+
+La columna del medio es la que importa para Core Web Vitals: 1 kB vs 120 kB es la diferencia entre LCP por debajo de 2.5s y LCP en zona naranja. Y la columna de cookies dicta si necesitas banner de consentimiento, que reduce conversión real entre 12% y 35% según el estudio de Cookiebot 2024.
+
+## Patrones avanzados
+
+**Event delegation sobre data-cta-id es preferible a listeners por botón.** El patrón anti es agregar `onclick="track(...)"` a cada botón o un `addEventListener` por cada `.cta-btn` en el DOM. El listener delegado funciona porque el evento `click` burbujea desde cualquier descendiente hasta `document`, y `target.closest('[data-cta-id]')` resuelve cuál wrapper lo origina. Beneficios: 1 listener vs N listeners (memoria), el listener captura CTAs agregados dinámicamente sin re-binding, y la lógica vive en un solo lugar. La técnica está documentada en MDN desde 2015 y la usan Stripe, GitHub y casi todo SaaS de tamaño.
+
+**Consentimiento GDPR/LFPDPPP: el flujo correcto cuando usas GA4.** Si el cliente exige GA4 (típicamente porque ya invierte en Google Ads), el listener debe respetar el estado de consentimiento. El patrón canónico es Google Consent Mode v2: la llamada inicial a `gtag` declara `analytics_storage` en estado `denied` por defecto antes del script de GA4, el banner del visitante (CookieYes, Cookiebot, Klaro, o uno propio) actualiza a `granted` cuando el usuario acepta, y GA4 solo persiste cookies después del consentimiento. Con Plausible/Umami este flujo es innecesario porque no hay cookies; ese es el ahorro arquitectónico de elegir analytics sin cookies desde el inicio.
+
+```html
+<!-- GA4 con Consent Mode v2 · default denied -->
+<script>
+  window.dataLayer = window.dataLayer || []
+  function gtag() { dataLayer.push(arguments) }
+
+  // Default: TODO denegado hasta consentimiento explícito
+  gtag('consent', 'default', {
+    analytics_storage: 'denied',
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    wait_for_update: 500,
+  })
+
+  // Cuando el usuario acepta en el banner, llamar:
+  // gtag('consent', 'update', { analytics_storage: 'granted' })
+</script>
+```
+
+**Conversion tracking por destino de CTA.** Si tu sitio tiene varios destinos (WhatsApp, formulario, llamada, descarga), el `cta_id` y el `href` te bastan para segmentar conversiones en el dashboard. En Plausible se filtra por `props:cta_id`; en GA4 con `event_params`; en Umami con propiedades del custom event. Lo importante: definir UNA conversión por destino y no inflar la lista. Tres conversiones (lead-WhatsApp, lead-form, lead-call) son sostenibles; doce («click hero», «scroll 50%», «hover botón», «vista FAQ») son ruido que no se itera.
+
+**Tracking de scroll y engagement: cuándo NO sirve.** La tentación es medir scroll depth, tiempo en página y engagement rate. La realidad: en sitios de marketing/contenido, scroll depth correlaciona débilmente con conversión (Baymard 2023: r=0.23), y tiempo en página se confunde con el visitante que abrió la pestaña y se fue al refri. Las dos métricas son ruido en el dashboard y aportan poco al iterar. El criterio editorial del proyecto: medir click, medir conversión, medir bounce; el resto opcional. Menos paneles = más iteración.
+
+**Server-side tracking como evolución.** El siguiente paso cuando el proyecto crece (más de 200k pageviews al mes o más de 5 conversiones diarias) es mover el tracking a server-side: el browser hace un `fetch` POST a un endpoint propio del tipo `/api/track` con el payload en el body, en lugar de llamar al proveedor directamente. Ventajas: el `Adblock` no lo bloquea (recupera 20-40% de eventos perdidos), el payload se valida en server antes de reenviar, y se pueden agregar contexto del backend (variante A/B server-side, segmento de cliente). Astro lo permite con endpoints (`src/pages/api/track.ts` en SSR) o con un Worker de Cloudflare adelante. La complejidad vale la pena solo a partir de cierto volumen.
+
+## Checklist
+
+- [ ] Cada CTA tiene un `data-cta-id` único en el wrapper de la página padre
+- [ ] El identificador sigue la convención `‹contexto›-‹seccion›-‹variante›` legible
+- [ ] El listener delegado vive una sola vez en `BaseLayout.astro`, no por componente
+- [ ] El payload contiene solo `cta_id`, `href`, `external`, `page` (zero PII)
+- [ ] No hay `userId`, `email`, `ip`, `fingerprint` ni `sessionId` en el payload
+- [ ] Si se usa GA4, hay `Consent Mode v2` con `default: denied` antes del script
+- [ ] Si se usa Plausible/Umami, NO hay banner de consentimiento (no hace falta)
+- [ ] El `data-cta-id` no se reutiliza entre CTAs físicos distintos del sitio
+- [ ] Los conversion goals están definidos por destino, no por evento intermedio
+- [ ] El script de analytics carga con `defer` o al final del body (no bloquea LCP)
+- [ ] Hay un dashboard configurado con los 3-5 CTAs principales del sitio listos
+- [ ] Revisión trimestral: qué CTAs sirven, cuáles eliminar, cuáles renombrar
+
+## Preguntas frecuentes
+
+### ¿Por qué `data-cta-id` y no `id`?
+
+Porque `id` es identificador único del DOM (un solo `id` por documento; usarlo para telemetría rompe la unicidad si se reusa el componente) y porque mezclar telemetría con identificador de DOM acopla dos responsabilidades distintas. El atributo `data-*` está documentado en HTML Living Standard sección 3.2.6.6 como canal personalizado, sobrevive a minificación de HTML, y los selectores `[data-cta-id="..."]` son tan eficientes como los de `id`. La regla operativa: `id` para el DOM, `class` para presentación, `data-*` para datos del componente y telemetría.
+
+### ¿Plausible y Umami son legales sin banner de consentimiento en México?
+
+Sí, porque no instalan cookies y no recogen PII. La LFPDPPP exige consentimiento informado para «datos personales», definidos como «cualquier información concerniente a una persona física identificada o identificable». Plausible y Umami solo registran pageviews y eventos custom sin identificadores que permitan re-identificar; el IP del visitante se hashea y se descarta. La CNIL francesa (autoridad GDPR de referencia) aprobó explícitamente Plausible en 2022 sin consent banner; el criterio mexicano del INAI es análogo. GA4 sí necesita consentimiento previo en MX+EU por las cookies y por el cruce con audiencias de Google Ads.
+
+### ¿El listener delegado funciona si el CTA se inserta dinámicamente con JavaScript?
+
+Sí, y es la principal razón para usar delegation. El `addEventListener('click')` sobre `document` captura eventos burbujeados desde cualquier elemento que exista en ese momento o que se agregue después. Si tu sitio inserta un modal con CTAs después de cargar (típico de chatbots, popups, lazy-loaded content), el listener delegado los captura sin re-binding. Listeners directos por botón se romperían en ese escenario; delegation no.
+
+### ¿Cómo manejo el caso del usuario logueado sin filtrar PII en el payload?
+
+Manteniendo el payload sin PII y agregando contexto adicional en server-side si lo necesitas. Si el visitante está logueado y quieres saber qué CTAs convierten para usuarios premium vs free, NO mandes `userId` en el payload del browser: en el endpoint server-side que recibe el evento, lee la cookie de sesión, deriva el segmento (premium/free) y agrégalo al evento reenviado al proveedor. Así el browser nunca envía PII, el server hace el cruce con autenticación legítima, y el dashboard recibe segmentación útil sin riesgo regulatorio. Es la justificación principal para server-side tracking.
+
+### ¿Cloudflare Web Analytics sirve si ya tengo el sitio en Cloudflare Pages?
+
+Sí, y es la opción más barata (gratis hasta cierto volumen) si el sitio vive en Pages o detrás de Cloudflare. Carga un beacon de ~5 kB sin cookies, mide pageviews, dispositivos y referrers, y se integra como `‹script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='...'›`. Limitación: no soporta custom events nativamente, así que para el tracking de CTAs con `data-cta-id` te conviene combinarlo con Plausible o con un endpoint propio. Para sitios donde el reporting de pageviews es suficiente, Cloudflare basta solo.
+
+Medir CTAs bien es decidir las cuatro preguntas que importan, instrumentar con el peso mínimo necesario, y respetar al visitante en el camino. El patrón `data-cta-id` + listener delegado + payload sin PII + proveedor sin cookies cierra el ciclo completo en ~25 líneas de código, sin tag manager, sin Consent Mode v2, sin banner de cookies, y con conformidad legal automática en MX+EU. El sistema del proyecto deja el componente `CTABanner.astro` libre de telemetría por diseño; el wrapper en la página padre decide qué reportar y a quién. Cambias de proveedor en un día editando el listener; el componente nunca se entera.
+
+## Sigue leyendo
+
+- [Módulo CTA banner en vivo](/modulos/cta-banner)
+- [CTAs honestos: copy, jerarquía, anti dark-patterns](/blog/cta-honestos-copy-jerarquia-antidarkpatterns)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

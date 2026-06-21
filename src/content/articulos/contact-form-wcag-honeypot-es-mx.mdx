@@ -1,0 +1,332 @@
+---
+title: "Contact form Astro: WCAG, honeypot y es-MX"
+description: "Formularios de contacto en Astro accesibles WCAG 2.2, con honeypot anti-spam y validación HTML5 nativa para inputs en español de México."
+category: "guias"
+heroImage: "/images/articulos/contact-form-wcag-honeypot-es-mx.avif"
+pubDate: 2026-05-10
+author: "Ejemplos.mx"
+tags: ["astro", "contact-form", "a11y", "wcag", "honeypot"]
+seoTitle: "Contact form: WCAG, honeypot, es-MX"
+seoDescription: "Contact form en Astro accesible (WCAG 2.2 SC 1.3.5/2.5.8/3.3.7), honeypot anti-spam y validación HTML5 con patrones es-MX (teléfono, RFC)."
+---
+
+El formulario de contacto es el módulo con más superficie accesible roto del sitio promedio. Cada input arrastra seis reglas WCAG en cadena —label asociado, contraste, foco visible, área tappable, manejo de error, focus management post-submit— y cada placeholder usado como label, cada input a 14 px que dispara el zoom de iOS, cada captcha que pide identificar semáforos, son una conversión perdida. Esta guía construye el componente accesible de cabo a rabo: WCAG 2.2 (incluyendo los success criteria nuevos 1.3.5, 2.5.8 y 3.3.7), honeypot canónico como técnica anti-spam sin fricción y validación HTML5 con patrones es-MX (teléfono nacional a 10 dígitos, RFC con homoclave, código postal). El backend serverless queda para el [artículo siguiente](/blog/form-cloudflare-pages-function-backend); aquí el trabajo es 100% frontend.
+
+## Contexto
+
+WCAG 2.2 cerró su recomendación en octubre de 2023 y para 2026 ya es el estándar de referencia en la mayoría de las legales corporativas mexicanas que se apoyan en EAA (European Accessibility Act, vigente desde junio 2025) o ADA Title III en Estados Unidos. Los success criteria nuevos que afectan al formulario son tres: **1.3.5 Identify Input Purpose** (cada input debe declarar su propósito con autocomplete cuando aplique), **2.5.8 Target Size Minimum** (24 CSS px mínimo para controles interactivos, 44 px en AAA) y **3.3.7 Redundant Entry** (no pidas dos veces el mismo dato en el mismo flujo). Los tres son AA, y los tres se resuelven con HTML nativo más una decena de líneas de CSS —no necesitas librería ni framework—.
+
+El segundo eje del módulo es el anti-spam. La industria pasó dos décadas atornillando captchas cada vez más hostiles —imágenes de bicicletas, fragmentos de texto deformado, ahora puzzles 3D— hasta darse cuenta de que el costo de fricción humana superó al beneficio anti-bot. El honeypot resuelve el 90% del spam con cuatro líneas de HTML: un input oculto al humano (clipeado fuera del viewport, `aria-hidden`, `tabindex="-1"`, `autocomplete="off"`) que solo los crawlers rellenan porque parsean el DOM completo. Si llega con valor, descartas el envío. Cero captcha, cero fricción, cero datos enviados a un tercero. Cuando el honeypot no alcanza —campañas dirigidas, no spam masivo— Cloudflare Turnstile (sin tracking, sin Google, ~30 KB) cierra el último 10%.
+
+El tercer eje es es-MX. Los patrones de teléfono, código postal y RFC mexicanos no salen de la spec HTML5: hay que escribirlos a mano como atributo `pattern`. El teléfono nacional son 10 dígitos exactos sin lada internacional (la lada +52 no se escribe en formularios locales). El código postal son 5 dígitos. El RFC de persona física tiene 13 caracteres con homoclave; el de persona moral, 12. La CURP son 18 alfanuméricos. Cada uno con su `inputmode` correspondiente —numeric, tel— para que el teclado del móvil aparezca correcto y el visitante teclee con el pulgar y no con la frustración.
+
+## Implementación paso a paso
+
+El componente vive en `src/components/ContactForm.astro` y la versión accesible canónica suma cuatro piezas a la base mínima de tres campos: campo de contacto (email o teléfono según el negocio), checkbox de consentimiento LFPDPPP, honeypot oculto y región `role="status"` con `aria-live="polite"` para feedback post-submit. La API se mantiene en tres props opcionales —el componente es plug-and-play— pero el markup interno cumple WCAG 2.2 AA por default.
+
+```astro
+---
+// src/components/ContactForm.astro — versión accesible WCAG 2.2 AA
+import { CONTACT } from '@config/site'
+
+interface Props {
+  heading?: string
+  note?: string
+  asuntos?: string[]
+}
+
+const {
+  heading = 'Escríbenos',
+  note = 'Respuesta inmediata. Tus datos no se comparten con terceros.',
+  asuntos = ['Quiero una cotización', 'Soporte técnico', 'Una pregunta general'],
+} = Astro.props
+---
+
+<form class="cform" novalidate action="/api/contacto" method="POST"
+      data-wa-number={CONTACT.whatsapp}
+      aria-labelledby="cform-title">
+
+  <div class="cform__head">
+    <h3 id="cform-title" class="cform__title">{heading}</h3>
+    <p class="cform__sub">Llena el formulario y se abrirá WhatsApp con tu mensaje listo.</p>
+  </div>
+
+  <!-- HONEYPOT — oculto al humano, visible al bot -->
+  <div aria-hidden="true" class="cform__hp">
+    <label for="cf-website">No llenar este campo</label>
+    <input id="cf-website" name="website" type="text" tabindex="-1" autocomplete="off" />
+  </div>
+
+  <div class="cform__field">
+    <label for="cf-nombre">Nombre completo</label>
+    <input id="cf-nombre" name="nombre" type="text"
+           autocomplete="name" enterkeyhint="next"
+           required minlength="2" maxlength="80"
+           aria-describedby="cf-nombre-err" />
+    <span id="cf-nombre-err" class="cform__err" role="alert"></span>
+  </div>
+
+  <div class="cform__field">
+    <label for="cf-tel">Teléfono (10 dígitos)</label>
+    <input id="cf-tel" name="telefono" type="tel"
+           inputmode="tel" autocomplete="tel-national"
+           enterkeyhint="next"
+           required pattern="[0-9]{10}" maxlength="10"
+           aria-describedby="cf-tel-help cf-tel-err" />
+    <p id="cf-tel-help" class="cform__hint">Sin lada internacional. Ejemplo: 5512345678.</p>
+    <span id="cf-tel-err" class="cform__err" role="alert"></span>
+  </div>
+
+  <div class="cform__field">
+    <label for="cf-asunto">Asunto</label>
+    <select id="cf-asunto" name="asunto" autocomplete="off">
+      {asuntos.map((a) => <option value={a}>{a}</option>)}
+    </select>
+  </div>
+
+  <div class="cform__field">
+    <label for="cf-msg">¿Cómo podemos ayudarte?</label>
+    <textarea id="cf-msg" name="mensaje" rows="5"
+              enterkeyhint="send"
+              required minlength="20" maxlength="2000"
+              aria-describedby="cf-msg-help cf-msg-err"></textarea>
+    <p id="cf-msg-help" class="cform__hint">Cuéntanos qué necesitas: producto, plazo, presupuesto.</p>
+    <span id="cf-msg-err" class="cform__err" role="alert"></span>
+  </div>
+
+  <label class="cform__check">
+    <input type="checkbox" name="consent" required />
+    <span>He leído y acepto el <a href="/privacidad">aviso de privacidad</a>.</span>
+  </label>
+
+  <button type="submit" class="cform__submit">Enviar mensaje</button>
+
+  <div role="status" aria-live="polite" class="cform__status"></div>
+  <p class="cform__note">{note}</p>
+</form>
+```
+
+Los puntos no negociables de ese markup son cinco. Primero, **cada input tiene un label asociado con `for`/`id`**: si el diseño exige ocultar el label visualmente, se usa una clase `.sr-only` con clip + position absoluta, nunca `aria-label` (los lectores de pantalla lo traducen peor entre idiomas y dejan al control sin etiqueta visible cuando aria falla). Segundo, **los inputs van a 16 px literales** —no `1rem` si el root cambia— para evitar el zoom de iOS al enfocar. Tercero, **el honeypot está clipeado con CSS**, no oculto con `display: none` (un bot inteligente filtra los `display: none` y rellena solo lo visible al humano; el clip a `-9999px` se ve como cualquier input al parser DOM). Cuarto, **el botón submit es nativo**: el `type="submit"` permite mandar el form con Enter desde el último campo, complemento natural del `enterkeyhint="send"` del textarea. Quinto, **el `role="status"` con `aria-live="polite"`** es el contenedor donde el JS pinta el mensaje post-envío sin interrumpir al lector de pantalla.
+
+El CSS para el honeypot y los estados accesibles es minimalista pero crítico —el clip mal hecho expone el campo al humano y rompe el patrón completo—.
+
+```css
+/* HONEYPOT — clipeado fuera del viewport pero presente en el DOM */
+.cform__hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* FOCO VISIBLE — outline real, no solo cambio de color (WCAG 2.4.7) */
+.cform input:focus-visible,
+.cform textarea:focus-visible,
+.cform select:focus-visible,
+.cform__submit:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+}
+
+/* TOUCH TARGET — 44 px mínimo (WCAG 2.5.8 AAA, recomendado AA) */
+.cform__submit {
+  min-height: 48px;
+  padding: 0.85em 1.2em;
+}
+
+/* CHECKBOX TAPPABLE — área extendida más allá del cuadrito nativo */
+.cform__check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  min-height: 44px;
+  padding: var(--sp-3) 0;
+  cursor: pointer;
+}
+.cform__check input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+/* ERRORES — color + icono + texto (WCAG 1.4.1, no solo color) */
+.cform__err {
+  display: none;
+  font-size: var(--text-sm);
+  color: #c62828;
+  padding-left: 1.5em;
+  background: url("data:image/svg+xml,...") no-repeat 0 50%;
+}
+.cform__err:not(:empty) { display: block; }
+
+input[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+  border-color: #c62828;
+  box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.15);
+}
+
+/* MOVIMIENTO REDUCIDO — respetar prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .cform input,
+  .cform textarea,
+  .cform__submit { transition: none; }
+}
+```
+
+El JS de validación es opcional —la validación HTML5 nativa funciona sin él— pero gestiona dos cosas que el navegador no resuelve solo: pintar el error contextual en el `span.cform__err` correspondiente y mover el foco al primer campo inválido tras un submit fallido. El handler también detecta el honeypot relleno y devuelve `false` sin avisar al humano (silencioso es mejor: si el bot recibe un error, reintenta con otro vector; si recibe un 200 OK falso, asume éxito y sale).
+
+```js
+// src/components/ContactForm.astro — script de validación + UX
+document.querySelectorAll('form.cform').forEach((form) => {
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    // 1. Honeypot — si trae valor, silencio total (no avisar al bot).
+    const hp = form.querySelector('input[name="website"]');
+    if (hp && hp.value.trim() !== '') return;
+
+    // 2. Limpia errores previos y aria-invalid.
+    form.querySelectorAll('.cform__err').forEach((n) => (n.textContent = ''));
+    form.querySelectorAll('[aria-invalid]').forEach((n) => n.removeAttribute('aria-invalid'));
+
+    // 3. Validación HTML5 nativa + pinta errores en es-MX.
+    if (!form.checkValidity()) {
+      let first = null;
+      form.querySelectorAll('input, textarea, select').forEach((field) => {
+        if (!field.validity.valid) {
+          field.setAttribute('aria-invalid', 'true');
+          const err = form.querySelector('#' + field.id + '-err');
+          if (err) err.textContent = mensajeError(field);
+          if (!first) first = field;
+        }
+      });
+      if (first) first.focus();
+      return;
+    }
+
+    // 4. Todo OK — armar WhatsApp o POST a backend (otro artículo).
+    const data = new FormData(form);
+    const num = form.dataset.waNumber;
+    const texto = [
+      'Hola, soy ' + data.get('nombre') + '.',
+      'Teléfono: ' + data.get('telefono'),
+      'Asunto: ' + data.get('asunto'),
+      '',
+      String(data.get('mensaje')),
+    ].join('\n');
+    window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(texto), '_blank', 'noopener');
+
+    // 5. Mensaje accesible en role="status".
+    const status = form.querySelector('.cform__status');
+    if (status) status.textContent = 'Gracias. Abrimos WhatsApp con tu mensaje listo para enviar.';
+    form.reset();
+  });
+});
+
+function mensajeError(field) {
+  if (field.validity.valueMissing) return 'Este campo es obligatorio.';
+  if (field.validity.tooShort) return 'Mínimo ' + field.minLength + ' caracteres.';
+  if (field.validity.tooLong) return 'Máximo ' + field.maxLength + ' caracteres.';
+  if (field.validity.patternMismatch && field.name === 'telefono')
+    return 'Teléfono de 10 dígitos, sin lada internacional.';
+  if (field.validity.typeMismatch && field.type === 'email')
+    return 'Correo inválido. Ejemplo: nombre@dominio.com';
+  return 'Revisa este campo.';
+}
+```
+
+## Tabla comparativa
+
+| Técnica anti-spam | Fricción al humano | Eficacia | Privacidad |
+|---|---|---|---|
+| Honeypot (input oculto) | Cero (invisible) | 85–90% del spam masivo | Cero datos a terceros |
+| Cloudflare Turnstile | Mínima (auto-verify) | 95–98% (incluye dirigido) | Sin tracking, sin Google |
+| reCAPTCHA v2 («No soy un robot») | Media (1 clic + ocasional puzzle) | 90–95% | Traza al usuario en TODO el sitio |
+| reCAPTCHA v3 (invisible, score) | Cero | 92–96% | Traza al usuario en TODO el sitio + score opaco |
+| hCaptcha | Media (puzzle obligatorio) | 90–95% | Sin tracking de Google, paga al sitio |
+| Rate-limit por IP | Cero (transparente) | 60–70% (no detiene rotación) | Cero |
+| Validación server-side de shape | Cero | 40–60% (descarta basura obvia) | Cero |
+
+La combinación canónica para sitios mexicanos en 2026 es **honeypot + Turnstile + rate-limit**: el honeypot tumba el spam masivo barato sin fricción, Turnstile cierra el dirigido sin sacrificar privacidad ni cargar 600 KB de JS, y el rate-limit pone un techo a la rotación de IPs. reCAPTCHA queda descartado de fábrica: la promesa de privacidad que vende el resto del sitio se rompe en el momento que Google inyecta su script tracker en todas las páginas (no solo en el formulario; el script v3 sigue al usuario por toda la navegación para calcular el score).
+
+## Patrones avanzados
+
+**Validación HTML5 con `pattern` para datos es-MX.** El atributo `pattern` acepta cualquier regex JavaScript-flavored y se evalúa en cliente al `checkValidity()`. Los regex canónicos para los identificadores mexicanos más comunes se documentan en un solo bloque para copy-paste directo:
+
+```html
+<!-- Teléfono nacional MX (10 dígitos sin lada internacional) -->
+<input type="tel" pattern="[0-9]{10}" inputmode="tel" />
+
+<!-- Código postal MX (5 dígitos) -->
+<input type="text" pattern="[0-9]{5}" inputmode="numeric" maxlength="5" />
+
+<!-- RFC persona física con homoclave (13 caracteres) -->
+<input type="text" pattern="[A-ZÑ&]{4}[0-9]{6}[A-Z0-9]{3}" maxlength="13" style="text-transform: uppercase" />
+
+<!-- RFC persona moral (12 caracteres) -->
+<input type="text" pattern="[A-ZÑ&]{3}[0-9]{6}[A-Z0-9]{3}" maxlength="12" style="text-transform: uppercase" />
+
+<!-- CURP (18 caracteres alfanuméricos) -->
+<input type="text" pattern="[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]" maxlength="18" style="text-transform: uppercase" />
+```
+
+Acompáñalos con `inputmode="numeric"` para CP y teléfono (teclado numérico) y `style="text-transform: uppercase"` para RFC y CURP (visual; la validación va sobre el value real, así que el regex acepta mayúsculas y el JS hace `.toUpperCase()` antes de enviar al backend).
+
+**`autocomplete` con valores semánticos.** WCAG 2.2 SC 1.3.5 exige que los inputs que pidan datos personales declaren su propósito con tokens conocidos. La spec HTML define ~40 tokens —`name`, `email`, `tel`, `tel-national`, `street-address`, `postal-code`, `country`, `bday`, `organization`, `url`— y los navegadores autocompletan con datos guardados (perfil de Google/Apple, llaveros, gestores de contraseñas). Nunca uses `autocomplete="off"` salvo en campos sensibles (passwords nuevos, OTPs, tarjetas en sitios sin PCI): apagarlo en un campo de nombre o teléfono rompe la accesibilidad para personas con discapacidad motriz que dependen del autocompletado para no tecleo masivo.
+
+**`enterkeyhint` para guiar el teclado móvil.** Otro atributo HTML5 ignorado por la mayoría: define qué muestra la tecla Enter del teclado móvil en cada input. Valores: `enter`, `done`, `go`, `next`, `previous`, `search`, `send`. La convención del formulario de contacto es `next` en cada campo intermedio (Enter avanza al siguiente) y `send` en el último (Enter envía). El visitante recorre el formulario con el pulgar sin tocar la pantalla salvo para escribir; en un formulario de 5 campos son 5 segundos ahorrados y cero ambigüedad sobre qué hace Enter.
+
+**Manejo de foco post-submit (WCAG SC 3.3.1 + 2.4.3).** Si la validación falla, el foco debe moverse al primer campo inválido —el snippet de arriba lo hace con `first.focus()`—. Si el submit es exitoso, el foco se mueve al `role="status"` con `tabindex="-1"` y `.focus()` para que el lector de pantalla anuncie el mensaje de éxito y el usuario de teclado no se quede en el botón ya deshabilitado. Sin focus management, un usuario de NVDA o VoiceOver no sabe si el formulario se envió, si hubo error o si la página ignoró el clic. Es la diferencia entre un formulario que cumple a11y de check-box y uno que se usa de verdad.
+
+**WCAG 2.2 SC 3.3.7 (Redundant Entry) — no pidas dos veces lo mismo.** Si el formulario tiene varios pasos (multi-step) y ya pediste el email en el paso 1, NO lo vuelvas a pedir en el paso 3 «para confirmar». La spec considera que la confirmación de email es redundante y excluida del SC; en su lugar usa autocompletado y muestra el valor capturado para que el usuario lo edite si necesario. En formularios single-step (el caso default del componente) este SC no aplica.
+
+## Checklist
+
+- [ ] Cada `input`, `textarea` y `select` tiene `label` asociado con `for`/`id` literal
+- [ ] Inputs con `font-size: 16px` literal (no `1rem`) para evitar zoom de iOS
+- [ ] Honeypot clipeado con `position: absolute; left: -9999px`, NO con `display: none`
+- [ ] Tipos HTML5 correctos: `email`, `tel`, `url` con `inputmode` y `autocomplete` match
+- [ ] Atributo `pattern` para teléfono MX (10 dígitos), CP (5 dígitos), RFC con homoclave si aplica
+- [ ] `enterkeyhint="next"` en campos intermedios, `enterkeyhint="send"` en el último
+- [ ] Foco visible con outline de 2 px en `:focus-visible` (no solo cambio de color)
+- [ ] Touch target del botón submit ≥ 48 px (WCAG 2.5.8 AA + Apple HIG)
+- [ ] Checkbox de consentimiento LFPDPPP con enlace a `/privacidad`, desmarcado por default
+- [ ] Error contextual con `role="alert"` por campo + `aria-invalid="true"` en el input fallido
+- [ ] `role="status"` con `aria-live="polite"` para feedback post-submit
+- [ ] Focus management: foco al primer error si falla, al status si éxito
+- [ ] `prefers-reduced-motion` respetado en transiciones del componente
+- [ ] Cero reCAPTCHA (privacidad rota); honeypot + Turnstile en su lugar
+
+## Preguntas frecuentes
+
+### ¿El honeypot funciona contra todos los bots?
+
+Contra los scrapers genéricos y el spam masivo barato, sí: el 85–90% rellena todo input que ve en el DOM sin filtrar. Contra bots dirigidos a tu sitio específico (un competidor que quiere ensuciar tu CRM, un atacante que estudió tu formulario) NO basta: esos bots inspeccionan el campo, detectan el clip o el `aria-hidden`, y lo evitan. Para ese 10% residual va Cloudflare Turnstile, que verifica el navegador real con desafíos no interactivos (huella del runtime, comportamiento del puntero) sin enseñarle puzzles al humano. El patrón canónico siempre combina ambos: honeypot tumba el volumen, Turnstile cierra el dirigido.
+
+### ¿Por qué un `pattern` de 10 dígitos puros y no acepto el formato con guiones?
+
+Porque los humanos teclean el teléfono como les acomoda —con guiones, con espacios, con paréntesis de lada, con prefijo +52— y la normalización es trabajo del cliente, no del validator. Dos opciones: o el `pattern` acepta cualquier formato (regex permisivo de 10–20 caracteres con guiones, espacios y paréntesis, y normalizas en JS antes de enviar) o el `pattern` es estricto a 10 dígitos puros y un `oninput` quita los caracteres no numéricos en vivo. La segunda es más explícita: el visitante ve cómo desaparecen los guiones que tecleó y aprende el formato sin mensaje de error. El backend siempre revalida después.
+
+### ¿Necesito `type="email"` si valido con `pattern`?
+
+Sí, los dos. `type="email"` activa el teclado con `@` y `.` visibles en móvil (UX) y aporta una validación nativa básica (sintaxis general). El `pattern` agrega reglas específicas si las necesitas —dominio interno, lista blanca, anti-disposable—. La validación HTML5 dispara `:invalid` cuando CUALQUIERA de las dos reglas falla; el navegador no las suma sino que las concatena con AND. Y sí, también necesitas validación server-side: cualquier usuario con DevTools puede borrar el `type` y mandar basura.
+
+### ¿`aria-required="true"` es redundante con `required`?
+
+Sí, en navegadores modernos. El atributo `required` ya expone el campo como obligatorio a la accessibility tree, y los lectores de pantalla actuales (NVDA 2023+, JAWS 2024+, VoiceOver iOS 17+) lo anuncian como «requerido» al enfocar. Agregar `aria-required="true"` es defensive coding para soporte legacy (IE11, lectores muy viejos). En 2026 ya no se justifica salvo en sitios con audiencia de gobierno o salud que aún soporten esos entornos. Para el resto: solo `required`.
+
+### ¿El checkbox de consentimiento puede venir pre-marcado para «agilizar»?
+
+No. La LFPDPPP mexicana (art. 16) y el GDPR europeo (art. 6) coinciden: un consentimiento pre-marcado NO es consentimiento. Tiene que ser una acción afirmativa explícita del titular de los datos. Si el checkbox viene marcado por default y el visitante lo deja así, ante una queja del INAI o el DPA europeo la prueba se cae: no hay registro de que el visitante eligió marcarlo. La consecuencia es multa por tratamiento de datos sin consentimiento. La frase decorativa «al enviar aceptas…» bajo el botón tampoco sustituye al checkbox; es informativa, no interactiva.
+
+El formulario accesible no es un componente, es una disciplina —cada decisión de label, de `pattern`, de focus management, de antispam paga dividendos por años—. La trampa frecuente es resolverlo con una librería de un viernes y heredar 14 dependencias que se rompen en cada major update. El componente que esta guía construye vive en menos de 200 líneas de Astro + CSS + JS sin frameworks, cumple WCAG 2.2 AA por default y deja al sitio listo para escalar a backend serverless cuando crezca —el siguiente artículo del par cubre exactamente ese salto—.
+
+## Sigue leyendo
+
+- [Módulo Contact form en vivo](/modulos/contact-form)
+- [Form backend con Cloudflare Pages Functions](/blog/form-cloudflare-pages-function-backend)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

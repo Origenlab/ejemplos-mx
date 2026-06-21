@@ -1,0 +1,257 @@
+---
+title: "Reviews en Astro: estrellas y aggregate honestos"
+description: "Cómo emitir Review schema en Astro de forma honesta: estrellas reales, aggregate solo con datos verificables y por qué la confianza vale más que el snippet."
+category: "guias"
+heroImage: "/images/articulos/reviews-schema-estrellas-aggregate-astro.avif"
+pubDate: 2026-04-27
+author: "Ejemplos.mx"
+tags: ["astro", "review", "schema", "seo", "casos"]
+seoTitle: "Reviews schema en Astro: estrellas honestas"
+seoDescription: "Review + AggregateRating schema en Astro: datos verificables, regla B4 contra reviews falsas, ReviewCard real y manejo de la colección casos."
+---
+
+Pocas tentaciones en SEO son tan baratas de ejecutar y tan caras de mantener como inflar el bloque de reseñas. Cinco minutos de "rating: 4.9, reviewCount: 187" en el JSON-LD y la página gana estrellas amarillas en la SERP; seis meses después, una acción manual de Google borra el sitio de la primera página y deja al cliente preguntando por qué cayó el tráfico. Esta guía construye el camino opuesto: emitir Review y AggregateRating en Astro solo cuando los datos son reales y verificables, modelar las reseñas como Content Collection tipada, conectarlas al componente ReviewCard que ya vive en `src/components/ReviewCard.astro`, y dejar el gate global `SITE.allowSelfReviews` en false hasta que exista evidencia que justifique cambiarlo.
+
+## Contexto
+
+El módulo de reseñas del repo nació con una decisión deliberada: el componente ReviewCard NO emite JSON-LD por sí solo. La página `src/pages/modulos/review.astro` lo explica sin rodeos: el schema vive en `lib/seo.ts` con dos helpers, uno puro (reviewSchema) y otro gateado (emitReviews) que se ejecuta dentro de productSchema o serviceSchema. La razón es la regla dura B4 del proyecto: SITE.allowSelfReviews por default está en false, y emitReviews retorna un objeto vacío cuando no hay reseñas válidas. Si auto-emites Review o AggregateRating sin reseñas reales de terceros, Google te penaliza tarde o temprano.
+
+La trampa frecuente es modelar las reseñas como strings sueltos dentro de un componente o, peor, como objetos hardcodeados en un .astro de página. Ambos caminos rompen la regla D1 del proyecto: toda entidad repetible vive en una Content Collection con schema Zod estricto. Por eso `src/content.config.ts` define la colección casos con campos validados (clientName, quote, rating opcional 1-5, approved con gate editorial). Ese schema es el contrato que conecta el contenido editorial con el JSON-LD que sale al grafo: el frontmatter se valida en build-time, el helper lo transforma en nodo schema.org y el componente solo se preocupa de pintar HTML semántico.
+
+La tercera pieza del rompecabezas es entender qué emite Google como rich result en 2026 y qué no. Después del endurecimiento de las pautas en mayo, los tipos que aún reciben estrellas en la SERP son Product, Recipe, Movie y Book. Un LocalBusiness o un Service pueden llevar AggregateRating en el grafo y el schema sigue siendo válido para entender la entidad, pero no esperes las amarillas. Esto cambia la conversación: si emites Review schema, hazlo por integridad semántica del grafo, no por el snippet. Cuando esa expectativa se ajusta, la decisión de auto-emitir reseñas pierde casi todo su atractivo y la regla B4 se siente menos restrictiva.
+
+## Implementación paso a paso
+
+El primer paso es asegurar que la colección casos exista con el schema correcto. Ya está definida en `src/content.config.ts`, así que basta con auditarla y crear archivos .md por cada testimonio real y autorizado.
+
+```ts
+// src/content.config.ts — colección casos (extracto del schema real)
+const casos = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/casos' }),
+  schema: z
+    .object({
+      title: z.string().min(10).max(110),
+      clientName: z.string(),
+      clientRole: z.string().optional(),
+      clientCompany: z.string().optional(),
+      clientLocation: z.string().optional(),
+      quote: z.string(),                          // testimonio textual real
+      summary: z.string().optional(),
+      image: imagePath,
+      rating: z.number().min(1).max(5).optional(), // SOLO si es real y verificable
+      relatedServices: z.array(reference('servicios')).optional(),
+      relatedProducts: z.array(reference('productos')).optional(),
+      date: z.coerce.date().optional(),
+      featured: z.boolean().default(false),
+      approved: z.boolean().default(true),         // gate editorial
+      draft: z.boolean().default(false),
+    })
+    .strict(),
+});
+```
+
+Tres detalles del schema importan más que el resto. El campo `rating` es opcional a propósito: si el cliente nunca dio una calificación numérica, no inventes una para llenar el JSON-LD. El campo `approved` actúa como gate editorial: un caso entra al sitio solo cuando alguien verificó que el testimonio existe, que el cliente autorizó la publicación y que la cita es textual. Y el `.strict()` rechaza campos desconocidos, lo que evita que alguien agregue `fakeRating: 5` y siga al siguiente sprint sin que nadie lo note.
+
+El segundo paso es el helper en `src/lib/seo.ts`. Es una función pura que recibe items normalizados y devuelve el nodo schema.org listo para spread. No toca SITE.allowSelfReviews; ese gate vive en emitReviews, que es el que llaman productSchema y serviceSchema.
+
+```ts
+// src/lib/seo.ts — reviewSchema (puro) y emitReviews (gateado por B4)
+export interface Review {
+  author: string;
+  text: string;
+  rating: number;        // 1-5
+  date: string;          // ISO 'YYYY-MM-DD'
+  sourceUrl?: string;    // URL de la reseña original (Google Business, Trustpilot)
+}
+
+export interface ReviewSchemaResult {
+  aggregateRating?: object;
+  review?: object[];
+}
+
+// PURO: no consulta SITE.allowSelfReviews; el llamador decide cuándo invocarlo.
+export function reviewSchema(opts: { items: Review[]; minCount?: number }): ReviewSchemaResult {
+  const items = (opts.items ?? []).filter((r) => r.author && r.text && r.rating >= 1 && r.rating <= 5);
+  const minCount = opts.minCount ?? 5;
+  if (items.length < minCount) return {};
+
+  const avg = items.reduce((s, r) => s + r.rating, 0) / items.length;
+  return {
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: Number(avg.toFixed(2)),
+      reviewCount: items.length,
+      bestRating: 5,
+      worstRating: 1,
+    },
+    review: items.map((r) => ({
+      '@type': 'Review',
+      author: { '@type': 'Person', name: r.author },
+      reviewBody: r.text,
+      datePublished: r.date,
+      reviewRating: { '@type': 'Rating', ratingValue: r.rating, bestRating: 5, worstRating: 1 },
+      ...(r.sourceUrl ? { url: r.sourceUrl } : {}),
+    })),
+  };
+}
+
+// GATEADO: lo invocan productSchema y serviceSchema. Respeta SITE.allowSelfReviews.
+import { SITE } from '@config/site';
+export function emitReviews(items: Review[]): ReviewSchemaResult {
+  if (!SITE.allowSelfReviews) return {};   // regla B4 explícita
+  return reviewSchema({ items, minCount: 5 });
+}
+```
+
+El helper hace dos cosas que parecen pequeñas y son críticas. Filtra reseñas inválidas antes de calcular el promedio: un item sin author o sin rating numérico nunca llega al AggregateRating, así que el `reviewCount` siempre cuadra con el `review[]`. Y exige un mínimo (default 5) porque un AggregateRating con dos reseñas se ve débil y, en categorías competitivas, Google lo descarta como señal de baja confianza. El default está calibrado contra la guía pública de structured data en 2026; ajusta el mínimo a 10 o 15 si tu proyecto vive en industrias donde el ruido es alto.
+
+El tercer paso es la página que consume la colección casos y enchufa todo. El patrón canónico carga los .md, ordena, mapea a la shape Review, pasa al layout y deja que el grafo se arme solo cuando el gate global lo permite.
+
+```astro
+---
+// src/pages/servicios/desarrollo-web.astro — uso real (data-driven)
+import PageLayout from '@layouts/PageLayout.astro';
+import ReviewCard from '@components/ReviewCard.astro';
+import SectionHeading from '@components/SectionHeading.astro';
+import { getCollection } from 'astro:content';
+
+// 1) Cargar casos aprobados y con rating (cuando aplique).
+const casos = (await getCollection('casos', ({ data }) => data.approved && !data.draft))
+  .filter((c) => c.data.relatedServices?.some((ref) => ref.id === 'desarrollo-web'))
+  .sort((a, b) => (b.data.date?.getTime() ?? 0) - (a.data.date?.getTime() ?? 0));
+
+// 2) Normalizar a la shape Review (lib/seo.ts).
+const reviews = casos
+  .filter((c) => typeof c.data.rating === 'number')
+  .map((c) => ({
+    author: c.data.clientName,
+    text: c.data.quote,
+    rating: c.data.rating as number,
+    date: (c.data.date ?? new Date()).toISOString().slice(0, 10),
+  }));
+---
+
+<PageLayout
+  title="Desarrollo web Astro"
+  description="Sitios Astro listos para producción con reseñas reales y trazables."
+  pageType="service"
+  data={{
+    service: {
+      name: 'Desarrollo web Astro',
+      description: 'Sitios Astro listos para producción.',
+      path: '/servicios/desarrollo-web',
+      reviews,   // serviceSchema delega a emitReviews(): respeta B4
+    },
+  }}
+>
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        eyebrow="Prueba social"
+        title="Lo que dicen nuestros clientes"
+        desc="Reseñas reales de proyectos publicados con permiso del cliente."
+      />
+      <div class="reviews-grid">
+        {casos.map((c) => (
+          <ReviewCard
+            quote={c.data.quote}
+            name={c.data.clientName}
+            role={c.data.clientRole}
+            rating={c.data.rating ?? 0}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+</PageLayout>
+```
+
+El cuarto paso es el HTML semántico que pinta ReviewCard. Es importante no perder de vista qué llega al DOM porque ese HTML es la fuente de verdad para los buscadores incluso cuando el JSON-LD está apagado. El componente real (`src/components/ReviewCard.astro`) usa article, blockquote y cite, con un div de estrellas que lleva `role="img"` y `aria-label="N de 5 estrellas"`. Eso lo hace accesible y, al mismo tiempo, deja una huella semántica fuerte que Google sabe leer aunque no haya schema.
+
+```html
+<!-- HTML que renderiza ReviewCard.astro (extracto) -->
+<article class="rcard">
+  <div class="rcard__stars" role="img" aria-label="5 de 5 estrellas">
+    <span class="is-on"><!-- SVG star --></span>
+    <span class="is-on"><!-- SVG star --></span>
+    <span class="is-on"><!-- SVG star --></span>
+    <span class="is-on"><!-- SVG star --></span>
+    <span class="is-on"><!-- SVG star --></span>
+  </div>
+  <blockquote class="rcard__quote">El sitio quedó listo en nueve días y no he tenido que tocar el código una sola vez.</blockquote>
+  <footer class="rcard__author">
+    <span class="rcard__avatar" aria-hidden="true">MG</span>
+    <span class="rcard__who">
+      <cite class="rcard__name">María González</cite>
+      <span class="rcard__role">Directora · Estudio de arquitectura CDMX</span>
+    </span>
+  </footer>
+</article>
+```
+
+## Tabla comparativa
+
+| Estrategia de Review schema | Cuándo elegirla | Trade-off |
+|---|---|---|
+| ReviewCard sin JSON-LD (default actual) | Sitios nuevos, menos de 5 reseñas reales, marcas que aún no piden permiso a clientes | Pierdes el AggregateRating, ganas integridad y cero riesgo de penalización |
+| reviewSchema puro spread en nodo Service | Reseñas verificables con autor/fecha/texto y allowSelfReviews=true | Control total, requiere componer el grafo a mano; un emisor por página (B3) |
+| emitReviews via productSchema/serviceSchema | Patrón canónico cuando hay 5+ reseñas reales y allowSelfReviews=true | Gate global automático, cero código por página, requiere disciplina al popular casos |
+| Import directo de Google Business Profile API | Proyectos con cuenta de GBP activa y volumen de reseñas reales | Trazabilidad perfecta vía sourceUrl, dependencia operativa de la API y refresh semanal |
+| AggregateRating hardcoded con valores ficticios | Nunca; rompe la regla B4 | Estrellas en SERP por semanas, acción manual de Google y daño reputacional |
+
+La fila que duele es la última, y es la que un cliente sin asesor técnico pide por inercia. El argumento comercial parece sólido —"vamos a poner 4.8 estrellas mientras juntamos reseñas reales"—; el costo aparece cuando Search Console envía la primera notificación de structured data abuse y el sitio pierde meses de trabajo en SEO honesto. La regla B4 existe precisamente para que esa conversación se resuelva en código y no en cada reunión con el cliente.
+
+## Patrones avanzados
+
+**Filtrar antes de promediar, siempre.** El helper `reviewSchema` filtra items inválidos antes de calcular el AggregateRating: nada sin author, sin rating o con rating fuera de 1-5 entra al promedio. Esa decisión evita un bug clásico: una colección con 20 casos donde 5 no tienen rating numérico pinta `reviewCount: 20` y `ratingValue` calculado solo sobre 15. Es inconsistencia interna que las herramientas de auditoría (Schema.org Validator, Rich Results Test) detectan y, peor, que un audit técnico de Google marca como "structured data discrepancy". El `items.filter` antes del reduce y del map garantiza que `reviewCount` siempre cuadre con `review.length`.
+
+**El campo sourceUrl es la mejor evidencia para Google.** Cuando una reseña viene de Google Business Profile o Trustpilot, agregar `sourceUrl` al item le dice a Google "esta reseña es verificable, aquí está la original". El helper la incluye condicionalmente como `url` del nodo Review, y la práctica recomendada es enlazarla también desde el HTML (variante "Con fuente externa" en el ReviewCard, hoy extensión propuesta). La diferencia entre una reseña con sourceUrl y una sin él, en términos de credibilidad para el bot, es enorme: la primera es testimonio verificable, la segunda es declaración no auditable. Cuando importes vía API, persiste siempre el permalink.
+
+**`approved=false` como freno editorial real.** El gate `approved` en la colección casos parece decorativo y es la línea de defensa más importante. Un workflow saludable es: el responsable comercial sube el .md con `approved: false`, alguien con criterio editorial (no necesariamente el dev) revisa que el permiso esté en orden, que la cita sea textual y que el cliente sepa que aparecerá en el sitio, y solo entonces pasa a `approved: true`. El filtro de getCollection sobre la colección casos —con un predicado que exige `approved: true`— garantiza que un .md a medio editar no llegue al deploy. Si tu equipo es pequeño, considera un PR review como gate (commit con `approved: true` requiere aprobación de un segundo par de ojos).
+
+**El emisor único (regla B3) aplica también al AggregateRating.** Si tu Service emite AggregateRating vía serviceSchema y, además, alguien spreadea reviewSchema en otro nodo del mismo grafo, terminas con dos AggregateRating en la misma página. Google detecta el conflicto y descarta ambos. La auditoría es un grep manual: busca `reviewSchema(` y `emitReviews(` en el repo y, por cada match, verifica que la página padre no esté pasando reviews al layout. Si encuentras la combinación, es un bug latente; reescribe para que solo emita el layout, no el componente ni el spread manual.
+
+**Caveat 2026 sobre rich results.** Desde mayo, los tipos schema que reciben estrellas amarillas en la SERP son Product, Recipe, Movie y Book. Un LocalBusiness o un Service con AggregateRating válido sigue siendo útil para el Knowledge Graph y para entender la entidad, pero el snippet visual no aparece. Esto cambia la matemática del proyecto: si tu objetivo era el rich result, hoy no llega; si tu objetivo es señal semántica honesta, sigue siendo válido. Para sitios de e-commerce con catálogo de productos individuales, las estrellas siguen pintándose (Product es el camino); para servicios profesionales o consultoría, ajusta expectativas y considera testimonios sin schema como alternativa (ver el artículo siguiente).
+
+## Checklist
+
+- [ ] Crear `src/content/casos/*.md` por cada testimonio real con permiso documentado
+- [ ] Verificar que el frontmatter cumpla el schema strict de la colección casos
+- [ ] Dejar `approved: false` hasta que un segundo par de ojos valide permiso y cita
+- [ ] Solo incluir `rating: 5` (o el número real) si el cliente dio calificación; si no, omitir
+- [ ] Implementar `reviewSchema(items, minCount)` en `lib/seo.ts` con filtro de items inválidos
+- [ ] Implementar `emitReviews()` gateado por `SITE.allowSelfReviews` (default false)
+- [ ] Mantener `SITE.allowSelfReviews` en false hasta tener 5+ reseñas verificables con sourceUrl
+- [ ] Auditar con grep que no exista `emitSchema` en ningún uso del ReviewCard
+- [ ] Probar el grafo final en Rich Results Test y Schema.org Validator
+- [ ] Documentar la trazabilidad de cada reseña (mensaje original, captura GBP, correo)
+
+## Preguntas frecuentes
+
+### ¿Por qué `SITE.allowSelfReviews` está en false por default?
+
+Porque la regla dura B4 del proyecto considera que el sitio NO debe auto-emitir AggregateRating ni Review sin reseñas reales y verificables de terceros. Self-serving reviews son una violación de las guidelines de structured data de Google y derivan en acciones manuales (penalización con notificación en Search Console). El default false es la salvaguarda: el gate debe activarse de forma explícita cuando exista evidencia documentada. El artículo "Por qué nunca auto-emitir reseñas: regla B4" explica el costo SEO con casos reales.
+
+### ¿Qué pasa si tengo solo 3 reseñas reales pero quiero emitir schema?
+
+`reviewSchema()` tiene `minCount` con default 5 precisamente para frenar AggregateRatings débiles. Puedes bajarlo a 3 si tu industria es de nicho y tres reseñas son representativas, pero piénsalo dos veces: un AggregateRating con tres items pesa poco como señal y, en categorías competitivas, Google lo descarta. La recomendación práctica es esperar a tener 5+ reseñas con autor, fecha, texto y, idealmente, sourceUrl. Mientras tanto, sigue mostrando las reseñas en el HTML (ReviewCard) sin emitir JSON-LD: la prueba social funciona, el riesgo SEO es cero.
+
+### ¿La colección casos puede vivir sin el campo `rating`?
+
+Sí, el schema lo marca como opcional. Es el patrón recomendado para testimonios cualitativos donde el cliente no dio calificación numérica (clientes B2B grandes que "no califican proveedores", testimonios largos sin estrellas). En ese caso, el ReviewCard puede recibir `rating=0` para no pintar estrellas (hoy pinta 5 vacías, que se leen como "cero estrellas"; idealmente se extiende el componente con `showRating=false`). El item nunca llega al `reviewSchema()` porque el filtro descarta items sin rating numérico, así que no afecta al AggregateRating.
+
+### ¿Puedo combinar reseñas importadas de Google Business con reseñas internas?
+
+Sí, siempre que ambas sean reales y trazables. El patrón es: importar las de GBP vía API semanal, persistir cada una como .md con `sourceUrl` apuntando al permalink, y agregar las internas (correo del cliente con permiso por escrito) sin sourceUrl. El helper `reviewSchema` las trata por igual y emite el AggregateRating combinado. Lo que no se vale es etiquetar como "Google review" una que viene de un correo interno: rompe la trazabilidad y, si Google audita, detecta la inconsistencia entre el snippet declarado y el inventario público en GBP.
+
+### ¿Y si el cliente exige "poner 4.8 estrellas para que se vea bien"?
+
+Es la conversación más común y el momento donde la regla B4 te salva el cuello. La respuesta honesta es: podemos mostrar estrellas en SERP cuando tengamos 5+ reseñas reales de tus clientes; mientras tanto, podemos pintar las reseñas en el sitio (ReviewCard) y emitir testimonios sin schema. El AggregateRating ficticio gana visibilidad por semanas y la pierde con acción manual; el costo de recuperación es mayor que el beneficio temporal. Si el cliente insiste, documenta por escrito el riesgo (penalización con pérdida de tráfico orgánico) y deja la decisión asentada antes de proceder. El artículo sobre la regla B4 entra a fondo en este tema.
+
+El módulo de reseñas es de esos componentes donde la disciplina importa más que la elegancia del código. Pintar HTML semántico con ReviewCard es trivial; mantener la colección casos con `approved` real, alimentar `reviewSchema()` solo con datos verificables y resistir la presión de inflar AggregateRating es lo que separa un sitio que dura tres años de uno que se rompe en seis meses. La arquitectura del repo —colección tipada, helper puro, gate global, componente sin schema— está pensada para que esa disciplina viva en código y no dependa de la memoria del dev de turno.
+
+## Sigue leyendo
+
+- [Módulo Review en vivo](/modulos/review)
+- [Por qué nunca auto-emitir reseñas: regla B4](/blog/por-que-no-auto-emitir-resenas-regla-b4)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)

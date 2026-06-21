@@ -1,0 +1,253 @@
+---
+title: "CTAs honestos: copy, jerarquía, anti dark-patterns"
+description: "CTAs honestos en Astro: copy del botón, jerarquía visual primary/secondary y por qué los dark-patterns dañan más conversión de la que aparentan ganar."
+category: "guias"
+heroImage: "/images/articulos/cta-honestos-copy-jerarquia-antidarkpatterns.avif"
+pubDate: 2026-05-16
+author: "Ejemplos.mx"
+tags: ["astro", "cta-banner", "copy", "ux", "etica"]
+seoTitle: "CTAs honestos: copy + jerarquía + ética"
+seoDescription: "CTAs honestos en Astro CTABanner: copy del botón verbo+resultado, jerarquía primary/secondary y por qué los dark-patterns destruyen retención."
+---
+
+El CTA banner es el módulo donde se cobran todas las decisiones que vinieron antes. Hero limpio, beneficios sólidos, FAQ bien resuelta, footer ordenado, y al cierre aparece un botón que dice «Click aquí» con un timer falso de 7 minutos y un secundario que reza «No, prefiero seguir perdiendo dinero». La conversión del mes sube tres puntos; la retención del trimestre baja quince. Esta guía construye el copy, la jerarquía y la ética del CTA en Astro a partir del componente `CTABanner.astro` real del proyecto, con sus presets canónicos en `cta-presets.ts`, y enumera los dark-patterns que el sistema rechaza por diseño, con anti-ejemplos y la alternativa honesta que sí sostiene marca.
+
+## Contexto
+
+Un CTA banner profesional pide UNA sola cosa. Esa frase parece obvia hasta que se cuentan los botones de la última landing que viste: cotizar, ver catálogo, agendar demo, descargar PDF, suscribirse al newsletter, hablar con asesor. Seis caminos al cierre de una página equivalen a ninguno: el ojo se reparte, la decisión se posterga, la pestaña se cierra. La literatura UX lo documenta desde hace una década (Nielsen Norman Group, Baymard Institute, CXL): cada botón adicional baja la conversión del primario entre 5% y 15%, y al tercer botón la caída es de 20-40%. Un banner bien hecho carga 1 botón primario y, a lo más, 1 ghost que da escape al visitante indeciso.
+
+La jerarquía visual no es estética: es semántica. Cuando dos botones tienen el mismo peso (mismo color, mismo tamaño, mismo tratamiento), el visitante interpreta que las dos acciones son igualmente importantes y posterga la decisión. Cuando uno es sólido (`primary: true`) y el otro es ghost (`primary: false`), el sistema le dice al ojo «esto es lo que esperamos de ti; lo otro está aquí por si no estás listo». La conversión sube no porque el ghost desaparezca, sino porque el primary deja de competir consigo mismo. El componente `CTABanner.astro` del proyecto modela esa decisión en una sola prop: `BtnDef.primary?: boolean`.
+
+El copy del botón es la decisión que más rendimiento entrega y la que menos atención recibe. «Click aquí», «Más información», «Enviar», «Comenzar» son labels muertos: no le dicen al visitante qué pasa después de clicar. «Cotizar por WhatsApp», «Ver catálogo completo», «Hablar con un asesor», «Solicitar cotización» son labels vivos: verbo imperativo + objeto concreto. La fórmula es de Steve Krug (Don't Make Me Think, 2014) y MailChimp la formalizó en su guía de voz: el botón es una promesa, y la promesa tiene que ser específica. Un cambio de «Enviar» a «Solicitar cotización» mueve conversión sin tocar diseño.
+
+Y luego está la pregunta ética, que en realidad es una pregunta económica con horizonte largo. Los dark-patterns (contadores falsos de urgencia, escasez fabricada, confirmshaming, labels que mienten sobre el destino) suben clicks a corto plazo y queman lista a mediano. La Comisión Federal de Comercio de EUA emitió en 2023 reglas explícitas contra estos patrones; la directiva europea 2005/29/EC los tipifica como publicidad engañosa; en México, la LFPC art. 32-bis cubre prácticamente el mismo terreno. El sistema del proyecto los rechaza por diseño, no por moral: porque la marca se construye en años y se quema en una campaña.
+
+## Implementación paso a paso
+
+### 1. El label del botón: verbo imperativo + objeto concreto
+
+El label de cada botón es un campo de la prop `btns[]`. El componente lo recibe como string y lo pinta dentro del ancla:
+
+```astro
+---
+// src/components/CTABanner.astro — el label es texto puro dentro del <a>
+import CTABanner from '@components/CTABanner.astro'
+import { waUrl, WA_MESSAGES } from '@config/site'
+---
+
+<CTABanner
+  heading="¿Necesitas una cotización?"
+  desc="Te respondemos por WhatsApp con precio y plazo."
+  btns={[
+    {
+      label: 'Cotizar por WhatsApp',
+      href: waUrl(WA_MESSAGES.cotizacion),
+      icon: 'wa',
+      primary: true,
+      external: true,
+    },
+    { label: 'Ver catálogo completo', href: '/productos', icon: 'catalog' },
+  ]}
+  badge="Respuesta en menos de 2 horas"
+/>
+```
+
+La fórmula operativa del label:
+
+- **Verbo en imperativo**: «Cotizar», no «Cotización»; «Ver», no «Vista»; «Hablar», no «Plática».
+- **Objeto concreto**: «por WhatsApp», «el catálogo», «con un asesor», «mi cotización».
+- **Longitud**: 16-32 caracteres. Más corto y se vuelve críptico («Click»), más largo y se corta en móvil («Solicita ya mismo tu cotización personalizada»).
+- **Sin signos de exclamación**: «Cotizar por WhatsApp», no «¡Cotizar ya!». La exclamación huele a marketing barato y sube la sospecha del visitante.
+
+### 2. Jerarquía visual: `primary` vs `ghost` en el componente real
+
+El componente del proyecto ya separa los dos tratamientos por clase y por estilo, con tres variantes de fondo (`red`, `dark`, `light`):
+
+```css
+/* src/components/CTABanner.astro — los dos tratamientos por variant */
+.cta-banner--red .cta-btn--primary,
+.cta-banner--dark .cta-btn--primary {
+  background: #fff;
+  color: var(--color-red, #C41E24);
+  border: 2px solid #fff;
+}
+
+.cta-banner--red .cta-btn--ghost,
+.cta-banner--dark .cta-btn--ghost {
+  background: transparent;
+  color: rgba(255, 255, 255, .88);
+  border: 2px solid rgba(255, 255, 255, .35);
+}
+
+.cta-banner--light .cta-btn--primary {
+  background: var(--color-red, #C41E24);
+  color: #fff;
+  border: 2px solid var(--color-red, #C41E24);
+}
+
+.cta-banner--light .cta-btn--ghost {
+  background: #fff;
+  color: var(--color-gray-700, #374151);
+  border: 2px solid var(--color-gray-200, #D1D5DB);
+}
+```
+
+Lo importante no es el color: es el contraste. El primary tiene fondo sólido (alto contraste con el banner); el ghost tiene fondo transparente con borde sutil (bajo contraste). El ojo prioriza al primero por física óptica, no por preferencia. La regla operativa del sistema: una sola entrada de `btns[]` con `primary: true`, máximo una entrada adicional con `primary: false`. Tres botones primary cancelan la jerarquía.
+
+### 3. Presets canónicos: el copy vive en `cta-presets.ts`, no en cada página
+
+El patrón del proyecto centraliza el copy del cierre en presets SSoT. La página padre NO escribe `heading`, `desc` ni `btns[]` a mano: importa el preset y monta el componente con spread.
+
+```ts
+// src/config/cta-presets.ts — los 3 presets canónicos
+import { waUrl, WA_MESSAGES } from './site'
+
+export const PRESET_GENERAL = {
+  heading: '¿Necesitas una cotización?',
+  desc: 'Te respondemos por WhatsApp con precio, plazo y stock real. Sin compromiso.',
+  btns: [
+    {
+      label: 'Cotizar por WhatsApp',
+      href: waUrl(WA_MESSAGES.cotizacion),
+      icon: 'wa' as const,
+      primary: true,
+      external: true,
+    },
+    { label: 'Ver catálogo', href: '/productos', icon: 'catalog' as const },
+  ],
+  badge: 'Respuesta en menos de 2 horas',
+  variant: 'red' as const,
+}
+
+export const PRESET_CATEGORIA = {
+  heading: '¿Listo para cotizar este modelo?',
+  desc: 'Mándanos tu cantidad y aplicación; te respondemos con precio, ficha técnica y plazo de entrega.',
+  btns: [
+    {
+      label: 'Solicitar cotización',
+      href: waUrl(WA_MESSAGES.productos),
+      icon: 'wa' as const,
+      primary: true,
+      external: true,
+    },
+    { label: 'Hablar con asesor', href: '/contacto', icon: 'phone' as const },
+  ],
+  badge: 'Asesoría técnica sin costo',
+  variant: 'dark' as const,
+}
+
+export const PRESET_CONTACTO = {
+  heading: '¿Tienes dudas? Escríbenos.',
+  desc: 'Lee, pregunta, decide. Sin presión, sin formularios largos.',
+  btns: [
+    {
+      label: 'Hablar por WhatsApp',
+      href: waUrl(WA_MESSAGES.contacto),
+      icon: 'wa' as const,
+      primary: true,
+      external: true,
+    },
+  ],
+  badge: 'Sin compromiso de compra',
+  variant: 'light' as const,
+}
+```
+
+Tres registros, una sola voz. Cambias el copy del cierre del sitio entero = editas un archivo. Y agregar un preset nuevo (PRESET_BLACK_FRIDAY con plazo REAL, PRESET_NEWSLETTER, PRESET_DESCARGABLE) tampoco toca componentes.
+
+### 4. Enlace honesto: el href hace lo que el label promete
+
+La regla dura: el destino del clic coincide con lo que dice el label. Si el botón dice «Cotizar por WhatsApp», el `href` abre WhatsApp. Si dice «Ver catálogo», navega a `/productos`. Si dice «Descargar PDF», descarga un PDF, no abre un formulario de 8 campos previo. Cualquier divergencia entre label y destino es dark-pattern, aunque no figure en ningún libro de UX.
+
+```astro
+---
+// CORRECTO · el label promete WhatsApp, el href abre WhatsApp
+btns: [
+  { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotizacion), icon: 'wa', primary: true, external: true }
+]
+
+// INCORRECTO · el label dice WhatsApp, el href abre un form
+btns: [
+  { label: 'Cotizar por WhatsApp', href: '/cotizar', icon: 'wa', primary: true }
+]
+
+// INCORRECTO · el label dice "Descargar gratis", el href pide registro
+btns: [
+  { label: 'Descargar gratis', href: '/registro?next=/descarga', primary: true }
+]
+---
+```
+
+El visitante que clica «Descargar gratis» y aterriza en un formulario de 8 campos no se enoja la primera vez: se enoja la tercera, y a la cuarta cierra la pestaña antes de scrollear. La fricción de promesa rota acumula desgaste de marca que no se mide en GA4.
+
+## Tabla comparativa
+
+| Práctica | Honesto | Dark-pattern equivalente |
+|---|---|---|
+| Urgencia | «Cierra cupo el 30 de junio» (verificable) | «Termina en 02:34:18» (timer falso reiniciado) |
+| Escasez | «Stock final · quedan 12 unidades» (campo real) | «¡Solo quedan 2!» (constante, fabricado) |
+| Botón secundario | «Ver catálogo», «Seguir leyendo» (neutro) | «No, prefiero seguir perdiendo dinero» (confirmshaming) |
+| Label del primario | «Cotizar por WhatsApp» (verbo + destino) | «Click aquí», «Comenzar ahora» (oculta destino) |
+| Newsletter en banner | «Suscribirme al newsletter mensual» | Checkbox premarcado oculto en el flujo de checkout |
+| Precio en CTA | «Cotizar (precio varía por cantidad)» | «Gratis» que abre un upsell de 8 pasos |
+
+La columna del medio es la que aguanta auditoría de marca, retención y, en MX+EU, escrutinio regulatorio (PROFECO/LFPC art. 32-bis, Directive 2005/29/EC, FTC Act Section 5). La columna derecha sube clicks del mes y baja confianza del año.
+
+## Patrones avanzados
+
+**Anti-pattern enumerado: contadores falsos de urgencia.** El clásico de las landings de curso online: un timer rojo de 7 minutos que dice «Oferta termina pronto». Recargas la página, el timer reinicia. Es el dark-pattern más obvio y el más venenoso: el visitante que lo detecta una vez no vuelve, y el que no lo detecta convierte por miedo y pide reembolso al día siguiente. El componente `CTABanner.astro` del proyecto NO incluye prop de timer por diseño; la variante 5 documentada en `/modulos/cta-banner` admite urgencia con `expiresAt?: ISODate` pero exige que la fecha sea real y verificable (extension futura, no activa). Regla dura del sistema: si la urgencia no es real, no hay urgencia.
+
+**Anti-pattern: escasez fabricada.** «¡Solo quedan 2!», «1 persona viendo ahora mismo», «12 personas reservaron en la última hora». Si el dato no se origina en un campo real del catálogo (stock final de un producto, cupos limitados de un curso, sesiones disponibles de un servicio), es manipulación. La escasez REAL se comunica con honestidad: un campo `stock` en el frontmatter del producto, una consulta server-side al inventario. La fabricada es marketing tóxico que tu sistema debería rechazar al code review.
+
+**Anti-pattern: confirmshaming en el ghost.** «No gracias, prefiero pagar más impuestos», «No, no quiero ahorrar dinero», «Cerrar (sé que pierdo)». El botón secundario existe para dar escape al visitante indeciso, no para humillarlo. El copy debe ser neutro y honesto: «Ver catálogo», «Seguir leyendo», «Volver al inicio», «No por ahora». El confirmshaming es el dark-pattern que mejor se viraliza en redes (el subreddit r/assholedesign documenta cientos); cuando tu copy aparece ahí, la conversión del banner deja de importar.
+
+**Anti-pattern: label que miente sobre el destino.** «Descargar gratis» que abre un formulario de 8 campos no es descargar gratis: es lead magnet. «Hablar con un asesor» que lleva a un autoresponder no es hablar con asesor: es ticket. «Comenzar ahora» que pide tarjeta de crédito no es comenzar: es checkout. La regla dura: el verbo del botón es lo que pasa después del clic, sin sorpresa. Si el clic abre WhatsApp, dice «Cotizar por WhatsApp». Si el clic lleva a un form, dice «Solicitar cotización». Si el clic descarga, dice «Descargar PDF (2.4 MB)».
+
+**Caso de retención dañada · documentado.** Booking.com y Expedia recibieron en 2024 sanciones de la Autoridad italiana de competencia (AGCM) por contadores falsos de habitaciones y mensajes inflados de demanda; el caso es público y la multa pasó de €10M. El daño cuantificado no fue la multa: fue el ciclo de cancelaciones aumentadas, las reseñas negativas que mencionan «sentí que me presionaron», y el cambio de comportamiento de los repeat customers que migraron a Airbnb. La métrica que el dark-pattern infla (booking en sesión) cae 18-25% en el trimestre siguiente cuando se desactivan los contadores. Convertir hoy con engaño es vender mañana sin marca.
+
+**Caso B: SaaS con confirmshaming retirado en 2025.** Una herramienta de proyectos retiró el confirmshaming de su modal de cancelación («No, prefiero perder mis 3 años de historial») después de que tres reviews G2 lo mencionaran como «la razón por la que me fui». La sustitución por «No por ahora» bajó cancelaciones 4% (el confirmshaming las inflaba al irritar al usuario que ya estaba decidido) y subió NPS 8 puntos en el siguiente survey. El dark-pattern no estaba reteniendo: estaba quemando.
+
+## Checklist
+
+- [ ] Cada `btns[]` tiene máximo 2 entradas (1 primary + 1 ghost) o solo 1 primary
+- [ ] El `label` de cada botón usa verbo imperativo + objeto concreto (16-32 caracteres)
+- [ ] Ningún label dice «Click aquí», «Más info», «Enviar», «Comenzar» a secas
+- [ ] El `href` del primary lleva exactamente a lo que promete el label
+- [ ] No hay signos de exclamación en los labels (`¡Cotizar ya!` está prohibido)
+- [ ] Solo UN botón tiene `primary: true` por banner
+- [ ] El ghost (`primary: false`) usa copy neutro, nunca confirmshaming
+- [ ] No hay timer de cuenta regresiva sin `expiresAt` real verificable
+- [ ] No hay mensajes de escasez (`¡Solo quedan 2!`) sin campo `stock` en el catálogo
+- [ ] El copy del banner vive en `cta-presets.ts`, no escrito a mano en la página
+- [ ] Cada `href` de WhatsApp se construye con `waUrl(WA_MESSAGES.x)`, sin hardcoding del número
+- [ ] El badge (`Respuesta rápida`, `Sin compromiso`) dice solo lo que el negocio puede sostener
+
+## Preguntas frecuentes
+
+### ¿Por qué dos botones bajan la conversión del primary si el ghost da escape?
+
+Porque el escape NO debería ser visualmente competidor. La jerarquía sólida vs ghost le dice al ojo «esto es lo que esperamos, esto está por si acaso». Cuando los dos botones tienen el mismo peso (mismo color, mismo tamaño, mismo borde), el visitante interpreta que las dos acciones valen igual y la decisión se posterga. El componente `CTABanner.astro` modela la jerarquía con `BtnDef.primary?: boolean`: el primary se pinta sólido, el ghost transparente con borde sutil. La conversión sube no porque el ghost desaparezca, sino porque el primary deja de pelearse con su gemelo.
+
+### Si un timer falso sube clicks 12%, ¿no compensa el daño de marca?
+
+A corto plazo, sí. A mediano, no. El cálculo honesto incluye tres efectos diferidos que GA4 no mide bien: cancelaciones aumentadas (el comprador apresurado pide reembolso), reseñas negativas con la frase «me sentí presionado» (Capterra/G2 las indexa y bajan el rating agregado en 3-6 meses), y caída de repeat customers (que el caso Booking.com 2024 documentó en 18-25% el trimestre siguiente). El timer falso es un préstamo de conversión a tasa de interés del 300% pagado en confianza. Si la urgencia es real, comunícala con `expiresAt` verificable y badge honesto («Cierra cupo el 30 de junio»). Si no, no hay urgencia.
+
+### ¿Confirmshaming en el botón secundario es legal en México?
+
+La LFPC art. 32-bis prohíbe «publicidad engañosa o abusiva», y la Suprema Corte ha interpretado «abusiva» como prácticas que aprovechen vulnerabilidad cognitiva del consumidor. El confirmshaming cabe en el espíritu de la norma, pero la jurisprudencia mexicana específica sobre dark-patterns aún es escasa (a junio de 2026, las sanciones documentadas son europeas: AGCM Italia 2024, autoridad francesa CNIL 2023). En la práctica: no hay multa probable, pero el daño reputacional es real y el copy se viraliza. La recomendación profesional: no lo uses. El ghost neutro convierte parecido sin riesgo.
+
+### ¿Puedo poner 3 botones si los tres llevan a destinos distintos pero relacionados?
+
+Si los tres son igualmente importantes, el componente correcto NO es `CTABanner`: es `SectionMenu` (ver `/modulos/section-menu`). El banner pide UNA cosa; el menú reparte hacia varias. Si insistes en 3 CTAs por página, repártelos en 3 banners contextuales a lo largo del scroll (uno por sección), cada uno con su cierre específico. Tres botones en un solo banner cancelan la jerarquía y bajan la conversión medible 20-40% según pruebas A/B documentadas por CXL Institute y Baymard.
+
+### ¿El badge de confianza («Respuesta rápida», «Sin compromiso») cuenta como overpromise?
+
+Solo si no se cumple. «Respuesta en menos de 2 horas» es overpromise si el equipo tarda 18 horas en responder; «Sin compromiso» es overpromise si el formulario suscribe al newsletter sin checkbox. La regla dura: el badge dice lo que el negocio puede sostener todos los días, no lo que aspira a sostener. Si la respuesta promedio es 8 horas, el badge dice «Respuesta el mismo día hábil». Si hay compromiso (newsletter automático, contrato), el badge no dice «Sin compromiso». Honestidad calibrada en lugar de marketing aspiracional.
+
+Un CTA banner honesto convierte menos en la sesión y vende más en el trimestre. La aritmética favorece la honestidad: 100 clicks de los cuales 30 son repeat valen más que 200 clicks de los cuales 10 vuelven. El componente `CTABanner.astro` del proyecto modela las decisiones críticas en su API (jerarquía con `primary`, copy en preset, sin timers ni escasez fabricada) y deja al code review las decisiones que ningún componente puede tomar: que el label diga lo que el destino hace, que el ghost no humille, que el badge no infle. El sistema da las herramientas; la voz de marca pone la disciplina.
+
+## Sigue leyendo
+
+- [Módulo CTA banner en vivo](/modulos/cta-banner)
+- [Tracking de CTAs con data-cta-id, sin invasión](/blog/tracking-cta-data-attr-analytics-respeto)
+- [Construir un sitio profesional con Astro y Markdown: 12 módulos](/blog/construir-sitio-astro-markdown-12-modulos-referencia)
