@@ -74,7 +74,7 @@ const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.blog)
           <CategoryCard
             label={a.data.title}
             href={`/blog/${a.id}`}
-            image={blogImage(a.id)}
+            image={blogImage(a.id, a.data.heroImage)}
             imageAlt={a.data.title}
             badge={CAT_LABEL[a.data.category] ?? a.data.category}
             blurb={a.data.description}

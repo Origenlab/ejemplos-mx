@@ -39,6 +39,20 @@ function hashId(s: string): number {
  * Imagen ilustrativa ESTABLE para un artículo (por su id de colección).
  * Reutiliza el pool; el mismo id devuelve siempre la misma imagen.
  */
-export function blogImage(id: string): string {
+export const REAL_ART = new Set<string>([
+  'home-astro-anatomia-hero-lcp',
+  'home-primera-impresion-distribucion-trafico',
+  'indice-de-seccion-astro-getcollection-itemlist',
+  'pagina-pilar-hub-and-spoke-seo-categorias',
+  'ficha-detalle-astro-rutas-dinamicas-schema',
+  'fichas-long-tail-conversion-intencion',
+  'variantes-l4-astro-canonical-productgroup',
+  'cuando-crear-l4-thin-content-arquitectura',
+  'niveles-de-un-sitio-l1-l4-arquitectura-informacion',
+])
+
+/** Devuelve el heroImage real si el artículo tiene arte propio (REAL_ART); si no, una imagen del pool. */
+export function blogImage(id: string, heroImage?: string): string {
+  if (heroImage && REAL_ART.has(id)) return heroImage
   return BLOG_IMAGE_POOL[hashId(id) % BLOG_IMAGE_POOL.length]
 }
