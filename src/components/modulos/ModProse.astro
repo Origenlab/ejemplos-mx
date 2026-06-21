@@ -1,0 +1,26 @@
+---
+// ============================================================================
+// ModProse.astro — Bloque de prosa técnica (sección «cómo se arma»).
+// ----------------------------------------------------------------------------
+// Columna de texto legible (máx 75ch) con <p>, <strong> y <code> inline ya
+// estilados. La página mete los párrafos por el slot por defecto. Centraliza el
+// CSS .prose que antes se copiaba en 13 páginas.
+//
+// USO:
+//   <ModProse>
+//     <p>El componente vive en <code>X.astro</code>…</p>
+//     <p>…</p>
+//   </ModProse>
+// ============================================================================
+---
+
+<div class="prose">
+  <slot />
+</div>
+
+<style>
+  .prose { max-width: 75ch; margin-top: var(--sp-6); }
+  .prose :global(p) { margin: 0 0 var(--sp-4); font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .prose :global(strong) { color: var(--c-ink); font-weight: var(--weight-semibold); }
+  .prose :global(code) { font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace; font-size: .85em; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
+</style>

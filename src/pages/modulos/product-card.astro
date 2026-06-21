@@ -23,7 +23,6 @@
 // ============================================================================
 import PageLayout from '@layouts/PageLayout.astro'
 import Hero from '@components/Hero.astro'
-import SectionHeading from '@components/SectionHeading.astro'
 import SectionMenu from '@components/SectionMenu.astro'
 import GaleriaDisenos from '@components/GaleriaDisenos.astro'
 import DisenoCard from '@components/DisenoCard.astro'
@@ -31,6 +30,13 @@ import MarcoMovil from '@components/MarcoMovil.astro'
 import Receta from '@components/Receta.astro'
 import GuiaNota from '@components/GuiaNota.astro'
 import ProductCard from '@components/ProductCard.astro'
+import ModSection from '@components/modulos/ModSection.astro'
+import ModBenefits from '@components/modulos/ModBenefits.astro'
+import ModAnatomy from '@components/modulos/ModAnatomy.astro'
+import ModResponsive from '@components/modulos/ModResponsive.astro'
+import ModPattern from '@components/modulos/ModPattern.astro'
+import ModProse from '@components/modulos/ModProse.astro'
+import ModDosDonts from '@components/modulos/ModDosDonts.astro'
 import { WA_MESSAGES, waUrl } from '@config/site'
 import { siblingsModules } from '@lib/modules'
 
@@ -405,59 +411,41 @@ import RelatedLinks from '@components/RelatedLinks.astro'
   />
 
   {/* ── 1) ¿QUÉ ES? ── */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Definición"
-        title="¿Qué es la tarjeta de producto?"
-        desc="El componente que presenta UN producto del catálogo como una ficha breve dentro de una vitrina: imagen 16:9 con overlay y badge, título H3, descripción corta y CTA inline, todo envuelto en un único enlace."
-        body={[
-          'La tarjeta de producto (ProductCard.astro) es el módulo que toma un producto del catálogo —un archivo Markdown en src/content/productos/— y lo presenta en formato vitrina: una foto cuadrada-y-media, un badge para señalar la norma o la categoría, el título de venta, una línea de descripción y un CTA «Ver detalles» que lleva a la ficha. Es promo de un solo clic: lo justo para enganchar y mandar al detalle.',
-          'En este proyecto vive en un único componente con una API pequeña (title, href, image?, imageAlt?, badge?, description?, ctaLabel?, index?, priority?). Hoy se usa en exactamente un consumidor: /productos/index.astro, la vitrina del catálogo. La ficha L4 (/productos/<slug>) NO la usa para «relacionados» —usa RelatedLinks, un componente aparte—, así que su rol es deliberadamente acotado: vitrina, no detalle.',
-        ]}
-      />
-    </div>
-  </section>
+  <ModSection
+    eyebrow="Definición"
+    title="¿Qué es la tarjeta de producto?"
+    desc="El componente que presenta UN producto del catálogo como una ficha breve dentro de una vitrina: imagen 16:9 con overlay y badge, título H3, descripción corta y CTA inline, todo envuelto en un único enlace."
+    body={[
+      'La tarjeta de producto (ProductCard.astro) es el módulo que toma un producto del catálogo —un archivo Markdown en src/content/productos/— y lo presenta en formato vitrina: una foto cuadrada-y-media, un badge para señalar la norma o la categoría, el título de venta, una línea de descripción y un CTA «Ver detalles» que lleva a la ficha. Es promo de un solo clic: lo justo para enganchar y mandar al detalle.',
+      'En este proyecto vive en un único componente con una API pequeña (title, href, image?, imageAlt?, badge?, description?, ctaLabel?, index?, priority?). Hoy se usa en exactamente un consumidor: /productos/index.astro, la vitrina del catálogo. La ficha L4 (/productos/<slug>) NO la usa para «relacionados» —usa RelatedLinks, un componente aparte—, así que su rol es deliberadamente acotado: vitrina, no detalle.',
+    ]}
+  />
 
   {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
-  <section class="section section--surface">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Función e importancia"
-        title="¿Para qué sirve?"
-        desc="Hace tres trabajos a la vez: convierte una colección Markdown en un grid uniforme, cuida CLS y LCP por defecto, y mantiene el schema centralizado en la ficha L4 sin acoplarse a SEO."
-        body={[
-          'Su función es ser la cara breve del catálogo: cuando un visitante entra a /productos, no quiere leer 15 fichas completas —quiere escanear, comparar y entrar a una—. La card resume cada producto en cinco trazos (imagen, badge, título, descripción, CTA) con la misma jerarquía visual en TODA la rejilla, así la comparación entre productos es justa. Cuando la categoría se merece más detalle, la ficha L4 (ProductLayout) toma el relevo.',
-          'Y por eso pesa fuera de proporción a su altura. Para los buscadores, la card lleva un H3 con el nombre del producto, alt descriptivo en la imagen y enlace interno a la ficha —el padre del grid emite ItemList (CollectionPage) vía directorySchema, así Google ve la lista entera, no card por card—. Para la accesibilidad, todo la card es un único <a> con aria-label igual al título, los iconos son aria-hidden y el foco es visible. Para el equipo que mantiene el sitio, un solo componente para todo el catálogo significa que ajustar el radio, la sombra o la jerarquía se hace en un archivo y se propaga.',
-        ]}
-      />
-      <div class="bene">
-        {beneficios.map((b) => (
-          <article class="bene__card">
-            <h3 class="bene__title">{b.titulo}</h3>
-            <p class="bene__desc">{b.desc}</p>
-          </article>
-        ))}
-      </div>
-    </div>
-  </section>
+  <ModSection
+    surface
+    eyebrow="Función e importancia"
+    title="¿Para qué sirve?"
+    desc="Hace tres trabajos a la vez: convierte una colección Markdown en un grid uniforme, cuida CLS y LCP por defecto, y mantiene el schema centralizado en la ficha L4 sin acoplarse a SEO."
+    body={[
+      'Su función es ser la cara breve del catálogo: cuando un visitante entra a /productos, no quiere leer 15 fichas completas —quiere escanear, comparar y entrar a una—. La card resume cada producto en cinco trazos (imagen, badge, título, descripción, CTA) con la misma jerarquía visual en TODA la rejilla, así la comparación entre productos es justa. Cuando la categoría se merece más detalle, la ficha L4 (ProductLayout) toma el relevo.',
+      'Y por eso pesa fuera de proporción a su altura. Para los buscadores, la card lleva un H3 con el nombre del producto, alt descriptivo en la imagen y enlace interno a la ficha —el padre del grid emite ItemList (CollectionPage) vía directorySchema, así Google ve la lista entera, no card por card—. Para la accesibilidad, todo la card es un único <a> con aria-label igual al título, los iconos son aria-hidden y el foco es visible. Para el equipo que mantiene el sitio, un solo componente para todo el catálogo significa que ajustar el radio, la sombra o la jerarquía se hace en un archivo y se propaga.',
+    ]}
+  >
+    <ModBenefits items={beneficios} />
+  </ModSection>
 
   {/* ── 3) ¿QUÉ LLEVA? — anatomía con ejemplo en vivo ── */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Anatomía"
-        title="¿Qué lleva la card?"
-        desc="Cuatro piezas dentro de un único <a> que envuelve todo: imagen 16:9 con overlay y badge, título H3, descripción corta y CTA inline con flecha. Width y height fijos en la imagen reservan el hueco (cero CLS)."
-        body={[
-          'Cada pieza cumple un papel claro. La imagen abre con su overlay decorativo y el badge (norma o categoría) en la esquina superior izquierda; el título en H3 da identidad y, como vive dentro del único <a>, vuelve la card entera clic-en-cualquier-lado; la descripción corta (1-2 líneas) mata la duda más común antes del clic; y el CTA inline —«Ver detalles» + flecha SVG— cierra el bloque y es el único elemento que anima en hover (color + gap), con respeto a prefers-reduced-motion.',
-          'Abajo, el ejemplo en vivo —réplica anotada a escala del componente—. Cada punto numerado se desglosa en su tarjeta: qué resuelve y de qué prop del componente sale. La sección termina renderizando la card REAL del componente (no un mockup) en la sección «En vivo» para que el espécimen y el componente convivan en la misma página.',
-        ]}
-      />
-
+  <ModSection
+    eyebrow="Anatomía"
+    title="¿Qué lleva la card?"
+    desc="Cuatro piezas dentro de un único <a> que envuelve todo: imagen 16:9 con overlay y badge, título H3, descripción corta y CTA inline con flecha. Width y height fijos en la imagen reservan el hueco (cero CLS)."
+    body={[
+      'Cada pieza cumple un papel claro. La imagen abre con su overlay decorativo y el badge (norma o categoría) en la esquina superior izquierda; el título en H3 da identidad y, como vive dentro del único <a>, vuelve la card entera clic-en-cualquier-lado; la descripción corta (1-2 líneas) mata la duda más común antes del clic; y el CTA inline —«Ver detalles» + flecha SVG— cierra el bloque y es el único elemento que anima en hover (color + gap), con respeto a prefers-reduced-motion.',
+      'Abajo, el ejemplo en vivo —réplica anotada a escala del componente—. Cada punto numerado se desglosa en su tarjeta: qué resuelve y de qué prop del componente sale. La sección termina renderizando la card REAL del componente (no un mockup) en la sección «En vivo» para que el espécimen y el componente convivan en la misma página.',
+    ]}
+  >
+    <ModAnatomy partes={partes}>
       {/* Ejemplo en vivo: réplica anotada a escala del componente (estructura
           idéntica al .pcard del componente real, con pines numerados). */}
       <div class="pcx" role="img" aria-label="Ejemplo de tarjeta de producto: imagen con badge, título, descripción y CTA inline">
@@ -484,37 +472,21 @@ import RelatedLinks from '@components/RelatedLinks.astro'
           </span>
         </div>
       </div>
-
-      <div class="partes">
-        {partes.map((p) => (
-          <article class="parte">
-            <span class="parte__num">{p.n}</span>
-            <div class="parte__body">
-              <h3 class="parte__nombre">{p.nombre}</h3>
-              <p class="parte__que">{p.que}</p>
-              <p class="parte__dato"><span>Dato</span> <code>{p.dato}</code></p>
-            </div>
-          </article>
-        ))}
-      </div>
-    </div>
-  </section>
+    </ModAnatomy>
+  </ModSection>
 
 
   {/* ── 3b) VARIANTES ── */}
-  <section class="section section--surface">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Variantes"
-        title="Otros diseños y aplicaciones"
-        desc="La de esta plantilla es la canónica (imagen + badge + título + descripción + CTA), pero la card cambia de cara según lo que la página padre quiera mostrar: vitrina principal, accesorios sin foto, sub-listas densas, LCP priority, B2B sin precio público o producto sin stock."
-        body={[
-          'No hay un único modelo: hay una misma idea —una sola card para una sola promesa— que cada tipo de vitrina ajusta. La vitrina principal lleva todo (la de productos/index.astro); una sub-lista densa omite badge y descripción para caber más cards por fila; un grid de accesorios sin foto colapsa la imagen; el primer producto sobre el pliegue recibe priority para ganar el LCP.',
-          'Abajo, seis variantes —cuatro son configuraciones REALES del componente actual (combinaciones de las props que ya existen), y dos son extensiones propuestas (sin precio y agotado) que requerirían añadir una prop al componente—. Cada una con su réplica en vivo y el tipo de proyecto donde rinde mejor.',
-        ]}
-      />
-
+  <ModSection
+    surface
+    eyebrow="Variantes"
+    title="Otros diseños y aplicaciones"
+    desc="La de esta plantilla es la canónica (imagen + badge + título + descripción + CTA), pero la card cambia de cara según lo que la página padre quiera mostrar: vitrina principal, accesorios sin foto, sub-listas densas, LCP priority, B2B sin precio público o producto sin stock."
+    body={[
+      'No hay un único modelo: hay una misma idea —una sola card para una sola promesa— que cada tipo de vitrina ajusta. La vitrina principal lleva todo (la de productos/index.astro); una sub-lista densa omite badge y descripción para caber más cards por fila; un grid de accesorios sin foto colapsa la imagen; el primer producto sobre el pliegue recibe priority para ganar el LCP.',
+      'Abajo, seis variantes —cuatro son configuraciones REALES del componente actual (combinaciones de las props que ya existen), y dos son extensiones propuestas (sin precio y agotado) que requerirían añadir una prop al componente—. Cada una con su réplica en vivo y el tipo de proyecto donde rinde mejor.',
+    ]}
+  >
       <GaleriaDisenos ariaLabel="Variantes de tarjeta de producto">
         {/* 0 · Canónica */}
         <DisenoCard {...disenos[0]}>
@@ -618,167 +590,137 @@ import RelatedLinks from '@components/RelatedLinks.astro'
           un estado «card sin enlace» visible (para roadmap), añade un <code>disabled</code> como el de <code>CategoryCard</code> y trátalo aparte —es la variante 5—.
         </p>
       </GuiaNota>
-    </div>
-  </section>
+  </ModSection>
 
   {/* ── 3c) RESPONSIVE Y MÓVIL ── */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Responsive y móvil"
-        title="Cómo se comporta en el teléfono"
-        desc="La card no se encoge: la rejilla decide. Default del padre es 1 → auto-fill (mobile-first); a partir de ahí, tres extensiones opcionales para vitrinas que el catálogo simple no cubre: scroll horizontal con snap, stack a ancho completo con CTA sticky, y carrusel curado con dots."
-        body={[
-          'En escritorio, la vitrina (.grid) usa auto-fill con minmax(260px, 1fr): el grid decide cuántas cards caben (típicamente 2-4 por fila). En el teléfono, baja a una sola columna por defecto —cero JS, cero esfuerzo del consumidor del componente—. La card en sí no cambia: las que cambian son la rejilla y, opcionalmente, el modo de presentación.',
-          'A partir de ahí, tres patrones opcionales según el tipo de catálogo. Para vitrinas largas (20+ productos), un scroll horizontal con snap evita el scroll vertical eterno. Para vitrinas cortas (3-6 productos) en mobile, apilar a ancho completo con un CTA sticky al fondo es más enganchador. Para vitrinas curadas (3-5 productos destacados), un carrusel con dots da contexto sobre cuántos hay. Las cuatro están abajo, cada una con su vista en el teléfono y una receta comentada lista para adaptar.',
-        ]}
-      />
+  <ModSection
+    eyebrow="Responsive y móvil"
+    title="Cómo se comporta en el teléfono"
+    desc="La card no se encoge: la rejilla decide. Default del padre es 1 → auto-fill (mobile-first); a partir de ahí, tres extensiones opcionales para vitrinas que el catálogo simple no cubre: scroll horizontal con snap, stack a ancho completo con CTA sticky, y carrusel curado con dots."
+    body={[
+      'En escritorio, la vitrina (.grid) usa auto-fill con minmax(260px, 1fr): el grid decide cuántas cards caben (típicamente 2-4 por fila). En el teléfono, baja a una sola columna por defecto —cero JS, cero esfuerzo del consumidor del componente—. La card en sí no cambia: las que cambian son la rejilla y, opcionalmente, el modo de presentación.',
+      'A partir de ahí, tres patrones opcionales según el tipo de catálogo. Para vitrinas largas (20+ productos), un scroll horizontal con snap evita el scroll vertical eterno. Para vitrinas cortas (3-6 productos) en mobile, apilar a ancho completo con un CTA sticky al fondo es más enganchador. Para vitrinas curadas (3-5 productos destacados), un carrusel con dots da contexto sobre cuántos hay. Las cuatro están abajo, cada una con su vista en el teléfono y una receta comentada lista para adaptar.',
+    ]}
+  >
+    <ModResponsive>
+      <ModPattern
+        title="1 · De auto-fill a una columna (default)"
+        desc="Es lo que ya hace <code>productos/index.astro</code> hoy. La rejilla declara una columna en móvil y crece con <code>repeat(auto-fill, minmax(260px, 1fr))</code> en escritorio. Mobile-first puro: cero breakpoints intermedios, cero JS. La card no se toca: el responsive vive en la rejilla del padre."
+        receta={{ titulo: 'CSS · grid auto-fill mobile-first (default)', lang: 'css', code: recetaGridMov }}
+      >
+        <MarcoMovil ariaLabel="Vitrina apilada en una sola columna en el teléfono (default mobile-first)">
+          <div class="pcm pcm--stack">
+            <div class="pcm__card">
+              <span class="pcm__img"></span>
+              <b class="pcm__t"></b>
+              <span class="pcm__d"></span>
+              <span class="pcm__cta">Ver detalles</span>
+            </div>
+            <div class="pcm__card">
+              <span class="pcm__img"></span>
+              <b class="pcm__t"></b>
+              <span class="pcm__d"></span>
+              <span class="pcm__cta">Ver detalles</span>
+            </div>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
 
-      <div class="pats">
-        {/* 1 · Grid mobile-first (default del padre) */}
-        <article class="pat">
-          <div class="pat__demo">
-            <MarcoMovil ariaLabel="Vitrina apilada en una sola columna en el teléfono (default mobile-first)">
-              <div class="pcm pcm--stack">
-                <div class="pcm__card">
-                  <span class="pcm__img"></span>
-                  <b class="pcm__t"></b>
-                  <span class="pcm__d"></span>
-                  <span class="pcm__cta">Ver detalles</span>
-                </div>
-                <div class="pcm__card">
-                  <span class="pcm__img"></span>
-                  <b class="pcm__t"></b>
-                  <span class="pcm__d"></span>
-                  <span class="pcm__cta">Ver detalles</span>
-                </div>
-              </div>
-            </MarcoMovil>
+      <ModPattern
+        title="2 · Scroll horizontal con snap (extensión)"
+        desc="Para catálogos largos (20+ productos), una fila horizontal con <code>scroll-snap-type: x mandatory</code> evita el scroll vertical eterno. Cada card ocupa ~85% del viewport y encaja en el snap. La señal visual del «peek» de la siguiente card invita al swipe. Extensión sobre la rejilla; NO toca el componente."
+        receta={{ titulo: 'CSS · scroll horizontal con snap (móvil)', lang: 'css', code: recetaScrollSnap }}
+      >
+        <MarcoMovil ariaLabel="Vitrina con scroll horizontal y snap: el visitante desliza con el pulgar">
+          <div class="pcm pcm--hscroll">
+            <div class="pcm__row">
+              <span class="pcm__card pcm__card--snap">
+                <span class="pcm__img"></span>
+                <b class="pcm__t"></b>
+                <span class="pcm__d"></span>
+              </span>
+              <span class="pcm__card pcm__card--snap pcm__card--peek">
+                <span class="pcm__img"></span>
+                <b class="pcm__t"></b>
+              </span>
+            </div>
+            <span class="pcm__hint" aria-hidden="true">↔ desliza con el pulgar</span>
           </div>
-          <div class="pat__info">
-            <h3 class="pat__title">1 · De auto-fill a una columna (default)</h3>
-            <p class="pat__desc">Es lo que ya hace <code>productos/index.astro</code> hoy. La rejilla declara una columna en móvil y crece con <code>repeat(auto-fill, minmax(260px, 1fr))</code> en escritorio. Mobile-first puro: cero breakpoints intermedios, cero JS. La card no se toca: el responsive vive en la rejilla del padre.</p>
-            <Receta titulo="CSS · grid auto-fill mobile-first (default)" lang="css" code={recetaGridMov} />
-          </div>
-        </article>
+        </MarcoMovil>
+      </ModPattern>
 
-        {/* 2 · Scroll horizontal con snap */}
-        <article class="pat">
-          <div class="pat__demo">
-            <MarcoMovil ariaLabel="Vitrina con scroll horizontal y snap: el visitante desliza con el pulgar">
-              <div class="pcm pcm--hscroll">
-                <div class="pcm__row">
-                  <span class="pcm__card pcm__card--snap">
-                    <span class="pcm__img"></span>
-                    <b class="pcm__t"></b>
-                    <span class="pcm__d"></span>
-                  </span>
-                  <span class="pcm__card pcm__card--snap pcm__card--peek">
-                    <span class="pcm__img"></span>
-                    <b class="pcm__t"></b>
-                  </span>
-                </div>
-                <span class="pcm__hint" aria-hidden="true">↔ desliza con el pulgar</span>
-              </div>
-            </MarcoMovil>
+      <ModPattern
+        title="3 · Stack ancho completo + CTA sticky (extensión)"
+        desc="Para vitrinas cortas (3-6 productos) en móvil, apilar cada card a ancho completo —cada producto como «hero»— y dejar un CTA sticky al fondo (<code>position: sticky; bottom</code>) recoge la intención sin obligar al visitante a volver al header. Respeta <code>env(safe-area-inset-bottom)</code> en iOS para no quedar bajo el home indicator."
+        receta={{ titulo: 'CSS · stack + CTA sticky (móvil)', lang: 'css', code: recetaStickyCta }}
+      >
+        <MarcoMovil ariaLabel="Vitrina apilada a ancho completo con CTA sticky al fondo">
+          <div class="pcm pcm--sticky">
+            <div class="pcm__full">
+              <span class="pcm__img"></span>
+              <b class="pcm__t"></b>
+              <span class="pcm__d"></span>
+            </div>
+            <div class="pcm__full">
+              <span class="pcm__img"></span>
+              <b class="pcm__t"></b>
+            </div>
+            <span class="pcm__sticky" aria-hidden="true">Cotizar por WhatsApp</span>
           </div>
-          <div class="pat__info">
-            <h3 class="pat__title">2 · Scroll horizontal con snap (extensión)</h3>
-            <p class="pat__desc">Para catálogos largos (20+ productos), una fila horizontal con <code>scroll-snap-type: x mandatory</code> evita el scroll vertical eterno. Cada card ocupa ~85% del viewport y encaja en el snap. La señal visual del «peek» de la siguiente card invita al swipe. Extensión sobre la rejilla; NO toca el componente.</p>
-            <Receta titulo="CSS · scroll horizontal con snap (móvil)" lang="css" code={recetaScrollSnap} />
-          </div>
-        </article>
+        </MarcoMovil>
+      </ModPattern>
 
-        {/* 3 · Stack ancho completo + CTA sticky */}
-        <article class="pat">
-          <div class="pat__demo">
-            <MarcoMovil ariaLabel="Vitrina apilada a ancho completo con CTA sticky al fondo">
-              <div class="pcm pcm--sticky">
-                <div class="pcm__full">
-                  <span class="pcm__img"></span>
-                  <b class="pcm__t"></b>
-                  <span class="pcm__d"></span>
-                </div>
-                <div class="pcm__full">
-                  <span class="pcm__img"></span>
-                  <b class="pcm__t"></b>
-                </div>
-                <span class="pcm__sticky" aria-hidden="true">Cotizar por WhatsApp</span>
-              </div>
-            </MarcoMovil>
+      <ModPattern
+        title="4 · Carrusel con dots (extensión, JS mínimo)"
+        desc="Para vitrinas curadas (3-5 productos destacados), un carrusel manual con indicadores: el snap horizontal lo hace CSS; los dots y la card visible se gestionan con un <code>IntersectionObserver</code> de 10 líneas. Útil cuando el dato «hay 4 destacados» comunica algo; antipatrón para catálogos largos —ahí mejor el scroll horizontal sin dots—."
+        receta={{ titulo: 'CSS + IntersectionObserver · carrusel con dots', lang: 'css', code: recetaCarrusel }}
+      >
+        <MarcoMovil ariaLabel="Carrusel curado de 3-5 productos con indicadores tipo dots">
+          <div class="pcm pcm--carrusel">
+            <div class="pcm__row">
+              <span class="pcm__card pcm__card--center">
+                <span class="pcm__img"></span>
+                <b class="pcm__t"></b>
+              </span>
+            </div>
+            <span class="pcm__dots" aria-hidden="true">
+              <i></i><i class="pcm__dot--on"></i><i></i><i></i>
+            </span>
           </div>
-          <div class="pat__info">
-            <h3 class="pat__title">3 · Stack ancho completo + CTA sticky (extensión)</h3>
-            <p class="pat__desc">Para vitrinas cortas (3-6 productos) en móvil, apilar cada card a ancho completo —cada producto como «hero»— y dejar un CTA sticky al fondo (<code>position: sticky; bottom</code>) recoge la intención sin obligar al visitante a volver al header. Respeta <code>env(safe-area-inset-bottom)</code> en iOS para no quedar bajo el home indicator.</p>
-            <Receta titulo="CSS · stack + CTA sticky (móvil)" lang="css" code={recetaStickyCta} />
-          </div>
-        </article>
-
-        {/* 4 · Carrusel con dots */}
-        <article class="pat">
-          <div class="pat__demo">
-            <MarcoMovil ariaLabel="Carrusel curado de 3-5 productos con indicadores tipo dots">
-              <div class="pcm pcm--carrusel">
-                <div class="pcm__row">
-                  <span class="pcm__card pcm__card--center">
-                    <span class="pcm__img"></span>
-                    <b class="pcm__t"></b>
-                  </span>
-                </div>
-                <span class="pcm__dots" aria-hidden="true">
-                  <i></i><i class="pcm__dot--on"></i><i></i><i></i>
-                </span>
-              </div>
-            </MarcoMovil>
-          </div>
-          <div class="pat__info">
-            <h3 class="pat__title">4 · Carrusel con dots (extensión, JS mínimo)</h3>
-            <p class="pat__desc">Para vitrinas curadas (3-5 productos destacados), un carrusel manual con indicadores: el snap horizontal lo hace CSS; los dots y la card visible se gestionan con un <code>IntersectionObserver</code> de 10 líneas. Útil cuando el dato «hay 4 destacados» comunica algo; antipatrón para catálogos largos —ahí mejor el scroll horizontal sin dots—.</p>
-            <Receta titulo="CSS + IntersectionObserver · carrusel con dots" lang="css" code={recetaCarrusel} />
-          </div>
-        </article>
-      </div>
-    </div>
-  </section>
+        </MarcoMovil>
+      </ModPattern>
+    </ModResponsive>
+  </ModSection>
 
   {/* ── 4) ¿DÓNDE VA? ── */}
-  <section class="section section--surface">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Posición"
-        title="¿Dónde se coloca?"
-        desc="Una vez por producto, siempre dentro de un .grid (auto-fill) en la vitrina del catálogo /productos. NO se usa en la ficha L4 (/productos/<slug>) para mostrar «relacionados» —ese papel lo cumple RelatedLinks—."
-        body={[
-          'A diferencia del CategoryDetail (que se apila N veces por página) o del Hero (uno por página), la ProductCard aparece tantas veces como productos haya en la vitrina —y SOLO en la vitrina—. Hoy se usa en exactamente un consumidor: /productos/index.astro. Cada card va dentro del wrapper <code>.grid</code> (mobile-first: 1 columna → auto-fill con <code>minmax(260px, 1fr)</code> en escritorio).',
-          'Lo que NO hace la card, por diseño: no aparece en la ficha L4 (ProductLayout) para mostrar productos relacionados. La ficha L4 usa <code>RelatedLinks</code>, un componente genérico tipo «más enlaces» que recibe <code>links: { label, href, description }[]</code> y los pinta como tiles simples. Esto evita el bucle visual «card de catálogo dentro de ficha de catálogo» y deja a la ProductCard cumpliendo un solo papel: vitrina. Si en el futuro se quisiera reusar la card para «relacionados», sería un cambio de patrón —no un parche al componente—.',
-        ]}
-      />
-    </div>
-  </section>
+  <ModSection
+    surface
+    eyebrow="Posición"
+    title="¿Dónde se coloca?"
+    desc="Una vez por producto, siempre dentro de un .grid (auto-fill) en la vitrina del catálogo /productos. NO se usa en la ficha L4 (/productos/<slug>) para mostrar «relacionados» —ese papel lo cumple RelatedLinks—."
+    body={[
+      'A diferencia del CategoryDetail (que se apila N veces por página) o del Hero (uno por página), la ProductCard aparece tantas veces como productos haya en la vitrina —y SOLO en la vitrina—. Hoy se usa en exactamente un consumidor: /productos/index.astro. Cada card va dentro del wrapper .grid (mobile-first: 1 columna → auto-fill con minmax(260px, 1fr) en escritorio).',
+      'Lo que NO hace la card, por diseño: no aparece en la ficha L4 (ProductLayout) para mostrar productos relacionados. La ficha L4 usa RelatedLinks, un componente genérico tipo «más enlaces» que recibe links: { label, href, description }[] y los pinta como tiles simples. Esto evita el bucle visual «card de catálogo dentro de ficha de catálogo» y deja a la ProductCard cumpliendo un solo papel: vitrina. Si en el futuro se quisiera reusar la card para «relacionados», sería un cambio de patrón —no un parche al componente—.',
+    ]}
+  />
 
   {/* ── 5) CÓMO SE ARMA — recetas + prose técnica ── */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Implementación"
-        title="Cómo está construido"
-        desc="Un único componente con API pequeña: title, href, image?, imageAlt?, badge?, description?, ctaLabel?, index?, priority?. Devuelve un <article> con un único <a> envolvente que contiene la imagen (16:9 con width/height fijos), el badge opcional, el título H3, la descripción opcional y el CTA inline con flecha SVG."
-        body={[
-          'El componente vive en ProductCard.astro y expone nueve props a propósito: title y href (obligatorios; href no está guardado, pasarlo vacío genera un enlace muerto silencioso), image + imageAlt (imagen opcional; el alt cae a title si no se pasa), badge (etiqueta superior, opcional), description (1-2 líneas, opcional), ctaLabel (default «Ver detalles»), index (posición en el grid: las 4 primeras cargan eager) y priority (LCP: la primera del grid sobre el pliegue lleva fetchpriority="high"). Cero JavaScript en el componente: HTML + CSS estático generado en build.',
-          'En el sitio, lo más común es alimentarlo desde getCollection(\'productos\'). La página /productos/index.astro filtra los drafts, ordena por data.order y mapea cada producto a una ProductCard pasando index para el lazy automático. El padre del grid emite ItemList vía directorySchema (CollectionPage + lista), NO Product —Product es de la ficha L4—. Las imágenes ya están en /images/productos/*.avif (validadas por Zod, regex que exige la ruta absoluta).',
-        ]}
-      />
-
+  <ModSection
+    eyebrow="Implementación"
+    title="Cómo está construido"
+    desc="Un único componente con API pequeña: title, href, image?, imageAlt?, badge?, description?, ctaLabel?, index?, priority?. Devuelve un <article> con un único <a> envolvente que contiene la imagen (16:9 con width/height fijos), el badge opcional, el título H3, la descripción opcional y el CTA inline con flecha SVG."
+    body={[
+      'El componente vive en ProductCard.astro y expone nueve props a propósito: title y href (obligatorios; href no está guardado, pasarlo vacío genera un enlace muerto silencioso), image + imageAlt (imagen opcional; el alt cae a title si no se pasa), badge (etiqueta superior, opcional), description (1-2 líneas, opcional), ctaLabel (default «Ver detalles»), index (posición en el grid: las 4 primeras cargan eager) y priority (LCP: la primera del grid sobre el pliegue lleva fetchpriority="high"). Cero JavaScript en el componente: HTML + CSS estático generado en build.',
+      'En el sitio, lo más común es alimentarlo desde getCollection(\'productos\'). La página /productos/index.astro filtra los drafts, ordena por data.order y mapea cada producto a una ProductCard pasando index para el lazy automático. El padre del grid emite ItemList vía directorySchema (CollectionPage + lista), NO Product —Product es de la ficha L4—. Las imágenes ya están en /images/productos/*.avif (validadas por Zod, regex que exige la ruta absoluta).',
+    ]}
+  >
       <div class="recetas">
         <Receta titulo="Astro · uso básico (hard-coded, una sola card)" lang="astro" code={recetaUso} />
         <Receta titulo="Astro · data-driven desde getCollection('productos') (vitrina del catálogo)" lang="astro" code={recetaCollection} />
         <Receta titulo="Astro · schema en el padre (ItemList vía directorySchema; la card no emite)" lang="astro" code={recetaSchema} />
       </div>
 
-      <div class="prose">
+      <ModProse>
         <p>
           En concreto: el componente recibe las props, computa <code>eager = priority || index &lt; 4</code> y emite un
           <code>{`<article class="pcard" aria-label={title}>`}</code> con un único <code>&lt;a class="pcard__link"&gt;</code>
@@ -795,55 +737,34 @@ import RelatedLinks from '@components/RelatedLinks.astro'
           vive en <code>lib/seo.ts</code> y solo lo invoca la ficha L4 (<code>ProductLayout</code>); el grid emite <code>ItemList</code> vía <code>directorySchema</code>.
           Un único emisor por página (regla B3), cero schema duplicado.
         </p>
-      </div>
-    </div>
-  </section>
+      </ModProse>
+  </ModSection>
 
 
   {/* ── 6) BUENAS PRÁCTICAS ── */}
-  <section class="section section--surface">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Buenas prácticas"
-        title="Qué hacer y qué evitar"
-        desc="La diferencia entre una vitrina que se lee con ritmo y una que se siente «hecha por cards distintas» cabe en un puñado de hábitos —empezando por respetar la regla B3 del schema (un solo emisor por página) y por NO pasar href vacíos—."
-        body={[
-          'Ninguno de estos hábitos es capricho: salen del diseño actual del componente y del esquema de schema del sitio. La card es presentación pura: Product schema vive en lib/seo.ts y solo la ficha L4 lo emite; el grid emite ItemList. Pasar todo por la collection (Zod) y filtrar drafts antes del map asegura que solo lleguen productos completos a la vitrina.',
-          'La buena noticia es que casi todo se sostiene solo cuando se respeta la collection: el alt cae a title (subóptimo pero funcional), el lazy es automático para todas menos las 4 primeras, y el LCP se cuida pasando priority a la primera card. El detalle a vigilar manualmente: <code>href</code> NO está guardado y queda en silencio si se pasa vacío. Abajo, lo que conviene y lo que conviene evitar, enfrentados.',
-        ]}
-      />
-      <div class="dodont">
-        <article class="dd dd--si">
-          <h3 class="dd__title"><span class="dd__icon" aria-hidden="true">✓</span> Sí conviene</h3>
-          <ul class="dd__list">
-            {sis.map((s) => <li>{s}</li>)}
-          </ul>
-        </article>
-        <article class="dd dd--no">
-          <h3 class="dd__title"><span class="dd__icon" aria-hidden="true">✕</span> Mejor evita</h3>
-          <ul class="dd__list">
-            {nos.map((s) => <li>{s}</li>)}
-          </ul>
-        </article>
-      </div>
-    </div>
-  </section>
+  <ModSection
+    surface
+    eyebrow="Buenas prácticas"
+    title="Qué hacer y qué evitar"
+    desc="La diferencia entre una vitrina que se lee con ritmo y una que se siente «hecha por cards distintas» cabe en un puñado de hábitos —empezando por respetar la regla B3 del schema (un solo emisor por página) y por NO pasar href vacíos—."
+    body={[
+      'Ninguno de estos hábitos es capricho: salen del diseño actual del componente y del esquema de schema del sitio. La card es presentación pura: Product schema vive en lib/seo.ts y solo la ficha L4 lo emite; el grid emite ItemList. Pasar todo por la collection (Zod) y filtrar drafts antes del map asegura que solo lleguen productos completos a la vitrina.',
+      'La buena noticia es que casi todo se sostiene solo cuando se respeta la collection: el alt cae a title (subóptimo pero funcional), el lazy es automático para todas menos las 4 primeras, y el LCP se cuida pasando priority a la primera card. El detalle a vigilar manualmente: href NO está guardado y queda en silencio si se pasa vacío. Abajo, lo que conviene y lo que conviene evitar, enfrentados.',
+    ]}
+  >
+    <ModDosDonts sis={sis} nos={nos} />
+  </ModSection>
 
   {/* ── 7) EAT YOUR OWN DOG FOOD — el componente en vivo, no como mockup ── */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="En vivo"
-        title="El componente, en su uso real"
-        desc="Las galerías de variantes son mockups a escala; estas cards NO. Aquí se renderizan dos ProductCard reales con sus props llenas, idénticos a los que verás en /productos."
-        body={[
-          'La regla del sitio es estricta —una sola card para todo el catálogo, presentación pura sin schema propio—. Este bloque cierra la página con una pequeña vitrina alimentada por el componente real, no por una réplica anotada. Si el componente se rompe, este bloque se rompe a la vista; documentación que se documenta a sí misma.',
-          'Las imágenes son las mismas fotos demo del proyecto (AVIF optimizadas, lazy salvo la primera —que recibe priority para que sea LCP friendly—). Los hrefs apuntan a fichas reales del catálogo. La rejilla replica el .grid de /productos/index.astro (1 → auto-fill).',
-        ]}
-      />
-
+  <ModSection
+    eyebrow="En vivo"
+    title="El componente, en su uso real"
+    desc="Las galerías de variantes son mockups a escala; estas cards NO. Aquí se renderizan dos ProductCard reales con sus props llenas, idénticos a los que verás en /productos."
+    body={[
+      'La regla del sitio es estricta —una sola card para todo el catálogo, presentación pura sin schema propio—. Este bloque cierra la página con una pequeña vitrina alimentada por el componente real, no por una réplica anotada. Si el componente se rompe, este bloque se rompe a la vista; documentación que se documenta a sí misma.',
+      'Las imágenes son las mismas fotos demo del proyecto (AVIF optimizadas, lazy salvo la primera —que recibe priority para que sea LCP friendly—). Los hrefs apuntan a fichas reales del catálogo. La rejilla replica el .grid de /productos/index.astro (1 → auto-fill).',
+    ]}
+  >
       <div class="grid-vivo">
         <ProductCard
           title="Casco de seguridad industrial NOM-115"
@@ -877,8 +798,7 @@ import RelatedLinks from '@components/RelatedLinks.astro'
           index={2}
         />
       </div>
-    </div>
-  </section>
+  </ModSection>
 
   {/* Cierre */}
   <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
@@ -897,18 +817,9 @@ import RelatedLinks from '@components/RelatedLinks.astro'
 </PageLayout>
 
 <style>
-  /* Utilidades estructurales (tokens.css = fuente única; scoped por página). */
-  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
-  .section { padding: var(--sp-8) 0; }
-  .section--surface { background: var(--c-surface); }
-  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
-
-  /* ── Beneficios ── */
-  .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
-  @media (min-width: 768px) { .bene { grid-template-columns: repeat(3, 1fr); } }
-  .bene__card { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); }
-  .bene__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
-  .bene__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  /* SOLO mockups bespoke de esta página (.pcx/.pcv/.pcm) + .recetas + .grid-vivo.
+     El armazón estructural (.section/.container/.bene/.partes/.prose/.dodont/.pats/.pat)
+     vive en el KIT (src/components/modulos/*) — antes estaba duplicado aquí. */
 
   /* ── Ejemplo en vivo de la card (réplica a escala del componente) ── */
   .pcx {
@@ -952,42 +863,8 @@ import RelatedLinks from '@components/RelatedLinks.astro'
   .pcx__n--mid { background: var(--c-muted); }
   .pcx__n--badge { background: #fff; color: var(--c-primary); }
 
-  /* ── Cards de las 4 partes ── */
-  .partes { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-5); }
-  @media (min-width: 600px) { .partes { grid-template-columns: repeat(2, 1fr); } }
-  @media (min-width: 1000px) { .partes { grid-template-columns: repeat(4, 1fr); } }
-  .parte { display: flex; gap: var(--sp-3); align-items: start; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-4); }
-  .parte__num { flex-shrink: 0; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: var(--radius-full); background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: var(--text-sm); }
-  .parte__body { display: grid; gap: 4px; min-width: 0; }
-  .parte__nombre { margin: 0; font-family: var(--font-heading); font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--c-ink); }
-  .parte__que { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
-  .parte__dato { margin: 4px 0 0; display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--text-xs); color: var(--c-muted); }
-  .parte__dato span { text-transform: uppercase; letter-spacing: .06em; font-weight: var(--weight-semibold); }
-  .parte__dato code, .prose code, .pat__desc code {
-    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace; font-size: .85em;
-    background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm);
-    padding: .05em .4em; color: var(--c-primary-dark);
-  }
-
   /* ── Recetas (apiladas, ancho completo) ── */
   .recetas { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
-
-  /* ── Prose técnica ── */
-  .prose { max-width: 75ch; margin-top: var(--sp-6); }
-  .prose p { margin: 0 0 var(--sp-4); font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
-  .prose strong { color: var(--c-ink); font-weight: var(--weight-semibold); }
-
-  /* ── Sí / No ── */
-  .dodont { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
-  @media (min-width: 768px) { .dodont { grid-template-columns: 1fr 1fr; } }
-  .dd { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); }
-  .dd__title { margin: 0 0 var(--sp-3); display: flex; align-items: center; gap: var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
-  .dd__icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-full); font-size: var(--text-sm); }
-  .dd--si .dd__icon { background: rgba(34,197,94,.14); color: #16a34a; }
-  .dd--no .dd__icon { background: rgba(239,68,68,.12); color: #dc2626; }
-  .dd__list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-2); }
-  .dd__list li { position: relative; padding-left: var(--sp-5); font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
-  .dd__list li::before { content: ''; position: absolute; left: 0; top: .55em; width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--c-muted); }
 
   /* ── Vitrina «en vivo» (grid del catálogo, mobile-first) ── */
   .grid-vivo {
@@ -1039,13 +916,6 @@ import RelatedLinks from '@components/RelatedLinks.astro'
   .pcv--disabled { opacity: .55; filter: saturate(.6); }
   .pcv--disabled .pcv__badge { background: var(--c-muted); }
   .pcv--lcp { box-shadow: 0 0 0 2px var(--c-primary); }
-
-  /* ── Sección Responsive: teléfono | explicación + receta ─────────────────── */
-  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
-  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
-  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
-  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
-  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
 
   /* ── Mockups MÓVIL (dentro de <MarcoMovil>) ──────────────────────────────── */
   .pcm { padding: 10px; font-size: 11px; color: var(--c-ink); display: flex; flex-direction: column; gap: 8px; }

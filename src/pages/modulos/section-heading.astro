@@ -15,13 +15,19 @@
 // ============================================================================
 import PageLayout from '@layouts/PageLayout.astro'
 import Hero from '@components/Hero.astro'
-import SectionHeading from '@components/SectionHeading.astro'
 import SectionMenu from '@components/SectionMenu.astro'
 import GaleriaDisenos from '@components/GaleriaDisenos.astro'
 import DisenoCard from '@components/DisenoCard.astro'
 import MarcoMovil from '@components/MarcoMovil.astro'
 import Receta from '@components/Receta.astro'
 import GuiaNota from '@components/GuiaNota.astro'
+import ModSection from '@components/modulos/ModSection.astro'
+import ModBenefits from '@components/modulos/ModBenefits.astro'
+import ModAnatomy from '@components/modulos/ModAnatomy.astro'
+import ModResponsive from '@components/modulos/ModResponsive.astro'
+import ModPattern from '@components/modulos/ModPattern.astro'
+import ModProse from '@components/modulos/ModProse.astro'
+import ModDosDonts from '@components/modulos/ModDosDonts.astro'
 import { WA_MESSAGES, waUrl } from '@config/site'
 import { siblingsModules } from '@lib/modules'
 
@@ -291,59 +297,41 @@ const recetaReorder = `/* MÓVIL · INVERTIR EL ORDEN EN STACK (extensión)
   />
 
   {/* ── 1) ¿QUÉ ES? ── */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Definición"
-        title="¿Qué es un encabezado de sección?"
-        desc="El bloque visible que abre cada sección del cuerpo: una etiqueta corta (eyebrow), el título (un H2 en la mayoría de los casos) y una descripción de 1-2 frases que amplía el título."
-        body={[
-          'El encabezado de sección (o «section heading») es el módulo que rotula cada bloque de la página. No es un H2 a secas: es un patrón estructurado —eyebrow + título + descripción + body en duo— que se repite en TODAS las secciones de TODAS las páginas del sitio. Visto de lejos parece decoración tipográfica; visto de cerca, es lo que permite escanear un sitio largo sin perderse.',
-          'En este proyecto vive en un único componente, SectionHeading.astro, que reúne dos layouts: «duo» (el estándar: título a la izquierda, body a la derecha, en dos columnas) y «simple» (un bloque centrado o alineado a la izquierda, sin body). Reusar un solo componente para todos los títulos significa que cambiar la tipografía o el color del acento se hace en un solo archivo, y el sitio entero responde.',
-        ]}
-      />
-    </div>
-  </section>
+  <ModSection
+    eyebrow="Definición"
+    title="¿Qué es un encabezado de sección?"
+    desc="El bloque visible que abre cada sección del cuerpo: una etiqueta corta (eyebrow), el título (un H2 en la mayoría de los casos) y una descripción de 1-2 frases que amplía el título."
+    body={[
+      'El encabezado de sección (o «section heading») es el módulo que rotula cada bloque de la página. No es un H2 a secas: es un patrón estructurado —eyebrow + título + descripción + body en duo— que se repite en TODAS las secciones de TODAS las páginas del sitio. Visto de lejos parece decoración tipográfica; visto de cerca, es lo que permite escanear un sitio largo sin perderse.',
+      'En este proyecto vive en un único componente, SectionHeading.astro, que reúne dos layouts: «duo» (el estándar: título a la izquierda, body a la derecha, en dos columnas) y «simple» (un bloque centrado o alineado a la izquierda, sin body). Reusar un solo componente para todos los títulos significa que cambiar la tipografía o el color del acento se hace en un solo archivo, y el sitio entero responde.',
+    ]}
+  />
 
   {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
-  <section class="section section--surface">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Función e importancia"
-        title="¿Para qué sirve?"
-        desc="Hace tres trabajos a la vez: ordena la jerarquía semántica, da contexto antes del contenido y mantiene el ritmo visual del sitio sin pedir CSS por título."
-        body={[
-          'Su función es estructurar la página para que se pueda leer en diagonal. Un cuerpo largo sin títulos es un muro de párrafos; los mismos párrafos repartidos en secciones rotuladas se vuelven escaneables. El visitante recorre los encabezados, decide en qué bloque entrar y solo entonces lee a fondo. Eso —tan obvio como suena— es la diferencia entre que se quede o se vaya.',
-          'Y por eso el patrón pesa fuera de proporción a su tamaño. Para los buscadores, los H2 bien escritos son la mejor pista del contenido de la página después del H1; para la accesibilidad, son los puntos por donde un lector de pantalla salta de sección en sección; para el equipo que mantiene el sitio, son la garantía de que el ritmo visual no se va a deformar con el tiempo.',
-        ]}
-      />
-      <div class="bene">
-        {beneficios.map((b) => (
-          <article class="bene__card">
-            <h3 class="bene__title">{b.titulo}</h3>
-            <p class="bene__desc">{b.desc}</p>
-          </article>
-        ))}
-      </div>
-    </div>
-  </section>
+  <ModSection
+    surface
+    eyebrow="Función e importancia"
+    title="¿Para qué sirve?"
+    desc="Hace tres trabajos a la vez: ordena la jerarquía semántica, da contexto antes del contenido y mantiene el ritmo visual del sitio sin pedir CSS por título."
+    body={[
+      'Su función es estructurar la página para que se pueda leer en diagonal. Un cuerpo largo sin títulos es un muro de párrafos; los mismos párrafos repartidos en secciones rotuladas se vuelven escaneables. El visitante recorre los encabezados, decide en qué bloque entrar y solo entonces lee a fondo. Eso —tan obvio como suena— es la diferencia entre que se quede o se vaya.',
+      'Y por eso el patrón pesa fuera de proporción a su tamaño. Para los buscadores, los H2 bien escritos son la mejor pista del contenido de la página después del H1; para la accesibilidad, son los puntos por donde un lector de pantalla salta de sección en sección; para el equipo que mantiene el sitio, son la garantía de que el ritmo visual no se va a deformar con el tiempo.',
+    ]}
+  >
+    <ModBenefits items={beneficios} />
+  </ModSection>
 
   {/* ── 3) ¿QUÉ LLEVA? — anatomía con ejemplo en vivo ── */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Anatomía"
-        title="¿Qué lleva el encabezado?"
-        desc="Cuatro piezas: el eyebrow con su barra de acento, el título (con segunda línea opcional resaltada), la descripción y —en el layout duo— el body de la columna derecha."
-        body={[
-          'Cada pieza cumple un papel claro. El eyebrow ubica de un vistazo («Definición», «Anatomía»); el título es la promesa del bloque y el marcador semántico (H2 por defecto); la descripción amplía sin repetir, en 1-2 frases; y el body de la columna derecha, exclusivo del layout duo, suma el «por qué» o la nota técnica al lado del título. El orden de lectura está cableado: rótulo, título, descripción, contexto.',
-          'Abajo, el ejemplo en vivo —la sección que estás leyendo es el ejemplo en vivo—. Cada punto numerado se desglosa en su tarjeta: qué resuelve y de qué prop del componente sale. Y para que el mapeo sea inequívoco, los pines del espécimen apuntan a los mismos elementos del SectionHeading que abre esta sección: lo que ves arriba es exactamente lo que se documenta abajo.',
-        ]}
-      />
-
+  <ModSection
+    eyebrow="Anatomía"
+    title="¿Qué lleva el encabezado?"
+    desc="Cuatro piezas: el eyebrow con su barra de acento, el título (con segunda línea opcional resaltada), la descripción y —en el layout duo— el body de la columna derecha."
+    body={[
+      'Cada pieza cumple un papel claro. El eyebrow ubica de un vistazo («Definición», «Anatomía»); el título es la promesa del bloque y el marcador semántico (H2 por defecto); la descripción amplía sin repetir, en 1-2 frases; y el body de la columna derecha, exclusivo del layout duo, suma el «por qué» o la nota técnica al lado del título. El orden de lectura está cableado: rótulo, título, descripción, contexto.',
+      'Abajo, el ejemplo en vivo —la sección que estás leyendo es el ejemplo en vivo—. Cada punto numerado se desglosa en su tarjeta: qué resuelve y de qué prop del componente sale. Y para que el mapeo sea inequívoco, los pines del espécimen apuntan a los mismos elementos del SectionHeading que abre esta sección: lo que ves arriba es exactamente lo que se documenta abajo.',
+    ]}
+  >
+    <ModAnatomy partes={partes}>
       {/* Ejemplo en vivo: réplica anotada a escala del componente (estructura
           idéntica al .sech--duo del componente real, con pines numerados). */}
       <div class="shx" role="img" aria-label="Ejemplo de encabezado de sección: eyebrow, título, descripción y body en duo">
@@ -362,37 +350,21 @@ const recetaReorder = `/* MÓVIL · INVERTIR EL ORDEN EN STACK (extensión)
           <p class="shx__bp">Segundo párrafo del body: el cómo o la nota técnica. Mantén ambos en el mismo registro y de longitud parecida.</p>
         </div>
       </div>
-
-      <div class="partes">
-        {partes.map((p) => (
-          <article class="parte">
-            <span class="parte__num">{p.n}</span>
-            <div class="parte__body">
-              <h3 class="parte__nombre">{p.nombre}</h3>
-              <p class="parte__que">{p.que}</p>
-              <p class="parte__dato"><span>Dato</span> <code>{p.dato}</code></p>
-            </div>
-          </article>
-        ))}
-      </div>
-    </div>
-  </section>
+    </ModAnatomy>
+  </ModSection>
 
   {/* ── 3b) VARIANTES ── */}
-  <section class="section section--surface">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Variantes"
-        title="Otros diseños y aplicaciones"
-        desc="El de esta plantilla es el duo, pero el encabezado cambia de cara según lo que el bloque necesita rotular: catálogo, artículo, fondo oscuro, sub-sección."
-        body={[
-          'No hay un único modelo: hay una misma idea —eyebrow + título + descripción— que cada tipo de bloque ajusta. Una sección de contenido usa duo (con body al lado del título); un catálogo usa simple+titleAccent (centrado, con segunda línea de acento); un artículo editorial alinea a la izquierda; un CTA banner usa duo sobre fondo oscuro; una sub-sección reusa el mismo componente bajando a H3.',
-          'Abajo, seis variantes —cinco son configuraciones REALES del componente (cambiando solo las props layout, align, as, titleAccent y dark), y la última es una extensión propuesta que requeriría añadir un slot al componente—. Cada una con su réplica en vivo y el tipo de proyecto donde rinde mejor.',
-        ]}
-      />
-
-      <GaleriaDisenos ariaLabel="Variantes de encabezado de sección">
+  <ModSection
+    surface
+    eyebrow="Variantes"
+    title="Otros diseños y aplicaciones"
+    desc="El de esta plantilla es el duo, pero el encabezado cambia de cara según lo que el bloque necesita rotular: catálogo, artículo, fondo oscuro, sub-sección."
+    body={[
+      'No hay un único modelo: hay una misma idea —eyebrow + título + descripción— que cada tipo de bloque ajusta. Una sección de contenido usa duo (con body al lado del título); un catálogo usa simple+titleAccent (centrado, con segunda línea de acento); un artículo editorial alinea a la izquierda; un CTA banner usa duo sobre fondo oscuro; una sub-sección reusa el mismo componente bajando a H3.',
+      'Abajo, seis variantes —cinco son configuraciones REALES del componente (cambiando solo las props layout, align, as, titleAccent y dark), y la última es una extensión propuesta que requeriría añadir un slot al componente—. Cada una con su réplica en vivo y el tipo de proyecto donde rinde mejor.',
+    ]}
+  >
+    <GaleriaDisenos ariaLabel="Variantes de encabezado de sección">
         {/* 0 · Duo (esta plantilla) */}
         <DisenoCard {...disenos[0]}>
           <div class="shv shv--duo" role="img" aria-label="Encabezado duo: título a la izquierda, body a la derecha">
@@ -481,221 +453,167 @@ const recetaReorder = `/* MÓVIL · INVERTIR EL ORDEN EN STACK (extensión)
           layout duo cuando ese slot esté presente. Se deja documentada por completitud, no se usa todavía.
         </p>
       </GuiaNota>
-    </div>
-  </section>
+  </ModSection>
 
   {/* ── 3c) RESPONSIVE Y MÓVIL ── */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Responsive y móvil"
-        title="Cómo se comporta en el teléfono"
-        desc="En móvil el encabezado no se encoge: cambia de modo. Las dos columnas se apilan, el título escala solo con clamp() y el espaciado vertical se ajusta para no comerse la pantalla."
-        body={[
-          'En escritorio el layout duo vive cómodo como dos columnas (1fr 1fr) con un gap fluido. En el teléfono, esas dos columnas no caben sin apretar el texto, así que el componente colapsa a una sola columna por defecto bajo 768 px y el body cae debajo del título. Es lo más seguro y lo que ya hace el componente, sin un molde distinto para cada ancho.',
-          'A partir de ahí, hay dos patrones de tipografía que conviene conocer —fluida con clamp() para que el H2 escale solo, y eyebrow fijo en xs para que no compita con el título— y dos extensiones opcionales según el caso: espaciado comprimido en pantallas muy pequeñas e inversión del orden en stack (body primero, título después) para landings narrativas. Las cuatro están abajo, cada una con su vista en el teléfono y una receta comentada lista para adaptar.',
-        ]}
-      />
+  <ModSection
+    eyebrow="Responsive y móvil"
+    title="Cómo se comporta en el teléfono"
+    desc="En móvil el encabezado no se encoge: cambia de modo. Las dos columnas se apilan, el título escala solo con clamp() y el espaciado vertical se ajusta para no comerse la pantalla."
+    body={[
+      'En escritorio el layout duo vive cómodo como dos columnas (1fr 1fr) con un gap fluido. En el teléfono, esas dos columnas no caben sin apretar el texto, así que el componente colapsa a una sola columna por defecto bajo 768 px y el body cae debajo del título. Es lo más seguro y lo que ya hace el componente, sin un molde distinto para cada ancho.',
+      'A partir de ahí, hay dos patrones de tipografía que conviene conocer —fluida con clamp() para que el H2 escale solo, y eyebrow fijo en xs para que no compita con el título— y dos extensiones opcionales según el caso: espaciado comprimido en pantallas muy pequeñas e inversión del orden en stack (body primero, título después) para landings narrativas. Las cuatro están abajo, cada una con su vista en el teléfono y una receta comentada lista para adaptar.',
+    ]}
+  >
+    <ModResponsive>
+      <ModPattern
+        title="1 · De dos columnas a una"
+        desc="Es lo que ya hace el componente de fábrica. Bajo <code>768 px</code> el <code>grid-template-columns</code> pasa de <code>1fr 1fr</code> a <code>1fr</code> y <code>align-items</code> baja a <code>start</code>. El body cae naturalmente debajo del título, sin reordenar nada en JS. Cero esfuerzo del consumidor del componente."
+        receta={{ titulo: 'CSS · duo → stack (default)', lang: 'css', code: recetaDuoStack }}
+      >
+        <MarcoMovil ariaLabel="Encabezado duo apilado en móvil: título arriba, body debajo">
+          <div class="shm shm--stack">
+            <p class="shm__eye"><b aria-hidden="true"></b>DEFINICIÓN</p>
+            <p class="shm__h">¿Qué es el encabezado de sección?</p>
+            <p class="shm__sub">El bloque que abre cada sección: eyebrow + título + descripción.</p>
+            <div class="shm__body">
+              <p class="shm__bp">Primer párrafo del body — cae debajo del título en móvil.</p>
+              <p class="shm__bp">Segundo párrafo del body — completa el contexto.</p>
+            </div>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
 
-      <div class="pats">
-        {/* 1 · Duo → stack (default del componente) */}
-        <article class="pat">
-          <div class="pat__demo">
-            <MarcoMovil ariaLabel="Encabezado duo apilado en móvil: título arriba, body debajo">
-              <div class="shm shm--stack">
-                <p class="shm__eye"><b aria-hidden="true"></b>DEFINICIÓN</p>
-                <p class="shm__h">¿Qué es el encabezado de sección?</p>
-                <p class="shm__sub">El bloque que abre cada sección: eyebrow + título + descripción.</p>
-                <div class="shm__body">
-                  <p class="shm__bp">Primer párrafo del body — cae debajo del título en móvil.</p>
-                  <p class="shm__bp">Segundo párrafo del body — completa el contexto.</p>
-                </div>
-              </div>
-            </MarcoMovil>
+      <ModPattern
+        title="2 · Tipografía fluida con clamp()"
+        desc="El <code>.sech__title</code> usa <code>font-size: clamp(2rem, 3.5vw, 3rem)</code>. El valor preferido (<code>3.5vw</code>) escala con el ancho del viewport, acotado entre un mínimo y un máximo. El eyebrow se queda en <code>xs</code> a propósito: es metadata, no debe competir con el título."
+        receta={{ titulo: 'CSS · clamp() para el título', lang: 'css', code: recetaClamp }}
+      >
+        <MarcoMovil ariaLabel="Título con tipografía fluida que escala con el viewport">
+          <div class="shm shm--type">
+            <p class="shm__eye"><b aria-hidden="true"></b>VARIANTES</p>
+            <p class="shm__h shm__h--fluid">Otros diseños y aplicaciones</p>
+            <p class="shm__sub">El título escala entre 2rem y 3rem según el ancho del viewport, sin media queries.</p>
+            <span class="shm__hint" aria-hidden="true">↔ el título crece y encoge solo</span>
           </div>
-          <div class="pat__info">
-            <h3 class="pat__title">1 · De dos columnas a una</h3>
-            <p class="pat__desc">Es lo que ya hace el componente de fábrica. Bajo <code>768 px</code> el <code>grid-template-columns</code> pasa de <code>1fr 1fr</code> a <code>1fr</code> y <code>align-items</code> baja a <code>start</code>. El body cae naturalmente debajo del título, sin reordenar nada en JS. Cero esfuerzo del consumidor del componente.</p>
-            <Receta titulo="CSS · duo → stack (default)" lang="css" code={recetaDuoStack} />
-          </div>
-        </article>
+        </MarcoMovil>
+      </ModPattern>
 
-        {/* 2 · Tipografía fluida con clamp() */}
-        <article class="pat">
-          <div class="pat__demo">
-            <MarcoMovil ariaLabel="Título con tipografía fluida que escala con el viewport">
-              <div class="shm shm--type">
-                <p class="shm__eye"><b aria-hidden="true"></b>VARIANTES</p>
-                <p class="shm__h shm__h--fluid">Otros diseños y aplicaciones</p>
-                <p class="shm__sub">El título escala entre 2rem y 3rem según el ancho del viewport, sin media queries.</p>
-                <span class="shm__hint" aria-hidden="true">↔ el título crece y encoge solo</span>
-              </div>
-            </MarcoMovil>
+      <ModPattern
+        title="3 · Espaciado comprimido (extensión)"
+        desc="En pantallas muy pequeñas (≤ 480 px) el <code>margin-bottom</code> de <code>2rem</code> del bloque se siente excesivo. Reducirlo a <code>1.25rem</code> y bajar el <code>gap</code> interno del head a <code>0.75rem</code> ahorra altura sin sentirse apretado. Es una extensión local, fuera del componente."
+        receta={{ titulo: 'CSS · márgenes y gap en ≤ 480 px', lang: 'css', code: recetaSpacing }}
+      >
+        <MarcoMovil ariaLabel="Encabezado con espaciado vertical comprimido en pantallas muy pequeñas">
+          <div class="shm shm--tight">
+            <p class="shm__eye"><b aria-hidden="true"></b>RESPONSIVE</p>
+            <p class="shm__h">Espaciado comprimido</p>
+            <p class="shm__sub">Menos margen inferior en pantallas muy pequeñas.</p>
+            <div class="shm__rule" aria-hidden="true"></div>
+            <p class="shm__next">Siguiente bloque más cerca →</p>
           </div>
-          <div class="pat__info">
-            <h3 class="pat__title">2 · Tipografía fluida con clamp()</h3>
-            <p class="pat__desc">El <code>.sech__title</code> usa <code>font-size: clamp(2rem, 3.5vw, 3rem)</code>. El valor preferido (<code>3.5vw</code>) escala con el ancho del viewport, acotado entre un mínimo y un máximo. El eyebrow se queda en <code>xs</code> a propósito: es metadata, no debe competir con el título.</p>
-            <Receta titulo="CSS · clamp() para el título" lang="css" code={recetaClamp} />
-          </div>
-        </article>
+        </MarcoMovil>
+      </ModPattern>
 
-        {/* 3 · Espaciado comprimido */}
-        <article class="pat">
-          <div class="pat__demo">
-            <MarcoMovil ariaLabel="Encabezado con espaciado vertical comprimido en pantallas muy pequeñas">
-              <div class="shm shm--tight">
-                <p class="shm__eye"><b aria-hidden="true"></b>RESPONSIVE</p>
-                <p class="shm__h">Espaciado comprimido</p>
-                <p class="shm__sub">Menos margen inferior en pantallas muy pequeñas.</p>
-                <div class="shm__rule" aria-hidden="true"></div>
-                <p class="shm__next">Siguiente bloque más cerca →</p>
-              </div>
-            </MarcoMovil>
+      <ModPattern
+        title="4 · Invertir el orden en stack (extensión)"
+        desc="En duo, por defecto el título cae primero al apilarse. Algunas landings editoriales prefieren lo contrario: el body «narrativo» va primero y el título funciona como pie. Se logra con <code>flex-direction: column</code> + <code>order</code>, fuera del componente. Úsalo con criterio: rompe la convención del molde."
+        receta={{ titulo: 'CSS · invertir order en ≤ 768 px', lang: 'css', code: recetaReorder }}
+      >
+        <MarcoMovil ariaLabel="Inversión del orden en móvil: body primero, título después">
+          <div class="shm shm--reorder">
+            <div class="shm__body">
+              <p class="shm__bp">Primer párrafo del body, primero — el «cuento» antes del «membrete».</p>
+              <p class="shm__bp">Segundo párrafo — engancha antes de etiquetar.</p>
+            </div>
+            <p class="shm__eye"><b aria-hidden="true"></b>EDITORIAL</p>
+            <p class="shm__h">Título al final del bloque</p>
+            <p class="shm__sub">El título cae después del cuerpo en este patrón.</p>
           </div>
-          <div class="pat__info">
-            <h3 class="pat__title">3 · Espaciado comprimido (extensión)</h3>
-            <p class="pat__desc">En pantallas muy pequeñas (≤ 480 px) el <code>margin-bottom</code> de <code>2rem</code> del bloque se siente excesivo. Reducirlo a <code>1.25rem</code> y bajar el <code>gap</code> interno del head a <code>0.75rem</code> ahorra altura sin sentirse apretado. Es una extensión local, fuera del componente.</p>
-            <Receta titulo="CSS · márgenes y gap en ≤ 480 px" lang="css" code={recetaSpacing} />
-          </div>
-        </article>
-
-        {/* 4 · Invertir el orden en stack */}
-        <article class="pat">
-          <div class="pat__demo">
-            <MarcoMovil ariaLabel="Inversión del orden en móvil: body primero, título después">
-              <div class="shm shm--reorder">
-                <div class="shm__body">
-                  <p class="shm__bp">Primer párrafo del body, primero — el «cuento» antes del «membrete».</p>
-                  <p class="shm__bp">Segundo párrafo — engancha antes de etiquetar.</p>
-                </div>
-                <p class="shm__eye"><b aria-hidden="true"></b>EDITORIAL</p>
-                <p class="shm__h">Título al final del bloque</p>
-                <p class="shm__sub">El título cae después del cuerpo en este patrón.</p>
-              </div>
-            </MarcoMovil>
-          </div>
-          <div class="pat__info">
-            <h3 class="pat__title">4 · Invertir el orden en stack (extensión)</h3>
-            <p class="pat__desc">En duo, por defecto el título cae primero al apilarse. Algunas landings editoriales prefieren lo contrario: el body «narrativo» va primero y el título funciona como pie. Se logra con <code>flex-direction: column</code> + <code>order</code>, fuera del componente. Úsalo con criterio: rompe la convención del molde.</p>
-            <Receta titulo="CSS · invertir order en ≤ 768 px" lang="css" code={recetaReorder} />
-          </div>
-        </article>
-      </div>
-    </div>
-  </section>
+        </MarcoMovil>
+      </ModPattern>
+    </ModResponsive>
+  </ModSection>
 
   {/* ── 4) ¿DÓNDE VA? ── */}
-  <section class="section section--surface">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Posición"
-        title="¿Dónde se coloca?"
-        desc="Una vez por sección de contenido, justo arriba del cuerpo del bloque, dentro del .container del 90 %. Varias veces por página, según cuántas secciones tenga."
-        body={[
-          'A diferencia del hero (una vez por página) o de la franja de menú (una o dos veces como máximo), el encabezado de sección se repite tantas veces como secciones tenga la página. En esta plantilla, una página de módulo lleva entre 6 y 8 SectionHeading —uno por cada bloque de contenido—. Es un patrón, no una pieza única, y por eso el componente está pensado para escalar sin pedir cambios.',
-          'Vive SIEMPRE dentro del .container central (90 % del ancho, max-width acotado). A diferencia de la franja del menú —que va full-width—, el encabezado respeta el ancho del cuerpo: pertenece al texto, no al chrome. Y se monta sobre la sección padre (.section o .section--surface), que es quien aporta el padding vertical y el color de fondo alternado.',
-        ]}
-      />
-      <p class="rl">Módulos cercanos: <a href="/modulos/hero">hero</a> (el H1 único de arriba), <a href="/modulos/section-menu">menú de secciones</a> (la franja full-width entre hero y cuerpo) y <a href="/modulos/breadcrumbs">migas de pan</a> (la barra que precede al primer encabezado en internas).</p>
-    </div>
-  </section>
+  <ModSection
+    surface
+    eyebrow="Posición"
+    title="¿Dónde se coloca?"
+    desc="Una vez por sección de contenido, justo arriba del cuerpo del bloque, dentro del .container del 90 %. Varias veces por página, según cuántas secciones tenga."
+    body={[
+      'A diferencia del hero (una vez por página) o de la franja de menú (una o dos veces como máximo), el encabezado de sección se repite tantas veces como secciones tenga la página. En esta plantilla, una página de módulo lleva entre 6 y 8 SectionHeading —uno por cada bloque de contenido—. Es un patrón, no una pieza única, y por eso el componente está pensado para escalar sin pedir cambios.',
+      'Vive SIEMPRE dentro del .container central (90 % del ancho, max-width acotado). A diferencia de la franja del menú —que va full-width—, el encabezado respeta el ancho del cuerpo: pertenece al texto, no al chrome. Y se monta sobre la sección padre (.section o .section--surface), que es quien aporta el padding vertical y el color de fondo alternado.',
+    ]}
+  >
+    <p class="rl">Módulos cercanos: <a href="/modulos/hero">hero</a> (el H1 único de arriba), <a href="/modulos/section-menu">menú de secciones</a> (la franja full-width entre hero y cuerpo) y <a href="/modulos/breadcrumbs">migas de pan</a> (la barra que precede al primer encabezado en internas).</p>
+  </ModSection>
 
   {/* ── 5) CÓMO SE ARMA ── */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Implementación"
-        title="Cómo está construido"
-        desc="Un único componente con API pequeña: id, eyebrow, title, titleAccent, desc, layout, align, body, dark, as. Devuelve un <header> con un Tag dinámico (h2 por defecto, h3 si se pide)."
-        body={[
-          'El componente vive en SectionHeading.astro y expone diez props a propósito: id (anchor), eyebrow, title (obligatorio), titleAccent (segunda línea de acento), desc, layout (simple|duo), align (center|left, solo simple), body[] (solo duo), dark (texto claro sobre fondo oscuro) y as (h2|h3). La etiqueta semántica del título es DINÁMICA: el componente declara «const Tag = as» y la renderiza como «Tag class="sech__title"»; cambiar la prop cambia el elemento HTML emitido.',
-          'La regla de uso está cableada en los defaults: layout="simple", align="center", as="h2". Eso significa que sin tocar nada se obtiene el rótulo tipo «catálogo». Para una sección de contenido (lo más común), basta con pasar layout="duo" y el array body. La jerarquía baja a H3 con un as="h3", sin tocar el resto. Cero JavaScript: HTML + CSS estático generado en build.',
-        ]}
-      />
-
-      <div class="recetas">
-        <Receta titulo="Astro · duo (uso estándar del sitio)" lang="astro" code={recetaDuo} />
-        <Receta titulo="Astro · simple + titleAccent (catálogos)" lang="astro" code={recetaSimple} />
-        <Receta titulo="Astro · jerarquía H3 (sub-sección)" lang="astro" code={recetaH3} />
-      </div>
-
-      <div class="prose">
-        <p>
-          En concreto: el componente recibe las props, construye un <code>&lt;header&gt;</code> con
-          <code>class:list</code> dinámico (<code>sech--duo</code> o <code>sech--simple</code>, más
-          <code>sech--center</code>/<code>sech--left</code> en simple, más <code>sech--dark</code> si aplica),
-          y emite siempre la columna izquierda (<code>.sech__head</code>: eyebrow + Tag + desc). Si el
-          <code>layout</code> es <code>duo</code> y <code>body.length &gt; 0</code>, añade la columna derecha
-          (<code>.sech__body</code>) con un <code>&lt;p class="sech__body-p"&gt;</code> por cada string del
-          array. Sin layout duo o con body vacío, la columna derecha no se renderiza.
-        </p>
-        <p>
-          La accesibilidad es de fábrica: el contenedor es un <code>&lt;header&gt;</code> semántico (no
-          <code>&lt;div&gt;</code>), el título es un heading real (<code>&lt;h2&gt;</code> o <code>&lt;h3&gt;</code>
-          según la prop <code>as</code>), la barra de acento del eyebrow lleva <code>aria-hidden="true"</code> y los
-          colores cumplen contraste AA tanto en claro como en <code>dark</code>. Los tokens del proyecto
-          (<code>--text-3xl</code>, <code>--text-lg</code>, <code>--weight-black</code>) son la única fuente
-          de tipografía: cambiar el design system cambia todos los títulos del sitio.
-        </p>
-      </div>
+  <ModSection
+    eyebrow="Implementación"
+    title="Cómo está construido"
+    desc="Un único componente con API pequeña: id, eyebrow, title, titleAccent, desc, layout, align, body, dark, as. Devuelve un header con un Tag dinámico (h2 por defecto, h3 si se pide)."
+    body={[
+      'El componente vive en SectionHeading.astro y expone diez props a propósito: id (anchor), eyebrow, title (obligatorio), titleAccent (segunda línea de acento), desc, layout (simple|duo), align (center|left, solo simple), body[] (solo duo), dark (texto claro sobre fondo oscuro) y as (h2|h3). La etiqueta semántica del título es DINÁMICA: el componente declara «const Tag = as» y la renderiza como «Tag class="sech__title"»; cambiar la prop cambia el elemento HTML emitido.',
+      'La regla de uso está cableada en los defaults: layout="simple", align="center", as="h2". Eso significa que sin tocar nada se obtiene el rótulo tipo «catálogo». Para una sección de contenido (lo más común), basta con pasar layout="duo" y el array body. La jerarquía baja a H3 con un as="h3", sin tocar el resto. Cero JavaScript: HTML + CSS estático generado en build.',
+    ]}
+  >
+    <div class="recetas">
+      <Receta titulo="Astro · duo (uso estándar del sitio)" lang="astro" code={recetaDuo} />
+      <Receta titulo="Astro · simple + titleAccent (catálogos)" lang="astro" code={recetaSimple} />
+      <Receta titulo="Astro · jerarquía H3 (sub-sección)" lang="astro" code={recetaH3} />
     </div>
-  </section>
+
+    <ModProse>
+      <p>
+        En concreto: el componente recibe las props, construye un <code>&lt;header&gt;</code> con
+        <code>class:list</code> dinámico (<code>sech--duo</code> o <code>sech--simple</code>, más
+        <code>sech--center</code>/<code>sech--left</code> en simple, más <code>sech--dark</code> si aplica),
+        y emite siempre la columna izquierda (<code>.sech__head</code>: eyebrow + Tag + desc). Si el
+        <code>layout</code> es <code>duo</code> y <code>body.length &gt; 0</code>, añade la columna derecha
+        (<code>.sech__body</code>) con un <code>&lt;p class="sech__body-p"&gt;</code> por cada string del
+        array. Sin layout duo o con body vacío, la columna derecha no se renderiza.
+      </p>
+      <p>
+        La accesibilidad es de fábrica: el contenedor es un <code>&lt;header&gt;</code> semántico (no
+        <code>&lt;div&gt;</code>), el título es un heading real (<code>&lt;h2&gt;</code> o <code>&lt;h3&gt;</code>
+        según la prop <code>as</code>), la barra de acento del eyebrow lleva <code>aria-hidden="true"</code> y los
+        colores cumplen contraste AA tanto en claro como en <code>dark</code>. Los tokens del proyecto
+        (<code>--text-3xl</code>, <code>--text-lg</code>, <code>--weight-black</code>) son la única fuente
+        de tipografía: cambiar el design system cambia todos los títulos del sitio.
+      </p>
+    </ModProse>
+  </ModSection>
 
   {/* ── 6) BUENAS PRÁCTICAS ── */}
-  <section class="section section--surface">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Buenas prácticas"
-        title="Qué hacer y qué evitar"
-        desc="La diferencia entre un sitio que se escanea bien y uno que se siente «hecho por bloques distintos» cabe en un puñado de hábitos —empezando por usar SectionHeading en TODOS los títulos—."
-        body={[
-          'Ninguno de estos hábitos es capricho: salen de la regla canónica del proyecto («un solo componente para todos los títulos»). El sitio se siente coherente porque cada encabezado nace del mismo molde, con la misma tipografía y el mismo ritmo entre eyebrow, título y descripción. La única decisión real es elegir el layout: duo para contenido (la mayoría), simple+titleAccent solo como rótulo de catálogo en productos/index y modulos/index.',
-          'La buena noticia es que casi todo se sostiene solo cuando se respeta el componente: la jerarquía H1 → H2 → H3 está cableada por la prop as, el contraste lo cuida el sistema y el responsive lo resuelve el componente. Abajo, lo que conviene y lo que conviene evitar, enfrentados.',
-        ]}
-      />
-      <div class="dodont">
-        <article class="dd dd--si">
-          <h3 class="dd__title"><span class="dd__icon" aria-hidden="true">✓</span> Sí conviene</h3>
-          <ul class="dd__list">
-            {sis.map((s) => <li>{s}</li>)}
-          </ul>
-        </article>
-        <article class="dd dd--no">
-          <h3 class="dd__title"><span class="dd__icon" aria-hidden="true">✕</span> Mejor evita</h3>
-          <ul class="dd__list">
-            {nos.map((s) => <li>{s}</li>)}
-          </ul>
-        </article>
-      </div>
-    </div>
-  </section>
+  <ModSection
+    surface
+    eyebrow="Buenas prácticas"
+    title="Qué hacer y qué evitar"
+    desc="La diferencia entre un sitio que se escanea bien y uno que se siente «hecho por bloques distintos» cabe en un puñado de hábitos —empezando por usar SectionHeading en TODOS los títulos—."
+    body={[
+      'Ninguno de estos hábitos es capricho: salen de la regla canónica del proyecto («un solo componente para todos los títulos»). El sitio se siente coherente porque cada encabezado nace del mismo molde, con la misma tipografía y el mismo ritmo entre eyebrow, título y descripción. La única decisión real es elegir el layout: duo para contenido (la mayoría), simple+titleAccent solo como rótulo de catálogo en productos/index y modulos/index.',
+      'La buena noticia es que casi todo se sostiene solo cuando se respeta el componente: la jerarquía H1 → H2 → H3 está cableada por la prop as, el contraste lo cuida el sistema y el responsive lo resuelve el componente. Abajo, lo que conviene y lo que conviene evitar, enfrentados.',
+    ]}
+  >
+    <ModDosDonts sis={sis} nos={nos} />
+  </ModSection>
 
   {/* Cierre */}
   <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
 </PageLayout>
 
 <style>
-  /* Utilidades estructurales (tokens.css = fuente única; scoped por página). */
-  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
-  .section { padding: var(--sp-8) 0; }
-  .section--surface { background: var(--c-surface); }
-  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+  /* SOLO bespoke de esta página (.shx ejemplo en vivo · .recetas · .shv variantes ·
+     .shm mockups móvil · .rl related-links). El armazón estructural
+     (.section/.container/.bene/.partes/.prose/.dodont/.pats/.pat) vive en el KIT
+     (src/components/modulos/*) — antes estaba duplicado aquí. */
 
   /* Related-links inline · interlinking natural entre L3. */
   .rl { margin: var(--sp-5) 0 0; font-size: var(--text-sm); color: var(--c-ink-2); line-height: var(--leading-relaxed); }
   .rl a { color: var(--c-primary); text-decoration: underline; text-underline-offset: 2px; }
   .rl a:hover { color: var(--c-primary-dark); }
-
-  /* ── Beneficios ── */
-  .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
-  @media (min-width: 768px) { .bene { grid-template-columns: repeat(3, 1fr); } }
-  .bene__card { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); }
-  .bene__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
-  .bene__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
 
   /* ── Ejemplo en vivo del encabezado (réplica a escala del componente) ── */
   .shx {
@@ -741,42 +659,8 @@ const recetaReorder = `/* MÓVIL · INVERTIR EL ORDEN EN STACK (extensión)
     .shx__n--abs { position: static; margin-bottom: 4px; display: inline-grid; }
   }
 
-  /* ── Cards de las 4 partes ── */
-  .partes { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-5); }
-  @media (min-width: 600px) { .partes { grid-template-columns: repeat(2, 1fr); } }
-  @media (min-width: 1000px) { .partes { grid-template-columns: repeat(4, 1fr); } }
-  .parte { display: flex; gap: var(--sp-3); align-items: start; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-4); }
-  .parte__num { flex-shrink: 0; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: var(--radius-full); background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: var(--text-sm); }
-  .parte__body { display: grid; gap: 4px; min-width: 0; }
-  .parte__nombre { margin: 0; font-family: var(--font-heading); font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--c-ink); }
-  .parte__que { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
-  .parte__dato { margin: 4px 0 0; display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--text-xs); color: var(--c-muted); }
-  .parte__dato span { text-transform: uppercase; letter-spacing: .06em; font-weight: var(--weight-semibold); }
-  .parte__dato code, .prose code, .pat__desc code {
-    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace; font-size: .85em;
-    background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm);
-    padding: .05em .4em; color: var(--c-primary-dark);
-  }
-
   /* ── Recetas de la sección «Cómo se arma» (apiladas, ancho completo) ── */
   .recetas { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
-
-  /* ── Prose técnica ── */
-  .prose { max-width: 75ch; margin-top: var(--sp-6); }
-  .prose p { margin: 0 0 var(--sp-4); font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
-  .prose strong { color: var(--c-ink); font-weight: var(--weight-semibold); }
-
-  /* ── Sí / No ── */
-  .dodont { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
-  @media (min-width: 768px) { .dodont { grid-template-columns: 1fr 1fr; } }
-  .dd { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); }
-  .dd__title { margin: 0 0 var(--sp-3); display: flex; align-items: center; gap: var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
-  .dd__icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-full); font-size: var(--text-sm); }
-  .dd--si .dd__icon { background: rgba(34,197,94,.14); color: #16a34a; }
-  .dd--no .dd__icon { background: rgba(239,68,68,.12); color: #dc2626; }
-  .dd__list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-2); }
-  .dd__list li { position: relative; padding-left: var(--sp-5); font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
-  .dd__list li::before { content: ''; position: absolute; left: 0; top: .55em; width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--c-muted); }
 
   /* ── Mockups de variantes (dentro de <GaleriaDisenos>) ───────────────────── */
   .shv {
@@ -814,13 +698,6 @@ const recetaReorder = `/* MÓVIL · INVERTIR EL ORDEN EN STACK (extensión)
   /* Acción (extensión) */
   .shv__col--action { justify-items: end; align-self: center; }
   .shv__btn { padding: 6px 10px; background: var(--c-primary); color: #fff; border-radius: var(--radius-sm); font-weight: var(--weight-semibold); font-size: 10px; }
-
-  /* ── Sección Responsive: teléfono | explicación + receta ─────────────────── */
-  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
-  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
-  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
-  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
-  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
 
   /* ── Mockups MÓVIL (dentro de <MarcoMovil>) ──────────────────────────────── */
   .shm { padding: 14px 16px; font-size: 11px; color: var(--c-ink); }

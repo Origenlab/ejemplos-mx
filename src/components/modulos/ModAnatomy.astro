@@ -1,0 +1,47 @@
+---
+// ============================================================================
+// ModAnatomy.astro — Cards numeradas de «anatomía» (sección «¿qué lleva?»).
+// ----------------------------------------------------------------------------
+// Cada pieza del módulo como tarjeta: número + nombre + qué resuelve + el dato
+// (campo de site.ts del que sale). Data-driven con `partes`. El slot por defecto
+// va ARRIBA del grid: ahí la página mete su ejemplo en vivo bespoke (.tbx/.wax…).
+//
+// USO:
+//   <ModAnatomy partes={[{ n:1, nombre:'…', que:'…', dato:'…' }, …]}>
+//     <div class="wax">…ejemplo en vivo bespoke de la página…</div>
+//   </ModAnatomy>
+// ============================================================================
+export interface Props {
+  partes: { n: number; nombre: string; que: string; dato: string }[]
+}
+const { partes } = Astro.props
+---
+
+<slot />
+
+<div class="partes">
+  {partes.map((p) => (
+    <article class="parte">
+      <span class="parte__num">{p.n}</span>
+      <div class="parte__body">
+        <h3 class="parte__nombre">{p.nombre}</h3>
+        <p class="parte__que">{p.que}</p>
+        <p class="parte__dato"><span>Dato</span> <code>{p.dato}</code></p>
+      </div>
+    </article>
+  ))}
+</div>
+
+<style>
+  .partes { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-5); }
+  @media (min-width: 600px) { .partes { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1000px) { .partes { grid-template-columns: repeat(4, 1fr); } }
+  .parte { display: flex; gap: var(--sp-3); align-items: start; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-4); }
+  .parte__num { flex-shrink: 0; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: var(--radius-full); background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: var(--text-sm); }
+  .parte__body { display: grid; gap: 4px; min-width: 0; }
+  .parte__nombre { margin: 0; font-family: var(--font-heading); font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .parte__que { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--c-ink-2); }
+  .parte__dato { margin: 4px 0 0; display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--text-xs); color: var(--c-muted); }
+  .parte__dato span { text-transform: uppercase; letter-spacing: .06em; font-weight: var(--weight-semibold); }
+  .parte__dato code { font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace; font-size: .85em; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
+</style>

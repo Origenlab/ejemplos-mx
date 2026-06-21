@@ -1,0 +1,25 @@
+---
+// ============================================================================
+// ModResponsive.astro — Rejilla de patrones móviles (sección «responsive y móvil»).
+// ----------------------------------------------------------------------------
+// Solo el contenedor .pats: recibe varios <ModPattern> por el slot. Cada patrón
+// (teléfono | explicación + receta) lo pinta ModPattern. Antes el .pats se
+// duplicaba en las 16 páginas.
+//
+// USO:
+//   <ModResponsive>
+//     <ModPattern title="…" desc="…" receta={{ titulo:'…', code:'…' }}>
+//       <MarcoMovil>…mockup…</MarcoMovil>
+//     </ModPattern>
+//     … (3–4 patrones) …
+//   </ModResponsive>
+// ============================================================================
+---
+
+<div class="pats">
+  <slot />
+</div>
+
+<style>
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+</style>

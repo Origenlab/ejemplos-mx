@@ -46,6 +46,10 @@ import MarcoMovil from '@components/MarcoMovil.astro'
 import Receta from '@components/Receta.astro'
 import GuiaNota from '@components/GuiaNota.astro'
 import CTABanner from '@components/CTABanner.astro'
+import ModSection from '@components/modulos/ModSection.astro'
+import ModBenefits from '@components/modulos/ModBenefits.astro'
+import ModResponsive from '@components/modulos/ModResponsive.astro'
+import ModPattern from '@components/modulos/ModPattern.astro'
 import { PRESET_GENERAL, PRESET_CATEGORIA, PRESET_CONTACTO } from '@config/cta-presets'
 import { WA_MESSAGES, waUrl } from '@config/site'
 import { siblingsModules } from '@lib/modules'
@@ -459,44 +463,29 @@ const btnsConTracking = [
   />
 
   {/* ── 1) ¿QUÉ ES? ── */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Definición"
-        title="¿Qué es el módulo CTA banner?"
-        desc="La franja de cierre que pide UNA acción al final de una sección o página: heading + descripción opcional + uno o dos botones tipados + badge opcional. Componente único (CTABanner.astro) con 3 variantes visuales y 3 presets temáticos (cta-presets.ts) que cubren home/categoría/contacto. Cero schema, cero hardcoding del número de WhatsApp (regla D4), cero copy duplicado en páginas."
-        body={[
-          'El CTA banner (CTABanner.astro) es el módulo de conversión final del sistema: la franja que aparece al cierre de una sección o página para pedir UNA cosa concreta — cotizar, contactar, ver el catálogo, hablar con un asesor — sin las distracciones del header (mapa del sitio) o el footer (taxonomía completa). A diferencia del SectionMenu (que reparte hacia varios destinos), el banner se enfoca en UNA acción primaria y, a lo más, una secundaria que da escape al visitante indeciso.',
-          'Su API es deliberadamente pequeña: 5 props (heading, desc?, btns?, badge?, variant?, centered?) y un array tipado de botones (BtnDef = { label, href, icon?, primary?, external? }) con 6 íconos SVG inline (wa · arrow · phone · catalog · info · quote) que cubren el catálogo completo de iconografía del cierre. El copy NO se escribe en cada página — vive centralizado en cta-presets.ts (3 presets canónicos hoy: PRESET_GENERAL, PRESET_CATEGORIA, PRESET_CONTACTO) y cada página importa el preset que corresponde a su tipo. Los enlaces de WhatsApp se construyen UNA sola vez con waUrl(WA_MESSAGES.x) en el preset (regla D4); las páginas solo montan el componente con spread.',
-        ]}
-      />
-    </div>
-  </section>
+  <ModSection
+    eyebrow="Definición"
+    title="¿Qué es el módulo CTA banner?"
+    desc="La franja de cierre que pide UNA acción al final de una sección o página: heading + descripción opcional + uno o dos botones tipados + badge opcional. Componente único (CTABanner.astro) con 3 variantes visuales y 3 presets temáticos (cta-presets.ts) que cubren home/categoría/contacto. Cero schema, cero hardcoding del número de WhatsApp (regla D4), cero copy duplicado en páginas."
+    body={[
+      'El CTA banner (CTABanner.astro) es el módulo de conversión final del sistema: la franja que aparece al cierre de una sección o página para pedir UNA cosa concreta — cotizar, contactar, ver el catálogo, hablar con un asesor — sin las distracciones del header (mapa del sitio) o el footer (taxonomía completa). A diferencia del SectionMenu (que reparte hacia varios destinos), el banner se enfoca en UNA acción primaria y, a lo más, una secundaria que da escape al visitante indeciso.',
+      'Su API es deliberadamente pequeña: 5 props (heading, desc?, btns?, badge?, variant?, centered?) y un array tipado de botones (BtnDef = { label, href, icon?, primary?, external? }) con 6 íconos SVG inline (wa · arrow · phone · catalog · info · quote) que cubren el catálogo completo de iconografía del cierre. El copy NO se escribe en cada página — vive centralizado en cta-presets.ts (3 presets canónicos hoy: PRESET_GENERAL, PRESET_CATEGORIA, PRESET_CONTACTO) y cada página importa el preset que corresponde a su tipo. Los enlaces de WhatsApp se construyen UNA sola vez con waUrl(WA_MESSAGES.x) en el preset (regla D4); las páginas solo montan el componente con spread.',
+    ]}
+  />
 
   {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
-  <section class="section section--surface">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Función e importancia"
-        title="¿Para qué sirve?"
-        desc="Hace tres trabajos a la vez, todos críticos: convierte la atención del visitante en una acción concreta sin las opciones competidoras del header/footer (un solo handshake), centraliza el copy de cierre del sitio entero en presets de SSoT (cero divergencia entre páginas), y aplica por diseño reglas anti dark-patterns que protegen la marca a mediano plazo (honestidad del label, urgencia verificable o ninguna, ghost neutro sin confirmshaming)."
-        body={[
-          'Su función primaria es de conversión: el banner es el último intento de mover al visitante a la acción antes de que cierre la pestaña. La regla operativa del sistema — UN botón primario, a lo más UNO ghost — sale de literatura UX (Nielsen Norman, CXL Institute, Baymard Institute) y de pruebas A/B documentadas: tres botones competidores reparten la atención y bajan la conversión medible en 20-40%; uno solo con copy claro la sube. El componente lo permite (btns[] admite hasta 2 entradas razonablemente) y los presets ya vienen calibrados así.',
-          'Su función secundaria es de coherencia: el copy del cierre vive en cta-presets.ts, no en cada página. PRESET_GENERAL cierra home y landings comerciales (heading «¿Necesitas una cotización?», 2 botones), PRESET_CATEGORIA cierra fichas L4 (heading «¿Listo para cotizar?», tono consultivo), PRESET_CONTACTO cierra contacto/blog/legales (heading empático, 1 botón). Cambiar el copy de cierre de TODO el sitio = editar UN archivo. Y la terciaria es de marca: las reglas anti dark-patterns que viven en §6 y docs/MODULOS.md §6.4 (sin contadores falsos, sin escasez fabricada, sin confirmshaming, label honesto) protegen la marca a mediano plazo. A corto plazo, un timer falso sube clicks; a mediano, quema lista. El sistema rechaza esos patrones por diseño.',
-        ]}
-      />
-      <div class="bene">
-        {beneficios.map((b) => (
-          <article class="bene__card">
-            <h3 class="bene__title">{b.titulo}</h3>
-            <p class="bene__desc">{b.desc}</p>
-          </article>
-        ))}
-      </div>
-    </div>
-  </section>
+  <ModSection
+    surface
+    eyebrow="Función e importancia"
+    title="¿Para qué sirve?"
+    desc="Hace tres trabajos a la vez, todos críticos: convierte la atención del visitante en una acción concreta sin las opciones competidoras del header/footer (un solo handshake), centraliza el copy de cierre del sitio entero en presets de SSoT (cero divergencia entre páginas), y aplica por diseño reglas anti dark-patterns que protegen la marca a mediano plazo (honestidad del label, urgencia verificable o ninguna, ghost neutro sin confirmshaming)."
+    body={[
+      'Su función primaria es de conversión: el banner es el último intento de mover al visitante a la acción antes de que cierre la pestaña. La regla operativa del sistema — UN botón primario, a lo más UNO ghost — sale de literatura UX (Nielsen Norman, CXL Institute, Baymard Institute) y de pruebas A/B documentadas: tres botones competidores reparten la atención y bajan la conversión medible en 20-40%; uno solo con copy claro la sube. El componente lo permite (btns[] admite hasta 2 entradas razonablemente) y los presets ya vienen calibrados así.',
+      'Su función secundaria es de coherencia: el copy del cierre vive en cta-presets.ts, no en cada página. PRESET_GENERAL cierra home y landings comerciales (heading «¿Necesitas una cotización?», 2 botones), PRESET_CATEGORIA cierra fichas L4 (heading «¿Listo para cotizar?», tono consultivo), PRESET_CONTACTO cierra contacto/blog/legales (heading empático, 1 botón). Cambiar el copy de cierre de TODO el sitio = editar UN archivo. Y la terciaria es de marca: las reglas anti dark-patterns que viven en §6 y docs/MODULOS.md §6.4 (sin contadores falsos, sin escasez fabricada, sin confirmshaming, label honesto) protegen la marca a mediano plazo. A corto plazo, un timer falso sube clicks; a mediano, quema lista. El sistema rechaza esos patrones por diseño.',
+    ]}
+  >
+    <ModBenefits items={beneficios} />
+  </ModSection>
 
   {/* ── 3) ¿QUÉ LLEVA? — Anatomía con las 5 piezas + ejemplo en vivo ── */}
   <section class="section">
@@ -550,19 +539,16 @@ const btnsConTracking = [
   </section>
 
   {/* ── 4) VARIANTES — GaleriaDisenos + DisenoCard ── */}
-  <section class="section section--surface">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Otros diseños y aplicaciones"
-        title="Variantes del CTA banner"
-        desc="Seis configuraciones: cuatro salen del componente actual con props/presets existentes (REAL) y dos requieren extender el componente (EXTENSIÓN). Cada réplica pinta el layout en miniatura con clases .ctv (cta variant) + modificador y deja claro qué se reordena o agrega."
-        body={[
-          'El banner admite variantes sin perder identidad: cambia la intensidad (red sólido vs dark premium vs light suave), el número de botones (2 con escape vs 1 focal), la urgencia (badge decorativo vs urgencia honesta verificable) y la posición (inline en sección vs sticky en zona del pulgar). El componente actual cubre las cuatro primeras como REAL (los tres presets canónicos + btns[] de 1); las dos últimas son EXTENSIÓN documentada con condiciones.',
-          'Cada variante tiene su contexto de aplicación: home/landing → PRESET_GENERAL, ficha L4 premium → PRESET_CATEGORIA, contacto/blog/legales → PRESET_CONTACTO, página focal sin escape → solo botón primario, campaña con plazo REAL → badge de urgencia honesta, landing dedicada a una conversión → sticky bottom-bar móvil. Reusar el mismo componente con presets distintos es la lección del sistema — el banner NO es seis componentes, es uno con seis caras.',
-        ]}
-      />
-
+  <ModSection
+    surface
+    eyebrow="Otros diseños y aplicaciones"
+    title="Variantes del CTA banner"
+    desc="Seis configuraciones: cuatro salen del componente actual con props/presets existentes (REAL) y dos requieren extender el componente (EXTENSIÓN). Cada réplica pinta el layout en miniatura con clases .ctv (cta variant) + modificador y deja claro qué se reordena o agrega."
+    body={[
+      'El banner admite variantes sin perder identidad: cambia la intensidad (red sólido vs dark premium vs light suave), el número de botones (2 con escape vs 1 focal), la urgencia (badge decorativo vs urgencia honesta verificable) y la posición (inline en sección vs sticky en zona del pulgar). El componente actual cubre las cuatro primeras como REAL (los tres presets canónicos + btns[] de 1); las dos últimas son EXTENSIÓN documentada con condiciones.',
+      'Cada variante tiene su contexto de aplicación: home/landing → PRESET_GENERAL, ficha L4 premium → PRESET_CATEGORIA, contacto/blog/legales → PRESET_CONTACTO, página focal sin escape → solo botón primario, campaña con plazo REAL → badge de urgencia honesta, landing dedicada a una conversión → sticky bottom-bar móvil. Reusar el mismo componente con presets distintos es la lección del sistema — el banner NO es seis componentes, es uno con seis caras.',
+    ]}
+  >
       <GaleriaDisenos ariaLabel="Seis variantes del módulo CTA banner">
         {/* 0 · Canónica red — heading + desc + 2 botones */}
         <DisenoCard {...disenos[0]}>
@@ -673,103 +659,86 @@ const btnsConTracking = [
           dedicadas a UNA conversión.
         </p>
       </GuiaNota>
-    </div>
-  </section>
+  </ModSection>
 
   {/* ── 5) RESPONSIVE Y MÓVIL — 4 patrones con MarcoMovil + Receta ── */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Responsive y móvil"
-        title="El banner, en el teléfono"
-        desc="Cuatro patrones reales: stack progresivo del inner (row → column al ≤900, btns column-full-width al ≤560), touch target ≥48 px en los botones (WCAG SC 2.5.5), sticky bottom-bar opcional con safe-area iOS y zona del pulgar, foco visible + prefers-reduced-motion + forced-colors. CSS puro, cero JavaScript."
-        body={[
-          'El banner es más simple que el footer en responsive — pero los detalles importan. El patrón canónico es mobile-first progresivo: el componente ya nace con inner flex side-by-side (heading|botones), reflowea a column con text-align:center al ≤900px, y al ≤560px los btns pasan a column-full-width con min-height 48px para que el pulgar los alcance. Cero media queries añadidas — todo vive en el style scoped del componente.',
-          'A eso se suman dos detalles que pocos banners cubren: la extensión sticky bottom-bar móvil (cuando la landing está dedicada a UNA conversión y la zona del pulgar es la única que importa, con safe-area-inset-bottom respetada para no chocar con el home indicator de iOS) y la triada de accesibilidad: :focus-visible nítido sobre las tres variantes (outline 2px blanco sobre red/dark, rojo sobre light), prefers-reduced-motion respetado (cualquier animación añadida debe estar gateada), forced-colors compatible (Windows alto contraste no rompe el botón).',
-        ]}
-      />
-
-      <div class="pats">
+  <ModSection
+    eyebrow="Responsive y móvil"
+    title="El banner, en el teléfono"
+    desc="Cuatro patrones reales: stack progresivo del inner (row → column al ≤900, btns column-full-width al ≤560), touch target ≥48 px en los botones (WCAG SC 2.5.5), sticky bottom-bar opcional con safe-area iOS y zona del pulgar, foco visible + prefers-reduced-motion + forced-colors. CSS puro, cero JavaScript."
+    body={[
+      'El banner es más simple que el footer en responsive — pero los detalles importan. El patrón canónico es mobile-first progresivo: el componente ya nace con inner flex side-by-side (heading|botones), reflowea a column con text-align:center al ≤900px, y al ≤560px los btns pasan a column-full-width con min-height 48px para que el pulgar los alcance. Cero media queries añadidas — todo vive en el style scoped del componente.',
+      'A eso se suman dos detalles que pocos banners cubren: la extensión sticky bottom-bar móvil (cuando la landing está dedicada a UNA conversión y la zona del pulgar es la única que importa, con safe-area-inset-bottom respetada para no chocar con el home indicator de iOS) y la triada de accesibilidad: :focus-visible nítido sobre las tres variantes (outline 2px blanco sobre red/dark, rojo sobre light), prefers-reduced-motion respetado (cualquier animación añadida debe estar gateada), forced-colors compatible (Windows alto contraste no rompe el botón).',
+    ]}
+  >
+      <ModResponsive>
         {/* 1 · Stack progresivo + botones full-width */}
-        <article class="pat">
-          <div class="pat__demo">
-            <MarcoMovil ariaLabel="El banner baja a una columna en el teléfono; los botones se apilan full-width">
-              <div class="ctm ctm--stack">
-                <b class="ctm__h">¿Necesitas cotización?</b>
-                <span class="ctm__d"></span><span class="ctm__d"></span>
-                <span class="ctm__btn ctm__btn--solid">Cotizar por WhatsApp</span>
-                <span class="ctm__btn ctm__btn--ghost">Ver catálogo</span>
-                <span class="ctm__badge">◆ Respuesta rápida</span>
-              </div>
-            </MarcoMovil>
-          </div>
-          <div class="pat__info">
-            <h3 class="pat__title">1 · Stack progresivo + botones full-width</h3>
-            <p class="pat__desc">El componente ya es mobile-first progresivo: <code>flex-direction: row</code> en ≥901, <code>column + center</code> en ≤900, <code>btns column + width:100%</code> en ≤560. Cero media queries añadidas — viven en el <code>style</code> scoped del componente. Cada botón pasa a ancho 100% con <code>min-height: 48px</code> para garantizar superficie tappable (WCAG SC 2.5.5).</p>
-            <Receta titulo="CSS · stack progresivo del componente actual" lang="css" code={recetaStackMov} />
-          </div>
-        </article>
+        <ModPattern
+          title="1 · Stack progresivo + botones full-width"
+          desc="El componente ya es mobile-first progresivo: <code>flex-direction: row</code> en ≥901, <code>column + center</code> en ≤900, <code>btns column + width:100%</code> en ≤560. Cero media queries añadidas — viven en el <code>style</code> scoped del componente. Cada botón pasa a ancho 100% con <code>min-height: 48px</code> para garantizar superficie tappable (WCAG SC 2.5.5)."
+          receta={{ titulo: 'CSS · stack progresivo del componente actual', lang: 'css', code: recetaStackMov }}
+        >
+          <MarcoMovil ariaLabel="El banner baja a una columna en el teléfono; los botones se apilan full-width">
+            <div class="ctm ctm--stack">
+              <b class="ctm__h">¿Necesitas cotización?</b>
+              <span class="ctm__d"></span><span class="ctm__d"></span>
+              <span class="ctm__btn ctm__btn--solid">Cotizar por WhatsApp</span>
+              <span class="ctm__btn ctm__btn--ghost">Ver catálogo</span>
+              <span class="ctm__badge">◆ Respuesta rápida</span>
+            </div>
+          </MarcoMovil>
+        </ModPattern>
 
         {/* 2 · Touch target ≥44×44 */}
-        <article class="pat">
-          <div class="pat__demo">
-            <MarcoMovil ariaLabel="Botones con superficie de toque generosa, mínimo 44×44 px (Apple HIG, WCAG SC 2.5.5)">
-              <div class="ctm ctm--touch">
-                <b class="ctm__h">¿Listo para empezar?</b>
-                <span class="ctm__btn ctm__btn--solid ctm__btn--measured">Cotizar por WhatsApp <i class="ctm__ruler">48px</i></span>
-                <span class="ctm__btn ctm__btn--ghost ctm__btn--measured">Ver catálogo <i class="ctm__ruler">48px</i></span>
-                <span class="ctm__hint">tap target visible</span>
-              </div>
-            </MarcoMovil>
-          </div>
-          <div class="pat__info">
-            <h3 class="pat__title">2 · Touch target ≥44×44 px (Apple HIG · WCAG 2.5.5)</h3>
-            <p class="pat__desc">El umbral viene de Apple HIG (44 pt) y WCAG 2.2 AA enhanced (44 CSS px). El componente sobrepasa el mínimo con <code>min-height: 48px</code> + <code>padding: .9em 1.4em</code>. Cumplirlo baja errores de tap en 20-30% (Material Design 3 study) y reduce la fricción en visitantes con motricidad reducida, dedos grandes o uso con guantes.</p>
-            <Receta titulo="CSS · touch target ≥48 px + realce táctil" lang="css" code={recetaTouch} />
-          </div>
-        </article>
+        <ModPattern
+          title="2 · Touch target ≥44×44 px (Apple HIG · WCAG 2.5.5)"
+          desc="El umbral viene de Apple HIG (44 pt) y WCAG 2.2 AA enhanced (44 CSS px). El componente sobrepasa el mínimo con <code>min-height: 48px</code> + <code>padding: .9em 1.4em</code>. Cumplirlo baja errores de tap en 20-30% (Material Design 3 study) y reduce la fricción en visitantes con motricidad reducida, dedos grandes o uso con guantes."
+          receta={{ titulo: 'CSS · touch target ≥48 px + realce táctil', lang: 'css', code: recetaTouch }}
+        >
+          <MarcoMovil ariaLabel="Botones con superficie de toque generosa, mínimo 44×44 px (Apple HIG, WCAG SC 2.5.5)">
+            <div class="ctm ctm--touch">
+              <b class="ctm__h">¿Listo para empezar?</b>
+              <span class="ctm__btn ctm__btn--solid ctm__btn--measured">Cotizar por WhatsApp <i class="ctm__ruler">48px</i></span>
+              <span class="ctm__btn ctm__btn--ghost ctm__btn--measured">Ver catálogo <i class="ctm__ruler">48px</i></span>
+              <span class="ctm__hint">tap target visible</span>
+            </div>
+          </MarcoMovil>
+        </ModPattern>
 
         {/* 3 · Sticky bottom-bar + safe-area iOS (EXTENSIÓN) */}
-        <article class="pat">
-          <div class="pat__demo">
-            <MarcoMovil ariaLabel="El banner se ancla al borde inferior con safe-area iOS, ocupando la zona del pulgar">
-              <div class="ctm ctm--sticky">
-                <div class="ctm__page"><span class="ctm__line"></span><span class="ctm__line"></span><span class="ctm__line ctm__line--sm"></span><span class="ctm__line"></span></div>
-                <div class="ctm__sticky">
-                  <span class="ctm__btn ctm__btn--solid ctm__btn--full">Hablar con un asesor</span>
-                  <i class="ctm__safe" aria-hidden="true"></i>
-                </div>
+        <ModPattern
+          title="3 · Sticky bottom-bar con safe-area iOS (EXTENSIÓN)"
+          desc="EXTENSIÓN del componente: la prop <code>sticky?: 'mobile'</code> ancla el banner al borde inferior con <code>position: fixed</code> + <code>env(safe-area-inset-bottom)</code> para respetar el home indicator de iOS. La zona del pulgar (Thumb Zone UX) es la franja inferior del viewport — botón ahí = menos esfuerzo de alcance. CUIDADO: rompe el flujo de scroll. Solo en landings dedicadas a UNA conversión."
+          receta={{ titulo: 'CSS · sticky bottom-bar + safe-area iOS', lang: 'css', code: recetaSticky }}
+        >
+          <MarcoMovil ariaLabel="El banner se ancla al borde inferior con safe-area iOS, ocupando la zona del pulgar">
+            <div class="ctm ctm--sticky">
+              <div class="ctm__page"><span class="ctm__line"></span><span class="ctm__line"></span><span class="ctm__line ctm__line--sm"></span><span class="ctm__line"></span></div>
+              <div class="ctm__sticky">
+                <span class="ctm__btn ctm__btn--solid ctm__btn--full">Hablar con un asesor</span>
+                <i class="ctm__safe" aria-hidden="true"></i>
               </div>
-            </MarcoMovil>
-          </div>
-          <div class="pat__info">
-            <h3 class="pat__title">3 · Sticky bottom-bar con safe-area iOS (EXTENSIÓN)</h3>
-            <p class="pat__desc">EXTENSIÓN del componente: la prop <code>sticky?: 'mobile'</code> ancla el banner al borde inferior con <code>position: fixed</code> + <code>env(safe-area-inset-bottom)</code> para respetar el home indicator de iOS. La zona del pulgar (Thumb Zone UX) es la franja inferior del viewport — botón ahí = menos esfuerzo de alcance. CUIDADO: rompe el flujo de scroll. Solo en landings dedicadas a UNA conversión.</p>
-            <Receta titulo="CSS · sticky bottom-bar + safe-area iOS" lang="css" code={recetaSticky} />
-          </div>
-        </article>
+            </div>
+          </MarcoMovil>
+        </ModPattern>
 
         {/* 4 · Foco visible + reduced-motion + forced-colors */}
-        <article class="pat">
-          <div class="pat__demo">
-            <MarcoMovil ariaLabel="Foco visible nítido con outline 2px y compatibilidad con prefers-reduced-motion y forced-colors">
-              <div class="ctm ctm--a11y">
-                <b class="ctm__h">¿Tienes dudas?</b>
-                <span class="ctm__btn ctm__btn--solid ctm__btn--focused">Cotizar</span>
-                <span class="ctm__hint">:focus-visible · 2px outline</span>
-                <span class="ctm__chip">prefers-reduced-motion ✓</span>
-                <span class="ctm__chip">forced-colors ✓</span>
-              </div>
-            </MarcoMovil>
-          </div>
-          <div class="pat__info">
-            <h3 class="pat__title">4 · Foco visible + reduced-motion + forced-colors</h3>
-            <p class="pat__desc">El componente ya pinta <code>:focus-visible</code> con outline 2px sólido + offset 3px (blanco sobre red/dark, rojo sobre light). NUNCA <code>outline:none</code> sin reemplazo. Cualquier animación añadida debe estar gateada con <code>@media (prefers-reduced-motion: no-preference)</code>. El modo <strong>forced-colors</strong> de Windows (alto contraste) requiere <code>forced-color-adjust: auto</code> + outline en focus para que el botón siga siendo distinguible aunque el SO fuerce su paleta.</p>
-            <Receta titulo="CSS · accesibilidad de foco, motion y colors" lang="css" code={recetaA11y} />
-          </div>
-        </article>
-      </div>
+        <ModPattern
+          title="4 · Foco visible + reduced-motion + forced-colors"
+          desc="El componente ya pinta <code>:focus-visible</code> con outline 2px sólido + offset 3px (blanco sobre red/dark, rojo sobre light). NUNCA <code>outline:none</code> sin reemplazo. Cualquier animación añadida debe estar gateada con <code>@media (prefers-reduced-motion: no-preference)</code>. El modo <strong>forced-colors</strong> de Windows (alto contraste) requiere <code>forced-color-adjust: auto</code> + outline en focus para que el botón siga siendo distinguible aunque el SO fuerce su paleta."
+          receta={{ titulo: 'CSS · accesibilidad de foco, motion y colors', lang: 'css', code: recetaA11y }}
+        >
+          <MarcoMovil ariaLabel="Foco visible nítido con outline 2px y compatibilidad con prefers-reduced-motion y forced-colors">
+            <div class="ctm ctm--a11y">
+              <b class="ctm__h">¿Tienes dudas?</b>
+              <span class="ctm__btn ctm__btn--solid ctm__btn--focused">Cotizar</span>
+              <span class="ctm__hint">:focus-visible · 2px outline</span>
+              <span class="ctm__chip">prefers-reduced-motion ✓</span>
+              <span class="ctm__chip">forced-colors ✓</span>
+            </div>
+          </MarcoMovil>
+        </ModPattern>
+      </ModResponsive>
 
       <GuiaNota titulo="El responsive del banner vive en el componente; los presets viven en cta-presets.ts" archivo="src/components/CTABanner.astro · src/config/cta-presets.ts">
         <p>
@@ -787,22 +756,19 @@ const btnsConTracking = [
           editar un solo archivo. SSoT del cierre.
         </p>
       </GuiaNota>
-    </div>
-  </section>
+  </ModSection>
 
   {/* ── 6) ¿DÓNDE VA? — el banner en el flujo de cada página ── */}
-  <section class="section section--surface">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Posición en el layout"
-        title="¿Dónde va en la página?"
-        desc="Al cierre de cada página (antes del footer) cuando la página tiene una intención comercial clara, o al cierre de una sección cuando la página alterna varios temas. NO sustituye al SectionMenu (que reparte hacia varios destinos) — convive con él: si la página tiene UN cierre comercial fuerte, va el banner; si tiene varias rutas de navegación útiles, va el menú; si tiene ambas necesidades, primero el banner (conversión) y debajo el menú (mapa)."
-        body={[
-          'La posición canónica: justo antes del Footer (que aparece en TODAS las páginas, montado por PageLayout). El banner cierra UNA conversión específica; el footer reparte el mapa entero del sitio. Hay tres patrones operativos: (a) banner + footer (cierre comercial fuerte: home, landings, fichas L4 producto/servicio), (b) SectionMenu + footer (cierre exploratorio: páginas guía como /modulos/* — ver el cierre de esta misma página), (c) banner + SectionMenu + footer (página larga con conversión fuerte Y mapa útil: típicamente la home).',
-          'La decisión NO la toma el componente — la toma el editor de la página. Las guías de los módulos cierran con SectionMenu (siblingsModules) porque el visitante de una guía explora la serie; las páginas comerciales cierran con CTABanner porque el visitante quiere cotizar. Cross-link explícito: el banner es el primo cercano del cierre pre-footer (ver /modulos/footer, banda CTA pre-footer = una variante del CTA banner dentro del Footer.astro) y del formulario de contacto (ver /modulos/contact-form, cuando el CTA primario va a un form en lugar de a WhatsApp).',
-        ]}
-      />
+  <ModSection
+    surface
+    eyebrow="Posición en el layout"
+    title="¿Dónde va en la página?"
+    desc="Al cierre de cada página (antes del footer) cuando la página tiene una intención comercial clara, o al cierre de una sección cuando la página alterna varios temas. NO sustituye al SectionMenu (que reparte hacia varios destinos) — convive con él: si la página tiene UN cierre comercial fuerte, va el banner; si tiene varias rutas de navegación útiles, va el menú; si tiene ambas necesidades, primero el banner (conversión) y debajo el menú (mapa)."
+    body={[
+      'La posición canónica: justo antes del Footer (que aparece en TODAS las páginas, montado por PageLayout). El banner cierra UNA conversión específica; el footer reparte el mapa entero del sitio. Hay tres patrones operativos: (a) banner + footer (cierre comercial fuerte: home, landings, fichas L4 producto/servicio), (b) SectionMenu + footer (cierre exploratorio: páginas guía como /modulos/* — ver el cierre de esta misma página), (c) banner + SectionMenu + footer (página larga con conversión fuerte Y mapa útil: típicamente la home).',
+      'La decisión NO la toma el componente — la toma el editor de la página. Las guías de los módulos cierran con SectionMenu (siblingsModules) porque el visitante de una guía explora la serie; las páginas comerciales cierran con CTABanner porque el visitante quiere cotizar. Cross-link explícito: el banner es el primo cercano del cierre pre-footer (ver /modulos/footer, banda CTA pre-footer = una variante del CTA banner dentro del Footer.astro) y del formulario de contacto (ver /modulos/contact-form, cuando el CTA primario va a un form en lugar de a WhatsApp).',
+    ]}
+  >
       <GuiaNota titulo="Cuándo banner vs menú vs banner+menú · decisión por página" archivo="src/components/CTABanner.astro · src/components/SectionMenu.astro">
         <p>
           <strong>Banner solo</strong> — la página tiene UN cierre comercial claro y el visitante
@@ -824,43 +790,36 @@ const btnsConTracking = [
           decide acción primero, exploración después.
         </p>
       </GuiaNota>
-    </div>
-  </section>
+  </ModSection>
 
   {/* ── 7) CÓMO ESTÁ CONSTRUIDO — 3 recetas ── */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Capa técnica"
-        title="Cómo está construido"
-        desc="El componente vive en src/components/CTABanner.astro y los presets en src/config/cta-presets.ts. Cero JSON-LD desde el componente (regla B3 — Action/PotentialAction lo cubre organizationSchema en el grafo base). Cero hardcoding del número de WhatsApp (regla D4 — waUrl(WA_MESSAGES.x) en los presets). Tres recetas cubren el espectro de uso: A uso básico con preset, B data-driven desde frontmatter de fichas L4, C tracking no invasivo con data-cta-id."
-        body={[
-          'La arquitectura es estricta: el componente solo presenta (5 props tipadas, 0 cálculos internos, 0 dependencias). Los presets son SSoT del copy de cierre (cta-presets.ts: PRESET_GENERAL, PRESET_CATEGORIA, PRESET_CONTACTO; cada uno compone heading + desc + btns[] + badge + variant una sola vez para todo el sitio). El número de WhatsApp vive UNA vez en CONTACT.whatsapp + WA_MESSAGES de site.ts; cada btn de WhatsApp se construye con waUrl(WA_MESSAGES.<intencion>) — regla D4 dura, sin excepciones. Esa separación es lo que mantiene el banner estable y data-driven a escala del sitio entero.',
-          'Las tres recetas cubren el camino completo del uso real: A muestra el patrón canónico (importar preset + montar con spread), B muestra cómo el frontmatter de una ficha L4 puede sobrescribir el preset por entry (cuando cada producto/servicio quiere su propio copy de CTA), y C muestra el patrón de tracking no invasivo (data-cta-id en un wrapper + listener delegado a nivel de página, sin acoplar telemetría al componente). Sobre el schema: NO se emite desde el banner — el ContactPoint del WhatsApp vive en organizationSchema().contactPoint y se declara una sola vez (regla B3).',
-        ]}
-      />
+  <ModSection
+    eyebrow="Capa técnica"
+    title="Cómo está construido"
+    desc="El componente vive en src/components/CTABanner.astro y los presets en src/config/cta-presets.ts. Cero JSON-LD desde el componente (regla B3 — Action/PotentialAction lo cubre organizationSchema en el grafo base). Cero hardcoding del número de WhatsApp (regla D4 — waUrl(WA_MESSAGES.x) en los presets). Tres recetas cubren el espectro de uso: A uso básico con preset, B data-driven desde frontmatter de fichas L4, C tracking no invasivo con data-cta-id."
+    body={[
+      'La arquitectura es estricta: el componente solo presenta (5 props tipadas, 0 cálculos internos, 0 dependencias). Los presets son SSoT del copy de cierre (cta-presets.ts: PRESET_GENERAL, PRESET_CATEGORIA, PRESET_CONTACTO; cada uno compone heading + desc + btns[] + badge + variant una sola vez para todo el sitio). El número de WhatsApp vive UNA vez en CONTACT.whatsapp + WA_MESSAGES de site.ts; cada btn de WhatsApp se construye con waUrl(WA_MESSAGES.<intencion>) — regla D4 dura, sin excepciones. Esa separación es lo que mantiene el banner estable y data-driven a escala del sitio entero.',
+      'Las tres recetas cubren el camino completo del uso real: A muestra el patrón canónico (importar preset + montar con spread), B muestra cómo el frontmatter de una ficha L4 puede sobrescribir el preset por entry (cuando cada producto/servicio quiere su propio copy de CTA), y C muestra el patrón de tracking no invasivo (data-cta-id en un wrapper + listener delegado a nivel de página, sin acoplar telemetría al componente). Sobre el schema: NO se emite desde el banner — el ContactPoint del WhatsApp vive en organizationSchema().contactPoint y se declara una sola vez (regla B3).',
+    ]}
+  >
       <div class="recetas">
         <Receta titulo="A · Uso básico con preset canónico" lang="astro" code={recetaUso} />
         <Receta titulo="B · Data-driven desde frontmatter de ficha L4" lang="astro" code={recetaDataDriven} />
         <Receta titulo="C · Tracking no invasivo con data-cta-id" lang="astro" code={recetaTracking} />
       </div>
-    </div>
-  </section>
+  </ModSection>
 
   {/* ── 8) BUENAS PRÁCTICAS (sí/no) — destila el aprendizaje del flujo entero ── */}
-  <section class="section section--surface">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Buenas prácticas"
-        title="Qué hacer y qué evitar"
-        desc="Siete hábitos que mantienen al banner como activo de conversión honesto y mantenible; siete errores que lo degradan a dark-pattern, fuente de divergencia o vector de spam de schema. Esta sección es el cierre simbólico del flujo entero — destila las reglas duras de los 12 módulos en el componente más sensible al daño de marca: el botón de cierre."
-        body={[
-          'La diferencia entre un CTA que convierte sostenido y uno que quema lista en tres campañas es disciplinaria: copy honesto, preset centralizado, UN botón primario, foco visible AA, anti dark-patterns por diseño, tracking en data-* (nunca en id), variante contextual (no doorway). Cada regla viene de un caso real visto en sitios mexicanos: timers que reinician al recargar, escasez ficticia con número inventado, ghost con confirmshaming pasivo-agresivo, hrefs a WhatsApp hardcodeados que sobreviven al cambio de número del cliente.',
-          'Los sí son hábitos de SSoT + honestidad de copy. Los no son tentaciones que parecen subir conversión a corto plazo y queman marca a mediano. Léelos juntos — cada par sí/no apunta al mismo problema desde dos ángulos. Esta lista es la destilación del flujo de doce módulos: lo que aprendimos sobre cómo NO romper el sistema al cierre de cada página.',
-        ]}
-      />
+  <ModSection
+    surface
+    eyebrow="Buenas prácticas"
+    title="Qué hacer y qué evitar"
+    desc="Siete hábitos que mantienen al banner como activo de conversión honesto y mantenible; siete errores que lo degradan a dark-pattern, fuente de divergencia o vector de spam de schema. Esta sección es el cierre simbólico del flujo entero — destila las reglas duras de los 12 módulos en el componente más sensible al daño de marca: el botón de cierre."
+    body={[
+      'La diferencia entre un CTA que convierte sostenido y uno que quema lista en tres campañas es disciplinaria: copy honesto, preset centralizado, UN botón primario, foco visible AA, anti dark-patterns por diseño, tracking en data-* (nunca en id), variante contextual (no doorway). Cada regla viene de un caso real visto en sitios mexicanos: timers que reinician al recargar, escasez ficticia con número inventado, ghost con confirmshaming pasivo-agresivo, hrefs a WhatsApp hardcodeados que sobreviven al cambio de número del cliente.',
+      'Los sí son hábitos de SSoT + honestidad de copy. Los no son tentaciones que parecen subir conversión a corto plazo y queman marca a mediano. Léelos juntos — cada par sí/no apunta al mismo problema desde dos ángulos. Esta lista es la destilación del flujo de doce módulos: lo que aprendimos sobre cómo NO romper el sistema al cierre de cada página.',
+    ]}
+  >
       <div class="bp">
         <div class="bp__col bp__col--si">
           <h3 class="bp__title bp__title--si">Sí</h3>
@@ -888,20 +847,13 @@ const btnsConTracking = [
           extensión de presets para newsletter/black-friday). Ver <code>docs/MODULOS.md §8</code>.
         </p>
       </GuiaNota>
-    </div>
-  </section>
+  </ModSection>
 
   {/* ── Cierre: menú de navegación full-width (siblingsModules SSoT) ── */}
   <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
 </PageLayout>
 
 <style>
-  /* Estructura (tokens.css = fuente única; scoped por página) */
-  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
-  .section { padding: var(--sp-8) 0; }
-  .section--surface { background: var(--c-surface); }
-  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
-
   /* ── Anatomía (piezas) ── */
   .piezas { display: grid; gap: var(--sp-5); margin: var(--sp-6) 0 0; padding: 0; list-style: none; }
   .pieza { display: grid; grid-template-columns: 48px 1fr; gap: var(--sp-4); align-items: start; padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
@@ -911,13 +863,6 @@ const btnsConTracking = [
   .pieza__dato { margin: 0; font-size: var(--text-xs); color: var(--c-ink-2); }
   .pieza__dato-label { font-weight: var(--weight-bold); color: var(--c-primary-dark); text-transform: uppercase; letter-spacing: .06em; margin-right: .35em; }
   .pieza__dato code { font-family: ui-monospace, Menlo, monospace; font-size: .95em; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .1em .4em; color: var(--c-primary-dark); word-break: break-word; }
-
-  /* ── Beneficios ── */
-  .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
-  @media (min-width: 768px) { .bene { grid-template-columns: repeat(3, 1fr); } }
-  .bene__card { padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
-  .bene__title { margin: 0 0 var(--sp-3); font-family: var(--font-heading); font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--c-ink); line-height: var(--leading-snug); }
-  .bene__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
 
   /* ── Recetas (sección «Cómo se construye») ── */
   .recetas { display: grid; gap: var(--sp-5); margin-top: var(--sp-6); }
@@ -935,14 +880,6 @@ const btnsConTracking = [
   /* ── Ejemplo en vivo (3 presets canónicos) ── */
   .vivo { margin-top: var(--sp-6); }
   .vivo--gap { margin-top: var(--sp-4); }
-
-  /* ── Patrones móviles (.pats / .pat) ── */
-  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
-  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
-  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
-  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
-  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
-  .pat__desc code { font-family: ui-monospace, Menlo, monospace; font-size: .85em; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
 
   /* ── Mockups galería de variantes (.ctv = cta variant, escritorio) ── */
   .ctv { display: flex; flex-direction: column; min-height: 100%; padding: 10px; border-radius: 6px; font-size: 9px; line-height: 1.2; color: rgba(255,255,255,.8); }

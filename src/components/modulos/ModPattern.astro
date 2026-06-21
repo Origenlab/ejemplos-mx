@@ -1,0 +1,43 @@
+---
+// ============================================================================
+// ModPattern.astro — UN patrón responsive: teléfono (slot) | título + desc + receta.
+// ----------------------------------------------------------------------------
+// El mockup del teléfono entra por el slot por defecto (la página pinta su
+// <MarcoMovil> bespoke). El texto y la receta van por props. `desc` admite
+// <code> inline (se inyecta con set:html). Centraliza el CSS .pat que antes se
+// copiaba en las 16 páginas.
+//
+// USO:
+//   <ModPattern title="1 · …" desc="… <code>x</code> …"
+//               receta={{ titulo:'CSS · …', lang:'css', code: recetaX }}>
+//     <MarcoMovil ariaLabel="…">…mockup…</MarcoMovil>
+//   </ModPattern>
+// ============================================================================
+import Receta from '@components/Receta.astro'
+export interface Props {
+  title: string
+  /** Admite <code> inline (set:html). */
+  desc: string
+  receta: { titulo: string; lang?: string; code: string }
+}
+const { title, desc, receta } = Astro.props
+---
+
+<article class="pat">
+  <div class="pat__demo">
+    <slot />
+  </div>
+  <div class="pat__info">
+    <h3 class="pat__title">{title}</h3>
+    <p class="pat__desc" set:html={desc}></p>
+    <Receta titulo={receta.titulo} lang={receta.lang ?? 'css'} code={receta.code} />
+  </div>
+</article>
+
+<style>
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pat__desc :global(code) { font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace; font-size: .85em; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
+</style>

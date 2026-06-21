@@ -1,0 +1,32 @@
+---
+// ============================================================================
+// ModBenefits.astro — Grid de beneficios (sección «¿para qué sirve?»).
+// ----------------------------------------------------------------------------
+// Tres (o más) tarjetas con título + descripción. Data-driven: la página pasa
+// `items`; el markup y el CSS viven aquí UNA vez (antes copiados en 16 páginas).
+//
+// USO:  <ModBenefits items={[{ titulo: '…', desc: '…' }, …]} />
+// Va dentro del slot de <ModSection>.
+// ============================================================================
+export interface Props {
+  items: { titulo: string; desc: string }[]
+}
+const { items } = Astro.props
+---
+
+<div class="bene">
+  {items.map((b) => (
+    <article class="bene__card">
+      <h3 class="bene__title">{b.titulo}</h3>
+      <p class="bene__desc">{b.desc}</p>
+    </article>
+  ))}
+</div>
+
+<style>
+  .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .bene { grid-template-columns: repeat(3, 1fr); } }
+  .bene__card { background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); }
+  .bene__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .bene__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+</style>

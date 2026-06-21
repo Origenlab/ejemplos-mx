@@ -1,0 +1,58 @@
+---
+// ============================================================================
+// ModSection.astro — Cáscara de sección de la serie /modulos/* (y hermanas).
+// ----------------------------------------------------------------------------
+// Centraliza el armazón que ANTES se copiaba en cada página: <section> (con su
+// variante --surface) + .container + (opcional) un SectionHeading «duo» + slot.
+// Así el CSS estructural (.section/.container) vive UNA sola vez, no 16 veces.
+//
+// USO:
+//   <ModSection surface eyebrow="Función" title="¿Para qué sirve?" desc="…"
+//               body={['párrafo 1', 'párrafo 2']}>
+//     …contenido de la sección (cards, grid, prose…)…
+//   </ModSection>
+// Sin `title` no pinta encabezado (sección solo-slot). `body` activa la 2.ª
+// columna del título (layout duo). El CSS de tokens.css es la fuente de color.
+// ============================================================================
+import SectionHeading from '@components/SectionHeading.astro'
+export interface Props {
+  /** Fondo gris de superficie (alterna secciones). */
+  surface?: boolean
+  id?: string
+  eyebrow?: string
+  /** Si se omite, la sección no pinta encabezado (solo el slot). */
+  title?: string
+  titleAccent?: string
+  desc?: string
+  /** Párrafos de la 2.ª columna (layout duo). */
+  body?: string[]
+  as?: 'h2' | 'h3'
+}
+const { surface = false, id, eyebrow, title, titleAccent, desc, body = [], as = 'h2' } = Astro.props
+---
+
+<section class:list={['section', { 'section--surface': surface }]}>
+  <div class="container">
+    {title && (
+      <SectionHeading
+        layout="duo"
+        eyebrow={eyebrow}
+        title={title}
+        titleAccent={titleAccent}
+        desc={desc}
+        body={body}
+        id={id}
+        as={as}
+      />
+    )}
+    <slot />
+  </div>
+</section>
+
+<style>
+  /* Armazón estructural (tokens.css = fuente única). Antes duplicado por página. */
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+</style>

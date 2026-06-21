@@ -28,13 +28,16 @@
 // ============================================================================
 import PageLayout from '@layouts/PageLayout.astro'
 import Hero from '@components/Hero.astro'
-import SectionHeading from '@components/SectionHeading.astro'
 import SectionMenu from '@components/SectionMenu.astro'
 import GaleriaDisenos from '@components/GaleriaDisenos.astro'
 import DisenoCard from '@components/DisenoCard.astro'
 import MarcoMovil from '@components/MarcoMovil.astro'
 import Receta from '@components/Receta.astro'
 import GuiaNota from '@components/GuiaNota.astro'
+import ModSection from '@components/modulos/ModSection.astro'
+import ModBenefits from '@components/modulos/ModBenefits.astro'
+import ModResponsive from '@components/modulos/ModResponsive.astro'
+import ModPattern from '@components/modulos/ModPattern.astro'
 import { SITE, CONTACT, SOCIAL, LEGAL, WA_MESSAGES, waUrl } from '@config/site'
 import { siblingsModules } from '@lib/modules'
 
@@ -388,58 +391,40 @@ import RelatedLinks from '@components/RelatedLinks.astro'
   />
 
   {/* ── 1) ¿QUÉ ES? ── */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Definición"
-        title="¿Qué es el módulo Footer?"
-        desc="El pie de página del sitio: cierre visual e informativo que aparece en cada URL, con cinco zonas (CTA + cuerpo NAP/columnas + cumplimiento opcional + barra inferior + acento decorativo). Data-driven desde site.ts (SITE · CONTACT · PRODUCT_CATEGORIES · SERVICES · COVERAGE_STATES · BRANCHES · SOCIAL · LEGAL); JSON-LD Organization centralizado en lib/seo.ts y emitido por buildSchema() en BaseLayout."
-        body={[
-          'El Footer (Footer.astro) es la última franja de cualquier página: la zona que recoge al visitante que dudó arriba y le ofrece la red de seguridad —contacto, mapa del sitio, legales—. Está compuesto por cinco zonas en orden estricto: banda CTA pre-footer (último intento de conversión, eyebrow + título + dos botones), cuerpo con la columna de marca + 4 columnas de navegación data-driven (Productos, Servicios+Sectores, Cobertura, Empresa), banda opcional de cumplimiento normativo (badges/certificaciones), barra inferior con copyright dinámico + enlaces legales + botón «volver arriba», y la barra de acento decorativa en la parte superior absoluta.',
-          'En este proyecto vive en un único componente que SE MONTA UNA SOLA VEZ en PageLayout. Todas las páginas del sitio heredan su footer sin saberlo —incluyendo esta misma guía, que cierra abajo con el componente REAL, no con una réplica anotada—. La data llega íntegra desde site.ts: marca de SITE, NAP de CONTACT, taxonomía de PRODUCT_CATEGORIES/SERVICES/SECTORS/COVERAGE_STATES, sucursales de BRANCHES (vacío en esta plantilla), redes de SOCIAL (auto-oculta si []), legales de LEGAL. La única lógica de presentación es: usar telUrl() para el teléfono, waUrl(WA_MESSAGES.cotizacion) para WhatsApp, y new Date().getFullYear() para el copyright. Para el SEO local, el JSON-LD Organization se centraliza en lib/seo.ts → organizationSchema() (alias canónico de orgSchema) y se emite UNA sola vez desde buildSchema() en BaseLayout —el componente NO toca el grafo—.',
-        ]}
-      />
-    </div>
-  </section>
+  <ModSection
+    eyebrow="Definición"
+    title="¿Qué es el módulo Footer?"
+    desc="El pie de página del sitio: cierre visual e informativo que aparece en cada URL, con cinco zonas (CTA + cuerpo NAP/columnas + cumplimiento opcional + barra inferior + acento decorativo). Data-driven desde site.ts (SITE · CONTACT · PRODUCT_CATEGORIES · SERVICES · COVERAGE_STATES · BRANCHES · SOCIAL · LEGAL); JSON-LD Organization centralizado en lib/seo.ts y emitido por buildSchema() en BaseLayout."
+    body={[
+      'El Footer (Footer.astro) es la última franja de cualquier página: la zona que recoge al visitante que dudó arriba y le ofrece la red de seguridad —contacto, mapa del sitio, legales—. Está compuesto por cinco zonas en orden estricto: banda CTA pre-footer (último intento de conversión, eyebrow + título + dos botones), cuerpo con la columna de marca + 4 columnas de navegación data-driven (Productos, Servicios+Sectores, Cobertura, Empresa), banda opcional de cumplimiento normativo (badges/certificaciones), barra inferior con copyright dinámico + enlaces legales + botón «volver arriba», y la barra de acento decorativa en la parte superior absoluta.',
+      'En este proyecto vive en un único componente que SE MONTA UNA SOLA VEZ en PageLayout. Todas las páginas del sitio heredan su footer sin saberlo —incluyendo esta misma guía, que cierra abajo con el componente REAL, no con una réplica anotada—. La data llega íntegra desde site.ts: marca de SITE, NAP de CONTACT, taxonomía de PRODUCT_CATEGORIES/SERVICES/SECTORS/COVERAGE_STATES, sucursales de BRANCHES (vacío en esta plantilla), redes de SOCIAL (auto-oculta si []), legales de LEGAL. La única lógica de presentación es: usar telUrl() para el teléfono, waUrl(WA_MESSAGES.cotizacion) para WhatsApp, y new Date().getFullYear() para el copyright. Para el SEO local, el JSON-LD Organization se centraliza en lib/seo.ts → organizationSchema() (alias canónico de orgSchema) y se emite UNA sola vez desde buildSchema() en BaseLayout —el componente NO toca el grafo—.',
+    ]}
+  />
 
   {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
-  <section class="section section--surface">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Función e importancia"
-        title="¿Para qué sirve?"
-        desc="Hace tres trabajos a la vez, todos críticos: distribuye autoridad interna a TODAS las páginas con un mismo set de enlaces (activo SEO global), garantiza la consistencia NAP entre Topbar/Footer/JSON-LD (factor de confianza local) y concentra las señales de trust que NO caben arriba (dirección física, horario, redes, certificaciones, legales)."
-        body={[
-          'Su función primaria es estructural: el footer es la red de seguridad de la navegación —si el visitante llegó hasta abajo sin encontrar algo, aquí lo encuentra—. A diferencia del header (que lleva 4-5 ítems primarios, los que el visitante busca primero), el footer carga las 50+ rutas que componen el sitio: catálogo completo por categoría, cobertura por estado, todos los servicios, sectores cuando aplican, páginas legales, contacto, blog. Es el «mapa exhaustivo» del sitio, ordenado por temática. Para el visitante: la última oportunidad de descubrir. Para el crawler de Google: una matriz de internal linking que se imprime en cada URL y reparte equity equitativamente al sitio entero.',
-          'Su función secundaria es SEO local: aquí se materializa la consistencia NAP (Name + Address + Phone), uno de los factores más antiguos del ranking local. El teléfono que aparece en el bloque NAP del Footer DEBE ser idéntico —letra por letra, formato por formato— al que muestra el Topbar y al que declara el JSON-LD Organization en contactPoint.telephone. La SSoT en CONTACT lo garantiza: CONTACT.phone para mostrar, telUrl() (que lee phoneE164) para el tel:, CONTACT.phoneRaw para el schema. Si una página cualquiera reescribe el teléfono con un formato distinto, Google detecta la divergencia y baja la confianza del Knowledge Panel. Y la terciaria es de conversión: la banda CTA pre-footer es el último intento de mover al visitante a WhatsApp/contacto antes del cierre informativo, con eyebrow + título + dos botones (WhatsApp con mensaje pre-armado vía WA_MESSAGES.cotizacion + ghost a /contacto).',
-        ]}
-      />
-      <div class="bene">
-        {beneficios.map((b) => (
-          <article class="bene__card">
-            <h3 class="bene__title">{b.titulo}</h3>
-            <p class="bene__desc">{b.desc}</p>
-          </article>
-        ))}
-      </div>
-    </div>
-  </section>
+  <ModSection
+    surface
+    eyebrow="Función e importancia"
+    title="¿Para qué sirve?"
+    desc="Hace tres trabajos a la vez, todos críticos: distribuye autoridad interna a TODAS las páginas con un mismo set de enlaces (activo SEO global), garantiza la consistencia NAP entre Topbar/Footer/JSON-LD (factor de confianza local) y concentra las señales de trust que NO caben arriba (dirección física, horario, redes, certificaciones, legales)."
+    body={[
+      'Su función primaria es estructural: el footer es la red de seguridad de la navegación —si el visitante llegó hasta abajo sin encontrar algo, aquí lo encuentra—. A diferencia del header (que lleva 4-5 ítems primarios, los que el visitante busca primero), el footer carga las 50+ rutas que componen el sitio: catálogo completo por categoría, cobertura por estado, todos los servicios, sectores cuando aplican, páginas legales, contacto, blog. Es el «mapa exhaustivo» del sitio, ordenado por temática. Para el visitante: la última oportunidad de descubrir. Para el crawler de Google: una matriz de internal linking que se imprime en cada URL y reparte equity equitativamente al sitio entero.',
+      'Su función secundaria es SEO local: aquí se materializa la consistencia NAP (Name + Address + Phone), uno de los factores más antiguos del ranking local. El teléfono que aparece en el bloque NAP del Footer DEBE ser idéntico —letra por letra, formato por formato— al que muestra el Topbar y al que declara el JSON-LD Organization en contactPoint.telephone. La SSoT en CONTACT lo garantiza: CONTACT.phone para mostrar, telUrl() (que lee phoneE164) para el tel:, CONTACT.phoneRaw para el schema. Si una página cualquiera reescribe el teléfono con un formato distinto, Google detecta la divergencia y baja la confianza del Knowledge Panel. Y la terciaria es de conversión: la banda CTA pre-footer es el último intento de mover al visitante a WhatsApp/contacto antes del cierre informativo, con eyebrow + título + dos botones (WhatsApp con mensaje pre-armado vía WA_MESSAGES.cotizacion + ghost a /contacto).',
+    ]}
+  >
+    <ModBenefits items={beneficios} />
+  </ModSection>
 
   {/* ── 3) ¿QUÉ LLEVA? — Anatomía con las 5 zonas ── */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Anatomía"
-        title="¿Qué lleva por dentro?"
-        desc="Cinco zonas en orden estricto, cada una con su rol y su fondo. Mapean 1:1 con el código de Footer.astro y reaparecen en el ejemplo en vivo del cierre de esta misma página (regla del molde: si el módulo se rompe, esta guía se rompe a la vista)."
-        body={[
-          'El componente no es un bloque monolítico: son cinco zonas con responsabilidades distintas. La 1 (banda CTA) intenta la última conversión, con fondo distinto y borde inferior. La 2 (cuerpo) es el grid principal, con la marca + NAP a la izquierda y las 4 columnas de navegación a la derecha. La 3 (cumplimiento) es opcional, una franja angosta solo aparece si la prop certifications llega poblada. La 4 (barra inferior) es el cierre legal, con fondo negro absoluto y tres bloques (copyright/tagline · legales · scroll-top). La 5 (barra de acento) es la única decoración «no-funcional», un degradé de 3 px en la parte superior absoluta.',
-          'Cada zona tiene su SSoT clara —ver la columna «dato» en cada ficha—. No hay magia: si quieres entender de dónde sale algo, lee el dato; si quieres modificarlo, edita esa SSoT en site.ts. El componente solo presenta lo que recibe.',
-        ]}
-      />
+  <ModSection
+    eyebrow="Anatomía"
+    title="¿Qué lleva por dentro?"
+    desc="Cinco zonas en orden estricto, cada una con su rol y su fondo. Mapean 1:1 con el código de Footer.astro y reaparecen en el ejemplo en vivo del cierre de esta misma página (regla del molde: si el módulo se rompe, esta guía se rompe a la vista)."
+    body={[
+      'El componente no es un bloque monolítico: son cinco zonas con responsabilidades distintas. La 1 (banda CTA) intenta la última conversión, con fondo distinto y borde inferior. La 2 (cuerpo) es el grid principal, con la marca + NAP a la izquierda y las 4 columnas de navegación a la derecha. La 3 (cumplimiento) es opcional, una franja angosta solo aparece si la prop certifications llega poblada. La 4 (barra inferior) es el cierre legal, con fondo negro absoluto y tres bloques (copyright/tagline · legales · scroll-top). La 5 (barra de acento) es la única decoración «no-funcional», un degradé de 3 px en la parte superior absoluta.',
+      'Cada zona tiene su SSoT clara —ver la columna «dato» en cada ficha—. No hay magia: si quieres entender de dónde sale algo, lee el dato; si quieres modificarlo, edita esa SSoT en site.ts. El componente solo presenta lo que recibe.',
+    ]}
+  >
       <ol class="zonas">
         {zonas.map((z) => (
           <li class="zona">
@@ -466,22 +451,19 @@ import RelatedLinks from '@components/RelatedLinks.astro'
           guía depende del módulo.
         </p>
       </GuiaNota>
-    </div>
-  </section>
+  </ModSection>
 
   {/* ── 4) VARIANTES — GaleriaDisenos + DisenoCard ── */}
-  <section class="section section--surface">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Otros diseños y aplicaciones"
-        title="Variantes del Footer"
-        desc="Seis configuraciones: tres salen de combinar props/data existentes (REAL) y tres requieren agregar una zona, una prop o un slot al componente (EXTENSIÓN). Cada réplica pinta el layout en miniatura con clases .fv (footer variant) y deja claro qué se reordena."
-        body={[
-          'El footer admite variantes sin perder identidad: cambia el énfasis (compacto vs multi-columna), la zona de cumplimiento (visible vs oculta), las redes (presentes vs auto-ocultadas), la banda CTA (WhatsApp vs newsletter) o el cierre legal (sin créditos vs con crédito de agencia). El componente actual cubre las REAL; las EXTENSIÓN documentan cómo escalarlo sin romper la arquitectura.',
-          'Cada variante tiene su contexto de aplicación: el negocio local quiere la canónica, la landing one-page quiere la compacta, el SaaS regulado quiere el cumplimiento poblado, el blog editorial quiere el newsletter. Reusar el mismo componente con configuraciones distintas es la lección del sistema —el footer NO es seis componentes, es uno con seis caras—.',
-        ]}
-      />
+  <ModSection
+    surface
+    eyebrow="Otros diseños y aplicaciones"
+    title="Variantes del Footer"
+    desc="Seis configuraciones: tres salen de combinar props/data existentes (REAL) y tres requieren agregar una zona, una prop o un slot al componente (EXTENSIÓN). Cada réplica pinta el layout en miniatura con clases .fv (footer variant) y deja claro qué se reordena."
+    body={[
+      'El footer admite variantes sin perder identidad: cambia el énfasis (compacto vs multi-columna), la zona de cumplimiento (visible vs oculta), las redes (presentes vs auto-ocultadas), la banda CTA (WhatsApp vs newsletter) o el cierre legal (sin créditos vs con crédito de agencia). El componente actual cubre las REAL; las EXTENSIÓN documentan cómo escalarlo sin romper la arquitectura.',
+      'Cada variante tiene su contexto de aplicación: el negocio local quiere la canónica, la landing one-page quiere la compacta, el SaaS regulado quiere el cumplimiento poblado, el blog editorial quiere el newsletter. Reusar el mismo componente con configuraciones distintas es la lección del sistema —el footer NO es seis componentes, es uno con seis caras—.',
+    ]}
+  >
 
       <GaleriaDisenos ariaLabel="Seis variantes del módulo Footer">
         <DisenoCard {...disenos[0]}>
@@ -551,103 +533,87 @@ import RelatedLinks from '@components/RelatedLinks.astro'
           </div>
         </DisenoCard>
       </GaleriaDisenos>
-    </div>
-  </section>
+  </ModSection>
 
   {/* ── 5) RESPONSIVE Y MÓVIL — 4 patrones con MarcoMovil + Receta ── */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Responsive y móvil"
-        title="El footer, en el teléfono y en papel"
-        desc="Cuatro patrones reales: stack progresivo del grid (default, mobile-first), acordeón nativo con <details> cuando hay muchas columnas, botones full-width en la banda CTA y hoja de impresión que reduce el footer al NAP. Todo CSS puro, cero JavaScript adicional."
-        body={[
-          'El footer es más complejo que un hero o un menú: tiene cinco columnas con datos heterogéneos (texto largo + listas + iconos + botones), por lo que el reflow al teléfono no es trivial. El patrón canónico es mobile-first y progresivo: 5 columnas en escritorio → 3 en tablet (marca ocupa la fila completa, las 3 nav debajo) → 2 en móvil estrecho → 1 en pantalla mínima. Cero JavaScript, todo CSS Grid nativo.',
-          'A eso se suman dos detalles que pocos footers cubren: el acordeón opcional con <details>/<summary> (cuando hay muchas columnas con muchos enlaces, evita un footer de 600+ px de alto en el teléfono) y la hoja de impresión (un sitio se imprime más de lo que se cree —recibos, fichas técnicas, propuestas— y el footer impreso debe mostrar el NAP, no las redes ni el scroll-top que no se pueden tocar en papel—).',
-        ]}
-      />
+  <ModSection
+    eyebrow="Responsive y móvil"
+    title="El footer, en el teléfono y en papel"
+    desc="Cuatro patrones reales: stack progresivo del grid (default, mobile-first), acordeón nativo con <details> cuando hay muchas columnas, botones full-width en la banda CTA y hoja de impresión que reduce el footer al NAP. Todo CSS puro, cero JavaScript adicional."
+    body={[
+      'El footer es más complejo que un hero o un menú: tiene cinco columnas con datos heterogéneos (texto largo + listas + iconos + botones), por lo que el reflow al teléfono no es trivial. El patrón canónico es mobile-first y progresivo: 5 columnas en escritorio → 3 en tablet (marca ocupa la fila completa, las 3 nav debajo) → 2 en móvil estrecho → 1 en pantalla mínima. Cero JavaScript, todo CSS Grid nativo.',
+      'A eso se suman dos detalles que pocos footers cubren: el acordeón opcional con <details>/<summary> (cuando hay muchas columnas con muchos enlaces, evita un footer de 600+ px de alto en el teléfono) y la hoja de impresión (un sitio se imprime más de lo que se cree —recibos, fichas técnicas, propuestas— y el footer impreso debe mostrar el NAP, no las redes ni el scroll-top que no se pueden tocar en papel—).',
+    ]}
+  >
 
-      <div class="pats">
+      <ModResponsive>
         {/* 1 · Stack progresivo */}
-        <article class="pat">
-          <div class="pat__demo">
-            <MarcoMovil ariaLabel="El footer baja a una sola columna en el teléfono, con la marca arriba y las navegaciones debajo">
-              <div class="fm fm--stack">
-                <div class="fm__cta"><b>¿Listo?</b><span class="fm__btn">WhatsApp</span></div>
-                <div class="fm__brand"><b class="fm__logo">E</b><span class="fm__nap"></span><span class="fm__nap"></span></div>
-                <div class="fm__col"><b></b><i></i><i></i><i></i></div>
-                <div class="fm__col"><b></b><i></i><i></i></div>
-                <div class="fm__col"><b></b><i></i><i></i></div>
-                <div class="fm__bot"><span></span><span class="fm__top">↑</span></div>
-              </div>
-            </MarcoMovil>
-          </div>
-          <div class="pat__info">
-            <h3 class="pat__title">1 · Stack progresivo (mobile-first)</h3>
-            <p class="pat__desc">El cuerpo del footer es un <code>grid</code> con tres cortes: 5 columnas en escritorio (marca + 4 nav), 3 en tablet (marca ocupa <code>grid-column: 1 / -1</code>), 2 en móvil, 1 en pantalla mínima. Cero JavaScript: el reflow lo hace CSS Grid solo. Es el default del componente actual.</p>
-            <Receta titulo="CSS · grid responsive del cuerpo" lang="css" code={recetaStackMov} />
-          </div>
-        </article>
+        <ModPattern
+          title="1 · Stack progresivo (mobile-first)"
+          desc="El cuerpo del footer es un <code>grid</code> con tres cortes: 5 columnas en escritorio (marca + 4 nav), 3 en tablet (marca ocupa <code>grid-column: 1 / -1</code>), 2 en móvil, 1 en pantalla mínima. Cero JavaScript: el reflow lo hace CSS Grid solo. Es el default del componente actual."
+          receta={{ titulo: 'CSS · grid responsive del cuerpo', lang: 'css', code: recetaStackMov }}
+        >
+          <MarcoMovil ariaLabel="El footer baja a una sola columna en el teléfono, con la marca arriba y las navegaciones debajo">
+            <div class="fm fm--stack">
+              <div class="fm__cta"><b>¿Listo?</b><span class="fm__btn">WhatsApp</span></div>
+              <div class="fm__brand"><b class="fm__logo">E</b><span class="fm__nap"></span><span class="fm__nap"></span></div>
+              <div class="fm__col"><b></b><i></i><i></i><i></i></div>
+              <div class="fm__col"><b></b><i></i><i></i></div>
+              <div class="fm__col"><b></b><i></i><i></i></div>
+              <div class="fm__bot"><span></span><span class="fm__top">↑</span></div>
+            </div>
+          </MarcoMovil>
+        </ModPattern>
 
         {/* 2 · Acordeón <details> */}
-        <article class="pat">
-          <div class="pat__demo">
-            <MarcoMovil ariaLabel="Cada columna del footer es un acordeón colapsable; el visitante abre solo la que le interesa">
-              <div class="fm fm--acc">
-                <div class="fm__brand"><b class="fm__logo">E</b></div>
-                <div class="fm__acc fm__acc--open"><b>Productos <span>−</span></b><div class="fm__acc-list"><i></i><i></i><i></i></div></div>
-                <div class="fm__acc"><b>Servicios <span>+</span></b></div>
-                <div class="fm__acc"><b>Cobertura <span>+</span></b></div>
-                <div class="fm__acc"><b>Empresa <span>+</span></b></div>
-                <div class="fm__bot"><span></span><span class="fm__top">↑</span></div>
-              </div>
-            </MarcoMovil>
-          </div>
-          <div class="pat__info">
-            <h3 class="pat__title">2 · Acordeón nativo con &lt;details&gt;</h3>
-            <p class="pat__desc">Cuando el footer tiene muchas columnas y cada una lleva 10+ enlaces, el stack vertical produce un pie de 600+ px en el teléfono. Reemplazar cada <code>&lt;nav class="footer__col"&gt;</code> por un <code>&lt;details&gt;</code> con <code>&lt;summary&gt;</code> deja al visitante abrir solo lo que le interesa. EXTENSIÓN sin JS, soportada nativamente.</p>
-            <Receta titulo="CSS · acordeón nativo con <details>" lang="css" code={recetaAcordeonMov} />
-          </div>
-        </article>
+        <ModPattern
+          title="2 · Acordeón nativo con &lt;details&gt;"
+          desc='Cuando el footer tiene muchas columnas y cada una lleva 10+ enlaces, el stack vertical produce un pie de 600+ px en el teléfono. Reemplazar cada <code>&lt;nav class="footer__col"&gt;</code> por un <code>&lt;details&gt;</code> con <code>&lt;summary&gt;</code> deja al visitante abrir solo lo que le interesa. EXTENSIÓN sin JS, soportada nativamente.'
+          receta={{ titulo: 'CSS · acordeón nativo con <details>', lang: 'css', code: recetaAcordeonMov }}
+        >
+          <MarcoMovil ariaLabel="Cada columna del footer es un acordeón colapsable; el visitante abre solo la que le interesa">
+            <div class="fm fm--acc">
+              <div class="fm__brand"><b class="fm__logo">E</b></div>
+              <div class="fm__acc fm__acc--open"><b>Productos <span>−</span></b><div class="fm__acc-list"><i></i><i></i><i></i></div></div>
+              <div class="fm__acc"><b>Servicios <span>+</span></b></div>
+              <div class="fm__acc"><b>Cobertura <span>+</span></b></div>
+              <div class="fm__acc"><b>Empresa <span>+</span></b></div>
+              <div class="fm__bot"><span></span><span class="fm__top">↑</span></div>
+            </div>
+          </MarcoMovil>
+        </ModPattern>
 
         {/* 3 · Botones CTA full-width */}
-        <article class="pat">
-          <div class="pat__demo">
-            <MarcoMovil ariaLabel="Los botones de la banda CTA del footer ocupan el ancho completo y se apilan en el teléfono">
-              <div class="fm fm--cta">
-                <div class="fm__hero"><b>¿Listo para empezar?</b><i></i></div>
-                <span class="fm__fullbtn fm__fullbtn--wa">WhatsApp</span>
-                <span class="fm__fullbtn fm__fullbtn--gh">Ir a contacto</span>
-                <div class="fm__brand"><b class="fm__logo">E</b><span class="fm__nap"></span></div>
-                <div class="fm__bot"><span></span><span class="fm__top">↑</span></div>
-              </div>
-            </MarcoMovil>
-          </div>
-          <div class="pat__info">
-            <h3 class="pat__title">3 · Botones CTA full-width</h3>
-            <p class="pat__desc">En escritorio, los 2 botones de la banda CTA van inline con <code>gap</code>; en móvil deben ocupar el ancho completo y apilarse, con área táctil ≥48 px (WCAG SC 2.5.5). El componente actual ya lo hace en <code>≤760px</code>: <code>flex-direction:column</code> en el inner, <code>flex:1</code> en cada botón, y padding más ajustado.</p>
-            <Receta titulo="CSS · banda CTA full-width en móvil" lang="css" code={recetaCtaMov} />
-          </div>
-        </article>
+        <ModPattern
+          title="3 · Botones CTA full-width"
+          desc="En escritorio, los 2 botones de la banda CTA van inline con <code>gap</code>; en móvil deben ocupar el ancho completo y apilarse, con área táctil ≥48 px (WCAG SC 2.5.5). El componente actual ya lo hace en <code>≤760px</code>: <code>flex-direction:column</code> en el inner, <code>flex:1</code> en cada botón, y padding más ajustado."
+          receta={{ titulo: 'CSS · banda CTA full-width en móvil', lang: 'css', code: recetaCtaMov }}
+        >
+          <MarcoMovil ariaLabel="Los botones de la banda CTA del footer ocupan el ancho completo y se apilan en el teléfono">
+            <div class="fm fm--cta">
+              <div class="fm__hero"><b>¿Listo para empezar?</b><i></i></div>
+              <span class="fm__fullbtn fm__fullbtn--wa">WhatsApp</span>
+              <span class="fm__fullbtn fm__fullbtn--gh">Ir a contacto</span>
+              <div class="fm__brand"><b class="fm__logo">E</b><span class="fm__nap"></span></div>
+              <div class="fm__bot"><span></span><span class="fm__top">↑</span></div>
+            </div>
+          </MarcoMovil>
+        </ModPattern>
 
         {/* 4 · Hoja de impresión */}
-        <article class="pat">
-          <div class="pat__demo">
-            <MarcoMovil ariaLabel="Vista de impresión: solo NAP y legales en blanco y negro, sin redes ni scroll-top">
-              <div class="fm fm--print">
-                <div class="fm__paper"><b>NEGOCIO S.A.</b><span>Av. Demo 123, Col. Centro</span><span>CDMX 06000 · Tel. 55 0000 0000</span><span>hola@negocio.mx</span></div>
-                <div class="fm__paper fm__paper--legal"><span>© 2026 Negocio S.A. · Privacidad · Términos</span></div>
-              </div>
-            </MarcoMovil>
-          </div>
-          <div class="pat__info">
-            <h3 class="pat__title">4 · Hoja de impresión (@media print)</h3>
-            <p class="pat__desc">Una página impresa (recibo, propuesta, ficha) NO necesita la fila de redes ni el botón «volver arriba» —no se tocan en papel—. La hoja de impresión reduce el footer al bloque NAP + legales en blanco y negro: cumple con la información esencial sin gastar tinta en gradientes ni iconos sociales. Patrón a11y barato.</p>
-            <Receta titulo="CSS · @media print del footer" lang="css" code={recetaPrintMov} />
-          </div>
-        </article>
-      </div>
+        <ModPattern
+          title="4 · Hoja de impresión (@media print)"
+          desc="Una página impresa (recibo, propuesta, ficha) NO necesita la fila de redes ni el botón «volver arriba» —no se tocan en papel—. La hoja de impresión reduce el footer al bloque NAP + legales en blanco y negro: cumple con la información esencial sin gastar tinta en gradientes ni iconos sociales. Patrón a11y barato."
+          receta={{ titulo: 'CSS · @media print del footer', lang: 'css', code: recetaPrintMov }}
+        >
+          <MarcoMovil ariaLabel="Vista de impresión: solo NAP y legales en blanco y negro, sin redes ni scroll-top">
+            <div class="fm fm--print">
+              <div class="fm__paper"><b>NEGOCIO S.A.</b><span>Av. Demo 123, Col. Centro</span><span>CDMX 06000 · Tel. 55 0000 0000</span><span>hola@negocio.mx</span></div>
+              <div class="fm__paper fm__paper--legal"><span>© 2026 Negocio S.A. · Privacidad · Términos</span></div>
+            </div>
+          </MarcoMovil>
+        </ModPattern>
+      </ModResponsive>
 
       <GuiaNota titulo="El footer es CSS puro: cero librerías, cero JS adicional" archivo="src/components/Footer.astro">
         <p>
@@ -663,22 +629,19 @@ import RelatedLinks from '@components/RelatedLinks.astro'
           cero dependencias.
         </p>
       </GuiaNota>
-    </div>
-  </section>
+  </ModSection>
 
   {/* ── 6) ¿DÓNDE VA? — la regla del eat-your-own-dog-food ── */}
-  <section class="section section--surface">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Posición en el layout"
-        title="¿Dónde va en la página?"
-        desc="Al cierre de TODAS las páginas del sitio, montado UNA sola vez en src/layouts/PageLayout.astro. No se importa página por página: PageLayout lo emite por debajo del slot principal, así que cualquier ruta que extienda PageLayout (o que use BaseLayout vía PageLayout) hereda el footer automáticamente."
-        body={[
-          'La regla canónica del sistema: el Footer es un componente de LAYOUT, no de página. Eso significa que cada nueva página (.astro nueva en src/pages/) hereda el footer sin hacer nada —no hay que importarlo ni renderizarlo manualmente—. Si necesitas omitirlo en una página puntual (un funnel de cierre, un wizard sin escapes), debería existir una prop showFooter?: boolean en PageLayout (hoy NO existe; es una EXTENSIÓN documentada en la sección 4 del molde).',
-          'El cierre de cada página tiene un orden estable: contenido principal del slot → SectionMenu de cierre (interlinking, opcional) → Footer (cierre informativo, siempre). El SectionMenu es donde la página decide a qué llevar al visitante después; el Footer es donde el sitio entero le ofrece el mapa. Las dos piezas no compiten: el menú reparte hacia adelante (lo siguiente que ver), el footer reparte hacia los lados (todo el resto del sitio).',
-        ]}
-      />
+  <ModSection
+    surface
+    eyebrow="Posición en el layout"
+    title="¿Dónde va en la página?"
+    desc="Al cierre de TODAS las páginas del sitio, montado UNA sola vez en src/layouts/PageLayout.astro. No se importa página por página: PageLayout lo emite por debajo del slot principal, así que cualquier ruta que extienda PageLayout (o que use BaseLayout vía PageLayout) hereda el footer automáticamente."
+    body={[
+      'La regla canónica del sistema: el Footer es un componente de LAYOUT, no de página. Eso significa que cada nueva página (.astro nueva en src/pages/) hereda el footer sin hacer nada —no hay que importarlo ni renderizarlo manualmente—. Si necesitas omitirlo en una página puntual (un funnel de cierre, un wizard sin escapes), debería existir una prop showFooter?: boolean en PageLayout (hoy NO existe; es una EXTENSIÓN documentada en la sección 4 del molde).',
+      'El cierre de cada página tiene un orden estable: contenido principal del slot → SectionMenu de cierre (interlinking, opcional) → Footer (cierre informativo, siempre). El SectionMenu es donde la página decide a qué llevar al visitante después; el Footer es donde el sitio entero le ofrece el mapa. Las dos piezas no compiten: el menú reparte hacia adelante (lo siguiente que ver), el footer reparte hacia los lados (todo el resto del sitio).',
+    ]}
+  >
       <GuiaNota titulo="Eat your own dog food: el ejemplo en vivo es el cierre de esta misma página" archivo="src/components/Footer.astro · src/layouts/PageLayout.astro">
         <p>
           Cuando termines de leer esta guía (y crucemos el cierre de <code>SectionMenu</code>),
@@ -694,43 +657,36 @@ import RelatedLinks from '@components/RelatedLinks.astro'
           NO redibuja el componente; lo deja salir de fábrica en el cierre.
         </p>
       </GuiaNota>
-    </div>
-  </section>
+  </ModSection>
 
   {/* ── 7) CÓMO ESTÁ CONSTRUIDO — 3 recetas ── */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Capa técnica"
-        title="Cómo está construido"
-        desc="El componente vive en src/components/Footer.astro y consume site.ts como SSoT total. El JSON-LD Organization vive en src/lib/seo.ts → organizationSchema() (alias canónico de orgSchema), emitido UNA vez por buildSchema() en BaseLayout (regla B3). Tres recetas cubren el espectro de uso: básico data-driven, con sponsors/badges, y la integración SEO con organizationSchema."
-        body={[
-          'La arquitectura es estricta: el componente no decide datos, los presenta. El componente no emite schema, lo deja al emisor central. El componente no hardcodea enlaces, los lee de la taxonomía. Esa separación de responsabilidades es lo que mantiene el footer estable y data-driven —cambias un teléfono en CONTACT y se propaga al Topbar, al Footer, al telUrl(), al JSON-LD; cambias un nombre legal en SITE.organization y se actualiza el copyright (si se conecta) y el schema Organization—.',
-          'Las tres recetas que siguen son el camino completo: la receta A muestra el uso default sin props, la B muestra cómo poblar la banda de cumplimiento con certificaciones reales, y la C documenta la integración con organizationSchema —dónde vive, quién lo emite, por qué el Footer NO debe emitirlo—.',
-        ]}
-      />
+  <ModSection
+    eyebrow="Capa técnica"
+    title="Cómo está construido"
+    desc="El componente vive en src/components/Footer.astro y consume site.ts como SSoT total. El JSON-LD Organization vive en src/lib/seo.ts → organizationSchema() (alias canónico de orgSchema), emitido UNA vez por buildSchema() en BaseLayout (regla B3). Tres recetas cubren el espectro de uso: básico data-driven, con sponsors/badges, y la integración SEO con organizationSchema."
+    body={[
+      'La arquitectura es estricta: el componente no decide datos, los presenta. El componente no emite schema, lo deja al emisor central. El componente no hardcodea enlaces, los lee de la taxonomía. Esa separación de responsabilidades es lo que mantiene el footer estable y data-driven —cambias un teléfono en CONTACT y se propaga al Topbar, al Footer, al telUrl(), al JSON-LD; cambias un nombre legal en SITE.organization y se actualiza el copyright (si se conecta) y el schema Organization—.',
+      'Las tres recetas que siguen son el camino completo: la receta A muestra el uso default sin props, la B muestra cómo poblar la banda de cumplimiento con certificaciones reales, y la C documenta la integración con organizationSchema —dónde vive, quién lo emite, por qué el Footer NO debe emitirlo—.',
+    ]}
+  >
       <div class="recetas">
         <Receta titulo="A · Uso básico data-driven desde site.ts" lang="astro" code={recetaUso} />
         <Receta titulo="B · Sponsors / certificaciones via prop certifications" lang="astro" code={recetaSponsors} />
         <Receta titulo="C · Integración SEO con organizationSchema (regla B3)" lang="astro" code={recetaSchema} />
       </div>
-    </div>
-  </section>
+  </ModSection>
 
   {/* ── 8) BUENAS PRÁCTICAS (sí/no) ── */}
-  <section class="section section--surface">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Buenas prácticas"
-        title="Qué hacer y qué evitar"
-        desc="Seis hábitos que mantienen al footer como activo SEO global, NAP consistente y trust signal verificable; seis errores que lo degradan a vertedero de enlaces, fuente de inconsistencias NAP o emisor duplicado de schema. Tratar el footer como decoración es el camino corto a las dos cosas."
-        body={[
-          'La diferencia entre un footer que multiplica equity y uno que solo ocupa espacio es disciplinaria: data-driven sin excepciones, NAP letra por letra, schema centralizado, certificaciones verificables, año dinámico, redes solo si están vivas. Cada regla viene de un caso real visto en sitios mexicanos: footers con teléfono distinto al header (banco perdido en Google), copyrights del 2018 en sitios de 2024, badges «ISO» sin certificación adjunta, mapas del sitio con páginas que ya no existen.',
-          'Los sí son hábitos de SSoT; los no son tentaciones que parecen rápidas y salen caras. Léelos juntos —cada par sí/no apunta al mismo problema desde dos ángulos—.',
-        ]}
-      />
+  <ModSection
+    surface
+    eyebrow="Buenas prácticas"
+    title="Qué hacer y qué evitar"
+    desc="Seis hábitos que mantienen al footer como activo SEO global, NAP consistente y trust signal verificable; seis errores que lo degradan a vertedero de enlaces, fuente de inconsistencias NAP o emisor duplicado de schema. Tratar el footer como decoración es el camino corto a las dos cosas."
+    body={[
+      'La diferencia entre un footer que multiplica equity y uno que solo ocupa espacio es disciplinaria: data-driven sin excepciones, NAP letra por letra, schema centralizado, certificaciones verificables, año dinámico, redes solo si están vivas. Cada regla viene de un caso real visto en sitios mexicanos: footers con teléfono distinto al header (banco perdido en Google), copyrights del 2018 en sitios de 2024, badges «ISO» sin certificación adjunta, mapas del sitio con páginas que ya no existen.',
+      'Los sí son hábitos de SSoT; los no son tentaciones que parecen rápidas y salen caras. Léelos juntos —cada par sí/no apunta al mismo problema desde dos ángulos—.',
+    ]}
+  >
       <div class="bp">
         <div class="bp__col bp__col--si">
           <h3 class="bp__title bp__title--si">Sí</h3>
@@ -741,8 +697,7 @@ import RelatedLinks from '@components/RelatedLinks.astro'
           <ul class="bp__list">{nos.map((t) => <li>{t}</li>)}</ul>
         </div>
       </div>
-    </div>
-  </section>
+  </ModSection>
 
   {/* ── Cierre: menú de navegación full-width (siblingsModules SSoT) ── */}
   <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
@@ -761,12 +716,6 @@ import RelatedLinks from '@components/RelatedLinks.astro'
 </PageLayout>
 
 <style>
-  /* Estructura (tokens.css = fuente única; scoped por página) */
-  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
-  .section { padding: var(--sp-8) 0; }
-  .section--surface { background: var(--c-surface); }
-  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
-
   /* ── Anatomía (zonas) ── */
   .zonas { display: grid; gap: var(--sp-5); margin: var(--sp-6) 0 0; padding: 0; list-style: none; }
   .zona { display: grid; grid-template-columns: 48px 1fr; gap: var(--sp-4); align-items: start; padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
@@ -776,13 +725,6 @@ import RelatedLinks from '@components/RelatedLinks.astro'
   .zona__dato { margin: 0; font-size: var(--text-xs); color: var(--c-ink-2); }
   .zona__dato-label { font-weight: var(--weight-bold); color: var(--c-primary-dark); text-transform: uppercase; letter-spacing: .06em; margin-right: .35em; }
   .zona__dato code { font-family: ui-monospace, Menlo, monospace; font-size: .95em; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .1em .4em; color: var(--c-primary-dark); word-break: break-word; }
-
-  /* ── Beneficios ── */
-  .bene { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
-  @media (min-width: 768px) { .bene { grid-template-columns: repeat(3, 1fr); } }
-  .bene__card { padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
-  .bene__title { margin: 0 0 var(--sp-3); font-family: var(--font-heading); font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--c-ink); line-height: var(--leading-snug); }
-  .bene__desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
 
   /* ── Recetas (sección «Cómo se construye») ── */
   .recetas { display: grid; gap: var(--sp-5); margin-top: var(--sp-6); }
@@ -796,14 +738,6 @@ import RelatedLinks from '@components/RelatedLinks.astro'
   .bp__title--no { color: #dc2626; }
   .bp__list { margin: 0; padding-left: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-3); }
   .bp__list li { font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
-
-  /* ── Patrones móviles (.pats / .pat / mockups .fm) ── */
-  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
-  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
-  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
-  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
-  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
-  .pat__desc code { font-family: ui-monospace, Menlo, monospace; font-size: .85em; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
 
   /* Mockup móvil del footer (.fm = footer móvil) */
   .fm { display: flex; flex-direction: column; gap: 6px; padding: 8px; background: #0d0d0d; color: rgba(255,255,255,.7); min-height: 100%; font-size: 8px; line-height: 1.2; }
