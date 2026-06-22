@@ -27,7 +27,14 @@ const sitemapOptions = {
   filter: (page) =>
     !page.includes('/404') &&
     !page.includes('/_') &&
-    !page.includes('/admin'),
+    !page.includes('/admin') &&
+    // Andamiaje de la plantilla-guía: NO debe entrar al sitemap de un sitio
+    // cliente (diluye autoridad temática y desperdicia crawl budget). new-site.mjs
+    // además borra estos árboles al generar un cliente. Ver docs/AUDITORIA-INTEGRAL.
+    !page.includes('/modulos') &&
+    !page.includes('/niveles') &&
+    !page.includes('/blog/anatomia') &&
+    !page.includes('/productos/guia'),
 
   // Prioridades por tipo de página: home y categorías empujan más que fichas.
   serialize(item) {

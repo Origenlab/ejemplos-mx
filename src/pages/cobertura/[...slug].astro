@@ -12,18 +12,32 @@ import SectionHeading from '@components/SectionHeading.astro'
 import GuiaNota from '@components/GuiaNota.astro'
 import FAQAccordion from '@components/FAQAccordion.astro'
 import SectionMenu from '@components/SectionMenu.astro'
+import { getCollection, render } from 'astro:content'
 import { COVERAGE_STATES, SERVICES, waUrl, WA_MESSAGES } from '@config/site'
 
 export async function getStaticPaths() {
-  return COVERAGE_STATES.map((z) => ({ params: { slug: z.slug }, props: { zona: z } }))
+  // Datos RICOS de cada zona en la colección `zonas` (un .md por zona, nombrado
+  // con el MISMO slug que en COVERAGE_STATES). NAV/rutas siguen saliendo de
+  // COVERAGE_STATES (sync) → no rompe el menú; la colección solo enriquece.
+  const entries = await getCollection('zonas', ({ data }) => !data.draft)
+  return COVERAGE_STATES.map((z) => ({
+    params: { slug: z.slug },
+    props: { zona: z, entry: entries.find((e) => e.id === z.slug) ?? null },
+  }))
 }
 
-const { zona } = Astro.props
+const { zona, entry } = Astro.props
 const { slug, label, type } = zona
 const tipo = type === 'operativo' ? 'operativa' : 'comercial'
 
+// Riqueza de la zona desde la colección (colonias, tiempos, cuerpo Markdown).
+const colonias = entry?.data.colonias ?? []
+const deliveryTime = entry?.data.delivery?.time
+const deliveryNote = entry?.data.delivery?.note
+const ZoneContent = entry ? (await render(entry)).Content : null
+
 const faqs = [
-  { question: `¿La cobertura en ${label} es real?`, answer: 'No. Es una plantilla-guía: el contenido es DEMO. Reemplázalo por la cobertura, las colonias y los tiempos reales del cliente antes de publicar.' },
+  { question: `¿Atienden a domicilio en ${label}?`, answer: `Sí. Coordinamos la visita o el servicio en ${label} según tu necesidad. Escríbenos por WhatsApp con tu dirección y te damos fecha y condiciones.` },
   { question: '¿Qué diferencia hay entre zona operativa y comercial?', answer: 'En una zona operativa damos servicio directo en sitio; en una comercial atendemos a distancia o con cobertura parcial. El tipo sale de COVERAGE_STATES en site.ts.' },
   { question: `¿Atienden fuera de ${label}?`, answer: 'Escríbenos tu ubicación por WhatsApp y te confirmamos la cobertura. Muchos servicios se prestan a distancia sin importar la zona.' },
 ]
@@ -39,8 +53,9 @@ const cierreCta = { label: `Cotizar en ${label}`, href: waUrl(WA_MESSAGES.cotiza
 
 <PageLayout
   title={`Cobertura en ${label}`}
-  description={`Cobertura ${tipo} en ${label}: zona atendida por Ejemplos.mx con el patrón de SEO local. Servicios disponibles y contacto directo. Datos DEMO de la plantilla.`}
+  description={`Cobertura ${tipo} en ${label}: servicios disponibles, alcance y contacto directo por WhatsApp. Cotiza en ${label}.`}
   pageType="page"
+  schemaData={{ areaServed: [label], faqs }}
   breadcrumbs={[{ label: 'Cobertura', href: '/cobertura' }, { label }]}
   guia={false}
 >
@@ -48,10 +63,10 @@ const cierreCta = { label: `Cotizar en ${label}`, href: waUrl(WA_MESSAGES.cotiza
     badge={`Zona ${tipo}`}
     title="Cobertura en"
     accent={label}
-    subtitle={`Atendemos ${label} con el mismo estándar de servicio. Esta es la página de zona: el patrón con el que un negocio cubre cada ubicación.`}
+    subtitle={`Atendemos ${label} con el mismo estándar de servicio. Conoce el alcance en tu zona y cotiza directo por WhatsApp.`}
     descRight={[
-      `Esta es una página de zona dedicada a ${label}. Su trabajo de SEO local es responder a quien busca un servicio en esta ubicación específica, con contenido propio en lugar de una mención genérica. Una URL por zona, con su nombre y sus datos, posiciona mejor que una sola página que intente cubrirlas todas.`,
-      'El contenido de apoyo es DEMO. En un sitio real, aquí van las colonias o municipios cubiertos, los tiempos de respuesta y cualquier particularidad de la zona. Cuanto más específico y verdadero sea, mejor responde a la búsqueda local y más confianza genera.',
+      `Damos servicio en ${label} como zona ${tipo}. Aquí ves qué incluye la atención en tu ubicación y cómo solicitarla.`,
+      'Cuéntanos dónde estás y qué necesitas: te confirmamos cobertura, tiempos y la mejor forma de atenderte.',
     ]}
   />
 
@@ -70,12 +85,33 @@ const cierreCta = { label: `Cotizar en ${label}`, href: waUrl(WA_MESSAGES.cotiza
         layout="duo"
         eyebrow="Qué cubrimos"
         title={`Servicio en ${label}`}
-        desc="El alcance en esta zona y por qué una página dedicada importa para el SEO local."
+        desc="El alcance del servicio en esta zona: colonias cubiertas, tiempos y cómo solicitarlo."
         body={[
-          `Atendemos ${label} como zona ${tipo}. En una implementación real, este bloque detalla el alcance concreto: colonias o municipios cubiertos, tiempos de respuesta y modalidad de atención. La especificidad es la que convierte y la que posiciona.`,
-          'Mantener una página por zona es sostenible porque todas comparten plantilla y se generan desde una sola fuente de datos. Solo cambia el contenido propio de cada ubicación; la estructura y el diseño se reutilizan idénticos.',
+          `Atendemos ${label} como zona ${tipo}: aquí detallamos las colonias o municipios cubiertos, los tiempos de respuesta y la modalidad de atención en tu ubicación.`,
+          '¿No ves tu colonia o municipio? Escríbenos por WhatsApp y te confirmamos si llegamos y en qué condiciones.',
         ]}
       />
+
+      {colonias.length > 0 && (
+        <div class="zona-colonias">
+          <p class="zona-colonias__lead">{tipo === 'operativa' ? 'Cubrimos, entre otras:' : 'Atendemos, entre otros:'}</p>
+          <ul class="chips">
+            {colonias.map((c) => <li><span class="chip chip--static">{c}</span></li>)}
+          </ul>
+          {(deliveryTime || deliveryNote) && (
+            <p class="zona-delivery">
+              {deliveryTime && <strong>Tiempos: {deliveryTime}. </strong>}
+              {deliveryNote}
+            </p>
+          )}
+        </div>
+      )}
+
+      {ZoneContent && (
+        <div class="prose">
+          <ZoneContent />
+        </div>
+      )}
 
       <div class="servicios-zona">
         <p class="servicios-zona__lead">Servicios disponibles en {label}:</p>
@@ -112,4 +148,14 @@ const cierreCta = { label: `Cotizar en ${label}`, href: waUrl(WA_MESSAGES.cotiza
     font-size: var(--text-sm); font-weight: var(--weight-medium); text-decoration: none; transition: border-color .15s, color .15s;
   }
   .chip:hover { border-color: var(--c-primary); color: var(--c-primary); }
+
+  .zona-colonias { margin-top: var(--sp-6); }
+  .zona-colonias__lead { font-weight: var(--weight-semibold); color: var(--c-ink); margin: 0 0 var(--sp-3); }
+  .chip--static { cursor: default; }
+  .chip--static:hover { border-color: var(--c-border); color: var(--c-ink-2); }
+  .zona-delivery { margin: var(--sp-4) 0 0; font-size: var(--text-sm); color: var(--c-muted); }
+  .prose { margin-top: var(--sp-6); max-width: 65ch; }
+  .prose :global(h2) { font-family: var(--font-heading); font-size: var(--text-xl); color: var(--c-ink); margin: var(--sp-5) 0 var(--sp-2); }
+  .prose :global(p) { color: var(--c-ink-2); line-height: var(--leading-relaxed); margin: 0 0 var(--sp-3); }
+  .prose :global(strong) { color: var(--c-ink); }
 </style>

@@ -1,0 +1,494 @@
+---
+// ============================================================================
+// /productos/guia/la-coleccion — PIEZA «La colección» de la guía de productos.
+// ----------------------------------------------------------------------------
+// Primera de la serie /productos/guia/* (la-coleccion · las-categorias ·
+// las-imagenes · el-precio · la-ficha · el-schema), MISMO molde de 10 secciones
+// que /modulos (docs/MODULOS.md · docs/PRODUCTOS.md).
+//
+// Tema: cómo NACE un producto en el sitio — un archivo Markdown en
+// src/content/productos/ validado por un esquema Zod .strict() en build-time.
+// Es la pieza-raíz de la guía: define qué es un producto como DATO antes de
+// hablar de categorías, imágenes, precio, ficha o schema.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import RelatedLinks from '@components/RelatedLinks.astro'
+import ModSection from '@components/modulos/ModSection.astro'
+import ModBenefits from '@components/modulos/ModBenefits.astro'
+import ModAnatomy from '@components/modulos/ModAnatomy.astro'
+import ModResponsive from '@components/modulos/ModResponsive.astro'
+import ModPattern from '@components/modulos/ModPattern.astro'
+import ModProse from '@components/modulos/ModProse.astro'
+import ModDosDonts from '@components/modulos/ModDosDonts.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+import { siblingsProductos } from '@lib/productos'
+
+const cierreItems = siblingsProductos('la-coleccion')
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.productos), sub: 'Respuesta inmediata', external: true }
+
+// ── Anatomía: los campos del frontmatter (mapean con el esquema Zod real) ──
+const partes = [
+  {
+    n: 1,
+    nombre: 'Identidad — title + description',
+    que: 'El nombre de venta y la descripción corta del producto. No son libres: Zod exige title de 10–110 caracteres y description de 70–280. Ese rango fuerza títulos escaneables y descripciones que dicen algo, sin frases de una palabra ni párrafos enteros que rompan la card.',
+    dato: 'title: z.string().min(10).max(110) · description: 70–280',
+  },
+  {
+    n: 2,
+    nombre: 'Clasificación — category + order + draft',
+    que: 'Dónde encaja y cómo se ordena. category es un enum CERRADO (equipos · accesorios · general); order define la posición en el grid; draft:true lo oculta del sitio (borrador). featured marca destacados. Son los campos que controlan el catálogo sin tocar la página.',
+    dato: 'category: z.enum(PRODUCT_CATEGORIES) · order · draft · featured',
+  },
+  {
+    n: 3,
+    nombre: 'Medios — image + gallery',
+    que: 'La foto. image es OBLIGATORIA y se valida con una regex: ruta absoluta bajo /images/. gallery[] añade vistas extra para la ficha (opcional). Sin imagen válida, el build falla antes de publicar —no hay producto sin foto en el catálogo—.',
+    dato: 'image: imagePath (regex ^/images/) · gallery: imagePath[]',
+  },
+  {
+    n: 4,
+    nombre: 'Comercial + SEO — price, sku, faqs, related…',
+    que: 'Todo lo opcional que enriquece la ficha: price (string libre o nada → «bajo cotización»), sku, brand, faqs (FAQPage), relatedProducts/relatedServices (interlinking tipado) y los seoFields (seoTitle, seoDescription, keywords). Se pintan solo si vienen.',
+    dato: 'price? · sku? · brand? · faqs? · relatedProducts? · seoTitle?…',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Crear ≠ programar',
+    desc: 'Para sumar un producto escribes un archivo Markdown, no editas un .astro. Quien mantiene el catálogo trabaja con texto; quien mantiene el diseño toca el componente una sola vez para todos los productos. La barrera de entrada baja de «saber Astro» a «saber escribir».',
+  },
+  {
+    titulo: 'Validación en build, no en producción',
+    desc: 'El esquema Zod .strict() revisa cada .md cuando se compila el sitio: campos faltantes, tipos equivocados, categorías inventadas o un "hero_image:" mal escrito rompen el build con un mensaje claro —no se publican en silencio—. El error se ve antes de que lo vea un cliente.',
+  },
+  {
+    titulo: 'Una fuente, muchas salidas',
+    desc: 'El mismo .md alimenta la card del catálogo, la ficha de detalle (L4), el ItemList del grid y el Product+Offer del schema. No se duplica el dato en cuatro sitios: se escribe una vez y cada vista lo lee. Cambiar el título cambia todo a la vez.',
+  },
+]
+
+const sis = [
+  'Crea UN archivo .md por producto en src/content/productos/. El nombre del archivo es el slug de la URL (/productos/<slug>).',
+  'Respeta los rangos de Zod: title 10–110, description 70–280. Si el build se queja, ajusta el texto —no relajes el esquema sin razón—.',
+  'Usa draft:true mientras escribes un producto incompleto: queda fuera del sitio hasta que lo publiques (quita el draft o ponlo en false).',
+  'Ordena con el campo order (número). Productos sin order caen al final; reserva 1, 2, 3… para los que van primero en el grid.',
+  'Apóyate en el .strict(): si Zod rechaza un campo, es que no existe en el esquema —revisa la ortografía antes de añadirlo a content.config.ts—.',
+]
+const nos = [
+  'NO hardcodees un producto dentro de un .astro: rompe la regla D1 (toda entidad repetible vive en una colección) y se queda fuera del schema y del grid.',
+  'NO inventes campos en el frontmatter: con .strict() un campo desconocido (p. ej. "imagen:" en vez de "image:") falla el build, no se ignora en silencio.',
+  'NO uses una categoría fuera del enum: Zod la rechaza. Si necesitas una nueva, añádela al enum en content.config.ts Y a TAXONOMY en site.ts.',
+  'NO dejes la imagen apuntando a una ruta relativa o fuera de /images/: la regex la rechaza. Siempre ruta absoluta bajo /images/.',
+  'NO publiques los .md DEMO: reemplázalos por productos reales antes de lanzar. Son ejemplos para ver el esquema, no contenido de cliente.',
+]
+
+const disenos = [
+  {
+    nombre: 'Mínimo viable (solo obligatorios)',
+    tag: 'Producto simple · Arranque',
+    desc: 'Los cuatro campos que Zod exige: title, description, category e image. Nada más. Genera una card y una ficha válidas con precio «bajo cotización». Es el punto de partida de cualquier producto; lo demás se añade después.',
+  },
+  {
+    nombre: 'Con precio público',
+    tag: 'Retail · B2C',
+    desc: 'Suma price (string libre: «Desde $450 MXN», «$1,299»). La card y la ficha lo muestran y el Offer del schema lleva la cifra. Para catálogos con tarifa pública. Omitirlo activa el modelo cotización.',
+  },
+  {
+    nombre: 'Con galería',
+    tag: 'Producto visual · Equipos',
+    desc: 'Añade gallery[] con rutas /images extra. La ficha (L4) pinta una imagen grande + miniaturas; la card sigue usando solo image. Para productos que se entienden mejor con varias vistas.',
+  },
+  {
+    nombre: 'Con FAQs (FAQPage)',
+    tag: 'Producto con dudas · Soporte',
+    desc: 'faqs[] de pregunta/respuesta. La ficha pinta el acordeón y el schema emite FAQPage. Resuelve objeciones en la propia ficha y baja la carga de soporte. Misma forma {question, answer} en todo el sitio.',
+  },
+  {
+    nombre: 'Con relacionados (interlinking)',
+    tag: 'Cross-sell · Catálogo grande',
+    desc: 'relatedProducts/relatedServices con reference() tipado: enlaza a otras fichas por slug, validado en build (un slug roto falla el build). Reparte autoridad interna y sugiere el siguiente paso.',
+  },
+  {
+    nombre: 'Borrador (draft: true)',
+    tag: 'En redacción · Roadmap',
+    desc: 'draft:true mantiene el producto FUERA del sitio: no entra al grid, no genera ficha, no aparece en el schema. Útil para escribir a medias sin publicar. Quitar el draft (o false) lo activa.',
+  },
+]
+
+// ── Recetas (código real del sistema) ──
+const recetaMd = `---
+# src/content/productos/casco-nom-115.md  → URL: /productos/casco-nom-115
+title: "Casco de seguridad industrial NOM-115"
+description: "Casco homologado para industria pesada, ligero y con barboquejo
+  ajustable. Stock para entrega 24 h en CDMX y zona metropolitana."
+category: "equipos"            # enum cerrado: equipos | accesorios | general
+image: "/images/productos/casco-seguridad-industrial.avif"
+price: "Desde $450 MXN"        # opcional → sin él, CTA "bajo cotización"
+sku: "EQ-CASCO-115"
+brand: "EJEMPLOS"
+order: 1                        # posición en el grid (menor = primero)
+featured: true
+faqs:
+  - question: "¿El casco cumple la NOM-115-STPS?"
+    answer: "Sí, está homologado y se entrega con su certificado."
+---
+
+## Sobre este producto
+
+Cuerpo en **Markdown**: se renderiza en la ficha de detalle. Aquí va la
+descripción larga, listas de beneficios, tablas de especificaciones, etc.`
+
+const recetaSchema = `// src/content.config.ts — el esquema que valida CADA .md (Zod .strict()).
+import { defineCollection, reference, z } from 'astro:content'
+import { glob } from 'astro/loaders'
+
+// La imagen DEBE ser ruta absoluta bajo /images/ (si no, falla el build).
+const imagePath = z.string().regex(/^\\/images\\//)
+
+export const PRODUCT_CATEGORIES = ['equipos', 'accesorios', 'general'] as const
+
+const productos = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/productos' }),
+  schema: z.object({
+    title:       z.string().min(10).max(110),
+    description: z.string().min(70).max(280),
+    category:    z.enum(PRODUCT_CATEGORIES),   // enum CERRADO, no string libre
+    image:       imagePath,                    // OBLIGATORIA
+    price:       z.string().optional(),        // string libre; omitir = cotización
+    sku:         z.string().optional(),
+    brand:       z.string().optional(),
+    gallery:     z.array(imagePath).optional(),
+    relatedProducts: z.array(reference('productos')).optional(),
+    faqs:        z.array(z.object({ question: z.string(), answer: z.string() })).optional(),
+    featured:    z.boolean().default(false),
+    order:       z.number().default(0),
+    draft:       z.boolean().default(false),
+  }).strict(),   // ← rechaza cualquier campo desconocido
+})
+
+export const collections = { productos }`
+
+const recetaGet = `---
+// Cualquier página lee la colección con getCollection. Una sola fuente.
+import { getCollection } from 'astro:content'
+import ProductCard from '@components/ProductCard.astro'
+
+// Filtra borradores (draft) y ordena por 'order'.
+const productos = (await getCollection('productos', ({ data }) => !data.draft))
+  .sort((a, b) => a.data.order - b.data.order)
+---
+
+<div class="grid">
+  {productos.map((p, i) => (
+    <ProductCard
+      title={p.data.title}
+      href={\`/productos/\${p.id}\`}
+      image={p.data.image}
+      badge={p.data.category}
+      description={p.data.description}
+      index={i}
+    />
+  ))}
+</div>`
+
+// ── Recetas de los patrones móviles ──
+const recetaUnaFuente = `/* UNA FUENTE → MUCHAS VISTAS (el mismo .md, en cualquier pantalla)
+   No hay un .md «de escritorio» y otro «de móvil». El frontmatter es
+   el dato; cada vista (card, ficha, schema) lo lee y se adapta sola.
+   El responsive vive en los componentes, NO en el contenido. */
+
+// El .md NO sabe de breakpoints. La card sí:
+.grid { grid-template-columns: 1fr; }                 /* móvil */
+@media (min-width: 768px) {
+  .grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+}`
+
+const recetaDraftMovil = `/* draft Y order SE RESPETAN EN TODA PANTALLA
+   El filtro de borradores y el orden viven en getCollection, antes
+   de pintar: el teléfono recibe exactamente los mismos productos
+   publicados y en el mismo orden que el escritorio. Cero divergencia. */
+
+const productos = (await getCollection('productos', ({ data }) => !data.draft))
+  .sort((a, b) => a.data.order - b.data.order)`
+---
+
+<PageLayout
+  title="La colección de productos — crear un producto en Markdown"
+  description="Cómo se crea un producto en un sitio Astro: un archivo Markdown en una Content Collection validada por Zod .strict(). Frontmatter, campos y generación automática."
+  pageType="page"
+  schemaType="TechArticle"
+  guia={false}
+  breadcrumbs={[{ label: 'Productos', href: '/productos' }, { label: 'La colección' }]}
+>
+  <Hero
+    badge="Guía de productos · La colección"
+    title="La colección:"
+    accent="cómo nace un producto"
+    subtitle="Crear un producto en este sitio no es tocar código: es escribir un archivo Markdown. Cada .md es un producto; un esquema Zod .strict() valida su frontmatter en build-time, y el catálogo, la ficha y el schema se generan solos."
+    descRight={[
+      'Esta es la pieza-raíz de la guía. Antes de hablar de categorías, imágenes, precio, ficha o schema, conviene fijar qué es un producto como DATO: una entrada en una Content Collection, no markup dibujado a mano. Esa decisión —contenido en colecciones, nunca hardcodeado— es la regla D1 del sistema y la que hace que todo lo demás se genere solo.',
+      'Con una consecuencia que conviene marcar de entrada: el contenido y el diseño viven separados. El .md dice QUÉ es el producto; el componente dice CÓMO se ve. Quien edita el catálogo escribe texto y Zod lo valida; quien mantiene el diseño toca un componente, una vez, para todos los productos. Cero duplicación, cero markup repetido.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <ModSection
+    eyebrow="Definición"
+    title="¿Qué es la colección de productos?"
+    desc="La carpeta src/content/productos/ donde cada archivo Markdown es un producto. Astro la carga como Content Collection y valida su frontmatter contra un esquema Zod .strict() en build-time."
+    body={[
+      'La colección de productos es el conjunto de archivos .md que viven en src/content/productos/. Cada archivo es un producto: su frontmatter (la cabecera entre ---) declara los datos —título, descripción, categoría, imagen, precio…— y su cuerpo Markdown es la descripción larga que se renderiza en la ficha. Astro 6 los carga con un loader glob y los expone con getCollection.',
+      'Lo que la vuelve una colección y no «unos archivos sueltos» es el esquema: un objeto Zod .strict() definido en src/content.config.ts que valida CADA producto cuando se compila el sitio. El esquema es el contrato —qué campos existen, de qué tipo, qué rango— y .strict() es la garantía de que nadie cuela un campo inventado. Si un .md no cumple, el build falla con un mensaje claro.',
+    ]}
+  />
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <ModSection
+    surface
+    eyebrow="Función e importancia"
+    title="¿Para qué sirve?"
+    desc="Hace tres trabajos a la vez: baja la barrera de crear un producto a «saber escribir», valida el contenido en build (no en producción) y convierte un solo .md en la card, la ficha, el grid y el schema."
+    body={[
+      'Su función es separar el contenido del código. En un sitio sin colecciones, agregar un producto significa copiar y pegar markup, con el riesgo de romper el diseño en cada copia. Con la colección, agregar un producto es crear un .md: el grid del catálogo y la ficha de detalle se regeneran solos. Quien escribe no necesita saber Astro; el sistema se encarga del resto.',
+      'Y por eso es la pieza-raíz. El mismo archivo alimenta cuatro salidas —la card del catálogo, la ficha L4, el ItemList del grid y el Product+Offer del schema— sin duplicar el dato. La validación Zod, además, atrapa los errores cuando se compila el sitio, no cuando un cliente abre una ficha rota: el costo de un typo se paga en build, no en producción.',
+    ]}
+  >
+    <ModBenefits items={beneficios} />
+  </ModSection>
+
+  {/* ── 3) ¿QUÉ LLEVA? — anatomía con ejemplo en vivo ── */}
+  <ModSection
+    eyebrow="Anatomía"
+    title="¿Qué lleva el frontmatter?"
+    desc="Cuatro grupos de campos: identidad (title + description), clasificación (category + order + draft), medios (image + gallery) y comercial/SEO (price, sku, faqs, related, seoFields). Cuatro son obligatorios; el resto, opcionales."
+    body={[
+      'El frontmatter es la cabecera del .md entre dos líneas de tres guiones. Cada campo cumple un papel y Zod lo vigila: los cuatro obligatorios (title, description, category, image) garantizan que ningún producto entre incompleto al catálogo; los opcionales (price, sku, gallery, faqs, related, seoFields) enriquecen la ficha solo si vienen.',
+      'Abajo, el ejemplo en vivo —un frontmatter real anotado—. Cada punto numerado se desglosa en su tarjeta: qué resuelve y qué regla de Zod lo respalda. Es exactamente la forma que valida src/content.config.ts.',
+    ]}
+  >
+    <ModAnatomy partes={partes}>
+      <div class="fm" role="img" aria-label="Ejemplo de frontmatter de un producto: identidad, clasificación, medios y campos comerciales">
+        <div class="fm__bar"><span class="fm__dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="fm__name">casco-nom-115.md</span></div>
+        <pre class="fm__code"><span class="fm__rule">---</span>
+<span class="fm__pin fm__pin--1">1</span><span class="fm__k">title:</span> <span class="fm__s">"Casco de seguridad industrial NOM-115"</span>
+<span class="fm__k">description:</span> <span class="fm__s">"Casco homologado para industria…"</span>
+<span class="fm__pin fm__pin--2">2</span><span class="fm__k">category:</span> <span class="fm__s">"equipos"</span>
+<span class="fm__k">order:</span> <span class="fm__n">1</span>
+<span class="fm__pin fm__pin--3">3</span><span class="fm__k">image:</span> <span class="fm__s">"/images/productos/casco.avif"</span>
+<span class="fm__pin fm__pin--4">4</span><span class="fm__k">price:</span> <span class="fm__s">"Desde $450 MXN"</span>
+<span class="fm__k">sku:</span> <span class="fm__s">"EQ-CASCO-115"</span>
+<span class="fm__rule">---</span>
+<span class="fm__c">## Cuerpo Markdown → ficha de detalle</span></pre>
+      </div>
+    </ModAnatomy>
+  </ModSection>
+
+  {/* ── 3b) VARIANTES ── */}
+  <ModSection
+    surface
+    eyebrow="Variantes"
+    title="Configuraciones del frontmatter"
+    desc="Un producto puede ir desde lo mínimo (cuatro campos) hasta una ficha rica con galería, FAQs y relacionados. Todas son configuraciones REALES del esquema actual: se obtienen poniendo o quitando campos opcionales, sin tocar content.config.ts."
+    body={[
+      'No hay un único molde: hay un esquema con cuatro campos obligatorios y un puñado de opcionales que cada producto activa según lo que necesite. Un repuesto menor va al mínimo; un equipo estrella lleva galería, FAQs y relacionados. El esquema es el mismo; cambia qué campos trae el .md.',
+      'Abajo, seis configuraciones —todas válidas hoy, sin extender el esquema—. Cada una con el tipo de producto donde rinde mejor.',
+    ]}
+  >
+    <GaleriaDisenos ariaLabel="Configuraciones del frontmatter de un producto">
+      {disenos.map((d) => (
+        <DisenoCard nombre={d.nombre} tag={d.tag} desc={d.desc}>
+          <div class="fmv" role="img" aria-label={d.nombre}>
+            <span class="fmv__row fmv__row--req">title · description</span>
+            <span class="fmv__row fmv__row--req">category · image</span>
+            {d.nombre.includes('precio') && <span class="fmv__row fmv__row--opt">price</span>}
+            {d.nombre.includes('galería') && <span class="fmv__row fmv__row--opt">gallery[]</span>}
+            {d.nombre.includes('FAQ') && <span class="fmv__row fmv__row--opt">faqs[]</span>}
+            {d.nombre.includes('relacionados') && <span class="fmv__row fmv__row--opt">relatedProducts[]</span>}
+            {d.nombre.includes('Borrador') && <span class="fmv__row fmv__row--draft">draft: true</span>}
+            {d.nombre.includes('Mínimo') && <span class="fmv__row fmv__row--muted">— nada opcional —</span>}
+          </div>
+        </DisenoCard>
+      ))}
+    </GaleriaDisenos>
+
+    <GuiaNota titulo="El esquema es el contrato · .strict() es el guardián" archivo="src/content.config.ts">
+      <p>
+        Todas estas variantes salen del MISMO esquema: cambian los campos opcionales que
+        trae el <code>.md</code>, nunca el esquema. Para añadir un campo nuevo a TODOS los
+        productos (por ejemplo <code>warranty</code>), se edita el esquema en
+        <code>content.config.ts</code> una vez. Mientras no exista ahí, <code>.strict()</code>
+        lo rechaza: es lo que evita que un <code>"imagen:"</code> mal escrito se cuele en silencio.
+      </p>
+    </GuiaNota>
+  </ModSection>
+
+  {/* ── 3c) RESPONSIVE Y MÓVIL ── */}
+  <ModSection
+    eyebrow="Responsive y móvil"
+    title="El mismo .md, en cualquier pantalla"
+    desc="El contenido no tiene breakpoints. Un producto es un dato; la card, la ficha y el schema lo leen y se adaptan solos. No existe un .md de escritorio y otro de móvil: hay uno, y el responsive vive en los componentes."
+    body={[
+      'La gran ventaja de separar contenido y diseño se nota justo aquí: el frontmatter es agnóstico de la pantalla. El teléfono y el escritorio reciben el mismo producto —mismo título, misma categoría, misma foto— y cada vista decide cómo presentarlo. El .md nunca duplica datos «para móvil».',
+      'Y el filtrado y el orden (draft, order) viven en getCollection, antes de pintar: el teléfono recibe exactamente los productos publicados y en el mismo orden. Abajo, los dos principios con su vista en el teléfono y su receta.',
+    ]}
+  >
+    <ModResponsive>
+      <ModPattern
+        title="1 · Una fuente, muchas vistas"
+        desc="El <code>.md</code> es el dato; no sabe de breakpoints. La card, la ficha y el schema lo leen y cada uno se adapta: el responsive vive en el componente, no en el contenido."
+        receta={{ titulo: 'Contenido agnóstico · responsive en el componente', lang: 'css', code: recetaUnaFuente }}
+      >
+        <MarcoMovil ariaLabel="El mismo archivo Markdown alimenta la card y la ficha en el teléfono">
+          <div class="cm">
+            <span class="cm__src" aria-hidden="true">casco-nom-115.md</span>
+            <span class="cm__arrow" aria-hidden="true">↓</span>
+            <span class="cm__card"><i class="cm__img"></i><b class="cm__t"></b><b class="cm__d"></b></span>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+
+      <ModPattern
+        title="2 · draft y order se respetan en todas partes"
+        desc="El filtro de borradores y el orden viven en <code>getCollection</code>, antes de pintar. El teléfono recibe los mismos productos publicados y en el mismo orden que el escritorio: cero divergencia."
+        receta={{ titulo: 'getCollection · filtro + orden, una sola vez', lang: 'js', code: recetaDraftMovil }}
+      >
+        <MarcoMovil ariaLabel="Los borradores quedan fuera y el orden se mantiene en el teléfono">
+          <div class="cm">
+            <span class="cm__list">
+              <span class="cm__li"><b>1</b> Producto A</span>
+              <span class="cm__li"><b>2</b> Producto B</span>
+              <span class="cm__li cm__li--off"><b>—</b> Borrador (draft)</span>
+              <span class="cm__li"><b>3</b> Producto C</span>
+            </span>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+    </ModResponsive>
+  </ModSection>
+
+  {/* ── 4) ¿DÓNDE VA? ── */}
+  <ModSection
+    surface
+    eyebrow="Posición"
+    title="¿Dónde vive?"
+    desc="Un archivo .md por producto en src/content/productos/. El nombre del archivo es el slug de la URL. El esquema que lo valida vive en src/content.config.ts; ambos se sincronizan con TAXONOMY en site.ts."
+    body={[
+      'Cada producto es un archivo en src/content/productos/<slug>.md, y ese <slug> es exactamente la URL de su ficha (/productos/<slug>). Para crear un producto, creas un archivo; para borrarlo, lo borras; para renombrarlo, cambias el nombre del archivo (y los enlaces que apunten a él). No hay un índice que mantener a mano: la carpeta ES el catálogo.',
+      'El esquema que valida estos archivos vive aparte, en src/content.config.ts, y los slugs de su enum de categorías deben coincidir con TAXONOMY en site.ts —esa es la sincronía que mantiene alineados el menú, las migas y las rutas con el contenido real—. La pieza «Las categorías» de esta guía profundiza justo en eso.',
+    ]}
+  />
+
+  {/* ── 5) CÓMO SE ARMA — recetas + prose ── */}
+  <ModSection
+    eyebrow="Implementación"
+    title="Cómo se construye"
+    desc="Tres piezas: el esquema Zod .strict() (content.config.ts), un archivo de producto (.md con frontmatter + cuerpo) y la lectura con getCollection en cualquier página. El loader glob conecta la carpeta con la colección."
+    body={[
+      'El esquema se define una vez con defineCollection: un loader glob que apunta a src/content/productos/**/*.md y un schema Zod .strict(). Cada campo declara su tipo y su validación —strings con min/max, el enum de categorías, la regex de imagen, las referencias tipadas—. Astro corre esa validación en build y tipa el resultado, así getCollection devuelve datos ya seguros.',
+      'A partir de ahí, crear un producto es escribir el .md, y consumirlo es llamar getCollection(\'productos\'), filtrar drafts, ordenar por order y mapear. La página no sabe cuántos productos hay ni cuáles: lee la colección. Abajo, las tres recetas reales del sistema.',
+    ]}
+  >
+    <div class="recetas">
+      <Receta titulo="content.config.ts · el esquema Zod .strict()" lang="ts" code={recetaSchema} />
+      <Receta titulo="src/content/productos/casco-nom-115.md · un producto" lang="markdown" code={recetaMd} />
+      <Receta titulo="Astro · leer la colección con getCollection" lang="astro" code={recetaGet} />
+    </div>
+
+    <ModProse>
+      <p>
+        En concreto: <code>defineCollection</code> recibe un <code>loader: glob(...)</code> que
+        carga todos los <code>.md</code> de la carpeta y un <code>schema</code> que es un
+        <code>z.object(...)</code> cerrado con <code>.strict()</code>. Astro valida cada archivo
+        en build; un fallo (campo faltante, tipo erróneo, categoría fuera del enum, imagen sin
+        <code>/images/</code>) detiene la compilación con la ruta del archivo y el campo culpable.
+      </p>
+      <p>
+        Al consumir, <code>getCollection('productos', filtro)</code> devuelve un array tipado donde
+        cada entrada trae <code>id</code> (el slug, = nombre del archivo) y <code>data</code> (el
+        frontmatter validado). El patrón del sitio es filtrar <code>!data.draft</code>, ordenar por
+        <code>data.order</code> y mapear a <code>ProductCard</code> en el grid o renderizar el cuerpo
+        con <code>render()</code> en la ficha. El cuerpo Markdown se vuelve HTML automáticamente.
+      </p>
+    </ModProse>
+  </ModSection>
+
+  {/* ── 6) BUENAS PRÁCTICAS ── */}
+  <ModSection
+    surface
+    eyebrow="Buenas prácticas"
+    title="Qué hacer y qué evitar"
+    desc="Casi todo se sostiene solo cuando se respeta la colección: el esquema valida, el slug sale del nombre del archivo y el draft oculta lo incompleto. El detalle a vigilar: no inventar campos ni categorías fuera del esquema."
+    body={[
+      'Ninguno de estos hábitos es capricho: salen del diseño de la colección y del esquema Zod. La regla de oro es dejar que el esquema mande —si rechaza algo, casi siempre el .md está mal, no el esquema—. Mantener el contenido en la colección (nunca en .astro) es lo que conserva el grid, la ficha y el schema sincronizados.',
+      'La buena noticia es que el sistema avisa: un campo mal escrito, una categoría inventada o una imagen fuera de /images/ rompen el build con un mensaje claro, antes de publicar. Abajo, lo que conviene y lo que conviene evitar, enfrentados.',
+    ]}
+  >
+    <ModDosDonts sis={sis} nos={nos} />
+  </ModSection>
+
+  {/* Cierre */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+
+  <RelatedLinks
+    title="Continúa con la guía"
+    desc="Los siguientes pasos del flujo de crear un producto."
+    links={[
+      { label: 'Las categorías', href: '/productos/guia/las-categorias', desc: 'El enum cerrado que organiza el catálogo.' },
+      { label: 'Las imágenes', href: '/productos/guia/las-imagenes', desc: 'La foto obligatoria, AVIF y sin saltos de maqueta.' },
+      { label: 'La ficha', href: '/productos/guia/la-ficha', desc: 'La página de detalle que se genera sola.' },
+    ]}
+    limit={3}
+  />
+</PageLayout>
+
+<style>
+  .recetas { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
+
+  /* ── Ejemplo en vivo: frontmatter anotado (mini editor) ── */
+  .fm { margin: var(--sp-6) auto 0; max-width: 520px; border: 1px solid #21262d; border-radius: var(--radius-md); overflow: hidden; background: #0d1117; }
+  .fm__bar { display: flex; align-items: center; gap: 10px; padding: .5rem .8rem; background: #161b22; border-bottom: 1px solid #21262d; }
+  .fm__dots { display: inline-flex; gap: 6px; }
+  .fm__dots i { width: 10px; height: 10px; border-radius: 50%; background: #30363d; }
+  .fm__dots i:nth-child(1) { background: #ff5f56; }
+  .fm__dots i:nth-child(2) { background: #ffbd2e; }
+  .fm__dots i:nth-child(3) { background: #27c93f; }
+  .fm__name { font-family: ui-monospace, Menlo, monospace; font-size: var(--text-xs); color: #8b949e; }
+  .fm__code { margin: 0; padding: var(--sp-4) var(--sp-5); font-family: ui-monospace, Menlo, monospace; font-size: .72rem; line-height: 1.9; color: #c9d1d9; white-space: pre-wrap; position: relative; }
+  .fm__rule { color: #6e7681; }
+  .fm__k { color: #79c0ff; }
+  .fm__s { color: #a5d6ff; }
+  .fm__n { color: #ffa657; }
+  .fm__c { color: #8b949e; font-style: italic; }
+  .fm__pin { position: absolute; left: 6px; display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-size: .58rem; font-weight: 700; }
+
+  /* ── Variantes: filas de campos ── */
+  .fmv { display: flex; flex-direction: column; gap: 4px; width: 100%; font-family: ui-monospace, Menlo, monospace; font-size: 10px; }
+  .fmv__row { padding: 4px 7px; border-radius: 5px; border: 1px solid var(--c-border); }
+  .fmv__row--req { background: rgba(var(--c-primary-rgb), .08); color: var(--c-primary-dark); border-color: rgba(var(--c-primary-rgb), .2); }
+  .fmv__row--opt { background: var(--c-white); color: var(--c-ink-2); }
+  .fmv__row--draft { background: rgba(239,68,68,.08); color: #dc2626; border-color: rgba(239,68,68,.2); }
+  .fmv__row--muted { background: var(--c-surface); color: var(--c-muted); font-style: italic; }
+
+  /* ── Mockups móviles ── */
+  .cm { padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 11px; }
+  .cm__src { font-family: ui-monospace, Menlo, monospace; font-size: 10px; color: var(--c-primary-dark); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 6px; padding: 4px 8px; }
+  .cm__arrow { color: var(--c-muted); font-size: 14px; }
+  .cm__card { width: 100%; display: grid; gap: 6px; padding: 8px; border-radius: 9px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .cm__img { display: block; height: 64px; border-radius: 6px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .cm__t { height: 9px; width: 70%; border-radius: 4px; background: var(--c-ink); opacity: .8; }
+  .cm__d { height: 7px; width: 92%; border-radius: 4px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .cm__list { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+  .cm__li { display: flex; align-items: center; gap: 8px; padding: 7px 9px; border-radius: 7px; background: var(--c-white); border: 1px solid var(--c-border); color: var(--c-ink); }
+  .cm__li b { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--c-primary); color: #fff; font-size: 9px; }
+  .cm__li--off { opacity: .5; }
+  .cm__li--off b { background: var(--c-muted); }
+</style>

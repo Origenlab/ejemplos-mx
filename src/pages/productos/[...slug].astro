@@ -44,6 +44,11 @@ const faqs = d.faqs;
   image={d.image}
   badge={d.brand}
   price={d.price}
+  gallery={d.gallery?.map((src) => ({ src, alt: d.title }))}
+  features={d.features}
+  specs={d.specs}
+  applications={d.applications}
+  certifications={d.certifications}
   faqs={faqs}
   related={related}
 >

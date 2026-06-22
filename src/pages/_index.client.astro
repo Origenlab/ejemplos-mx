@@ -1,0 +1,305 @@
+---
+// ============================================================================
+// _index.client.astro — HOME CANÓNICA del SITIO CLIENTE (esqueleto homologado).
+// ----------------------------------------------------------------------------
+// El generador `scripts/new-site.mjs` instala ESTE archivo como `index.astro`
+// del sitio cliente (reemplaza la home-guía de ejemplos.mx). Así CADA sitio nace
+// con los MISMOS módulos y el MISMO diseño — sin armar la home a mano.
+//
+// El prefijo `_` hace que Astro NO lo enrute en el template (no choca con la
+// home-guía). Es 100% data-driven desde src/config/site.ts: para personalizar un
+// sitio editas las 3 zonas (site.ts · tokens.css · content/), NO este esqueleto.
+//
+// BLOQUES CANÓNICOS (este es el contrato de homologación; respétalo):
+//   1. Hero            6. NormsTable* (respaldo normativo — opcional)
+//   2. SectionMenu     7. ProcessSteps (cómo trabajamos)
+//   3. TrustBar        8. CompanyAbout (quiénes somos)
+//   4. Catálogo        9. FAQ
+//   5. RiskGuide*      10. CTABanner
+//   * RiskGuide y NormsTable se renderizan solo si tienen filas (sector-específicos).
+//
+// REGLA DURA: contenido HONESTO. Sin reseñas, clientes, años ni cifras inventadas.
+// ============================================================================
+import PageLayout from "@layouts/PageLayout.astro";
+import Hero from "@components/Hero.astro";
+import SectionMenu from "@components/SectionMenu.astro";
+import SectionHeading from "@components/SectionHeading.astro";
+import CategoryCard from "@components/CategoryCard.astro";
+import ServiceCard from "@components/ServiceCard.astro";
+import TrustBar from "@components/TrustBar.astro";
+import RiskGuide from "@components/RiskGuide.astro";
+import NormsTable from "@components/NormsTable.astro";
+import ProcessSteps from "@components/ProcessSteps.astro";
+import CompanyAbout from "@components/CompanyAbout.astro";
+import FAQAccordion from "@components/FAQAccordion.astro";
+import CTABanner from "@components/CTABanner.astro";
+import { SITE, KEYWORDS, NAV, SHOWCASE, SERVICES, WA_MESSAGES, waUrl } from "@config/site";
+
+const waLink = waUrl();
+
+// ── Menú de secciones bajo el hero (data-driven desde NAV; excluye Contacto) ──
+const menuSecciones = NAV.filter((n) => n.label !== "Contacto").map((n) => ({
+  label: n.label,
+  href: n.href,
+  sub: "Ver sección",
+}));
+const menuCta = {
+  label: "Cotizar por WhatsApp",
+  href: waUrl(WA_MESSAGES.cotizar),
+  sub: "Respuesta inmediata",
+  external: true,
+};
+
+// ── Barra de confianza (pilares HONESTOS: compromisos reales, NO métricas) ──
+const pillars = [
+  { icon: "shield", title: "Trabajo conforme a norma", desc: "Cumplimos la normatividad aplicable a tu giro y te entregamos el soporte." },
+  { icon: "chat", title: "Asesoría directa", desc: "Hablas con quien hace el trabajo; te recomendamos lo que necesitas, sin venderte de más." },
+  { icon: "doc", title: "Cotización clara", desc: "Propuesta por escrito con alcance, tiempos y precio — sin sorpresas." },
+  { icon: "pin", title: "Cobertura local", desc: "Atendemos tu zona con tiempos de respuesta reales." },
+];
+
+// ── Servicios (data-driven desde SERVICES en site.ts) ──
+const servicios = SERVICES.map((s) => ({
+  title: s.label,
+  description: s.desc,
+  href: `/servicios/${s.id}`,
+  image: `/images/servicios/${s.id}.svg`,
+  imageAlt: s.label,
+}));
+
+// ── Guía por nivel de riesgo (OPCIONAL, sector-específico) ──────────────────
+// Llena `riskRows` para activar la tabla (se oculta si está vacía). Ejemplo:
+//   { nivel: "Ordinario", ejemplos: "Oficinas, comercios pequeños",
+//     minimo: "Equipo base de tu giro", complementos: "Extras recomendados" }
+const riskRows: { nivel: string; ejemplos: string; minimo: string; complementos: string }[] = [];
+
+// ── Respaldo normativo (OPCIONAL, sector-específico) ────────────────────────
+// Llena `normRows` para activar la tabla (se oculta si está vacía). Ejemplo:
+//   { norma: "NOM-XXX", alcance: "Qué cubre", aplica: "A quién aplica" }
+const normRows: { norma: string; alcance: string; aplica: string }[] = [];
+
+// ── Cómo trabajamos (proceso real, sin tiempos garantizados que no se cumplan) ──
+const steps = [
+  { num: "01", title: "Cuéntanos qué necesitas", desc: "Por WhatsApp o el formulario nos dices tu caso y lo que buscas." },
+  { num: "02", title: "Propuesta clara", desc: "Te enviamos opciones, alcance y precio para que decidas con calma." },
+  { num: "03", title: "Entrega o servicio", desc: "Entregamos, instalamos o ejecutamos el servicio acordado." },
+  { num: "04", title: "Seguimiento", desc: "Quedamos al pendiente para lo que necesites después." },
+];
+
+// ── Sobre el negocio (qué / cómo) — sin cifras inventadas (regla del sistema) ──
+const empresa = {
+  que: {
+    title: "Qué hacemos",
+    body: [
+      "Resolvemos bien y a tiempo lo que nuestros clientes necesitan, con trato directo y lenguaje claro.",
+      "Atendemos a quienes buscan calidad, claridad y cumplimiento, sin letras chiquitas.",
+    ],
+  },
+  como: {
+    title: "Cómo trabajamos",
+    pillars: [
+      { title: "El método", desc: "Un proceso claro de principio a fin, para que sepas siempre en qué va tu proyecto." },
+      { title: "La prueba", desc: "Respaldamos lo que decimos con hechos: alcance por escrito y trabajo verificable." },
+      { title: "La cercanía", desc: "Trato de persona a persona, con respuesta directa por WhatsApp." },
+    ],
+  },
+};
+
+// ── FAQ del negocio (alimenta el acordeón visible y el FAQPage del schema) ──
+const faqs = [
+  { question: "¿Cómo cotizo?", answer: "Por WhatsApp es lo más rápido: nos dices qué necesitas y te respondemos con opciones y disponibilidad." },
+  { question: "¿En qué zonas dan servicio?", answer: "Atendemos tu zona y alrededores. Cuéntanos dónde estás y te confirmamos cobertura y tiempos." },
+  { question: "¿Emiten factura?", answer: "Sí. Solicítala al cotizar y te indicamos los datos necesarios." },
+];
+---
+
+<PageLayout
+  keywords={KEYWORDS}
+  pageType="home"
+  guia={false}
+  schemaData={{ faqs }}
+>
+  <Hero
+    badge={SITE.tagline}
+    title="Tu proveedor de"
+    accent={KEYWORDS[0]}
+    subtitle="Te asesoramos, cotizamos claro y resolvemos con trato directo — lo que necesitas, sin venderte de más."
+    descRight={[
+      "Te acompañamos de la asesoría a la entrega, con trato directo y una recomendación honesta según lo que de verdad necesitas.",
+      "Cotiza por WhatsApp y resuelve con quien sí hace el trabajo.",
+    ]}
+    ctas={[
+      { text: "Ver catálogo", href: "/productos", variant: "outline" },
+      { text: "Cotizar por WhatsApp", href: waUrl(WA_MESSAGES.cotizar), variant: "primary", whatsapp: true },
+    ]}
+  />
+
+  <SectionMenu items={menuSecciones} cta={menuCta} />
+
+  {/* ─── Barra de confianza (pilares honestos) ─── */}
+  <TrustBar items={pillars} />
+
+  {/* ─── Catálogo: vitrina de categorías (SHOWCASE) ─── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Catálogo"
+        title="Lo que"
+        titleAccent="ofrecemos"
+        desc="Las familias con las que cubrimos la mayoría de las necesidades."
+        body={[
+          "Cada cliente tiene una necesidad distinta, así que la solución correcta también lo es. Aquí están las familias con las que trabajamos.",
+          "Si no sabes por dónde empezar, escríbenos: revisamos tu caso y te decimos exactamente qué necesitas.",
+        ]}
+      />
+      <div class="showcase">
+        {SHOWCASE.map((c, i) => (
+          <CategoryCard
+            label={c.label}
+            href={c.href}
+            image={c.image}
+            imageAlt={c.imageAlt}
+            badge={c.badge}
+            blurb={c.blurb}
+            subcategories={c.subcategories}
+            ctaLabel={c.ctaLabel}
+            index={i}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ─── Guía por nivel de riesgo (opcional: solo si hay filas) ─── */}
+  {riskRows.length > 0 && (
+    <RiskGuide
+      eyebrow="Guía de selección"
+      title="Qué necesitas"
+      titleAccent="según tu caso"
+      desc="Una recomendación base por nivel."
+      rows={riskRows}
+      ctaLabel="Pide tu diagnóstico por WhatsApp"
+      ctaHref={waLink}
+    />
+  )}
+
+  {/* ─── Servicios destacados ─── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Servicios"
+        title="No solo vendemos:"
+        titleAccent="te acompañamos"
+        desc="El ciclo completo, con servicio claro y un reporte de lo que se hizo."
+        body={[
+          "Un buen resultado depende de elegir bien, ejecutar bien y dar seguimiento. Por eso ofrecemos el ciclo completo.",
+          "Todo con trato directo y comunicación clara en cada paso.",
+        ]}
+      />
+      <div class="svcs">
+        {servicios.map((s) => (
+          <ServiceCard
+            title={s.title}
+            description={s.description}
+            href={s.href}
+            image={s.image}
+            imageAlt={s.imageAlt}
+            ctaLabel="Ver servicio"
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ─── Respaldo normativo (opcional: solo si hay filas) ─── */}
+  {normRows.length > 0 && (
+    <NormsTable
+      eyebrow="Respaldo normativo"
+      title="Cumplimiento"
+      titleAccent="que respalda"
+      desc="Las normas que aplican a tu giro y cómo te ayudamos a cumplirlas."
+      rows={normRows}
+    />
+  )}
+
+  {/* ─── Cómo trabajamos (proceso, fondo oscuro) ─── */}
+  <ProcessSteps
+    eyebrow="Cómo trabajamos"
+    title="De la duda a"
+    titleAccent="resuelto"
+    desc="Un solo interlocutor, de la cotización al seguimiento."
+    steps={steps}
+  />
+
+  {/* ─── Sobre el negocio (qué / cómo) ─── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Quiénes somos"
+        title="Trabajo bien hecho,"
+        titleAccent="explicado con claridad"
+        desc="Trato directo, propuesta clara y cumplimiento."
+        body={[
+          "Trabajamos para resolverte de verdad, no solo para venderte. La diferencia está en la asesoría: te decimos qué necesitas y por qué.",
+          "Cotiza por WhatsApp y habla directo con quien resuelve.",
+        ]}
+      />
+      <CompanyAbout
+        que={empresa.que}
+        como={empresa.como}
+        cta={{ label: "Hablar por WhatsApp", href: waLink, external: true }}
+      />
+    </div>
+  </section>
+
+  {/* ─── FAQ ─── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Preguntas frecuentes"
+        title="Dudas"
+        titleAccent="comunes"
+        desc="Lo que más nos preguntan antes de cotizar."
+        body={[
+          "Reunimos las preguntas más frecuentes de nuestros clientes.",
+          "¿Tu duda no está aquí? Escríbenos por WhatsApp y te respondemos.",
+        ]}
+      />
+      <FAQAccordion items={faqs} />
+    </div>
+  </section>
+
+  {/* ─── Cierre / CTA ─── */}
+  <CTABanner
+    heading="¿Listo para empezar?"
+    desc="Cuéntanos qué necesitas y te respondemos con opciones, disponibilidad y tiempos. Asesoría sin compromiso."
+    btns={[
+      { label: "Cotizar por WhatsApp", href: waUrl(WA_MESSAGES.cotizar), icon: "wa", primary: true, external: true },
+      { label: "Ver catálogo", href: "/productos", icon: "catalog" },
+    ]}
+    badge="Respuesta rápida · Atención personalizada"
+    variant="red"
+  />
+</PageLayout>
+
+<style>
+  .container {
+    max-width: var(--container-max);
+    margin-inline: auto;
+    padding-inline: var(--container-px);
+  }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  .showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
+  .svcs { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 640px) { .showcase { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 768px) { .svcs { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 1024px) {
+    .section { padding: var(--sp-10) 0; }
+    .showcase { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>

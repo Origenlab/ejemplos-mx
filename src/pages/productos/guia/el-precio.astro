@@ -1,0 +1,439 @@
+---
+// ============================================================================
+// /productos/guia/el-precio — PIEZA «El precio» de la guía de productos.
+// ----------------------------------------------------------------------------
+// Cuarta de la serie /productos/guia/*. MISMO molde de 10 secciones.
+// Tema: el campo price (opcional, string libre), el modelo «bajo cotización»
+// WhatsApp-first cuando se omite, el CTA con waUrl() y el Offer honesto del
+// schema (precio real o UnitPriceSpecification «bajo cotización», nunca falso).
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import RelatedLinks from '@components/RelatedLinks.astro'
+import ModSection from '@components/modulos/ModSection.astro'
+import ModBenefits from '@components/modulos/ModBenefits.astro'
+import ModAnatomy from '@components/modulos/ModAnatomy.astro'
+import ModResponsive from '@components/modulos/ModResponsive.astro'
+import ModPattern from '@components/modulos/ModPattern.astro'
+import ModProse from '@components/modulos/ModProse.astro'
+import ModDosDonts from '@components/modulos/ModDosDonts.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+import { siblingsProductos } from '@lib/productos'
+
+const cierreItems = siblingsProductos('el-precio')
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.productos), sub: 'Respuesta inmediata', external: true }
+
+const partes = [
+  {
+    n: 1,
+    nombre: 'El campo price (opcional, string)',
+    que: 'price es opcional y es un STRING libre, no un número forzado: «Desde $450 MXN», «$1,299», «Cotizar». Esa libertad permite expresar la realidad comercial (rangos, «desde», moneda) sin un esquema rígido. Si no lo pones, no es un error: activa el modelo cotización.',
+    dato: 'price: z.string().optional()',
+  },
+  {
+    n: 2,
+    nombre: 'El fallback «bajo cotización»',
+    que: 'Cuando price se omite, el sistema NO inventa una cifra: la ficha muestra «Precio bajo cotización» y la card se mantiene limpia. Es una decisión de honestidad —mejor pedir el contacto que mostrar un número que no aplica— y el modelo de negocio del cluster (WhatsApp-first, sin carrito).',
+    dato: 'price ?? "Precio bajo cotización"',
+  },
+  {
+    n: 3,
+    nombre: 'El CTA a WhatsApp (waUrl)',
+    que: 'Con o sin precio, el siguiente paso es cotizar/comprar por WhatsApp. El enlace se arma con waUrl() y un mensaje pre-armado que ya incluye el nombre del producto, para que el asesor entre en materia. NUNCA un wa.me escrito a mano (regla D4): el número vive en site.ts.',
+    dato: 'waUrl(`Hola, quiero cotizar: ${title}`)',
+  },
+  {
+    n: 4,
+    nombre: 'El Offer honesto (schema)',
+    que: 'El precio llega al JSON-LD sin mentir: con price, el Offer lleva la cifra y priceValidUntil; sin price, emite un UnitPriceSpecification «bajo cotización» en vez de un precio falso. Google penaliza precios inventados; el sistema modela la realidad, tenga o no tarifa pública.',
+    dato: 'productSchema → Offer (price | "bajo cotización")',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Honestidad por defecto',
+    desc: 'Sin precio público, el sistema no rellena con un «$0» ni con una cifra inventada: dice «bajo cotización» y abre la conversación. Esa honestidad protege la confianza del visitante y evita la penalización de Google por datos estructurados que no coinciden con la realidad de la página.',
+  },
+  {
+    titulo: 'WhatsApp-first, sin carrito',
+    desc: 'El modelo del cluster es conversacional: el siguiente paso de un producto no es «añadir al carrito», es «cotizar por WhatsApp». El CTA se arma con waUrl() y un mensaje que ya nombra el producto, así el lead llega con contexto y el asesor responde sin preguntar qué quiere.',
+  },
+  {
+    titulo: 'Flexible para B2B',
+    desc: 'Muchos productos no tienen una tarifa pública única: dependen de volumen, configuración o entrega. El precio como string opcional cubre todos los casos —«Desde $X», «Cotizar», un rango— sin forzar un número que tendrías que inventar. Ideal para catálogos industriales y mayoristas.',
+  },
+]
+
+const sis = [
+  'Usa price como string descriptivo: «Desde $450 MXN», «$1,299 + IVA». Refleja la realidad comercial, no solo un número pelado.',
+  'Omite price cuando la tarifa no es pública o depende del proyecto: el sistema activa «bajo cotización» y el Offer honesto, sin que inventes nada.',
+  'Deja que el CTA de WhatsApp se arme con waUrl() y un mensaje que nombre el producto: el lead llega con contexto y sube la calidad de la conversación.',
+  'Si pones precio, manténlo actualizado: un «Desde $450» viejo que ya no aplica es peor que «bajo cotización». Revísalo al actualizar el catálogo.',
+  'Para productos con IVA, envío o condiciones, dilo en el string («+ IVA», «entrega aparte»): la transparencia evita sorpresas en la cotización.',
+]
+const nos = [
+  'NO inventes un precio para «llenar el campo»: si no hay tarifa pública, omítelo. Una cifra falsa rompe la confianza y arriesga una penalización de schema.',
+  'NO hardcodees un enlace wa.me con el número escrito a mano (regla D4): usa waUrl(). El número vive en site.ts; un wa.me suelto se desincroniza al cambiarlo.',
+  'NO metas el precio como número (450) esperando formato automático: el campo es string libre a propósito. El formato («$», «MXN», «Desde») lo pones tú.',
+  'NO pongas «$0» ni «Gratis» para significar «cotización»: el sistema ya tiene «bajo cotización». «$0» en el Offer comunica algo distinto (y falso).',
+  'NO dejes precios desactualizados en producción: revisa las cifras al refrescar el catálogo. Un precio viejo es una promesa que no vas a cumplir.',
+]
+
+const disenos = [
+  {
+    nombre: 'Precio público fijo',
+    tag: 'Retail · B2C',
+    desc: 'price: "$1,299 MXN". La card y la ficha lo muestran; el Offer del schema lleva la cifra y priceValidUntil. Para productos con tarifa pública estable. El caso más directo.',
+  },
+  {
+    nombre: '«Desde $X» (precio de entrada)',
+    tag: 'Configurables · Variantes',
+    desc: 'price: "Desde $450 MXN". Comunica el punto de entrada sin comprometer cada variante. Honesto y útil cuando el precio sube según opciones; el detalle se cierra en la cotización.',
+  },
+  {
+    nombre: 'Bajo cotización (sin price)',
+    tag: 'B2B · Proyecto',
+    desc: 'Omitir price activa «Precio bajo cotización» en la ficha y un Offer UnitPriceSpecification en el schema —sin cifra falsa—. El CTA lleva directo a WhatsApp. Para tarifas por volumen o proyecto.',
+  },
+  {
+    nombre: 'Con condiciones (+ IVA / envío)',
+    tag: 'Transparencia · Mayoreo',
+    desc: 'price: "$1,299 + IVA". El string libre permite decir la verdad completa en una línea. Evita la sorpresa en la cotización y comunica seriedad. La transparencia es parte del precio.',
+  },
+  {
+    nombre: 'Promoción / oferta',
+    tag: 'Campaña · Temporada',
+    desc: 'price: "Oferta: $999 (antes $1,299)". El string admite el gancho de promoción. Úsalo con cuidado y con fecha real; una oferta perpetua deja de serlo y resta credibilidad.',
+  },
+]
+
+const recetaMd = `---
+# Con precio público (string libre — tú pones el formato):
+title: "Casco de seguridad industrial NOM-115"
+price: "Desde $450 MXN"          # ← string: «Desde», moneda, condiciones…
+# ...
+---
+
+# ──────────────────────────────────────────────
+# Sin precio → modelo «bajo cotización» (omite el campo):
+---
+title: "Sistema de protección perimetral a medida"
+# (sin 'price') → la ficha muestra "Precio bajo cotización"
+# ...
+---`
+
+const recetaLayout = `// src/layouts/ProductLayout.astro — el fallback y el CTA (extracto real).
+import { waUrl } from '@config/site'
+
+// El CTA se arma con waUrl() + mensaje pre-armado que nombra el producto.
+// NUNCA un wa.me a mano (regla D4): el número vive en site.ts.
+const waLink = waUrl(\`Hola, quiero cotizar: \${title}. ¿Precio y disponibilidad?\`)
+---
+
+<!-- Precio: la cifra si existe; si no, "bajo cotización" (sin inventar) -->
+<p class="prod-price">{price ?? "Precio bajo cotización"}</p>
+
+<a class="btn btn--primary" href={waLink}>Cotizar por WhatsApp</a>`
+
+const recetaSchema = `// src/lib/seo.ts — el Offer HONESTO (extracto real de productSchema).
+const offer = {
+  '@type': 'Offer',
+  url, priceCurrency: 'MXN',
+  availability: 'https://schema.org/InStock',
+  seller: { '@id': BUSINESS_ID },
+}
+
+if (p.price) {
+  offer.price = p.price                                   // precio real
+  offer.priceValidUntil = \`\${new Date().getFullYear() + 1}-12-31\`
+} else {
+  // SIN precio → NO se inventa una cifra: se declara "bajo cotización".
+  offer.price = '0'
+  offer.priceSpecification = {
+    '@type': 'UnitPriceSpecification',
+    price: '0', priceCurrency: 'MXN',
+    description: 'Precio bajo cotización — contáctanos para tarifa personalizada.',
+  }
+}`
+
+const recetaPrecioMovil = `/* PRECIO + CTA EN LA FICHA MÓVIL (zona del pulgar)
+   En la ficha L4, el sidebar de conversión (precio + botón WhatsApp)
+   en móvil se apila y queda accesible; el botón es full-width y
+   respeta el safe-area de iOS para no quedar bajo el home indicator. */
+.prod-price { font-size: var(--text-xl); font-weight: 700; color: var(--c-primary); }
+.btn--block { width: 100%; }
+@media (max-width: 560px) {
+  .prod-hero__actions .btn { width: 100%; justify-content: center; }
+}`
+
+const recetaWaMovil = `/* EL MENSAJE PRE-ARMADO VIAJA EN EL ENLACE (igual en móvil)
+   waUrl() codifica el mensaje en el enlace wa.me. Al tocarlo en el
+   teléfono, WhatsApp abre con el texto ya escrito: el lead llega
+   con el producto nombrado, sin teclear. El número sale de site.ts. */
+const waLink = waUrl(\`Hola, quiero cotizar: \${title}. ¿Precio y disponibilidad?\`)
+// → https://wa.me/<numero>?text=Hola%2C%20quiero%20cotizar%3A%20...`
+---
+
+<PageLayout
+  title="El precio del producto — público o «bajo cotización»"
+  description="Cómo se modela el precio de un producto en un sitio Astro: un campo opcional de texto libre, el modelo WhatsApp-first «bajo cotización» y un Offer honesto en el schema."
+  pageType="page"
+  schemaType="TechArticle"
+  guia={false}
+  breadcrumbs={[{ label: 'Productos', href: '/productos' }, { label: 'El precio' }]}
+>
+  <Hero
+    badge="Guía de productos · El precio"
+    title="El precio:"
+    accent="público o bajo cotización, sin inventar"
+    subtitle="El precio es un campo opcional y de texto libre. Si hay tarifa pública, se muestra; si no, el sistema usa «bajo cotización» por WhatsApp en lugar de inventar una cifra —y el schema emite un Offer honesto, no un número falso—."
+    descRight={[
+      'Es la cuarta decisión al crear un producto: cuánto cuesta —o cómo se cotiza—. Y es donde muchos catálogos tropiezan: rellenan el precio con un «$0» o una cifra de relleno para no dejar el campo vacío. Esta plantilla toma la decisión contraria: el precio es opcional, y omitirlo activa un modelo de cotización honesto, no un placeholder.',
+      'Detrás hay un modelo de negocio: WhatsApp-first, sin carrito. El siguiente paso de un producto es una conversación, no un checkout. El CTA se arma con waUrl() y un mensaje que ya nombra el producto, el número vive en site.ts (nunca a mano), y el Offer del schema refleja la realidad —precio real o «bajo cotización»—, lo que protege la confianza y evita penalizaciones.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <ModSection
+    eyebrow="Definición"
+    title="¿Qué es el precio de un producto?"
+    desc="El campo price del frontmatter: opcional y de texto libre. Si está, se muestra; si se omite, el sistema usa «Precio bajo cotización» y el siguiente paso es WhatsApp. El precio también viaja al schema como un Offer honesto."
+    body={[
+      'El precio es el campo price del frontmatter, y dos decisiones lo definen: es opcional y es un string. Opcional porque no todo producto tiene tarifa pública; string porque la realidad comercial no cabe siempre en un número —«Desde $450», «$1,299 + IVA», «Cotizar» son todas respuestas válidas que un campo numérico no permitiría—.',
+      'Cuando el precio está, la card y la ficha lo muestran tal cual lo escribiste. Cuando se omite, el sistema no lo trata como un error ni lo rellena: muestra «Precio bajo cotización» y enfoca al visitante hacia WhatsApp. Y en ambos casos, el precio llega al JSON-LD como un Offer que refleja la realidad, sin fabricar cifras.',
+    ]}
+  />
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <ModSection
+    surface
+    eyebrow="Función e importancia"
+    title="¿Para qué sirve?"
+    desc="Comunica el costo sin mentir: muestra el precio real cuando existe, y «bajo cotización» cuando no, en lugar de inventar. Encauza el siguiente paso a WhatsApp con contexto, y modela un Offer honesto para el buscador."
+    body={[
+      'Su función es resolver la pregunta «¿cuánto cuesta?» de la forma más honesta posible. Para productos con tarifa pública, mostrarla reduce fricción. Para los que se cotizan —la mayoría en B2B—, fingir un precio es peor que no tenerlo: el sistema dice «bajo cotización» y convierte la duda en una conversación, que es donde se cierra la venta consultiva.',
+      'Y protege dos cosas a la vez. La confianza del visitante: un precio inventado que luego cambia quema al lead antes de hablar. Y la salud del SEO: el Offer del schema refleja la realidad (precio real o «bajo cotización»), evitando la penalización de Google por datos estructurados que no coinciden con la página. Honestidad que además es técnicamente correcta.',
+    ]}
+  >
+    <ModBenefits items={beneficios} />
+  </ModSection>
+
+  {/* ── 3) ¿QUÉ LLEVA? — anatomía con ejemplo en vivo ── */}
+  <ModSection
+    eyebrow="Anatomía"
+    title="¿Qué lo compone?"
+    desc="Cuatro piezas: el campo price (opcional, string), el fallback «bajo cotización» cuando se omite, el CTA a WhatsApp armado con waUrl(), y el Offer honesto que viaja al schema con o sin cifra."
+    body={[
+      'Cada pieza cubre un escenario. El campo expresa el precio cuando lo hay; el fallback responde con dignidad cuando no; el CTA convierte en ambos casos hacia WhatsApp con contexto; y el Offer lleva todo al schema sin mentir. Juntas, cubren tanto el retail con precio fijo como el B2B por cotización.',
+      'Abajo, el ejemplo en vivo —los dos estados del precio, con y sin cifra—. Cada punto numerado se desglosa en su tarjeta: qué resuelve y qué línea del sistema lo respalda.',
+    ]}
+  >
+    <ModAnatomy partes={partes}>
+      <div class="pr" role="img" aria-label="Los dos estados del precio: con cifra pública y bajo cotización">
+        <div class="pr__col">
+          <span class="pr__lbl">Con precio</span>
+          <span class="pr__price"><span class="pr__pin pr__pin--1">1</span>Desde $450 MXN</span>
+          <span class="pr__cta"><span class="pr__pin pr__pin--3">3</span>Cotizar por WhatsApp</span>
+        </div>
+        <div class="pr__col pr__col--quote">
+          <span class="pr__lbl">Sin precio</span>
+          <span class="pr__price pr__price--quote"><span class="pr__pin pr__pin--2">2</span>Precio bajo cotización</span>
+          <span class="pr__cta"><span class="pr__pin pr__pin--3">3</span>Cotizar por WhatsApp</span>
+          <span class="pr__schema"><span class="pr__pin pr__pin--4">4</span>Offer · UnitPriceSpecification</span>
+        </div>
+      </div>
+    </ModAnatomy>
+  </ModSection>
+
+  {/* ── 3b) VARIANTES ── */}
+  <ModSection
+    surface
+    eyebrow="Variantes"
+    title="Formas de expresar el precio"
+    desc="El string libre cubre desde un precio fijo hasta «Desde $X», un rango, condiciones (+ IVA) o el modelo cotización al omitirlo. Todas son válidas; la elección depende de tu realidad comercial."
+    body={[
+      'No hay un único formato de precio: hay un string que dice la verdad de cada producto. Un retail pone la cifra; un configurable pone «Desde»; un B2B lo omite y cotiza; un mayorista aclara «+ IVA». El campo es el mismo; cambia lo que escribes (o si lo escribes).',
+      'Abajo, cinco formas —todas configuraciones reales del campo actual—. Cada una con el tipo de negocio donde encaja.',
+    ]}
+  >
+    <GaleriaDisenos ariaLabel="Formas de expresar el precio de un producto">
+      {disenos.map((d) => (
+        <DisenoCard nombre={d.nombre} tag={d.tag} desc={d.desc}>
+          <div class="prv" role="img" aria-label={d.nombre}>
+            {d.nombre.includes('fijo') && <span class="prv__p">$1,299 MXN</span>}
+            {d.nombre.includes('Desde') && <span class="prv__p">Desde $450 MXN</span>}
+            {d.nombre.includes('Bajo cotización') && <span class="prv__p prv__p--q">Precio bajo cotización</span>}
+            {d.nombre.includes('condiciones') && <span class="prv__p">$1,299 <b>+ IVA</b></span>}
+            {d.nombre.includes('Promoción') && <span class="prv__p prv__p--promo">$999 <s>$1,299</s></span>}
+            <span class="prv__cta">Cotizar por WhatsApp</span>
+          </div>
+        </DisenoCard>
+      ))}
+    </GaleriaDisenos>
+
+    <GuiaNota titulo="El número lo pones tú · la honestidad la garantiza el sistema" archivo="src/content/productos/*.md · src/lib/seo.ts">
+      <p>
+        El campo <code>price</code> es un <strong>string libre</strong>: el formato («$», «MXN»,
+        «Desde», «+ IVA») lo escribes tú, porque la realidad comercial no cabe en un número pelado.
+        Lo que el sistema garantiza es la <strong>honestidad</strong>: si omites el precio, el
+        <code>Offer</code> del schema declara «bajo cotización» (<code>UnitPriceSpecification</code>),
+        nunca un <code>$0</code> ni una cifra inventada. Y el CTA siempre se arma con <code>waUrl()</code>.
+      </p>
+    </GuiaNota>
+  </ModSection>
+
+  {/* ── 3c) RESPONSIVE Y MÓVIL ── */}
+  <ModSection
+    eyebrow="Responsive y móvil"
+    title="El precio y la cotización, en el teléfono"
+    desc="En la ficha móvil, el precio y el botón de cotizar quedan a mano: el sidebar de conversión se apila, el botón es full-width en la zona del pulgar, y el mensaje pre-armado viaja en el enlace de WhatsApp."
+    body={[
+      'En el teléfono, cotizar tiene que estar a un toque. En la ficha L4, el sidebar de conversión (precio + botón WhatsApp) se apila bajo el contenido y el botón se vuelve full-width, cómodo para el pulgar y respetando el safe-area de iOS. El precio —cifra o «bajo cotización»— se lee igual de claro que en escritorio.',
+      'Y el mensaje pre-armado es justo donde más rinde en móvil: al tocar el botón, WhatsApp abre con el texto ya escrito, nombrando el producto, sin que el visitante teclee nada. waUrl() codifica ese mensaje en el enlace. Abajo, los dos patrones con su receta.',
+    ]}
+  >
+    <ModResponsive>
+      <ModPattern
+        title="1 · Precio + CTA full-width en la zona del pulgar"
+        desc="En la ficha móvil, el bloque de conversión se apila y el botón «Cotizar» es <strong>full-width</strong>, en la zona del pulgar, respetando el <code>safe-area</code> de iOS. El precio (cifra o «bajo cotización») se lee igual de claro."
+        receta={{ titulo: 'CSS · precio + CTA en la ficha móvil', lang: 'css', code: recetaPrecioMovil }}
+      >
+        <MarcoMovil ariaLabel="El precio y el botón de cotizar en la ficha de producto en el teléfono">
+          <div class="pm">
+            <span class="pm__img"></span>
+            <span class="pm__price">Desde $450 MXN</span>
+            <span class="pm__cta">Cotizar por WhatsApp</span>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+
+      <ModPattern
+        title="2 · El mensaje pre-armado viaja en el enlace"
+        desc="<code>waUrl()</code> codifica el mensaje en el enlace <code>wa.me</code>. Al tocarlo, WhatsApp abre con el texto ya escrito —nombrando el producto—, sin teclear. El número sale de <code>site.ts</code>, nunca a mano."
+        receta={{ titulo: 'JS · waUrl() con mensaje pre-armado', lang: 'js', code: recetaWaMovil }}
+      >
+        <MarcoMovil ariaLabel="WhatsApp abre con el mensaje pre-escrito al tocar el botón">
+          <div class="pm pm--wa">
+            <span class="pm__bubble">Hola, quiero cotizar: <b>Casco NOM-115</b>. ¿Precio y disponibilidad?</span>
+            <span class="pm__send">Enviar</span>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+    </ModResponsive>
+  </ModSection>
+
+  {/* ── 4) ¿DÓNDE VA? ── */}
+  <ModSection
+    surface
+    eyebrow="Posición"
+    title="¿Dónde se decide?"
+    desc="El precio se declara en el frontmatter del .md (price, opcional). El fallback y el CTA viven en ProductLayout; el Offer honesto, en lib/seo.ts. El número de WhatsApp, siempre en site.ts."
+    body={[
+      'El precio entra por el frontmatter del producto (price). De ahí, el dato se reparte: ProductLayout decide qué mostrar (la cifra o «bajo cotización») y arma el CTA de WhatsApp con waUrl(); lib/seo.ts construye el Offer del schema según haya o no precio. El producto solo declara el string; la lógica de presentación y de SEO vive en los componentes.',
+      'El número de teléfono que usa el CTA NO vive en el producto ni en el layout: vive en CONTACT.whatsapp de site.ts (SSoT), y waUrl() lo formatea. Esa centralización (regla D4) es lo que permite cambiar el número en un solo lugar sin cazar enlaces wa.me por todo el sitio. La pieza «La ficha» cubre el resto del layout; aquí el foco es el precio y su conversión.',
+    ]}
+  />
+
+  {/* ── 5) CÓMO SE ARMA ── */}
+  <ModSection
+    eyebrow="Implementación"
+    title="Cómo se construye"
+    desc="El campo price en el .md (o su ausencia), el fallback + CTA en ProductLayout (price ?? «bajo cotización», waUrl), y el Offer honesto en lib/seo.ts (cifra real o UnitPriceSpecification)."
+    body={[
+      'En el contenido, todo es un string opcional: lo pones para mostrar precio, lo omites para cotización. En el layout, una sola expresión decide la presentación —price ?? "Precio bajo cotización"— y el CTA se arma con waUrl() y un mensaje que nombra el producto. No hay ramas complicadas: el operador ?? hace el trabajo.',
+      'En el schema, productSchema bifurca: con price, el Offer lleva la cifra y una fecha de validez; sin price, emite un UnitPriceSpecification «bajo cotización» con price "0" pero descrito como cotización —honesto y conformante—. Abajo, las tres recetas: el .md, el layout y el Offer.',
+    ]}
+  >
+    <div class="recetas">
+      <Receta titulo="Markdown · con precio y sin precio (los dos casos)" lang="markdown" code={recetaMd} />
+      <Receta titulo="ProductLayout · el fallback y el CTA (waUrl)" lang="astro" code={recetaLayout} />
+      <Receta titulo="lib/seo.ts · el Offer honesto (con/sin precio)" lang="ts" code={recetaSchema} />
+    </div>
+
+    <ModProse>
+      <p>
+        En concreto: <code>price</code> es un <code>z.string().optional()</code>. En la ficha,
+        <code>{'{'}price ?? "Precio bajo cotización"{'}'}</code> resuelve la presentación en una línea;
+        el CTA usa <code>waUrl(`Hola, quiero cotizar: ${'{'}title{'}'}…`)</code>, que codifica el mensaje
+        y usa el número de <code>site.ts</code> (regla D4, jamás un <code>wa.me</code> a mano).
+      </p>
+      <p>
+        En <code>productSchema</code> (lib/seo.ts), si hay <code>price</code> el <code>Offer</code> lleva
+        la cifra y <code>priceValidUntil</code>; si no, emite un <code>UnitPriceSpecification</code> con
+        <code>price: '0'</code> pero descrito como «bajo cotización». Así el dato estructurado refleja la
+        realidad de la página —nunca un precio fabricado— y se mantiene conformante con schema.org.
+      </p>
+    </ModProse>
+  </ModSection>
+
+  {/* ── 6) BUENAS PRÁCTICAS ── */}
+  <ModSection
+    surface
+    eyebrow="Buenas prácticas"
+    title="Qué hacer y qué evitar"
+    desc="El precio honesto cabe en unos hábitos: string descriptivo cuando lo hay, omitirlo cuando no, CTA con waUrl() y precios actualizados. La regla de oro: nunca inventar una cifra."
+    body={[
+      'Ninguno de estos hábitos es capricho: salen del modelo WhatsApp-first y de la regla de honestidad del schema. El sistema te respalda —el fallback «bajo cotización» y el Offer honesto son automáticos—; lo que queda a tu disciplina es no inventar precios, usar waUrl() y mantener las cifras al día.',
+      'La buena noticia: omitir el precio es una decisión válida y completa, no un hueco. Y el CTA se arma solo con el número correcto. Lo único que no debes hacer es rellenar con cifras falsas o enlaces wa.me a mano. Abajo, lo que conviene y lo que conviene evitar.',
+    ]}
+  >
+    <ModDosDonts sis={sis} nos={nos} />
+  </ModSection>
+
+  {/* Cierre */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+
+  <RelatedLinks
+    title="Continúa con la guía"
+    desc="Las piezas vecinas del flujo de crear un producto."
+    links={[
+      { label: 'Las imágenes', href: '/productos/guia/las-imagenes', desc: 'La foto obligatoria, AVIF y sin saltos de maqueta.' },
+      { label: 'La ficha', href: '/productos/guia/la-ficha', desc: 'La página de detalle, con el sidebar de cotización.' },
+      { label: 'El schema', href: '/productos/guia/el-schema', desc: 'El Offer honesto y el resto del JSON-LD.' },
+    ]}
+    limit={3}
+  />
+</PageLayout>
+
+<style>
+  .recetas { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
+
+  /* ── Ejemplo en vivo: los dos estados del precio ── */
+  .pr { margin: var(--sp-6) auto 0; max-width: 560px; display: grid; grid-template-columns: 1fr; gap: var(--sp-4); }
+  @media (min-width: 560px) { .pr { grid-template-columns: 1fr 1fr; } }
+  .pr__col { display: grid; gap: var(--sp-3); padding: var(--sp-4); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-lg); align-content: start; }
+  .pr__col--quote { background: var(--c-surface); }
+  .pr__lbl { font-size: var(--text-xs); font-weight: var(--weight-bold); text-transform: uppercase; letter-spacing: .06em; color: var(--c-muted); }
+  .pr__price { position: relative; padding-left: 26px; font-family: var(--font-heading); font-size: var(--text-xl); font-weight: var(--weight-bold); color: var(--c-primary); }
+  .pr__price--quote { font-size: var(--text-base); color: var(--c-ink-2); }
+  .pr__cta { position: relative; padding-left: 26px; display: inline-flex; align-items: center; min-height: 32px; font-size: var(--text-sm); font-weight: var(--weight-semibold); color: #fff; background: #25D366; border-radius: var(--radius-md); padding-right: 12px; }
+  .pr__schema { position: relative; padding-left: 26px; font-family: ui-monospace, Menlo, monospace; font-size: 10px; color: var(--c-muted); }
+  .pr__pin { position: absolute; left: 0; top: 50%; transform: translateY(-50%); display: inline-grid; place-items: center; width: 19px; height: 19px; border-radius: 50%; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-size: .6rem; font-weight: 700; }
+  .pr__cta .pr__pin { left: 6px; background: rgba(255,255,255,.25); }
+
+  /* ── Variantes ── */
+  .prv { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+  .prv__p { font-family: var(--font-heading); font-size: 15px; font-weight: var(--weight-bold); color: var(--c-primary); }
+  .prv__p b { font-size: 11px; color: var(--c-muted); font-weight: 600; }
+  .prv__p s { font-size: 11px; color: var(--c-muted); font-weight: 500; }
+  .prv__p--q { font-size: 13px; color: var(--c-ink-2); }
+  .prv__p--promo { color: #dc2626; }
+  .prv__cta { align-self: flex-start; font-size: 10px; font-weight: 700; color: #fff; background: #25D366; border-radius: 6px; padding: 4px 9px; }
+
+  /* ── Mockups móviles ── */
+  .pm { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .pm__img { display: block; height: 84px; border-radius: 8px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .pm__price { font-family: var(--font-heading); font-size: 15px; font-weight: 700; color: var(--c-primary); }
+  .pm__cta { display: block; text-align: center; min-height: 38px; line-height: 38px; font-size: 11px; font-weight: 700; color: #fff; background: #25D366; border-radius: 8px; }
+  .pm--wa { justify-content: flex-end; height: 100%; padding: 16px 12px; }
+  .pm__bubble { align-self: flex-start; max-width: 88%; font-size: 11px; line-height: 1.4; color: var(--c-ink); background: #dcf8c6; border-radius: 10px 10px 10px 2px; padding: 8px 10px; }
+  .pm__bubble b { font-weight: 700; }
+  .pm__send { align-self: flex-end; margin-top: 6px; font-size: 10px; font-weight: 700; color: #fff; background: #25D366; border-radius: 99px; padding: 5px 14px; }
+</style>

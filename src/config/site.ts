@@ -37,7 +37,7 @@ export const SITE = {
   locale: 'es-MX', // Locale para og:locale/inLanguage (lib/seo.ts lo normaliza a es_MX).
   description:
     'Plantilla astro lista para producción: contenido en Markdown y diseño listos para lanzar un sitio profesional, rápido y fácil de editar. Clónala y publica.', // 140–160 chars · regla de metas: abre con kw1, teje las 3 keywords.
-  defaultImage: '/images/og/default.svg', // OG image default (1200×630). Ruta absoluta bajo /public.
+  defaultImage: '/images/og/default.png', // OG default 1200×630 PNG (SVG NO renderiza en WhatsApp/FB/X). Ruta bajo /public.
 
   // Política de trailing slash. Debe coincidir con astro.config.mjs (canónico B5: 'never').
   trailingSlash: 'never' as 'never' | 'always',
@@ -55,7 +55,7 @@ export const SITE = {
     // factor de ranking (solo CTR) → debe convencer, no apilar keywords.
     description:
       'Plantilla astro lista para producción: contenido en Markdown y diseño listos para lanzar un sitio profesional, rápido y fácil de editar. Clónala y publica.',
-    image: '/images/og/default.svg', // OG default; suele = defaultImage.
+    image: '/images/og/default.png', // OG default; suele = defaultImage.
     titleMaxLength: 60, // Cap del <title> (Google ~575–600px ≈ 51–60 chars).
     descriptionMaxLength: 160, // Cap de la meta description.
     // appendBrand: ¿añadir ` | <marca>` al final del title? Regla Ejemplos.mx = false
@@ -189,9 +189,14 @@ export const CONTACT = {
 export const TAXONOMY = {
   // categories: catálogo de dominio (L2). href apunta a la landing de categoría.
   categories: [
-    { slug: 'productos', label: 'Productos', badge: undefined, href: '/productos' },
-    { slug: 'servicios', label: 'Servicios', badge: undefined, href: '/servicios' },
-    { slug: 'blog', label: 'Blog', badge: undefined, href: '/blog' },
+    // CATEGORÍAS REALES de producto (B5). Los `slug` DEBEN coincidir con el enum
+    // PRODUCT_CATEGORIES de src/content.config.ts (equipos · accesorios · general);
+    // el `href` apunta a la landing de categoría /productos/categoria/<slug>.
+    // Fuente única para: Footer (columna Productos), RelatedLinks, badge del
+    // catálogo (CAT_LABEL) y el dropdown «Productos» del Header.
+    { slug: 'equipos', label: 'Equipos', badge: undefined, href: '/productos/categoria/equipos' },
+    { slug: 'accesorios', label: 'Accesorios', badge: undefined, href: '/productos/categoria/accesorios' },
+    { slug: 'general', label: 'General', badge: undefined, href: '/productos/categoria/general' },
   ],
   // services: servicios ofrecidos (catálogo o página /servicios).
   services: [
@@ -339,7 +344,8 @@ export const NAV: readonly NavItem[] = [
     href: '/productos',
     panel: 'dropdown',
     allLabel: 'Ver catálogo de productos',
-    items: PRODUCTOS_GUIA.filter((p) => p.estado === 'listo').map((p) => ({ label: p.label, href: p.href, desc: p.desc })),
+    // Dropdown «Productos» = categorías REALES (B5) → su landing de categoría.
+    items: PRODUCT_CATEGORIES.map((c) => ({ label: c.label, href: c.href, desc: `Ver ${c.label.toLowerCase()}` })),
   },
   {
     label: 'Servicios',

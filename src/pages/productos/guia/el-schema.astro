@@ -1,0 +1,466 @@
+---
+// ============================================================================
+// /productos/guia/el-schema — PIEZA «El schema» de la guía de productos.
+// ----------------------------------------------------------------------------
+// Sexta y última de la serie /productos/guia/*. MISMO molde de 10 secciones.
+// Tema: el JSON-LD que sale del catálogo — Product + Offer en la ficha (L4),
+// CollectionPage + ItemList en el grid (L2), todo centralizado en lib/seo.ts
+// (buildSchema). Reglas B3 (un emisor por página) y B4 (sin rating fabricado).
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import RelatedLinks from '@components/RelatedLinks.astro'
+import ModSection from '@components/modulos/ModSection.astro'
+import ModBenefits from '@components/modulos/ModBenefits.astro'
+import ModAnatomy from '@components/modulos/ModAnatomy.astro'
+import ModResponsive from '@components/modulos/ModResponsive.astro'
+import ModPattern from '@components/modulos/ModPattern.astro'
+import ModProse from '@components/modulos/ModProse.astro'
+import ModDosDonts from '@components/modulos/ModDosDonts.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+import { siblingsProductos } from '@lib/productos'
+
+const cierreItems = siblingsProductos('el-schema')
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.productos), sub: 'Respuesta inmediata', external: true }
+
+const partes = [
+  {
+    n: 1,
+    nombre: 'Product + Offer (la ficha)',
+    que: 'La ficha L4 emite un nodo Product con su Offer: nombre, descripción, imagen, sku, categoría, marca y el precio (real o «bajo cotización»). Es lo que permite a un buscador entender que la página describe un producto a la venta, no un artículo cualquiera.',
+    dato: 'buildSchema("product", { product }) → lib/seo.ts',
+  },
+  {
+    n: 2,
+    nombre: 'CollectionPage + ItemList (el grid)',
+    que: 'El catálogo (L2) NO emite Product por cada card: emite UN CollectionPage con un ItemList que enumera los productos (nombre, URL, imagen). Así Google ve la lista entera como una colección ordenada, no como N productos sueltos compitiendo.',
+    dato: 'directorySchema({ list }) → CollectionPage + ItemList',
+  },
+  {
+    n: 3,
+    nombre: 'buildSchema + grafo base por @id',
+    que: 'Un único selector (buildSchema) arma el array JSON-LD según el tipo de página, y siempre incluye el grafo base —Organization, WebSite, LocalBusiness— enlazado por @id. Todo nodo (Product, ItemList) referencia ese grafo, así Google consolida la entidad.',
+    dato: 'buildSchema(pageType, data) · ORG_ID / WEBSITE_ID',
+  },
+  {
+    n: 4,
+    nombre: 'Reglas B3 + B4',
+    que: 'B3: un único emisor de schema por página —la card NO emite JSON-LD; el grid emite ItemList; la ficha emite Product—. B4: nunca se fabrica aggregateRating ni reseñas; solo se modelan si son reales y verificables. Honestidad estructural por diseño.',
+    dato: 'B3 (un emisor) · B4 (sin rating fabricado)',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'SEO técnico sin escribir JSON-LD',
+    desc: 'Del mismo .md que define el producto sale el Product+Offer y el ItemList, sin que escribas una línea de JSON-LD a mano. lib/seo.ts genera el grafo a partir de los datos de la colección y de site.ts. Cambiar el título o el precio cambia el schema solo.',
+  },
+  {
+    titulo: 'Un solo emisor, cero conflictos',
+    desc: 'La regla B3 garantiza un único emisor de schema por página: la card no emite, el grid emite la lista, la ficha emite el producto. Sin @id duplicados, sin nodos que compitan, sin breadcrumbs por partida doble. El grafo se mantiene limpio y consolidado.',
+  },
+  {
+    titulo: 'Honesto por diseño (B4)',
+    desc: 'El sistema nunca fabrica un aggregateRating ni reseñas para «verse mejor»: solo se emiten si son reales y verificables. Y el Offer refleja la realidad del precio (cifra o «bajo cotización»). Datos estructurados que coinciden con la página —lo que Google premia, no penaliza—.',
+  },
+]
+
+const sis = [
+  'Deja que lib/seo.ts emita el schema: pasa los datos (product, list) vía PageLayout y buildSchema arma el JSON-LD. No escribas <script type="application/ld+json"> a mano.',
+  'Respeta B3 — un emisor por página: la ficha pasa pageType="product"; el grid, pageType="category". Cada página tiene UN nodo principal, no varios.',
+  'Deja que la card sea presentación pura: NO emite schema. El ItemList del grid ya cubre la lista; duplicar Product por card rompería B3.',
+  'Confía en el Offer honesto: con precio, lleva la cifra; sin precio, «bajo cotización». No fuerces un price en el schema si la página no lo muestra.',
+  'Modela reseñas SOLO si son reales y verificables (B4), con SITE.allowSelfReviews. En la duda, vacío: un rating inventado es peor que ninguno.',
+]
+const nos = [
+  'NO escribas JSON-LD a mano en la página: se desincroniza del contenido y duplica lo que buildSchema ya emite. Pasa los datos, no el markup del grafo.',
+  'NO emitas Product por cada card del grid: rompe B3. El grid emite UN ItemList (la lista); el Product es de la ficha, una vez.',
+  'NO fabriques aggregateRating ni reseñas para «subir estrellas» (B4): Google penaliza las self-serving. Solo reseñas reales verificables.',
+  'NO pongas un precio en el schema que no esté en la página: el Offer debe coincidir con lo que ve el visitante. Sin precio público → «bajo cotización».',
+  'NO emitas el BreadcrumbList dos veces: lo emite buildSchema una vez (B3); el componente Breadcrumbs visual NO debe emitir su propio JSON-LD.',
+]
+
+const disenos = [
+  {
+    nombre: 'Product con precio (Offer con cifra)',
+    tag: 'Retail · Rich result',
+    desc: 'Con price, el Offer lleva la cifra, priceCurrency y priceValidUntil. Es el caso que puede pintar precio y disponibilidad en el buscador (Product es de los tipos con rich result vigente). El dato sale del frontmatter.',
+  },
+  {
+    nombre: 'Product «bajo cotización»',
+    tag: 'B2B · Sin precio público',
+    desc: 'Sin price, el Offer emite un UnitPriceSpecification «bajo cotización» en vez de una cifra falsa. Honesto y conformante: declara que el precio es a consultar, no inventa un $0 real.',
+  },
+  {
+    nombre: 'ItemList del catálogo',
+    tag: 'Grid L2 · Colección',
+    desc: 'El grid emite CollectionPage + ItemList: enumera los productos (posición, nombre, URL, imagen) como una colección. NO emite Product por card. Es lo que Google lee como «esta página lista productos».',
+  },
+  {
+    nombre: 'Product + FAQPage (conviven)',
+    tag: 'Ficha con dudas',
+    desc: 'Si la ficha tiene faqs visibles, buildSchema añade un FAQPage JUNTO al Product —no en su lugar—. Dos nodos tipados que conviven sin pisarse. El FAQPage solo si las preguntas se ven en la página.',
+  },
+  {
+    nombre: 'Sin rating fabricado (B4)',
+    tag: 'Honestidad · Default',
+    desc: 'No es un diseño: es la regla. emitReviews() devuelve vacío salvo reseñas reales con SITE.allowSelfReviews. El Product nunca lleva un aggregateRating inventado. Estrellas falsas = penalización.',
+  },
+]
+
+const recetaProduct = `// src/lib/seo.ts — productSchema: el Product + Offer de la ficha (extracto).
+export function productSchema(p) {
+  const url = absUrl(p.path)
+  const offer = {
+    '@type': 'Offer', url, priceCurrency: 'MXN',
+    availability: 'https://schema.org/InStock',
+    seller: { '@id': BUSINESS_ID },          // ← @id al grafo base
+  }
+  if (p.price) { offer.price = p.price }      // cifra real
+  else { /* UnitPriceSpecification "bajo cotización" — sin precio falso */ }
+
+  return {
+    '@type': 'Product',
+    '@id': \`\${url}#product\`,
+    name: p.name, description: p.description,
+    image: p.images, sku: p.sku, category: p.category,
+    brand: { '@type': 'Brand', name: p.brand ?? SITE.name },
+    manufacturer: { '@id': ORG_ID }, url, offers: offer,
+    // ...emitReviews(p.reviews)  ← SOLO si son reales (B4)
+  }
+}`
+
+const recetaList = `// src/lib/seo.ts — directorySchema: el ItemList del grid (extracto).
+export function directorySchema(data) {
+  return {
+    '@type': 'CollectionPage',
+    name: data.name, description: data.description,
+    url: absUrl(data.path),
+    isPartOf: { '@id': WEBSITE_ID },          // ← @id al grafo base
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: data.items.length,
+      itemListElement: data.items.map((it, i) => ({
+        '@type': 'ListItem', position: i + 1,
+        name: it.name, url: absUrl(it.path), image: absImage(it.image),
+      })),
+    },
+  }
+}`
+
+const recetaBuild = `---
+// Cómo cada página DECLARA su schema (no lo escribe). buildSchema lo arma.
+// LA FICHA (L4) → Product + Offer:
+<ProductLayout ... />   // por dentro pasa pageType="product" + schemaData.product
+
+// EL GRID (L2) → CollectionPage + ItemList:
+const items = productos.map((p) => ({
+  name: p.data.title, path: \`/productos/\${p.id}\`,
+  image: p.data.image, description: p.data.description,
+}))
+---
+<PageLayout
+  pageType="category"
+  schemaData={{ list: { name: 'Productos', description: '…', path: '/productos', items } }}
+>
+  <!-- buildSchema('category', …) → emite CollectionPage + ItemList -->
+</PageLayout>`
+
+const recetaRichProduct = `<!-- LO QUE EL Product+Offer HABILITA EN EL BUSCADOR (móvil)
+     Product es de los tipos con rich result vigente: con precio y
+     disponibilidad, el resultado puede mostrar la cifra y "En stock".
+     El dato sale del frontmatter → productSchema → el buscador. -->
+Product { name, image, offers: { price: "450", availability: "InStock" } }
+→ resultado enriquecido: foto · precio · disponibilidad`
+
+const recetaRichCrumb = `<!-- EL BreadcrumbList EN EL BUSCADOR (móvil)
+     buildSchema emite el BreadcrumbList UNA vez (B3). El buscador lo
+     usa para mostrar la ruta (Inicio › Productos › Casco) en vez de
+     una URL cruda, en el ancho angosto del móvil. -->
+BreadcrumbList: Inicio › Productos › Casco NOM-115
+→ resultado con migas en vez de URL larga`
+---
+
+<PageLayout
+  title="El schema de producto — Product, Offer e ItemList (JSON-LD)"
+  description="El JSON-LD que sale de un catálogo Astro: Product + Offer en la ficha, CollectionPage + ItemList en el grid, centralizado en lib/seo.ts. Un emisor por página, sin ratings fabricados."
+  pageType="page"
+  schemaType="TechArticle"
+  guia={false}
+  breadcrumbs={[{ label: 'Productos', href: '/productos' }, { label: 'El schema' }]}
+>
+  <Hero
+    badge="Guía de productos · El schema"
+    title="El schema:"
+    accent="el SEO que sale del catálogo"
+    subtitle="Del mismo .md que define un producto sale su JSON-LD: Product + Offer en la ficha, CollectionPage + ItemList en el grid. Todo centralizado en lib/seo.ts, con una regla dura —un único emisor por página— y cero ratings fabricados."
+    descRight={[
+      'Es la última pieza del flujo: lo que el catálogo le dice a los buscadores. Los datos estructurados (JSON-LD) describen, en un lenguaje que Google entiende, que una página es un producto a la venta o una lista de productos. Y aquí no se escriben a mano: se generan a partir de los datos de la colección y de site.ts, así que nunca se desincronizan del contenido.',
+      'Detrás hay dos reglas duras que mantienen el grafo limpio. B3: un único emisor de schema por página —la card no emite, el grid emite la lista, la ficha emite el producto—, sin nodos duplicados ni @id en conflicto. Y B4: nunca se fabrica un rating ni una reseña; solo se modelan si son reales y verificables. Honestidad estructural que Google premia en lugar de penalizar.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <ModSection
+    eyebrow="Definición"
+    title="¿Qué es el schema de un producto?"
+    desc="El JSON-LD (datos estructurados de schema.org) que describe el producto para los buscadores: un nodo Product + Offer en la ficha, y un CollectionPage + ItemList en el grid. Lo emite lib/seo.ts, no se escribe a mano."
+    body={[
+      'El schema es la capa de datos estructurados —JSON-LD siguiendo el vocabulario de schema.org— que viaja invisible en cada página para que los buscadores entiendan QUÉ es. En una ficha de producto, ese schema es un nodo Product con su Offer (precio, disponibilidad, vendedor); en el catálogo, es un CollectionPage con un ItemList que enumera los productos.',
+      'Lo que lo hace fiable es que no se escribe en cada página: vive centralizado en lib/seo.ts, la librería SEO del sitio. Una función (buildSchema) recibe el tipo de página y los datos —que salen de la colección y de site.ts— y devuelve el array JSON-LD listo. Así el schema siempre coincide con el contenido: cambiar el precio en el .md cambia el Offer del schema, sin tocar nada más.',
+    ]}
+  />
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <ModSection
+    surface
+    eyebrow="Función e importancia"
+    title="¿Para qué sirve?"
+    desc="Le dice al buscador que la página es un producto (o una lista de productos), habilitando resultados enriquecidos. Y lo hace sin JSON-LD a mano, con un solo emisor por página (B3) y sin datos inventados (B4)."
+    body={[
+      'Su función es traducir el catálogo a un lenguaje que los buscadores entienden. Sin schema, Google ve texto e imágenes y adivina; con schema, sabe que la página es un Product con un precio y una disponibilidad, o un CollectionPage que lista productos. Eso habilita los resultados enriquecidos (precio, stock, migas de pan) y desambigua el tipo de contenido para la búsqueda y para las experiencias de IA.',
+      'Y lo hace de forma sostenible y honesta. Sostenible: el grafo se genera de los datos existentes, así que no hay JSON-LD que mantener en paralelo al contenido. Honesta: la regla B3 evita nodos duplicados que confundirían a Google, y la B4 prohíbe fabricar ratings —el Offer refleja el precio real o «bajo cotización»—. Datos estructurados que coinciden con la página: lo único que Google recompensa.',
+    ]}
+  >
+    <ModBenefits items={beneficios} />
+  </ModSection>
+
+  {/* ── 3) ¿QUÉ LLEVA? — anatomía con ejemplo en vivo ── */}
+  <ModSection
+    eyebrow="Anatomía"
+    title="¿Qué lo compone?"
+    desc="Cuatro piezas: el Product + Offer de la ficha, el CollectionPage + ItemList del grid, el selector buildSchema con su grafo base por @id, y las reglas B3 (un emisor) y B4 (sin rating fabricado)."
+    body={[
+      'Cada pieza cubre una capa. El Product describe la ficha; el ItemList describe el catálogo; buildSchema decide qué emitir y enlaza todo al grafo base (Organization, WebSite) por @id; y las reglas B3/B4 mantienen el grafo limpio y honesto. Juntas, convierten los datos de la colección en SEO técnico sin esfuerzo manual.',
+      'Abajo, el ejemplo en vivo —un nodo Product+Offer anotado—. Cada punto numerado se desglosa en su tarjeta: qué resuelve y qué función de lib/seo.ts lo emite.',
+    ]}
+  >
+    <ModAnatomy partes={partes}>
+      <div class="js" role="img" aria-label="Un nodo JSON-LD Product + Offer anotado">
+        <div class="js__bar"><span class="js__dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="js__name">JSON-LD · Product</span></div>
+        <pre class="js__code"><span class="js__pin js__pin--1">1</span><span class="js__p">"@type"</span>: <span class="js__s">"Product"</span>,
+  <span class="js__p">"name"</span>: <span class="js__s">"Casco NOM-115"</span>,
+  <span class="js__p">"sku"</span>: <span class="js__s">"EQ-CASCO-115"</span>,
+  <span class="js__p">"category"</span>: <span class="js__s">"equipos"</span>,
+  <span class="js__p">"offers"</span>: {'{'}
+    <span class="js__p">"@type"</span>: <span class="js__s">"Offer"</span>,
+    <span class="js__p">"price"</span>: <span class="js__s">"450"</span>,
+    <span class="js__p">"availability"</span>: <span class="js__s">"InStock"</span>,
+    <span class="js__p">"seller"</span>: {'{'} <span class="js__p">"@id"</span>: <span class="js__s">"#org"</span> {'}'}
+  {'}'}</pre>
+        <div class="js__tags">
+          <span class="js__tag"><span class="js__pin js__pin--2">2</span>grid → ItemList</span>
+          <span class="js__tag"><span class="js__pin js__pin--3">3</span>buildSchema → @graph</span>
+          <span class="js__tag"><span class="js__pin js__pin--4">4</span>B3 · B4</span>
+        </div>
+      </div>
+    </ModAnatomy>
+  </ModSection>
+
+  {/* ── 3b) VARIANTES ── */}
+  <ModSection
+    surface
+    eyebrow="Variantes"
+    title="Qué emite cada página"
+    desc="Según el tipo de página y los datos, el schema cambia: Product con precio, Product «bajo cotización», el ItemList del grid, un FAQPage que convive con el Product, o la ausencia de rating fabricado. Todas las decide buildSchema."
+    body={[
+      'No hay un único schema: hay un selector que emite el nodo correcto según la página. La ficha emite Product (con o sin precio); el grid, ItemList; una ficha con FAQs visibles añade FAQPage. Y por debajo de todo, la regla B4: jamás un rating inventado. El emisor es el mismo (buildSchema); cambia qué produce.',
+      'Abajo, cinco salidas —todas reales del sistema actual—. Cada una con la página donde aplica.',
+    ]}
+  >
+    <GaleriaDisenos ariaLabel="Qué schema emite cada página">
+      {disenos.map((d) => (
+        <DisenoCard nombre={d.nombre} tag={d.tag} desc={d.desc}>
+          <div class="jsv" role="img" aria-label={d.nombre}>
+            {d.nombre.includes('con precio') && <><span class="jsv__node">Product</span><span class="jsv__node jsv__node--on">Offer · price 450</span></>}
+            {d.nombre.includes('bajo cotización') && <><span class="jsv__node">Product</span><span class="jsv__node jsv__node--q">Offer · cotización</span></>}
+            {d.nombre.includes('ItemList') && <><span class="jsv__node">CollectionPage</span><span class="jsv__node jsv__node--on">ItemList · 1,2,3…</span></>}
+            {d.nombre.includes('FAQPage') && <><span class="jsv__node">Product</span><span class="jsv__node jsv__node--on">+ FAQPage</span></>}
+            {d.nombre.includes('rating') && <><span class="jsv__node">Product</span><span class="jsv__node jsv__node--off">aggregateRating ✕</span></>}
+          </div>
+        </DisenoCard>
+      ))}
+    </GaleriaDisenos>
+
+    <GuiaNota titulo="Un emisor por página (B3) · cero rating fabricado (B4)" archivo="src/lib/seo.ts · src/layouts/ProductLayout.astro">
+      <p>
+        Dos reglas duras gobiernan el grafo. <strong>B3</strong>: un único emisor de schema por
+        página —la <code>ProductCard</code> NO emite JSON-LD; el grid emite <code>ItemList</code> vía
+        <code>directorySchema</code>; la ficha emite <code>Product</code> vía
+        <code>buildSchema('product', …)</code>; el <code>BreadcrumbList</code> se emite una sola vez—.
+        <strong>B4</strong>: <code>emitReviews()</code> devuelve vacío salvo reseñas reales con
+        <code>SITE.allowSelfReviews</code>. Nunca un <code>aggregateRating</code> inventado.
+      </p>
+    </GuiaNota>
+  </ModSection>
+
+  {/* ── 3c) RESPONSIVE Y MÓVIL ── */}
+  <ModSection
+    eyebrow="Responsive y móvil"
+    title="El schema, en el buscador móvil"
+    desc="El schema no se ve en la página —ni cambia con la pantalla: se emite una vez por página—, pero es justo lo que da forma al resultado en el buscador. En móvil, donde el espacio es mínimo, un rich result con precio o migas marca la diferencia en el clic."
+    body={[
+      'A diferencia de las otras piezas, el schema es invisible y no tiene versión «de móvil»: se emite una vez por página, idéntico en cualquier dispositivo. Donde sí se manifiesta es en el resultado de búsqueda —y ahí el móvil es el escenario más exigente—: en una pantalla angosta, un resultado que muestra precio, disponibilidad o la ruta de migas gana el clic frente a una URL cruda.',
+      'Por eso el Product+Offer y el BreadcrumbList importan tanto en móvil: son los que habilitan esos resultados enriquecidos. Abajo, los dos casos —cómo el schema da forma al snippet en el buscador del teléfono— con la pieza del grafo que los produce.',
+    ]}
+  >
+    <ModResponsive>
+      <ModPattern
+        title="1 · Rich result de Product (precio + disponibilidad)"
+        desc="<code>Product</code> es de los tipos con rich result vigente: con <code>price</code> y <code>availability</code>, el resultado móvil puede mostrar la cifra y «En stock». El dato sale del frontmatter, vía <code>productSchema</code>."
+        receta={{ titulo: 'Schema → rich result de producto', lang: 'html', code: recetaRichProduct }}
+      >
+        <MarcoMovil ariaLabel="Un resultado de búsqueda enriquecido con foto, precio y disponibilidad">
+          <div class="sr">
+            <span class="sr__bar"><i></i> Buscar</span>
+            <span class="sr__card">
+              <i class="sr__img"></i>
+              <span class="sr__body"><b class="sr__t">Casco de seguridad NOM-115</b><span class="sr__u">ejemplos.mx › productos</span><span class="sr__meta"><b>$450</b> · En stock ★</span></span>
+            </span>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+
+      <ModPattern
+        title="2 · Migas de pan en el resultado"
+        desc="<code>buildSchema</code> emite el <code>BreadcrumbList</code> una vez (B3). El buscador lo usa para mostrar la ruta (<strong>Inicio › Productos › Casco</strong>) en vez de una URL larga —clave en el ancho angosto del móvil—."
+        receta={{ titulo: 'Schema → migas en el resultado', lang: 'html', code: recetaRichCrumb }}
+      >
+        <MarcoMovil ariaLabel="Un resultado de búsqueda con la ruta de migas en vez de la URL">
+          <div class="sr">
+            <span class="sr__bar"><i></i> Buscar</span>
+            <span class="sr__card sr__card--crumb">
+              <span class="sr__crumbs">Inicio › Productos › Casco</span>
+              <b class="sr__t">Casco de seguridad industrial NOM-115</b>
+              <span class="sr__d">Casco homologado para industria pesada, ligero…</span>
+            </span>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+    </ModResponsive>
+  </ModSection>
+
+  {/* ── 4) ¿DÓNDE VA? ── */}
+  <ModSection
+    surface
+    eyebrow="Posición"
+    title="¿Dónde vive?"
+    desc="Toda la lógica de schema vive en src/lib/seo.ts (productSchema, directorySchema, buildSchema). Las páginas solo DECLARAN su tipo y sus datos (pageType + schemaData); BaseLayout serializa el JSON-LD una vez."
+    body={[
+      'El schema no vive en las páginas: vive centralizado en src/lib/seo.ts, la librería SEO del sitio. Ahí están productSchema (el Product+Offer), directorySchema (el ItemList), y buildSchema, el selector que arma el array según el tipo de página e incluye el grafo base por @id. Las páginas no construyen JSON-LD: solo declaran pageType y pasan schemaData.',
+      'El último eslabón es BaseLayout (a través de PageLayout), que llama a buildSchema y serializa el resultado en un único bloque <script type="application/ld+json">. Esa centralización es lo que hace cumplir B3 (un emisor por página) sin esfuerzo: como solo BaseLayout emite, no hay forma de duplicar el grafo desde un componente. Esta pieza cierra la guía: del .md al JSON-LD, todo se generó solo.',
+    ]}
+  />
+
+  {/* ── 5) CÓMO SE ARMA ── */}
+  <ModSection
+    eyebrow="Implementación"
+    title="Cómo se construye"
+    desc="productSchema arma el Product + Offer (honesto con/sin precio); directorySchema arma el CollectionPage + ItemList; y cada página declara su tipo (pageType) y sus datos (schemaData), que buildSchema convierte en JSON-LD."
+    body={[
+      'productSchema recibe los datos del producto y devuelve el nodo Product con su Offer: si hay precio, lo incluye con priceValidUntil; si no, emite un UnitPriceSpecification «bajo cotización». directorySchema recibe la lista del catálogo y devuelve un CollectionPage con un ItemList numerado. Ambos enlazan al grafo base (Organization, LocalBusiness) por @id, así Google consolida la entidad.',
+      'La página no llama a esas funciones directamente: declara pageType="product" o "category" y pasa schemaData (el producto o la lista) a PageLayout. buildSchema hace el switch por tipo, añade el grafo base y el breadcrumb (una vez), y BaseLayout serializa todo. Abajo, las tres recetas: el Product, el ItemList y cómo una página los declara.',
+    ]}
+  >
+    <div class="recetas">
+      <Receta titulo="lib/seo.ts · productSchema (Product + Offer honesto)" lang="js" code={recetaProduct} />
+      <Receta titulo="lib/seo.ts · directorySchema (CollectionPage + ItemList)" lang="js" code={recetaList} />
+      <Receta titulo="Astro · cómo cada página DECLARA su schema" lang="astro" code={recetaBuild} />
+    </div>
+
+    <ModProse>
+      <p>
+        En concreto: <code>buildSchema(pageType, data)</code> siempre incluye el grafo base
+        (<code>Organization</code> + <code>WebSite</code> + <code>LocalBusiness</code>) en un
+        <code>@graph</code> consolidado por <code>@id</code>, y según el <code>pageType</code> añade el
+        nodo de página: <code>product</code> → <code>Product</code>; <code>category</code> →
+        <code>CollectionPage</code> + <code>ItemList</code>. El <code>BreadcrumbList</code> se añade una
+        sola vez si la página pasa migas (B3).
+      </p>
+      <p>
+        La ficha (<code>ProductLayout</code>) arma su <code>schemaData.product</code> con
+        <code>{'{'} name, description, path, images, sku, category, price? {'}'}</code> y, si no hay
+        <code>price</code>, el <code>Offer</code> sale «bajo cotización». El grid pasa
+        <code>schemaData.list</code> con los <code>items</code>. Ningún componente emite JSON-LD por su
+        cuenta —<code>emitReviews()</code> devuelve vacío salvo reseñas reales (B4)—: el grafo es único,
+        honesto y siempre alineado con lo que ve el visitante.
+      </p>
+    </ModProse>
+  </ModSection>
+
+  {/* ── 6) BUENAS PRÁCTICAS ── */}
+  <ModSection
+    surface
+    eyebrow="Buenas prácticas"
+    title="Qué hacer y qué evitar"
+    desc="Un grafo sano cabe en unas reglas: dejar que lib/seo.ts emita el schema, un emisor por página (B3), la card sin schema, el Offer honesto y cero ratings fabricados (B4). El sistema hace cumplir casi todo."
+    body={[
+      'Ninguna de estas reglas es opcional: son las que mantienen el grafo limpio y honesto. B3 (un emisor por página) y B4 (sin rating fabricado) son duras por una razón —Google penaliza los grafos duplicados y los datos inventados—. La centralización en lib/seo.ts las hace cumplir casi solas: como solo BaseLayout emite, no hay dónde duplicar.',
+      'La buena noticia es que tú no escribes JSON-LD: declaras el tipo de página y los datos, y el sistema arma el grafo correcto, honesto y consolidado. Lo único que debes evitar es la tentación de «mejorar» el schema a mano —un rating falso, un precio que no está en la página—. Abajo, lo que conviene y lo que conviene evitar.',
+    ]}
+  >
+    <ModDosDonts sis={sis} nos={nos} />
+  </ModSection>
+
+  {/* Cierre */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+
+  <RelatedLinks
+    title="Cierra la guía y vuelve al catálogo"
+    desc="Has recorrido el flujo completo de crear un producto."
+    links={[
+      { label: 'La ficha', href: '/productos/guia/la-ficha', desc: 'La página de detalle que emite este schema.' },
+      { label: 'El precio', href: '/productos/guia/el-precio', desc: 'El Offer honesto: precio o «bajo cotización».' },
+      { label: 'Volver al catálogo', href: '/productos', desc: 'El hub de productos y la guía completa.' },
+    ]}
+    limit={3}
+  />
+</PageLayout>
+
+<style>
+  .recetas { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
+
+  /* ── Ejemplo en vivo: nodo JSON-LD anotado ── */
+  .js { margin: var(--sp-6) auto 0; max-width: 520px; border: 1px solid #21262d; border-radius: var(--radius-md); overflow: hidden; background: #0d1117; }
+  .js__bar { display: flex; align-items: center; gap: 10px; padding: .5rem .8rem; background: #161b22; border-bottom: 1px solid #21262d; }
+  .js__dots { display: inline-flex; gap: 6px; }
+  .js__dots i { width: 10px; height: 10px; border-radius: 50%; background: #30363d; }
+  .js__dots i:nth-child(1) { background: #ff5f56; }
+  .js__dots i:nth-child(2) { background: #ffbd2e; }
+  .js__dots i:nth-child(3) { background: #27c93f; }
+  .js__name { font-family: ui-monospace, Menlo, monospace; font-size: var(--text-xs); color: #8b949e; }
+  .js__code { margin: 0; padding: var(--sp-4) var(--sp-5); font-family: ui-monospace, Menlo, monospace; font-size: .72rem; line-height: 1.85; color: #c9d1d9; white-space: pre-wrap; position: relative; }
+  .js__p { color: #79c0ff; }
+  .js__s { color: #a5d6ff; }
+  .js__pin { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-size: .58rem; font-weight: 700; vertical-align: middle; margin-right: 4px; }
+  .js__tags { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 var(--sp-5) var(--sp-4); }
+  .js__tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: #8b949e; background: #161b22; border: 1px solid #21262d; border-radius: 99px; padding: 3px 9px; }
+
+  /* ── Variantes ── */
+  .jsv { width: 100%; display: flex; flex-direction: column; gap: 4px; font-family: ui-monospace, Menlo, monospace; font-size: 10px; }
+  .jsv__node { padding: 4px 7px; border-radius: 5px; background: var(--c-white); border: 1px solid var(--c-border); color: var(--c-ink-2); }
+  .jsv__node--on { background: rgba(var(--c-primary-rgb), .08); color: var(--c-primary-dark); border-color: rgba(var(--c-primary-rgb), .2); }
+  .jsv__node--q { background: var(--c-surface); color: var(--c-ink-2); font-style: italic; }
+  .jsv__node--off { background: rgba(239,68,68,.08); color: #dc2626; border-color: rgba(239,68,68,.2); }
+
+  /* ── Mockups móviles: resultado de búsqueda ── */
+  .sr { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .sr__bar { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--c-muted); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 99px; padding: 6px 10px; }
+  .sr__bar i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--c-muted); }
+  .sr__card { display: flex; gap: 8px; padding: 9px; border-radius: 9px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .sr__card--crumb { flex-direction: column; gap: 4px; }
+  .sr__img { flex: 0 0 48px; height: 48px; border-radius: 6px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .sr__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .sr__crumbs { font-size: 8px; color: var(--c-muted); }
+  .sr__t { font-size: 11px; color: #1a0dab; line-height: 1.25; }
+  .sr__u { font-size: 8px; color: #006621; }
+  .sr__d { font-size: 9px; color: var(--c-ink-2); line-height: 1.3; }
+  .sr__meta { font-size: 9px; color: var(--c-ink-2); margin-top: 2px; }
+  .sr__meta b { color: var(--c-primary); font-size: 11px; }
+</style>

@@ -15,13 +15,14 @@
 # ─── Reglas globales ───
 User-agent: *
 Allow: /
-Disallow: /_astro/
 Disallow: /api/
 Disallow: /draft/
 Disallow: /admin/
 Disallow: /404
 Disallow: /gracias
-Crawl-delay: 1
+# Nota: NO bloquear /_astro/ — contiene el CSS/JS hasheado que Googlebot necesita
+# para renderizar la página (bloquearlo degrada mobile-friendliness). Sin Crawl-delay
+# global: Google lo ignora y solo ralentiza a Bing/Yandex (que lo declaran abajo).
 
 # ─── Google (prioritario) ───
 User-agent: Googlebot
@@ -143,6 +144,4 @@ Disallow: /
 # programático (arquetipo D), declararlo también (origen BOMBERO).
 Sitemap: https://ejemplos.mx/sitemap-index.xml
 # Sitemap: https://ejemplos.mx/sitemap-directorio.xml
-
-# ─── Host ───
-Host: https://ejemplos.mx
+# (Host: eliminado — directiva deprecada que Google ignora.)

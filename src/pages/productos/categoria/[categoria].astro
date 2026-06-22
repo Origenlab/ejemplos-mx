@@ -1,0 +1,139 @@
+---
+// ============================================================================
+// /productos/categoria/<categoria> — Landing de CATEGORÍA de producto (Nivel L2.5).
+// ----------------------------------------------------------------------------
+// EL NIVEL QUE FALTABA en la jerarquía de catálogo:
+//   Inicio → Productos (L2) → CATEGORÍA (L2.5) → Ficha (L4)
+// Antes el catálogo colapsaba a un solo grid plano (/productos) y las
+// subcategorías del SHOWCASE apuntaban todas a /productos. Esta ruta introduce
+// la página de categoría, que es la que rankea por keywords de cabecera
+// ("extintores", "señalización") y reparte autoridad a las fichas hijas.
+//
+// DATA-DRIVEN sin enum duplicado: las categorías salen de los PROPIOS productos
+// (campo `category`), así NUNCA se genera una categoría vacía (anti thin-content)
+// ni hay que mantener una lista paralela. CollectionPage + ItemList (pageType
+// "category" → lib/seo.ts). Página de CLIENTE (sin capa-guía).
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import ProductCard from '@components/ProductCard.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import { getCollection } from 'astro:content'
+import { waUrl, WA_MESSAGES, PRODUCT_CATEGORIES } from '@config/site'
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+// Label canónico de la categoría (B5): de la taxonomía única; cap() como respaldo.
+const catLabel = (s: string) => PRODUCT_CATEGORIES.find((c) => c.slug === s)?.label ?? cap(s)
+
+export async function getStaticPaths() {
+  const productos = (await getCollection('productos', ({ data }) => !data.draft)).sort(
+    (a, b) => a.data.order - b.data.order,
+  )
+  // Categorías REALES presentes en la colección (sin vacías, sin enum paralelo).
+  const cats = [...new Set(productos.map((p) => p.data.category))]
+  return cats.map((categoria) => ({
+    params: { categoria },
+    props: {
+      categoria,
+      productos: productos.filter((p) => p.data.category === categoria),
+      allCats: cats,
+    },
+  }))
+}
+
+// Props inferidos de getStaticPaths (mismo patrón que las otras rutas dinámicas).
+const { categoria, productos, allCats } = Astro.props
+const label = catLabel(categoria)
+const n = productos.length
+
+// items → alimentan el ItemList del JSON-LD (buildSchema 'category').
+const items = productos.map((p) => ({
+  name: p.data.title,
+  path: `/productos/${p.id}`,
+  image: p.data.image,
+  description: p.data.description,
+}))
+
+const schemaData = {
+  list: {
+    name: label,
+    description: `Catálogo de ${label.toLowerCase()}: ${n} ${n === 1 ? 'producto disponible' : 'productos disponibles'}, cada uno con su ficha de detalle.`,
+    path: `/productos/categoria/${categoria}`,
+    items,
+  },
+}
+
+// Interlinking: categorías hermanas + volver al catálogo + contacto.
+const cierreItems = [
+  ...allCats
+    .filter((c) => c !== categoria)
+    .map((c) => ({ label: catLabel(c), href: `/productos/categoria/${c}`, sub: 'Otra categoría' })),
+  { label: 'Ver todo el catálogo', href: '/productos', sub: 'Todas las categorías' },
+  { label: 'Contacto', href: '/contacto', sub: '¿Dudas? Escríbenos' },
+]
+const cierreCta = {
+  label: 'Cotizar por WhatsApp',
+  href: waUrl(WA_MESSAGES.productos),
+  sub: 'Respuesta inmediata',
+  external: true,
+}
+---
+
+<PageLayout
+  title={label}
+  description={`${label}: ${n} ${n === 1 ? 'producto' : 'productos'} con ficha de detalle, precio o cotización y asesoría por WhatsApp.`}
+  pageType="category"
+  schemaData={schemaData}
+  breadcrumbs={[{ label: 'Productos', href: '/productos' }, { label }]}
+  guia={false}
+>
+  <Hero
+    badge="Categoría"
+    title={label}
+    accent=""
+    subtitle={`Todo nuestro catálogo de ${label.toLowerCase()} en un solo lugar, cada producto con su ficha. ¿No sabes cuál elegir? Te asesoramos por WhatsApp.`}
+    ctas={[
+      { text: "Cotizar por WhatsApp", href: waUrl(WA_MESSAGES.productos), variant: "primary", whatsapp: true },
+    ]}
+  />
+
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Catálogo"
+        title={label}
+        desc={`${n} ${n === 1 ? 'producto' : 'productos'} en esta categoría. Entra a cualquier ficha para ver el detalle, el precio o la opción de cotizar.`}
+        body={[
+          `Reunimos aquí los productos de ${label.toLowerCase()} para que compares y elijas con calma. Cada tarjeta lleva a su ficha, con la información que necesitas para decidir.`,
+          'Si tienes dudas sobre cuál es el adecuado para tu caso, escríbenos: te recomendamos el correcto según lo que necesitas, sin venderte de más.',
+        ]}
+      />
+      <div class="grid">
+        {productos.map((p, i) => (
+          <ProductCard
+            title={p.data.title}
+            href={`/productos/${p.id}`}
+            image={p.data.image}
+            imageAlt={p.data.title}
+            badge={p.data.category}
+            description={p.data.description}
+            index={i}
+            priority={i === 0}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Otras categorías y contacto" />
+</PageLayout>
+
+<style>
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+  .grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 768px) { .grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); } }
+</style>

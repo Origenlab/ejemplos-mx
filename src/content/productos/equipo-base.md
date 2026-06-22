@@ -11,6 +11,23 @@ order: 1
 seoTitle: "Equipo base de ejemplo | EJEMPLOS"
 seoDescription: "Producto DEMO de la plantilla: ejemplo de ficha de equipo con categoría, imagen y precio editorial para el catálogo."
 keywords: ["plantilla", "producto demo", "catálogo astro"]
+features:
+  - "Listo para usar"
+  - "Compatible con el resto del catálogo"
+  - "Garantía del fabricante"
+specs:
+  - label: "Material"
+    value: "Estándar del giro"
+  - label: "Dimensiones"
+    value: "Según modelo"
+  - label: "Garantía"
+    value: "12 meses"
+applications:
+  - "Uso general en el giro del cliente"
+  - "Proyectos residenciales y comerciales"
+  - "Reemplazo o ampliación de equipo existente"
+certifications:
+  - "Documentación de conformidad disponible bajo solicitud"
 ---
 
 ## Sobre este producto de ejemplo

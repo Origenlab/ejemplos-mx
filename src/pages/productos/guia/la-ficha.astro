@@ -1,0 +1,471 @@
+---
+// ============================================================================
+// /productos/guia/la-ficha — PIEZA «La ficha» de la guía de productos.
+// ----------------------------------------------------------------------------
+// Quinta de la serie /productos/guia/*. MISMO molde de 10 secciones.
+// Tema: la página de detalle (L4) que se genera SOLA — una ruta dinámica
+// [...slug].astro que sirve todas las fichas, ProductLayout schema-driven con
+// bloques opcionales, hero con galería, sidebar sticky de conversión.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import RelatedLinks from '@components/RelatedLinks.astro'
+import ModSection from '@components/modulos/ModSection.astro'
+import ModBenefits from '@components/modulos/ModBenefits.astro'
+import ModAnatomy from '@components/modulos/ModAnatomy.astro'
+import ModResponsive from '@components/modulos/ModResponsive.astro'
+import ModPattern from '@components/modulos/ModPattern.astro'
+import ModProse from '@components/modulos/ModProse.astro'
+import ModDosDonts from '@components/modulos/ModDosDonts.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+import { siblingsProductos } from '@lib/productos'
+
+const cierreItems = siblingsProductos('la-ficha')
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.productos), sub: 'Respuesta inmediata', external: true }
+
+const partes = [
+  {
+    n: 1,
+    nombre: 'La ruta única — [...slug].astro',
+    que: 'Una sola ruta dinámica sirve TODAS las fichas: getStaticPaths recorre la colección y genera una página por producto. No editas una página por producto —el contenido sale del frontmatter—. Renombrar el .md cambia la URL; añadirlo crea la ficha.',
+    dato: 'src/pages/productos/[...slug].astro · getStaticPaths',
+  },
+  {
+    n: 2,
+    nombre: 'El hero — galería + datos clave',
+    que: 'La cabecera de la ficha: foto principal (fetchpriority high) + miniaturas de la galería a un lado; del otro, badge, H1 con el nombre, descripción, lista de features y el precio. Es lo que el visitante ve sin hacer scroll: identidad + propuesta + acción.',
+    dato: 'ProductLayout · prod-hero (image · gallery · features · price)',
+  },
+  {
+    n: 3,
+    nombre: 'Los bloques opcionales',
+    que: 'Especificaciones (tabla), aplicaciones, certificaciones/normas y FAQ: cada bloque SOLO se pinta si el frontmatter trae sus datos. Un producto sin specs no muestra esa sección —sin huecos ni placeholders—. Pocos campos base + bloques que aparecen bajo demanda.',
+    dato: 'specs · applications · certifications · faqs (opcionales)',
+  },
+  {
+    n: 4,
+    nombre: 'El sidebar sticky de conversión',
+    que: 'Una columna que «sigue» el scroll en escritorio: precio (o «bajo cotización»), botón «Pedir cotización» (WhatsApp), «Llamar», y «También te puede servir» (relacionados). El siguiente paso siempre a la vista, sin volver arriba.',
+    dato: 'prod-sidebar (sticky) · waUrl · telUrl · RelatedLinks',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Cero páginas a mano',
+    desc: 'Una única ruta [...slug].astro genera todas las fichas del catálogo. Diez productos o mil: el mismo archivo. Crear una ficha es crear un .md; no hay una página .astro por producto que mantener, ni el riesgo de que una quede distinta de las demás.',
+  },
+  {
+    titulo: 'Bloques que aparecen solos',
+    desc: 'La ficha es schema-driven con pocos campos base y bloques opcionales: specs, aplicaciones, certificaciones, FAQ. Cada uno se pinta solo si el frontmatter trae sus datos. Un producto simple muestra lo justo; uno completo se despliega —sin huecos ni secciones vacías—.',
+  },
+  {
+    titulo: 'Conversión integrada',
+    desc: 'El sidebar sticky mantiene el siguiente paso siempre a la vista: cotizar por WhatsApp, llamar, ver relacionados. La ficha no solo informa: encauza. El CTA se arma con waUrl() y un mensaje que nombra el producto, así el lead llega con contexto.',
+  },
+]
+
+const sis = [
+  'Deja que [...slug].astro genere las fichas: no creas una página por producto, solo el .md. La ruta y el layout hacen el resto.',
+  'Llena solo los bloques que aporten: un producto sin specs no necesita la tabla. Los bloques opcionales se ocultan solos si no hay datos.',
+  'Usa el cuerpo Markdown del .md para la descripción larga: se renderiza dentro de la ficha (sección «Acerca de»), con listas, tablas y formato.',
+  'Aprovecha el sidebar sticky para la conversión: precio + WhatsApp + llamar. El mensaje pre-armado de waUrl() ya nombra el producto.',
+  'Cura los relacionados con relatedProducts (reference()): el bloque «también te puede servir» enlaza fichas reales, validadas en build.',
+]
+const nos = [
+  'NO crees una página .astro por producto: rompe la regla D1 y duplica el layout. Toda ficha sale de [...slug].astro + el .md.',
+  'NO rellenes bloques con datos de relleno «para que no se vean vacíos»: si no hay specs reales, omite el campo y el bloque no aparece. Vacío honesto > relleno.',
+  'NO metas el HTML del layout en el .md: el frontmatter son datos; la estructura (hero, sidebar, tabla) vive en ProductLayout, una vez para todas las fichas.',
+  'NO dupliques el CTA de WhatsApp con enlaces a mano: el layout ya lo arma con waUrl() y el número de site.ts (regla D4).',
+  'NO uses la ProductCard del catálogo para los «relacionados» de la ficha: ese papel es de RelatedLinks (tiles simples), para no anidar cards de catálogo dentro de la ficha.',
+]
+
+const disenos = [
+  {
+    nombre: 'Ficha mínima',
+    tag: 'Producto simple · Arranque',
+    desc: 'Solo los campos base: hero (foto + título + descripción + precio), cuerpo Markdown y el sidebar de conversión. Sin specs, sin galería, sin FAQ. Válida y completa para un producto que no necesita más.',
+  },
+  {
+    nombre: 'Con especificaciones',
+    tag: 'Técnico · Industrial',
+    desc: 'Añade specs[] {label, value}: la ficha pinta una tabla de especificaciones. Para productos donde los números deciden (medidas, materiales, capacidades). El bloque aparece solo porque hay datos.',
+  },
+  {
+    nombre: 'Con galería',
+    tag: 'Visual · Equipos',
+    desc: 'gallery[] añade miniaturas junto a la foto principal en el hero. Para productos que se entienden mejor desde varios ángulos. La card del catálogo sigue usando una sola imagen.',
+  },
+  {
+    nombre: 'Con FAQ y certificaciones',
+    tag: 'Confianza · Normado',
+    desc: 'faqs[] pinta el acordeón (y FAQPage en el schema); certifications[] lista normas. Resuelven objeciones y comunican cumplimiento en la propia ficha. Ambos opcionales, ambos bajo demanda.',
+  },
+  {
+    nombre: 'Bajo cotización (sin precio)',
+    tag: 'B2B · Proyecto',
+    desc: 'Sin price, el hero y el sidebar muestran «Precio bajo cotización» y el CTA va directo a WhatsApp. La ficha completa funciona igual; solo cambia cómo se comunica el precio (ver la pieza «El precio»).',
+  },
+]
+
+const recetaSlug = `---
+// src/pages/productos/[...slug].astro — UNA ruta sirve TODAS las fichas.
+import { getCollection, render } from 'astro:content'
+import ProductLayout from '@layouts/ProductLayout.astro'
+
+export async function getStaticPaths() {
+  const productos = await getCollection('productos', ({ data }) => !data.draft)
+  return productos.map((producto) => {
+    // Relacionados = hermanos de la colección (excluye el actual).
+    const related = productos
+      .filter((p) => p.id !== producto.id).slice(0, 3)
+      .map((p) => ({ label: p.data.title, href: \`/productos/\${p.id}\`, description: p.data.description }))
+    return { params: { slug: producto.id }, props: { producto, related } }
+  })
+}
+
+const { producto, related } = Astro.props
+const { Content } = await render(producto)   // el cuerpo Markdown → HTML
+const d = producto.data
+---`
+
+const recetaLayout = `<!-- La ficha pasa el frontmatter a ProductLayout; el cuerpo va en el slot. -->
+<ProductLayout
+  slug={producto.id}
+  title={d.title}
+  description={d.description}
+  category={d.category}
+  image={d.image}
+  badge={d.brand}
+  price={d.price}
+  faqs={d.faqs}
+  related={related}
+>
+  <Content />   <!-- descripción larga en Markdown → sección "Acerca de" -->
+</ProductLayout>`
+
+const recetaBloques = `<!-- ProductLayout — los bloques OPCIONALES solo se pintan si traen datos. -->
+{specs.length > 0 && (
+  <section class="prod-section">
+    <SectionHeading eyebrow="Detalle" title="Especificaciones" />
+    <table class="prod-table">
+      <tbody>{specs.map((s) => <tr><th>{s.label}</th><td>{s.value}</td></tr>)}</tbody>
+    </table>
+  </section>
+)}
+
+{faqs.length > 0 && (
+  <section class="prod-section">
+    <SectionHeading eyebrow="Dudas" title="Preguntas frecuentes" />
+    <FAQAccordion items={faqs} />
+  </section>
+)}
+<!-- Sin specs/faqs → el bloque NO existe en el HTML. Cero huecos. -->`
+
+const recetaStickyMovil = `/* EL SIDEBAR: STICKY EN ESCRITORIO, APILADO EN MÓVIL
+   En escritorio la columna de conversión "sigue" el scroll (sticky);
+   en el teléfono se apila bajo el contenido, a ancho completo. */
+.prod-body { display: grid; grid-template-columns: 1fr; gap: var(--space-8); }
+
+@media (min-width: 1024px) {
+  .prod-body { grid-template-columns: minmax(0, 1fr) 22rem; }
+  .prod-sidebar { position: sticky; top: calc(var(--header-height) + 1rem); }
+}`
+
+const recetaHeroMovil = `/* EL HERO DE LA FICHA: 2 COLUMNAS → 1 EN MÓVIL
+   La galería y los datos van lado a lado en escritorio; en el
+   teléfono se apilan (foto arriba, datos debajo). Los botones de
+   acción pasan a full-width en la zona del pulgar. */
+.prod-hero__grid { display: grid; grid-template-columns: 1fr; gap: var(--space-6); }
+@media (min-width: 1024px) { .prod-hero__grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .prod-hero__actions .btn { width: 100%; } }`
+---
+
+<PageLayout
+  title="La ficha de producto — la página de detalle que se genera sola"
+  description="La página de detalle (L4) de un producto en Astro: una ruta dinámica [...slug] que sirve todas las fichas, ProductLayout schema-driven con bloques opcionales y sidebar de conversión."
+  pageType="page"
+  schemaType="TechArticle"
+  guia={false}
+  breadcrumbs={[{ label: 'Productos', href: '/productos' }, { label: 'La ficha' }]}
+>
+  <Hero
+    badge="Guía de productos · La ficha"
+    title="La ficha:"
+    accent="la página de detalle que se genera sola"
+    subtitle="Cada producto tiene su página de detalle (L4), y NO se edita una por una: una sola ruta dinámica sirve todas las fichas desde la colección. El layout es schema-driven —pocos campos base y bloques que aparecen solo si traen datos—."
+    descRight={[
+      'Es la quinta pieza del flujo: la página que el visitante abre cuando ya eligió qué le interesa. Aquí espera todo lo que necesita para decidir —qué es, cómo es por dentro, qué cumple y cuál es el siguiente paso—. Y se genera sola: una ruta [...slug].astro recorre la colección y produce una ficha por producto, sin una página a mano por cada uno.',
+      'El layout (ProductLayout) sigue el principio de pocos campos base más bloques opcionales: el hero con galería y datos clave siempre; las especificaciones, aplicaciones, certificaciones y FAQ solo si el frontmatter las trae. Y un sidebar sticky de conversión que mantiene «cotizar por WhatsApp» a la vista. Informar y encauzar, en la misma página.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <ModSection
+    eyebrow="Definición"
+    title="¿Qué es la ficha de un producto?"
+    desc="La página de detalle (nivel L4) de un producto: la que entrega todo para decidir. Se genera desde una ruta dinámica [...slug].astro que sirve todas las fichas, con la estructura en ProductLayout y el contenido en el .md."
+    body={[
+      'La ficha es la página individual de un producto —/productos/<slug>—, el nivel más profundo del catálogo. Es donde el visitante llega cuando ya escogió qué mirar, así que su trabajo es entregar todo lo necesario para decidir: galería, descripción a fondo, especificaciones, cumplimiento y un camino claro a la cotización. No es un resumen como la card: es el detalle completo.',
+      'Lo que la hace especial técnicamente es que no se escribe una por producto. Una única ruta dinámica, [...slug].astro, recorre la colección con getStaticPaths y genera una página por cada .md. La estructura vive en ProductLayout (schema-driven, con bloques opcionales); el contenido —título, foto, precio, specs, FAQ— sale del frontmatter y del cuerpo Markdown. Crear una ficha es crear un archivo.',
+    ]}
+  />
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <ModSection
+    surface
+    eyebrow="Función e importancia"
+    title="¿Para qué sirve?"
+    desc="Entrega el detalle completo para decidir, sin mantener una página por producto: una ruta genera todas, los bloques aparecen solo si hay datos, y el sidebar sticky encauza la conversión."
+    body={[
+      'Su función es cerrar la decisión. La card del catálogo engancha; la ficha convence. Aquí va la galería que muestra el producto desde varios ángulos, la descripción larga que responde el «¿esto es para mí?», las especificaciones que comparan, las certificaciones que dan confianza y las FAQ que matan la última objeción. Es la página que más pesa en la conversión.',
+      'Y lo hace de forma sostenible. Una sola ruta sirve todo el catálogo, así que diez o mil productos comparten exactamente el mismo layout —ninguna ficha queda distinta por accidente—. Los bloques opcionales mantienen cada ficha tan simple o completa como el producto requiera, sin huecos. Y el sidebar sticky asegura que, por largo que sea el scroll, cotizar esté siempre a un toque.',
+    ]}
+  >
+    <ModBenefits items={beneficios} />
+  </ModSection>
+
+  {/* ── 3) ¿QUÉ LLEVA? — anatomía con ejemplo en vivo ── */}
+  <ModSection
+    eyebrow="Anatomía"
+    title="¿Qué lleva la ficha?"
+    desc="Cuatro piezas: la ruta única [...slug] que la genera, el hero (galería + datos + acción), los bloques opcionales (specs, aplicaciones, certificaciones, FAQ) y el sidebar sticky de conversión."
+    body={[
+      'Cada pieza cumple un papel. La ruta genera la página sin trabajo manual; el hero entrega la primera impresión completa (qué es + cómo se ve + cuánto cuesta); los bloques opcionales despliegan el detalle bajo demanda; y el sidebar mantiene la conversión a la vista. Juntas, convierten un .md en una página de venta.',
+      'Abajo, el ejemplo en vivo —el esqueleto de una ficha anotado—. Cada punto numerado se desglosa en su tarjeta: qué resuelve y qué parte de ProductLayout o de la ruta lo respalda.',
+    ]}
+  >
+    <ModAnatomy partes={partes}>
+      <div class="fic" role="img" aria-label="El esqueleto de una ficha de producto: hero, contenido con bloques opcionales y sidebar sticky">
+        <div class="fic__route"><span class="fic__pin fic__pin--1">1</span><code>/productos/[...slug]</code></div>
+        <div class="fic__hero">
+          <span class="fic__pin fic__pin--2">2</span>
+          <span class="fic__media"></span>
+          <span class="fic__data"><b></b><i></i><span class="fic__price">Desde $450</span><span class="fic__btn">Cotizar</span></span>
+        </div>
+        <div class="fic__body">
+          <div class="fic__content">
+            <span class="fic__pin fic__pin--3">3</span>
+            <span class="fic__block">Especificaciones</span>
+            <span class="fic__block">Aplicaciones</span>
+            <span class="fic__block fic__block--opt">FAQ (opcional)</span>
+          </div>
+          <div class="fic__side">
+            <span class="fic__pin fic__pin--4">4</span>
+            <span class="fic__widget">Cotizar · Llamar</span>
+            <span class="fic__widget fic__widget--rel">Relacionados</span>
+          </div>
+        </div>
+      </div>
+    </ModAnatomy>
+  </ModSection>
+
+  {/* ── 3b) VARIANTES ── */}
+  <ModSection
+    surface
+    eyebrow="Variantes"
+    title="De mínima a completa"
+    desc="La misma ficha va desde lo mínimo (hero + descripción + conversión) hasta una completa con galería, especificaciones, FAQ y certificaciones. Cada bloque aparece solo si el frontmatter trae sus datos —ninguna variante toca el layout—."
+    body={[
+      'No hay fichas «cortas» y «largas» como plantillas distintas: hay un layout que se despliega según lo que trae cada producto. Un repuesto va mínimo; un equipo técnico suma specs; uno normado añade certificaciones y FAQ. El layout es el mismo; cambia qué campos opcionales llena el .md.',
+      'Abajo, cinco configuraciones —todas reales del layout actual, obtenidas poniendo o quitando campos opcionales—. Cada una con el tipo de producto donde encaja.',
+    ]}
+  >
+    <GaleriaDisenos ariaLabel="Configuraciones de la ficha de producto">
+      {disenos.map((d) => (
+        <DisenoCard nombre={d.nombre} tag={d.tag} desc={d.desc}>
+          <div class="ficv" role="img" aria-label={d.nombre}>
+            <span class="ficv__hero"><i></i><b></b></span>
+            <span class="ficv__block">Descripción</span>
+            {d.nombre.includes('especificaciones') && <span class="ficv__block ficv__block--on">Especificaciones</span>}
+            {d.nombre.includes('galería') && <span class="ficv__thumbs"><i></i><i></i><i></i></span>}
+            {d.nombre.includes('FAQ') && <><span class="ficv__block ficv__block--on">Certificaciones</span><span class="ficv__block ficv__block--on">FAQ</span></>}
+            {d.nombre.includes('cotización') && <span class="ficv__price">Bajo cotización</span>}
+            <span class="ficv__cta">Cotizar</span>
+          </div>
+        </DisenoCard>
+      ))}
+    </GaleriaDisenos>
+
+    <GuiaNota titulo="Pocos campos base · bloques que aparecen bajo demanda" archivo="src/layouts/ProductLayout.astro">
+      <p>
+        <code>ProductLayout</code> sigue el principio de <strong>pocos campos base + bloques
+        opcionales</strong> (en vez del anti-patrón «god-layout» de 40 props). El hero, la descripción
+        y el sidebar siempre están; <code>specs</code>, <code>applications</code>,
+        <code>certifications</code> y <code>faqs</code> se renderizan <strong>solo si traen datos</strong>
+        (<code>specs.length &gt; 0 &amp;&amp; …</code>). Un producto sin specs no muestra esa sección:
+        cero huecos, cero placeholders.
+      </p>
+    </GuiaNota>
+  </ModSection>
+
+  {/* ── 3c) RESPONSIVE Y MÓVIL ── */}
+  <ModSection
+    eyebrow="Responsive y móvil"
+    title="La ficha, en el teléfono"
+    desc="La ficha es de dos columnas en escritorio (contenido + sidebar sticky) y se apila a una en móvil. El hero hace lo mismo (galería + datos lado a lado → apilados), y los botones de acción pasan a full-width."
+    body={[
+      'La ficha se diseña en dos columnas en escritorio —el contenido a la izquierda, el sidebar de conversión a la derecha «siguiendo» el scroll—. En el teléfono, donde no caben dos columnas, todo se apila a una: primero el contenido, luego el bloque de conversión, a ancho completo. El sidebar deja de ser sticky y pasa a ser una sección más.',
+      'El hero hace el mismo movimiento: galería y datos van lado a lado en pantalla ancha y se apilan en móvil (foto arriba, datos y precio debajo), con los botones de acción a ancho completo en la zona del pulgar. Abajo, los dos patrones con su receta.',
+    ]}
+  >
+    <ModResponsive>
+      <ModPattern
+        title="1 · Dos columnas → una (sidebar apilado)"
+        desc="En escritorio: contenido + <strong>sidebar sticky</strong> que sigue el scroll. En móvil se apila a una columna —contenido y luego conversión, a ancho completo— y el sidebar deja de ser sticky."
+        receta={{ titulo: 'CSS · 2 columnas → 1 + sidebar sticky', lang: 'css', code: recetaStickyMovil }}
+      >
+        <MarcoMovil ariaLabel="La ficha de dos columnas se apila a una en el teléfono">
+          <div class="ficm">
+            <span class="ficm__hero"><i></i></span>
+            <span class="ficm__block"></span>
+            <span class="ficm__block"></span>
+            <span class="ficm__side">Cotizar · Llamar</span>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+
+      <ModPattern
+        title="2 · El hero se apila, los botones a full-width"
+        desc="El hero (galería + datos) va lado a lado en escritorio y se apila en móvil: foto arriba, datos y precio debajo. Los botones de acción pasan a <strong>full-width</strong> en la zona del pulgar."
+        receta={{ titulo: 'CSS · hero de ficha responsive', lang: 'css', code: recetaHeroMovil }}
+      >
+        <MarcoMovil ariaLabel="El hero de la ficha apilado con botones a ancho completo">
+          <div class="ficm">
+            <span class="ficm__photo"></span>
+            <span class="ficm__t"></span>
+            <span class="ficm__price">Desde $450 MXN</span>
+            <span class="ficm__cta">Cotizar por WhatsApp</span>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+    </ModResponsive>
+  </ModSection>
+
+  {/* ── 4) ¿DÓNDE VA? ── */}
+  <ModSection
+    surface
+    eyebrow="Posición"
+    title="¿Dónde vive?"
+    desc="La ruta en src/pages/productos/[...slug].astro (genera todas las fichas); el layout en src/layouts/ProductLayout.astro (la estructura, una vez). El contenido sale de cada .md de la colección."
+    body={[
+      'La ficha se reparte en dos archivos que no se tocan por producto. La ruta dinámica src/pages/productos/[...slug].astro contiene el getStaticPaths que recorre la colección y, por cada producto, pasa su data a ProductLayout. El layout src/layouts/ProductLayout.astro contiene toda la estructura —hero, bloques, sidebar, schema— una sola vez para las fichas del sitio entero.',
+      'El contenido, en cambio, vive distribuido: un .md por producto en src/content/productos/. Crear una ficha es escribir ese .md; la ruta y el layout ya existen y la generan. Esta pieza cierra el flujo de la guía: la colección define el dato, las categorías lo ordenan, las imágenes lo ilustran, el precio lo tarifa, y la ficha es la página donde todo eso se presenta al visitante.',
+    ]}
+  />
+
+  {/* ── 5) CÓMO SE ARMA ── */}
+  <ModSection
+    eyebrow="Implementación"
+    title="Cómo se construye"
+    desc="La ruta [...slug].astro con getStaticPaths (una página por producto), el paso de props a ProductLayout (frontmatter + cuerpo en el slot), y el patrón de bloques opcionales (solo se pintan con datos)."
+    body={[
+      'La ruta es el corazón: getStaticPaths recorre getCollection(\'productos\'), y por cada producto devuelve { params: { slug }, props: { producto, related } }. Astro genera una página estática por cada uno en build. El cuerpo Markdown se obtiene con render(producto) y se inyecta en el slot de ProductLayout como <Content />.',
+      'ProductLayout recibe pocos campos base (title, description, image, price, faqs, related) y un puñado de bloques opcionales (specs, applications, certifications). Cada bloque se renderiza tras un guard (specs.length > 0 && …), así que un producto sin ese dato simplemente no genera la sección. Abajo, las tres recetas: la ruta, el paso a layout y los bloques.',
+    ]}
+  >
+    <div class="recetas">
+      <Receta titulo="[...slug].astro · una ruta genera todas las fichas" lang="astro" code={recetaSlug} />
+      <Receta titulo="Astro · pasar el frontmatter a ProductLayout" lang="astro" code={recetaLayout} />
+      <Receta titulo="ProductLayout · bloques opcionales (solo con datos)" lang="astro" code={recetaBloques} />
+    </div>
+
+    <ModProse>
+      <p>
+        En concreto: <code>getStaticPaths()</code> mapea la colección a rutas; cada una recibe
+        <code>props</code> con el producto y sus relacionados. La página llama
+        <code>render(producto)</code> para obtener <code>Content</code> (el cuerpo Markdown ya en HTML)
+        y lo pasa al slot de <code>ProductLayout</code>. La estructura —hero, tabla, sidebar— vive en el
+        layout, no en la ruta.
+      </p>
+      <p>
+        <code>ProductLayout</code> generaliza el patrón «pocos campos base + bloques opcionales»:
+        evita el god-layout de 40 props. Los bloques (<code>specs</code>, <code>applications</code>,
+        <code>certifications</code>, <code>faqs</code>) se pintan tras un <code>length &gt; 0</code>, y el
+        sidebar de conversión arma sus CTAs con <code>waUrl()</code> y <code>telUrl()</code> desde
+        <code>site.ts</code>. El schema (Product + Offer) lo emite el propio layout vía
+        <code>buildSchema('product', …)</code> — tema de la pieza «El schema».
+      </p>
+    </ModProse>
+  </ModSection>
+
+  {/* ── 6) BUENAS PRÁCTICAS ── */}
+  <ModSection
+    surface
+    eyebrow="Buenas prácticas"
+    title="Qué hacer y qué evitar"
+    desc="Una ficha sana cabe en unos hábitos: dejar que [...slug] la genere, llenar solo los bloques con datos reales, usar el Markdown para la descripción larga y el sidebar para la conversión. El layout hace lo repetitivo."
+    body={[
+      'Ninguno de estos hábitos es opcional si quieres un catálogo mantenible. La regla de oro es no crear páginas .astro por producto: la ruta dinámica las genera todas. Y no rellenar bloques con datos de relleno: los opcionales se ocultan solos, y una sección vacía honesta es mejor que una llena de placeholders.',
+      'La buena noticia es que el layout hace el trabajo pesado: la estructura, el schema y la conversión están resueltos una vez para todas las fichas. Lo que aportas tú es el contenido del .md, bien escrito y solo con lo que aplique. Abajo, lo que conviene y lo que conviene evitar.',
+    ]}
+  >
+    <ModDosDonts sis={sis} nos={nos} />
+  </ModSection>
+
+  {/* Cierre */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+
+  <RelatedLinks
+    title="Continúa con la guía"
+    desc="Las piezas vecinas del flujo de crear un producto."
+    links={[
+      { label: 'El precio', href: '/productos/guia/el-precio', desc: 'Cómo se muestra el precio y la cotización en la ficha.' },
+      { label: 'El schema', href: '/productos/guia/el-schema', desc: 'El Product + Offer que emite la ficha.' },
+      { label: 'La colección', href: '/productos/guia/la-coleccion', desc: 'El .md que alimenta cada ficha.' },
+    ]}
+    limit={3}
+  />
+</PageLayout>
+
+<style>
+  .recetas { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
+
+  /* ── Ejemplo en vivo: esqueleto de la ficha ── */
+  .fic { margin: var(--sp-6) auto 0; max-width: 560px; display: grid; gap: var(--sp-3); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-lg); padding: var(--sp-4); }
+  .fic__route { position: relative; padding-left: 28px; }
+  .fic__route code { font-family: ui-monospace, Menlo, monospace; font-size: .72rem; color: var(--c-primary-dark); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .2em .5em; }
+  .fic__hero { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); padding: var(--sp-3); border: 1px dashed var(--c-border); border-radius: var(--radius-md); }
+  .fic__media { height: 60px; border-radius: 6px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .fic__data { display: grid; gap: 5px; align-content: center; }
+  .fic__data b { height: 9px; width: 80%; border-radius: 4px; background: var(--c-ink); opacity: .8; }
+  .fic__data i { height: 6px; width: 95%; border-radius: 3px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .fic__price { font-family: var(--font-heading); font-size: 11px; font-weight: 700; color: var(--c-primary); }
+  .fic__btn, .fic__cta { font-size: 9px; font-weight: 700; color: #fff; background: #25D366; border-radius: 5px; padding: 3px 8px; text-align: center; }
+  .fic__body { display: grid; grid-template-columns: 1.6fr 1fr; gap: var(--sp-3); }
+  .fic__content, .fic__side { position: relative; display: grid; gap: 5px; padding: var(--sp-3); border: 1px dashed var(--c-border); border-radius: var(--radius-md); align-content: start; }
+  .fic__block { font-size: 9px; color: var(--c-ink-2); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 4px; padding: 4px 6px; }
+  .fic__block--opt { color: var(--c-muted); font-style: italic; }
+  .fic__widget { font-size: 9px; color: #fff; background: var(--c-primary); border-radius: 5px; padding: 5px 6px; text-align: center; }
+  .fic__widget--rel { background: var(--c-surface); color: var(--c-ink-2); border: 1px solid var(--c-border); }
+  .fic__pin { position: absolute; left: 5px; top: 5px; display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-size: .58rem; font-weight: 700; z-index: 1; }
+  .fic__route .fic__pin { left: 0; top: 50%; transform: translateY(-50%); }
+
+  /* ── Variantes ── */
+  .ficv { width: 100%; display: flex; flex-direction: column; gap: 4px; }
+  .ficv__hero { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .ficv__hero i { height: 30px; border-radius: 5px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .ficv__hero b { height: 30px; border-radius: 5px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .ficv__block { font-size: 9px; color: var(--c-ink-2); background: var(--c-white); border: 1px solid var(--c-border); border-radius: 4px; padding: 4px 6px; }
+  .ficv__block--on { background: rgba(var(--c-primary-rgb), .08); color: var(--c-primary-dark); border-color: rgba(var(--c-primary-rgb), .2); }
+  .ficv__thumbs { display: flex; gap: 3px; }
+  .ficv__thumbs i { flex: 1; height: 16px; border-radius: 3px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .ficv__price { font-family: var(--font-heading); font-size: 11px; font-weight: 700; color: var(--c-ink-2); }
+  .ficv__cta { align-self: flex-start; font-size: 9px; font-weight: 700; color: #fff; background: #25D366; border-radius: 5px; padding: 3px 9px; }
+
+  /* ── Mockups móviles ── */
+  .ficm { padding: 12px; display: flex; flex-direction: column; gap: 7px; }
+  .ficm__hero { display: block; }
+  .ficm__hero i, .ficm__photo { display: block; height: 70px; border-radius: 7px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .ficm__block { height: 26px; border-radius: 6px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .ficm__side { text-align: center; font-size: 10px; font-weight: 700; color: #fff; background: var(--c-primary); border-radius: 7px; padding: 8px; }
+  .ficm__t { height: 10px; width: 75%; border-radius: 4px; background: var(--c-ink); opacity: .8; }
+  .ficm__price { font-family: var(--font-heading); font-size: 13px; font-weight: 700; color: var(--c-primary); }
+  .ficm__cta { display: block; text-align: center; min-height: 36px; line-height: 36px; font-size: 11px; font-weight: 700; color: #fff; background: #25D366; border-radius: 7px; }
+</style>

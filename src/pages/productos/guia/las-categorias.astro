@@ -1,0 +1,449 @@
+---
+// ============================================================================
+// /productos/guia/las-categorias — PIEZA «Las categorías» de la guía de productos.
+// ----------------------------------------------------------------------------
+// Segunda de la serie /productos/guia/*. MISMO molde de 10 secciones.
+// Tema: el enum CERRADO de categorías (equipos · accesorios · general), la
+// sincronía site.ts ↔ content.config.ts, el badge en la card y el interlinking
+// tipado con reference(). Por qué un enum y no texto libre.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import RelatedLinks from '@components/RelatedLinks.astro'
+import ModSection from '@components/modulos/ModSection.astro'
+import ModBenefits from '@components/modulos/ModBenefits.astro'
+import ModAnatomy from '@components/modulos/ModAnatomy.astro'
+import ModResponsive from '@components/modulos/ModResponsive.astro'
+import ModPattern from '@components/modulos/ModPattern.astro'
+import ModProse from '@components/modulos/ModProse.astro'
+import ModDosDonts from '@components/modulos/ModDosDonts.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+import { siblingsProductos } from '@lib/productos'
+
+const cierreItems = siblingsProductos('las-categorias')
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.productos), sub: 'Respuesta inmediata', external: true }
+
+const partes = [
+  {
+    n: 1,
+    nombre: 'El enum cerrado',
+    que: 'category no es texto libre: es z.enum(PRODUCT_CATEGORIES), una lista fija (equipos · accesorios · general) en content.config.ts. Zod rechaza cualquier valor fuera de ella en build. Es la decisión que evita que «equipos», «Equipos» y «equipo» convivan como tres categorías distintas.',
+    dato: 'category: z.enum(PRODUCT_CATEGORIES)',
+  },
+  {
+    n: 2,
+    nombre: 'La sincronía con site.ts',
+    que: 'Los slugs del enum deben coincidir con TAXONOMY.categories en site.ts (la fuente del menú, el footer y las rutas). Esa coincidencia es la que mantiene navegación y contenido alineados: si el enum dice «equipos», el menú y las rutas también.',
+    dato: 'TAXONOMY.categories ↔ PRODUCT_CATEGORIES',
+  },
+  {
+    n: 3,
+    nombre: 'El badge en la card',
+    que: 'En la vitrina, la categoría se muestra como badge sobre la imagen de la ProductCard (p. data.category). Da contexto de un vistazo —«Equipos», «Accesorios»— sin abrir la ficha, y mantiene la rejilla legible cuando hay categorías mezcladas.',
+    dato: 'badge={p.data.category} → ProductCard',
+  },
+  {
+    n: 4,
+    nombre: 'El interlinking — reference()',
+    que: 'relatedProducts/relatedServices enlazan fichas por slug con reference() tipado: Astro valida en build que el destino exista (un slug roto rompe el build). Reparte autoridad interna entre productos de la misma familia y sugiere el siguiente paso.',
+    dato: 'relatedProducts: z.array(reference("productos"))',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Cero fragmentación de SEO',
+    desc: 'Un campo de texto libre genera, con el tiempo, «Guías» vs «Guias» vs «guía»: tres categorías que Google ve como distintas, dividiendo la autoridad y rompiendo los filtros. El enum cerrado obliga a elegir de una lista; la categoría es siempre el mismo string, letra por letra.',
+  },
+  {
+    titulo: 'Navegación que no se desincroniza',
+    desc: 'Como los slugs del enum coinciden con TAXONOMY en site.ts, el menú, las migas de pan y las rutas se generan de la misma fuente que la categoría del producto. Renombrar o añadir una categoría es un cambio en un sitio, no una cacería de strings por todo el código.',
+  },
+  {
+    titulo: 'Interlinking validado en build',
+    desc: 'Las relaciones entre fichas (relatedProducts) usan reference(), no URLs a mano. Astro comprueba en build que cada slug referenciado exista: un enlace a un producto borrado rompe la compilación, no se publica como enlace muerto. El grafo interno se mantiene íntegro solo.',
+  },
+]
+
+const sis = [
+  'Define las categorías como un z.enum() cerrado en content.config.ts; manténlas pocas y amplias (equipos, accesorios, general) — son ramas, no etiquetas finas.',
+  'Sincroniza los slugs del enum con TAXONOMY.categories en site.ts: el mismo string en ambos lados mantiene menú, rutas y contenido alineados.',
+  'Usa el badge de categoría en la card para orientar de un vistazo; en MAYÚSCULAS y corto («EQUIPOS»), como el resto de badges del sitio.',
+  'Para relacionar fichas, usa relatedProducts/relatedServices con reference(): Astro valida el slug en build y el interlinking nunca queda roto.',
+  'Si necesitas granularidad fina (color, talla, modelo), baja a sub-fichas L4 en vez de inflar el enum con decenas de categorías.',
+]
+const nos = [
+  'NO uses z.string() libre para category: reabre la puerta a variantes tipográficas que fragmentan el SEO y rompen los filtros (el anti-patrón que el enum resuelve).',
+  'NO cambies un slug del enum sin actualizar TAXONOMY en site.ts (y las rutas/contenido que lo usen): los desincronizas y aparecen 404 o menús que no cuadran.',
+  'NO metas decenas de categorías «por si acaso»: un catálogo con 30 categorías de 1 producto cada una no orienta a nadie. Pocas y amplias.',
+  'NO enlaces relacionados con href escrito a mano: pierdes la validación en build de reference() y un slug roto se publica como enlace muerto.',
+  'NO traduzcas ni acentúes los slugs de forma inconsistente: el slug es técnico (equipos), la etiqueta visible es aparte; no los mezcles.',
+]
+
+const disenos = [
+  {
+    nombre: 'Tres categorías amplias (default)',
+    tag: 'Catálogo simple · Recomendado',
+    desc: 'El enum del sitio: equipos · accesorios · general. Pocas ramas anchas que cubren todo el catálogo y orientan sin saturar. El punto de partida para casi cualquier negocio; se amplía solo cuando el catálogo lo pide.',
+  },
+  {
+    nombre: 'Categoría + sub-ficha (L4)',
+    tag: 'Catálogo grande · Variantes',
+    desc: 'Cuando un producto se subdivide (color, talla, modelo), la categoría se mantiene amplia y la granularidad baja a sub-fichas L4. El enum no se infla: la profundidad la da la jerarquía, no más categorías.',
+  },
+  {
+    nombre: 'Una sola categoría (general)',
+    tag: 'Mono-producto · Servicios',
+    desc: 'Negocios con un solo tipo de producto usan general para todo. El enum sigue cerrado (una entrada), el badge se vuelve redundante y se puede ocultar. Válido y limpio para catálogos pequeños y homogéneos.',
+  },
+  {
+    nombre: 'Badge de norma en vez de categoría',
+    tag: 'Industrial · Certificaciones',
+    desc: 'En catálogos donde la NORMA pesa más que la categoría (NOM-115, NFPA), el badge puede mostrar la certificación en lugar de la categoría. La categoría sigue clasificando por dentro; el badge comunica lo que vende.',
+  },
+  {
+    nombre: 'Filtrado por categoría',
+    tag: 'Catálogo navegable · UX',
+    desc: 'Con el enum cerrado, filtrar el grid por categoría es trivial y seguro: getCollection + filter por data.category. Como los valores son fijos, los chips de filtro nunca se desincronizan del contenido real.',
+  },
+]
+
+const recetaEnum = `// src/content.config.ts — el enum CERRADO (la lista fija de categorías).
+export const PRODUCT_CATEGORIES = [
+  'equipos',
+  'accesorios',
+  'general',
+] as const   // ← 'as const' = tipos literales para autocompletado
+
+const productos = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/productos' }),
+  schema: z.object({
+    // ...
+    category: z.enum(PRODUCT_CATEGORIES),   // SOLO acepta los 3 valores de arriba
+    relatedProducts: z.array(reference('productos')).optional(), // interlinking tipado
+  }).strict(),
+})`
+
+const recetaSync = `// src/config/site.ts — la MISMA taxonomía, sincronizada (SSoT del menú/rutas).
+export const TAXONOMY = {
+  categories: [
+    { slug: 'productos', label: 'Productos', href: '/productos' },
+    { slug: 'servicios', label: 'Servicios', href: '/servicios' },
+    { slug: 'blog',      label: 'Blog',      href: '/blog' },
+  ],
+  // ...
+} as const
+
+// REGLA: el 'category' del .md (equipos/accesorios/general) pertenece al enum de
+// content.config.ts; los slugs de SECCIÓN (productos/servicios/blog) viven aquí.
+// Ambos son enums cerrados: el menú, las rutas y el contenido nunca divergen.`
+
+const recetaFiltro = `---
+// Filtrar / agrupar el catálogo por categoría — seguro porque el enum es fijo.
+import { getCollection } from 'astro:content'
+const todos = await getCollection('productos', ({ data }) => !data.draft)
+
+// Solo una categoría:
+const equipos = todos.filter((p) => p.data.category === 'equipos')
+
+// Agrupar por categoría (para secciones del catálogo):
+const porCategoria = Object.groupBy(todos, (p) => p.data.category)
+---
+
+{Object.entries(porCategoria).map(([cat, items]) => (
+  <section>
+    <h2>{cat}</h2>
+    <div class="grid">
+      {items.map((p) => <article>{p.data.title}</article>)}
+    </div>
+  </section>
+))}`
+
+const recetaBadgeMovil = `/* EL BADGE DE CATEGORÍA EN LA CARD (móvil y escritorio, igual)
+   El badge se posiciona sobre la imagen 16:9; en el teléfono mantiene
+   tamaño legible y no se encima al título (vive en la zona de la foto). */
+.pcard__badge {
+  position: absolute; top: var(--sp-3); left: var(--sp-3);
+  font-size: var(--text-xs); text-transform: uppercase;
+  color: #fff; background: var(--c-primary);
+  padding: .25em .55em; border-radius: var(--radius-sm);
+}`
+
+const recetaChipsMovil = `/* CHIPS DE FILTRO POR CATEGORÍA (zona del pulgar en móvil)
+   Como las categorías son un enum fijo, los chips se generan de esa
+   lista y nunca se desincronizan. En móvil van en fila scrollable. */
+.filtros { display: flex; gap: var(--sp-2); overflow-x: auto; scrollbar-width: none; }
+.filtros::-webkit-scrollbar { display: none; }
+.filtro { flex: 0 0 auto; min-height: 40px; padding: 0 var(--sp-4);
+  border-radius: var(--radius-full); border: 1px solid var(--c-border); }
+.filtro[aria-pressed="true"] { background: var(--c-primary); color: #fff; }`
+---
+
+<PageLayout
+  title="Las categorías de producto — el enum cerrado del catálogo"
+  description="Cómo organizar un catálogo: un enum cerrado de categorías (equipos, accesorios, general) validado por Zod, sincronizado con la taxonomía y con interlinking tipado."
+  pageType="page"
+  schemaType="TechArticle"
+  guia={false}
+  breadcrumbs={[{ label: 'Productos', href: '/productos' }, { label: 'Las categorías' }]}
+>
+  <Hero
+    badge="Guía de productos · Las categorías"
+    title="Las categorías:"
+    accent="organizar el catálogo sin fragmentarlo"
+    subtitle="Cada producto declara su categoría, y el campo no es texto libre: es un enum cerrado (equipos · accesorios · general). Una decisión deliberada que evita el SEO fragmentado y mantiene el menú, las rutas y el contenido sincronizados."
+    descRight={[
+      'Es la segunda decisión al crear un producto: dónde encaja. Un catálogo se organiza por categorías, y la tentación es dejarlas como texto libre —hasta que, con el tiempo, aparecen «Guías», «Guias» y «guía» como tres ramas distintas que fragmentan el SEO y rompen los filtros. El enum cerrado lo impide de raíz: obliga a elegir de una lista fija que Zod valida en build.',
+      'Y va más allá del catálogo: los slugs del enum se sincronizan con la taxonomía en site.ts, la fuente del menú y las rutas. Esa coincidencia es la que mantiene la navegación alineada con el contenido. El interlinking entre fichas (relatedProducts) usa referencias tipadas que Astro valida —un enlace roto rompe el build, no se publica—.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <ModSection
+    eyebrow="Definición"
+    title="¿Qué es la categoría de un producto?"
+    desc="El campo category del frontmatter: un valor de un enum CERRADO (equipos · accesorios · general) que clasifica el producto. Zod lo valida en build; los slugs se sincronizan con la taxonomía del sitio."
+    body={[
+      'La categoría es la rama del catálogo a la que pertenece un producto. En esta plantilla se declara en el frontmatter (category: "equipos") y NO admite cualquier texto: es un z.enum() definido en content.config.ts con una lista fija. Cuando se compila el sitio, Zod comprueba que el valor esté en esa lista; si no, el build falla con el archivo y el valor culpables.',
+      'Esa restricción es la diferencia entre una taxonomía sana y una que se degrada. Sin enum, cada quien escribe la categoría a su manera y el catálogo termina con variantes tipográficas de lo mismo. Con enum, la categoría es siempre el mismo string, sincronizado además con TAXONOMY en site.ts para que el menú y las rutas hablen el mismo idioma que el contenido.',
+    ]}
+  />
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <ModSection
+    surface
+    eyebrow="Función e importancia"
+    title="¿Para qué sirve?"
+    desc="Tres trabajos: evita el SEO fragmentado por variantes de una misma categoría, mantiene sincronizados el menú y las rutas con el contenido, y habilita un interlinking validado en build entre fichas."
+    body={[
+      'Su función es ordenar el catálogo de forma estable. Las categorías agrupan productos para que el visitante navegue («quiero accesorios») y para que el buscador entienda la estructura. El enum cerrado garantiza que ese agrupamiento sea consistente: diez productos de «equipos» comparten exactamente la misma categoría, no diez variaciones del mismo concepto.',
+      'Y conecta el catálogo con el resto del sitio. Como los slugs del enum coinciden con la taxonomía de site.ts, el menú «Productos», las migas de pan y las rutas se alimentan de la misma verdad. El interlinking (relatedProducts/relatedServices) cierra el círculo: enlaza fichas relacionadas con referencias tipadas que Astro valida, repartiendo autoridad interna sin enlaces rotos.',
+    ]}
+  >
+    <ModBenefits items={beneficios} />
+  </ModSection>
+
+  {/* ── 3) ¿QUÉ LLEVA? — anatomía con ejemplo en vivo ── */}
+  <ModSection
+    eyebrow="Anatomía"
+    title="¿Qué la compone?"
+    desc="Cuatro piezas: el enum cerrado (la lista fija), la sincronía con TAXONOMY en site.ts, el badge que la muestra en la card, y el interlinking con reference() entre fichas relacionadas."
+    body={[
+      'Cada pieza cumple un papel. El enum define el universo de categorías válidas; la sincronía con site.ts las conecta con el menú y las rutas; el badge las hace visibles en la vitrina; y reference() las teje entre sí. Juntas convierten un campo de texto en una taxonomía con garantías.',
+      'Abajo, el ejemplo en vivo —el enum y los badges que produce—. Cada punto numerado se desglosa en su tarjeta: qué resuelve y qué línea del esquema lo respalda.',
+    ]}
+  >
+    <ModAnatomy partes={partes}>
+      <div class="cat" role="img" aria-label="El enum de categorías y los badges que genera">
+        <div class="cat__enum">
+          <span class="cat__pin cat__pin--1">1</span>
+          <code class="cat__code">PRODUCT_CATEGORIES = ['equipos', 'accesorios', 'general']</code>
+        </div>
+        <div class="cat__badges">
+          <span class="cat__pin cat__pin--3">3</span>
+          <span class="cat__badge">EQUIPOS</span>
+          <span class="cat__badge">ACCESORIOS</span>
+          <span class="cat__badge">GENERAL</span>
+        </div>
+        <div class="cat__sync">
+          <span class="cat__pin cat__pin--2">2</span>
+          <span class="cat__sync-txt">content.config.ts <b>↔</b> site.ts · mismos slugs</span>
+        </div>
+      </div>
+    </ModAnatomy>
+  </ModSection>
+
+  {/* ── 3b) VARIANTES ── */}
+  <ModSection
+    surface
+    eyebrow="Variantes"
+    title="Estrategias de categorización"
+    desc="La del sitio es la canónica (tres categorías amplias), pero la estrategia se adapta al catálogo: pocas ramas anchas, sub-fichas L4 para variantes, una sola categoría, badge de norma o filtrado navegable."
+    body={[
+      'No hay un número mágico de categorías: hay un principio —pocas y amplias, profundidad por jerarquía no por más ramas—. Un catálogo simple vive con tres; uno grande mantiene esas tres y baja la granularidad a sub-fichas; un mono-producto usa una. El enum cerrado es el mismo; cambia cómo se usa.',
+      'Abajo, cinco estrategias —todas compatibles con el esquema actual—. Cada una con el tipo de catálogo donde rinde mejor.',
+    ]}
+  >
+    <GaleriaDisenos ariaLabel="Estrategias de categorización del catálogo">
+      {disenos.map((d) => (
+        <DisenoCard nombre={d.nombre} tag={d.tag} desc={d.desc}>
+          <div class="catv" role="img" aria-label={d.nombre}>
+            {d.nombre.includes('Tres') && <><span class="catv__b">equipos</span><span class="catv__b">accesorios</span><span class="catv__b">general</span></>}
+            {d.nombre.includes('sub-ficha') && <><span class="catv__b">equipos</span><span class="catv__sub">└ rojo · azul · L</span></>}
+            {d.nombre.includes('Una sola') && <span class="catv__b catv__b--solo">general</span>}
+            {d.nombre.includes('norma') && <><span class="catv__b catv__b--norm">NOM-115</span><span class="catv__b catv__b--norm">NFPA</span></>}
+            {d.nombre.includes('Filtrado') && <><span class="catv__chip catv__chip--on">Todos</span><span class="catv__chip">Equipos</span><span class="catv__chip">Accesorios</span></>}
+          </div>
+        </DisenoCard>
+      ))}
+    </GaleriaDisenos>
+
+    <GuiaNota titulo="Pocas y amplias · profundidad por jerarquía, no por más categorías" archivo="src/content.config.ts · src/config/site.ts">
+      <p>
+        La regla del sistema: el enum de categorías se mantiene <strong>corto y amplio</strong>.
+        Cuando un producto necesita granularidad fina (color, talla, modelo), NO se añade una
+        categoría —se baja a una sub-ficha <code>L4</code> (ver la pieza «La ficha»)—. Y cualquier
+        slug nuevo del enum se replica en <code>TAXONOMY</code> de <code>site.ts</code>: si los
+        desincronizas, el menú o las rutas dejan de cuadrar con el contenido.
+      </p>
+    </GuiaNota>
+  </ModSection>
+
+  {/* ── 3c) RESPONSIVE Y MÓVIL ── */}
+  <ModSection
+    eyebrow="Responsive y móvil"
+    title="Las categorías, en el teléfono"
+    desc="La categoría se comunica igual en cualquier pantalla: el badge sobre la card y, si el catálogo lo necesita, chips de filtro en la zona del pulgar. Como el enum es fijo, esos chips nunca se desincronizan."
+    body={[
+      'En el teléfono la categoría sigue cumpliendo su trabajo de orientar. El badge vive en la zona de la imagen de la card —tamaño legible, sin encimarse al título— y viaja con ella al bajar a una columna. No hay lógica especial de móvil: es el mismo badge, la misma posición.',
+      'Y cuando el catálogo ofrece filtrar por categoría, los chips se generan del enum cerrado, así que la lista de filtros nunca difiere del contenido real. En móvil van en una fila scrollable en la zona del pulgar. Abajo, los dos patrones con su receta.',
+    ]}
+  >
+    <ModResponsive>
+      <ModPattern
+        title="1 · El badge de categoría en la card"
+        desc="El badge se posiciona sobre la imagen 16:9 de la <code>ProductCard</code>. En el teléfono mantiene tamaño legible y viaja con la card al bajar a una columna —misma posición, sin lógica de móvil—."
+        receta={{ titulo: 'CSS · badge de categoría sobre la card', lang: 'css', code: recetaBadgeMovil }}
+      >
+        <MarcoMovil ariaLabel="La card de producto con su badge de categoría en el teléfono">
+          <div class="cm2">
+            <span class="cm2__card">
+              <i class="cm2__img"><b class="cm2__badge">EQUIPOS</b></i>
+              <b class="cm2__t"></b>
+              <b class="cm2__d"></b>
+            </span>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+
+      <ModPattern
+        title="2 · Chips de filtro en la zona del pulgar"
+        desc="Como las categorías son un enum fijo, los chips de filtro se generan de esa lista y <strong>nunca se desincronizan</strong> del contenido. En móvil van en una fila scrollable, cómoda para el pulgar."
+        receta={{ titulo: 'CSS · chips de filtro scrollables (móvil)', lang: 'css', code: recetaChipsMovil }}
+      >
+        <MarcoMovil ariaLabel="Chips de filtro por categoría en una fila scrollable en el teléfono">
+          <div class="cm2">
+            <span class="cm2__chips">
+              <i class="cm2__chip cm2__chip--on">Todos</i><i class="cm2__chip">Equipos</i><i class="cm2__chip">Accesorios</i>
+            </span>
+            <span class="cm2__card"><i class="cm2__img"></i><b class="cm2__t"></b></span>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+    </ModResponsive>
+  </ModSection>
+
+  {/* ── 4) ¿DÓNDE VA? ── */}
+  <ModSection
+    surface
+    eyebrow="Posición"
+    title="¿Dónde se define?"
+    desc="El enum vive en src/content.config.ts (lo valida Zod); la taxonomía espejo, en src/config/site.ts (la consume el menú y las rutas). El producto solo declara su category en el frontmatter."
+    body={[
+      'La categoría tiene dos hogares que deben coincidir. La lista válida (el enum PRODUCT_CATEGORIES) vive en content.config.ts, junto al esquema que valida los productos. La taxonomía que consume el chrome (menú, footer, rutas) vive en TAXONOMY de site.ts. Mantener los slugs idénticos entre ambos es lo que evita que el menú prometa una categoría que el contenido no tiene, o al revés.',
+      'El producto, por su parte, no repite la lista: solo declara su category en el frontmatter, y Zod la valida contra el enum. Añadir una categoría es un cambio en dos archivos coordinados (el enum y la taxonomía), no en cada .md. La pieza «La colección» cubre el frontmatter; aquí el foco es la taxonomía que lo respalda.',
+    ]}
+  />
+
+  {/* ── 5) CÓMO SE ARMA ── */}
+  <ModSection
+    eyebrow="Implementación"
+    title="Cómo se construye"
+    desc="El enum cerrado en content.config.ts, su espejo en TAXONOMY de site.ts, y el consumo: filtrar o agrupar el catálogo por categoría con getCollection. El badge sale de p.data.category en la ProductCard."
+    body={[
+      'El enum se declara como un array as const y se pasa a z.enum(). El as const le da a TypeScript los tipos literales —autocompletado de las categorías válidas en el editor—; z.enum() le da a Zod la validación en build. Esa doble garantía (tipo + runtime) es lo que hace que una categoría inventada se atrape antes de publicar.',
+      'Consumir es trivial y seguro: getCollection devuelve cada producto con data.category ya validada, así que filtrar (data.category === \'equipos\') o agrupar (Object.groupBy) no necesita defensas contra valores inesperados —no los hay—. Abajo, las tres recetas: el enum, su sincronía con site.ts y el filtrado.',
+    ]}
+  >
+    <div class="recetas">
+      <Receta titulo="content.config.ts · el enum cerrado + reference()" lang="ts" code={recetaEnum} />
+      <Receta titulo="site.ts · la taxonomía espejo (sincronizada)" lang="ts" code={recetaSync} />
+      <Receta titulo="Astro · filtrar y agrupar el catálogo por categoría" lang="astro" code={recetaFiltro} />
+    </div>
+
+    <ModProse>
+      <p>
+        En concreto: <code>PRODUCT_CATEGORIES</code> es un <code>array as const</code> que alimenta
+        a la vez <code>z.enum(PRODUCT_CATEGORIES)</code> en el esquema y el autocompletado del editor.
+        Cualquier <code>category</code> fuera de la lista detiene el build con la ruta del archivo. En
+        la vitrina, la <code>ProductCard</code> recibe <code>badge=&#123;p.data.category&#125;</code> y
+        lo pinta sobre la imagen.
+      </p>
+      <p>
+        El interlinking se declara con <code>relatedProducts: z.array(reference('productos'))</code>:
+        Astro resuelve cada referencia a una entrada real de la colección y falla el build si el slug
+        no existe. Así el «también te puede servir» de una ficha nunca apunta a un producto borrado.
+        La sincronía con <code>TAXONOMY</code> en <code>site.ts</code> es manual y deliberada: dos
+        listas cortas que se revisan juntas, no una abstracción que las una mágicamente.
+      </p>
+    </ModProse>
+  </ModSection>
+
+  {/* ── 6) BUENAS PRÁCTICAS ── */}
+  <ModSection
+    surface
+    eyebrow="Buenas prácticas"
+    title="Qué hacer y qué evitar"
+    desc="La salud de la taxonomía cabe en un puñado de hábitos: enum cerrado, pocas categorías amplias, slugs sincronizados con site.ts e interlinking con reference(). El resto lo vigila Zod."
+    body={[
+      'Ninguno de estos hábitos es opcional si quieres una taxonomía que aguante el tiempo. El enum cerrado es la base; mantener pocas categorías amplias evita el catálogo de mil ramas vacías; sincronizar con site.ts mantiene la navegación honesta; y reference() mantiene el interlinking íntegro.',
+      'La buena noticia es que el sistema atrapa los errores: una categoría inventada o un slug relacionado inexistente rompen el build. Lo único que queda a tu disciplina es la sincronía con TAXONOMY (dos listas que se revisan juntas). Abajo, lo que conviene y lo que conviene evitar.',
+    ]}
+  >
+    <ModDosDonts sis={sis} nos={nos} />
+  </ModSection>
+
+  {/* Cierre */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+
+  <RelatedLinks
+    title="Continúa con la guía"
+    desc="Las piezas vecinas del flujo de crear un producto."
+    links={[
+      { label: 'La colección', href: '/productos/guia/la-coleccion', desc: 'Dónde nace el producto: el .md y su esquema Zod.' },
+      { label: 'Las imágenes', href: '/productos/guia/las-imagenes', desc: 'La foto obligatoria, AVIF y sin saltos de maqueta.' },
+      { label: 'El schema', href: '/productos/guia/el-schema', desc: 'El JSON-LD que sale del catálogo y la ficha.' },
+    ]}
+    limit={3}
+  />
+</PageLayout>
+
+<style>
+  .recetas { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
+
+  /* ── Ejemplo en vivo: enum + badges ── */
+  .cat { margin: var(--sp-6) auto 0; max-width: 560px; display: grid; gap: var(--sp-4); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-lg); padding: var(--sp-5); }
+  .cat__enum, .cat__badges, .cat__sync { position: relative; padding-left: 30px; }
+  .cat__code { font-family: ui-monospace, Menlo, monospace; font-size: .8rem; color: var(--c-primary-dark); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .3em .5em; display: inline-block; }
+  .cat__badges { display: flex; gap: var(--sp-2); flex-wrap: wrap; align-items: center; }
+  .cat__badge { font-size: var(--text-xs); font-weight: var(--weight-bold); letter-spacing: .04em; color: #fff; background: var(--c-primary); padding: .25em .6em; border-radius: var(--radius-sm); }
+  .cat__sync-txt { font-size: var(--text-sm); color: var(--c-ink-2); }
+  .cat__sync-txt b { color: var(--c-primary); }
+  .cat__pin { position: absolute; left: 0; top: 0; display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-size: .65rem; font-weight: 700; }
+
+  /* ── Variantes ── */
+  .catv { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; width: 100%; }
+  .catv__b { font-family: ui-monospace, Menlo, monospace; font-size: 10px; color: var(--c-primary-dark); background: rgba(var(--c-primary-rgb), .08); border: 1px solid rgba(var(--c-primary-rgb), .2); border-radius: 5px; padding: 3px 7px; }
+  .catv__b--solo { font-size: 13px; padding: 6px 14px; }
+  .catv__b--norm { background: var(--c-ink); color: #fff; border-color: var(--c-ink); }
+  .catv__sub { font-family: ui-monospace, Menlo, monospace; font-size: 9px; color: var(--c-muted); }
+  .catv__chip { font-size: 10px; color: var(--c-ink-2); background: var(--c-white); border: 1px solid var(--c-border); border-radius: 99px; padding: 3px 9px; }
+  .catv__chip--on { background: var(--c-primary); color: #fff; border-color: var(--c-primary); }
+
+  /* ── Mockups móviles ── */
+  .cm2 { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .cm2__card { display: grid; gap: 6px; padding: 8px; border-radius: 9px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .cm2__img { position: relative; display: block; height: 80px; border-radius: 6px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .cm2__badge { position: absolute; top: 6px; left: 6px; font-style: normal; font-size: 8px; font-weight: 700; color: #fff; background: var(--c-primary); border-radius: 4px; padding: 2px 6px; }
+  .cm2__t { height: 9px; width: 70%; border-radius: 4px; background: var(--c-ink); opacity: .8; }
+  .cm2__d { height: 7px; width: 92%; border-radius: 4px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .cm2__chips { display: flex; gap: 5px; overflow: hidden; }
+  .cm2__chip { font-style: normal; font-size: 9px; color: var(--c-ink-2); background: var(--c-white); border: 1px solid var(--c-border); border-radius: 99px; padding: 3px 8px; white-space: nowrap; }
+  .cm2__chip--on { background: var(--c-primary); color: #fff; border-color: var(--c-primary); }
+</style>

@@ -1,0 +1,54 @@
+---
+// ============================================================================
+// Img.astro — Imagen ESTÁNDAR del sistema (CWV-correcta, una sola fuente).
+// ----------------------------------------------------------------------------
+// ESTRATEGIA DE IMÁGENES DEL SISTEMA (decisión de arquitectura · A4):
+//   La optimización se hace FUERA de Astro, a propósito:
+//     1) imágenes pre-optimizadas en AVIF bajo /public (o /images, /img);
+//     2) CDN opcional (ExactDN/EWWW) que hace el RESIZE RESPONSIVE en el edge,
+//        aplicado en post-build por scripts/rewrite-cdn.mjs.
+//   Por eso NO se usa `astro:assets`: procesar en build re-codificaría en cada
+//   compilación, exigiría mover las imágenes a src/assets y DUPLICARÍA el trabajo
+//   que ya hacen gen-placeholders + el CDN. `astro:assets` está descartado de
+//   forma consciente para no pelear con ese pipeline.
+//
+//   Este componente NO procesa la imagen: centraliza los ATRIBUTOS correctos para
+//   Core Web Vitals en TODO el sitio, de modo que ninguna página los olvide:
+//     • width/height SIEMPRE  → reserva el hueco, cero CLS.
+//     • loading: 'lazy' por defecto; 'eager' para las above-the-fold / LCP.
+//     • LCP (`priority`)      → loading='eager' + fetchpriority='high' y SIN
+//        decoding='async' (que puede retrasar el primer pintado del LCP).
+//     • resto                 → decoding='async' (no bloquea el hilo principal).
+//     • sizes opcional        → lo aprovecha el srcset que sirva el CDN.
+//   El `src` pasa tal cual: rewrite-cdn lo reescribe al CDN en post-build.
+// ============================================================================
+interface Props {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  /** Imagen LCP / above-the-fold: carga con prioridad, sin lazy. */
+  priority?: boolean;
+  /** Override explícito de loading (si no, se deriva de `priority`). */
+  loading?: 'eager' | 'lazy';
+  /** Pista de tamaño responsive (útil cuando el CDN sirve srcset). */
+  sizes?: string;
+  /** Clase del <img> (para los estilos scoped de cada tarjeta/layout). */
+  class?: string;
+}
+const { src, alt, width, height, priority = false, loading, sizes, class: className } = Astro.props;
+const load = loading ?? (priority ? 'eager' : 'lazy');
+// LCP: dejar el decoding al navegador (omitir) evita retrasar el pintado.
+const decoding = priority ? undefined : 'async';
+---
+<img
+  src={src}
+  alt={alt}
+  width={width}
+  height={height}
+  loading={load}
+  decoding={decoding}
+  fetchpriority={priority ? 'high' : undefined}
+  sizes={sizes}
+  class={className}
+/>

@@ -104,6 +104,13 @@ const productos = defineCollection({
       sku: z.string().optional(),
       brand: z.string().optional(),
       gallery: z.array(imagePath).optional(),
+      // ── Bloques de FICHA RICA (opcionales) — los renderiza ProductLayout SOLO si
+      //    vienen. Habilitan una ficha de catálogo profesional (tabla de specs, usos,
+      //    normas) sin tocar ningún .astro: el cliente solo escribe Markdown. ──
+      features: z.array(z.string()).optional(),        // viñetas clave en el hero.
+      specs: z.array(z.object({ label: z.string(), value: z.string() })).optional(), // tabla de especificaciones.
+      applications: z.array(z.string()).optional(),    // usos / aplicaciones.
+      certifications: z.array(z.string()).optional(),  // normas/certificaciones REALES (no inventar).
       // Interlinking tipado entre colecciones — reference() (D1).
       relatedProducts: z.array(reference('productos')).optional(),
       relatedServices: z.array(reference('servicios')).optional(),

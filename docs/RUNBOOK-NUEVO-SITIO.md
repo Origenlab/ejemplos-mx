@@ -35,6 +35,11 @@ componentes guía (`GuiaNota`, `GaleriaDisenos`, `DisenoCard`, `MarcoMovil`, `Re
 `GuiaAnatomia`, `HeaderSpecimen`), `lib/modules.ts`, `lib/niveles.ts`, artículos y docs
 de plantilla, contenido e imágenes demo, columna «Módulos» del Footer.
 
+Qué instala: la **home canónica** `src/pages/_index.client.astro` como `index.astro`
+(esqueleto homologado: Hero · TrustBar · Catálogo · RiskGuide* · Servicios · NormsTable* ·
+ProcessSteps · CompanyAbout · FAQ · CTA). NO se arma la home a mano. Contrato y reglas:
+**`docs/HOME-CANONICA.md`**. (\*RiskGuide/NormsTable se activan llenando `riskRows`/`normRows`.)
+
 ## Estación 3 · Contenido
 Carga productos/servicios/zonas/artículos como Markdown en `src/content/`. El esquema
 Zod valida cada ficha en build. Reglas de longitud (las pide el schema):

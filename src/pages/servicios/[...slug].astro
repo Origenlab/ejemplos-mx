@@ -13,13 +13,22 @@ import SectionHeading from '@components/SectionHeading.astro'
 import GuiaNota from '@components/GuiaNota.astro'
 import FAQAccordion from '@components/FAQAccordion.astro'
 import SectionMenu from '@components/SectionMenu.astro'
-import { SERVICES, waUrl, WA_MESSAGES } from '@config/site'
+import { getCollection, render } from 'astro:content'
+import { SERVICES, COVERAGE_STATES, waUrl, WA_MESSAGES } from '@config/site'
 
 export async function getStaticPaths() {
-  return SERVICES.map((s) => ({ params: { slug: s.id }, props: { servicio: s } }))
+  // El detalle RICO de cada servicio vive en la colección `servicios` (un .md por
+  // servicio, nombrado con el MISMO slug que su id en SERVICES). Si existe, manda;
+  // si no, se usa el alcance genérico de respaldo. NAV y rutas siguen saliendo de
+  // SERVICES (sync) → cero riesgo de romper el menú.
+  const entries = await getCollection('servicios', ({ data }) => !data.draft)
+  return SERVICES.map((s) => ({
+    params: { slug: s.id },
+    props: { servicio: s, entry: entries.find((e) => e.id === s.id) ?? null },
+  }))
 }
 
-const { servicio } = Astro.props
+const { servicio, entry } = Astro.props
 const { id, label, desc } = servicio
 
 // Contenido de apoyo DEMO por servicio (qué incluye). Reemplázalo por el real.
@@ -37,7 +46,13 @@ const DETALLE: Record<string, { incluye: string[]; lede: string }> = {
     incluye: ['Mantenimiento técnico y mejoras', 'Publicación continua de contenido', 'Monitoreo, respaldos y soporte'],
   },
 }
-const det = DETALLE[id] ?? { lede: desc, incluye: ['Alcance a medida', 'Acompañamiento técnico', 'Entrega documentada'] }
+// Alcance e info: de la colección si hay ficha .md; si no, respaldo genérico.
+const fallback = DETALLE[id] ?? { lede: desc, incluye: ['Alcance a medida', 'Acompañamiento técnico', 'Entrega documentada'] }
+const det = entry
+  ? { lede: entry.data.description, incluye: entry.data.includes ?? fallback.incluye }
+  : fallback
+const pricingNote = entry?.data.pricing?.note
+const ServiceContent = entry ? (await render(entry)).Content : null
 
 // Proceso genérico (3 pasos) — mismo molde para todo servicio.
 const proceso = [
@@ -46,11 +61,13 @@ const proceso = [
   { n: '03', t: 'Entrega y seguimiento', d: 'Entregamos documentado y acompañamos para que puedas operar con autonomía.' },
 ]
 
-const faqs = [
-  { question: '¿Los datos de este servicio son reales?', answer: 'No. Es una plantilla-guía: el contenido es DEMO. Reemplázalo por el alcance y las condiciones reales del cliente antes de publicar.' },
+const faqsInline = [
+  { question: '¿Atienden mi zona?', answer: 'Cubrimos varias zonas. Escríbenos tu ubicación por WhatsApp y te confirmamos cobertura y tiempos para este servicio.' },
   { question: '¿Cómo se cotiza?', answer: 'Cada proyecto se cotiza según su alcance. Escríbenos por WhatsApp con tu necesidad y te damos una propuesta con entregables y tiempos claros.' },
-  { question: '¿Puedo combinar varios servicios?', answer: 'Sí. Consultoría, implementación y soporte están pensados para encadenarse: decidir, construir y mantener, como un ciclo continuo.' },
+  { question: '¿Puedo combinar varios servicios?', answer: 'Sí. Nuestros servicios están pensados para encadenarse según lo que necesites.' },
 ]
+// Si la ficha de colección trae faqs propias, mandan; si no, las genéricas.
+const faqs = entry?.data.faqs?.length ? entry.data.faqs : faqsInline
 
 // Relacionados — los otros servicios (interlinking).
 const otros = SERVICES.filter((s) => s.id !== id)
@@ -66,7 +83,17 @@ const cierreCta = { label: 'Cotizar este servicio', href: waUrl(WA_MESSAGES.serv
 <PageLayout
   title={`${label} — servicio`}
   description={desc}
-  pageType="page"
+  pageType="service"
+  schemaData={{
+    service: {
+      name: label,
+      description: desc,
+      path: `/servicios/${id}`,
+      serviceType: label,
+      areaServed: COVERAGE_STATES.map((z) => z.label),
+    },
+    faqs,
+  }}
   breadcrumbs={[{ label: 'Servicios', href: '/servicios' }, { label }]}
   guia={false}
 >
@@ -77,7 +104,7 @@ const cierreCta = { label: 'Cotizar este servicio', href: waUrl(WA_MESSAGES.serv
     subtitle={det.lede}
     descRight={[
       desc,
-      'Esta página de detalle es el cuarto nivel de la jerarquía (Inicio → Servicios → Detalle). Aquí la persona que ya mostró interés encuentra lo concreto: qué incluye el servicio, cómo se trabaja y las dudas frecuentes. El contenido de apoyo es DEMO de la plantilla.',
+      'Aquí encuentras lo concreto de este servicio: qué incluye, cómo trabajamos y las dudas más frecuentes. Si te queda alguna pregunta, escríbenos por WhatsApp y te respondemos.',
     ]}
   />
 
@@ -100,7 +127,7 @@ const cierreCta = { label: 'Cotizar este servicio', href: waUrl(WA_MESSAGES.serv
         desc="El alcance concreto del servicio: lo que recibes y por qué importa."
         body={[
           det.lede,
-          'La lista de la derecha es el alcance DEMO de este servicio. En un proyecto real define entregables verificables —no promesas vagas—: lo que se entrega, en qué formato y cuándo. Un alcance claro evita malentendidos y mejora la relación desde el inicio.',
+          'A la derecha, lo que incluye el servicio. Te lo entregamos por escrito antes de empezar: qué se hace, en qué formato y cuándo, para que no haya malentendidos.',
         ]}
       />
 
@@ -112,6 +139,12 @@ const cierreCta = { label: 'Cotizar este servicio', href: waUrl(WA_MESSAGES.serv
           </li>
         ))}
       </ul>
+      {pricingNote && <p class="pricing-note">{pricingNote}</p>}
+      {ServiceContent && (
+        <div class="prose">
+          <ServiceContent />
+        </div>
+      )}
     </div>
   </section>
 
@@ -153,6 +186,12 @@ const cierreCta = { label: 'Cotizar este servicio', href: waUrl(WA_MESSAGES.serv
   .incluye { list-style: none; margin: var(--sp-6) 0 0; padding: 0; display: grid; gap: var(--sp-3); max-width: 60ch; }
   .incluye__item { display: flex; gap: var(--sp-3); align-items: start; font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
   .incluye__check { flex-shrink: 0; display: grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-full); background: var(--c-primary-light); color: var(--c-primary); font-weight: var(--weight-bold); font-size: var(--text-sm); }
+
+  .pricing-note { margin: var(--sp-4) 0 0; font-size: var(--text-sm); color: var(--c-muted); }
+  .prose { margin-top: var(--sp-5); max-width: 65ch; }
+  .prose :global(h2) { font-family: var(--font-heading); font-size: var(--text-xl); color: var(--c-ink); margin: var(--sp-5) 0 var(--sp-2); }
+  .prose :global(p) { color: var(--c-ink-2); line-height: var(--leading-relaxed); margin: 0 0 var(--sp-3); }
+  .prose :global(strong) { color: var(--c-ink); }
 
   .proceso { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
   @media (min-width: 768px) { .proceso { grid-template-columns: repeat(3, 1fr); } }

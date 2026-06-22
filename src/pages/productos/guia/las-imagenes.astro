@@ -1,0 +1,429 @@
+---
+// ============================================================================
+// /productos/guia/las-imagenes — PIEZA «Las imágenes» de la guía de productos.
+// ----------------------------------------------------------------------------
+// Tercera de la serie /productos/guia/*. MISMO molde de 10 secciones.
+// Tema: la foto del producto — ruta obligatoria validada (regex /images/),
+// formato AVIF ligero, alt descriptivo con keyword, galería opcional, y el
+// montaje anti-CLS (width/height) + LCP (fetchpriority/eager-lazy).
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import RelatedLinks from '@components/RelatedLinks.astro'
+import ModSection from '@components/modulos/ModSection.astro'
+import ModBenefits from '@components/modulos/ModBenefits.astro'
+import ModAnatomy from '@components/modulos/ModAnatomy.astro'
+import ModResponsive from '@components/modulos/ModResponsive.astro'
+import ModPattern from '@components/modulos/ModPattern.astro'
+import ModProse from '@components/modulos/ModProse.astro'
+import ModDosDonts from '@components/modulos/ModDosDonts.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+import { siblingsProductos } from '@lib/productos'
+
+const cierreItems = siblingsProductos('las-imagenes')
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.productos), sub: 'Respuesta inmediata', external: true }
+
+const partes = [
+  {
+    n: 1,
+    nombre: 'Ruta obligatoria y validada',
+    que: 'image NO es opcional, y se valida con una regex: debe ser una ruta absoluta bajo /images/. Zod rechaza en build cualquier otra cosa (ruta relativa, URL externa, carpeta equivocada). Resultado: no existe un producto sin foto en el catálogo, ni una ruta rota que se descubra en producción.',
+    dato: 'image: z.string().regex(/^/images//)',
+  },
+  {
+    n: 2,
+    nombre: 'AVIF — el formato ligero',
+    que: 'Las fotos del sitio son AVIF: una imagen de catálogo pesa una fracción de un JPG o PNG equivalente, con la misma calidad percibida. Menos peso = carga más rápida = mejor Core Web Vitals y menos datos para el visitante en móvil.',
+    dato: '/images/productos/*.avif',
+  },
+  {
+    n: 3,
+    nombre: 'El texto alternativo (alt)',
+    que: 'El alt describe lo que se ve e incluye la palabra clave del producto («Casco de seguridad rojo NOM-115»). Sirve a quien no puede ver la imagen (lectores de pantalla) y da contexto al buscador. Si no se pasa, cae al título —funcional pero pobre—; escríbelo a propósito.',
+    dato: 'imageAlt → <img alt="…">',
+  },
+  {
+    n: 4,
+    nombre: 'Dimensiones + carga (CLS · LCP)',
+    que: 'La imagen lleva width y height fijos (640×360, 16:9) para reservar el hueco antes de cargar: cero CLS, cero saltos de maqueta. La carga es eager para las primeras del grid (la 1ª con fetchpriority="high" → LCP) y lazy para el resto.',
+    dato: 'width · height · loading · fetchpriority',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Ligero por defecto',
+    desc: 'AVIF reduce el peso de cada foto a una fracción de un JPG sin pérdida visible. En un catálogo de decenas de productos, eso es la diferencia entre una vitrina que pinta al instante y una que arrastra al visitante por segundos de carga —sobre todo en datos móviles—.',
+  },
+  {
+    titulo: 'Cero saltos de maqueta (CLS)',
+    desc: 'Con width y height fijos, el navegador reserva el espacio exacto de cada imagen antes de descargarla. El contenido no «salta» cuando la foto entra: el visitante no pierde el botón que iba a tocar. Es una de las métricas de Core Web Vitals que Google mide y premia.',
+  },
+  {
+    titulo: 'Accesible y rastreable',
+    desc: 'El alt descriptivo hace la imagen legible para lectores de pantalla y la indexa en la búsqueda de imágenes con su keyword. No es relleno SEO: es la misma frase que ayuda a una persona y a un buscador a entender qué muestra la foto.',
+  },
+]
+
+const sis = [
+  'Pon la imagen como ruta absoluta bajo /images/ (ej. /images/productos/casco.avif). Es lo que la regex exige; cualquier otra cosa rompe el build.',
+  'Optimiza a AVIF antes de subir (q50, ~1280px de ancho). Una foto de catálogo no necesita más resolución y pesa una fracción.',
+  'Escribe el alt a propósito, describiendo la foto con la keyword del producto. El fallback a title funciona, pero desaprovecha la imagen.',
+  'Mantén el aspect-ratio 16:9 con width/height fijos (640×360). Si cambias la proporción, cambia ambos números a la vez —si no, vuelve el CLS—.',
+  'Pasa priority a la PRIMERA card del grid sobre el pliegue (LCP); deja que el resto cargue en lazy automático por índice.',
+]
+const nos = [
+  'NO uses rutas relativas ni URLs externas en image: la regex /images/ las rechaza en build. La foto vive en /public/images, servida desde la raíz.',
+  'NO subas JPG/PNG pesados «porque ya los tienes»: una foto de 2 MB hunde el LCP. Conviértela a AVIF; el sistema espera fotos ligeras.',
+  'NO dejes el alt vacío ni genérico («imagen», «foto»): para el lector de pantalla y el buscador es como no tener alt. Describe con la keyword.',
+  'NO quites width/height para «que se vea más grande»: pierdes la reserva de espacio y reaparece el CLS que la card cuida por defecto.',
+  'NO pongas priority en varias cards: más de una fetchpriority="high" compite por el ancho de banda inicial y ninguna gana. Solo la primera.',
+]
+
+const disenos = [
+  {
+    nombre: 'Foto única (la del catálogo)',
+    tag: 'Card + ficha · Default',
+    desc: 'El campo image: una sola foto 16:9 que usa la card del catálogo y abre la ficha. Es lo mínimo y lo más común. Con su alt y sus dimensiones fijas, cubre el 90% de los productos.',
+  },
+  {
+    nombre: 'Con galería (ficha)',
+    tag: 'Producto visual · Equipos',
+    desc: 'gallery[] añade vistas extra. La ficha (L4) pinta una imagen grande + miniaturas debajo; la card del catálogo sigue usando solo image. Para productos que se entienden mejor desde varios ángulos.',
+  },
+  {
+    nombre: 'Con badge sobre la foto',
+    tag: 'Norma · Promoción',
+    desc: 'El badge (categoría, norma «NOM-115», etiqueta «Nuevo») se superpone arriba a la izquierda de la imagen, sobre un overlay en degradado. Comunica sin robar espacio al título. Es la misma foto, con una capa de contexto.',
+  },
+  {
+    nombre: 'LCP priority (primera del grid)',
+    tag: 'Sobre el pliegue · Rendimiento',
+    desc: 'La primera card recibe priority: su imagen carga en eager con fetchpriority="high" para ser ella —y no el hero— el LCP que mide Lighthouse. Las 4 primeras quedan eager por índice; el resto, lazy.',
+  },
+  {
+    nombre: 'Sin imagen válida → build falla',
+    tag: 'Garantía · No es una variante',
+    desc: 'No es un diseño: es la red de seguridad. Si un .md omite image o pone una ruta fuera de /images/, Zod detiene el build. Nunca hay un producto «sin foto» o con una imagen rota en producción.',
+  },
+]
+
+const recetaSchema = `// src/content.config.ts — la imagen, OBLIGATORIA y validada por regex.
+const imagePath = z.string().regex(/^\\/images\\//, {
+  message: 'La imagen debe ser ruta absoluta bajo /images/ (ej. /images/productos/foo.avif)',
+})
+
+const productos = defineCollection({
+  schema: z.object({
+    // ...
+    image:   imagePath,                    // OBLIGATORIA
+    gallery: z.array(imagePath).optional(), // vistas extra para la ficha
+  }).strict(),
+})`
+
+const recetaAvif = `# Optimizar una foto a AVIF antes de subirla (ImageMagick).
+# q50 da excelente calidad percibida a una fracción del peso; 1280px de
+# ancho sobra para una card de catálogo. Nombre del archivo = keyword SEO.
+
+magick foto-original.jpg \\
+  -resize 1280x \\
+  -quality 50 \\
+  public/images/productos/casco-seguridad-industrial-nom-115.avif
+
+# Verifica el peso (una foto de catálogo debería rondar 30–80 KB):
+ls -lh public/images/productos/*.avif`
+
+const recetaImg = `<!-- Cómo monta la imagen la ProductCard: 16:9, dimensiones fijas, carga
+     según posición. width/height reservan el hueco (cero CLS); la 1ª del
+     grid va eager + fetchpriority alto (LCP), el resto lazy. -->
+<img
+  src={image}
+  alt={imageAlt ?? title}        <!-- alt descriptivo; fallback al título -->
+  width="640" height="360"       <!-- 16:9 → reserva el espacio (anti-CLS) -->
+  loading={eager ? 'eager' : 'lazy'}
+  fetchpriority={priority ? 'high' : undefined}
+  decoding="async"
+/>`
+
+const recetaFluida = `/* tokens.css + mobile.css · la foto, fluida y sin desbordar. */
+img, picture, video, canvas, svg { max-width: 100%; }  /* nunca más ancha que su caja */
+
+@media (max-width: 768px) {
+  img, video { height: auto; }   /* escala manteniendo la proporción 16:9 */
+}
+/* Combinado con width/height en el HTML: fluida AL MISMO TIEMPO que anti-CLS. */`
+
+const recetaLcp = `/* LCP · la PRIMERA foto del grid carga con prioridad.
+   El resto, lazy: el visitante ve la vitrina rápido y las fotos de
+   abajo entran mientras hace scroll. Una sola priority por página. */
+
+// En el map del grid:
+{productos.map((p, i) => (
+  <ProductCard
+    image={p.data.image}
+    index={i}              // las 4 primeras → eager (auto)
+    priority={i === 0}     // la 1ª → fetchpriority="high" (LCP)
+  />
+))}`
+---
+
+<PageLayout
+  title="Las imágenes del producto — AVIF, alt y cero CLS"
+  description="La foto de un producto en un sitio Astro: ruta obligatoria validada, formato AVIF ligero, texto alternativo con palabra clave, galería opcional y montaje anti-CLS con LCP cuidado."
+  pageType="page"
+  schemaType="TechArticle"
+  guia={false}
+  breadcrumbs={[{ label: 'Productos', href: '/productos' }, { label: 'Las imágenes' }]}
+>
+  <Hero
+    badge="Guía de productos · Las imágenes"
+    title="Las imágenes:"
+    accent="entra por los ojos, sin pesar"
+    subtitle="La foto de un producto es obligatoria y se valida con una regex; el formato es AVIF (ligero); el alt describe con la palabra clave; y el montaje reserva el hueco (cero CLS) y cuida el LCP. Entra por los ojos sin arrastrar la carga."
+    descRight={[
+      'Es la tercera decisión al crear un producto: cómo se ve. Una foto vende más que un párrafo, pero mal montada es justo lo que hunde el rendimiento —imágenes pesadas que tardan, fotos sin dimensiones que hacen saltar la maqueta, alt vacíos que dejan ciega a media audiencia—. Esta pieza monta la imagen para que sume sin penalizar.',
+      'El sistema pone las garantías de fábrica: la ruta se valida en build (no hay foto rota en producción), el formato es AVIF (peso mínimo), las dimensiones son fijas (cero saltos) y la carga es inteligente (la primera con prioridad para el LCP, el resto en diferido). Tú solo eliges una buena foto y escribes un buen alt.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <ModSection
+    eyebrow="Definición"
+    title="¿Qué es la imagen de un producto?"
+    desc="El campo image del frontmatter (y la gallery opcional): una ruta absoluta bajo /images/, validada por Zod, que apunta a una foto AVIF. La card del catálogo y la ficha la montan con dimensiones fijas y carga según su posición."
+    body={[
+      'La imagen es el campo image del frontmatter: una ruta a una foto que vive en /public/images/ y se sirve desde la raíz del sitio (/images/...). No es opcional —Zod la exige— y no admite cualquier valor: una regex obliga a que sea una ruta absoluta bajo /images/. La gallery opcional añade más fotos para la ficha de detalle.',
+      'Lo que la convierte en una imagen «de producción» y no en un simple src es cómo se monta: en AVIF para pesar poco, con width y height fijos para no romper la maqueta, con un alt que la describe, y con una estrategia de carga (eager/lazy + fetchpriority) que prioriza lo que el visitante ve primero. Esas cuatro decisiones son el tema de esta pieza.',
+    ]}
+  />
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <ModSection
+    surface
+    eyebrow="Función e importancia"
+    title="¿Para qué sirve?"
+    desc="Hace que la foto venda sin penalizar: AVIF para pesar poco, dimensiones fijas para no saltar la maqueta (CLS), y alt descriptivo para ser accesible e indexable. Todo medido por Core Web Vitals."
+    body={[
+      'Su función es entrar por los ojos. En un catálogo, la foto es lo primero que mira el visitante y lo que decide si se detiene en un producto. Pero una imagen mal montada es también la causa más común de un sitio lento: pesada, sin dimensiones, cargando todas a la vez. Esta pieza convierte la foto en un activo, no en un lastre.',
+      'Y lo hace cuidando lo que Google mide. AVIF baja el peso (carga rápida); width/height fijos eliminan el CLS (la maqueta no salta); el alt la vuelve accesible e indexable; y la carga priorizada cuida el LCP (la foto principal aparece pronto). Son métricas de Core Web Vitals, sí, pero antes que eso son la diferencia entre un catálogo que se siente ágil y uno que frustra.',
+    ]}
+  >
+    <ModBenefits items={beneficios} />
+  </ModSection>
+
+  {/* ── 3) ¿QUÉ LLEVA? — anatomía con ejemplo en vivo ── */}
+  <ModSection
+    eyebrow="Anatomía"
+    title="¿Qué la compone?"
+    desc="Cuatro decisiones: la ruta obligatoria validada por regex, el formato AVIF ligero, el alt descriptivo con keyword, y el montaje (width/height fijos para CLS + carga eager/lazy/fetchpriority para LCP)."
+    body={[
+      'Cada decisión cubre un riesgo. La regex evita la imagen rota; AVIF evita el peso; el alt evita dejar fuera a quien no ve y al buscador; las dimensiones fijas evitan el salto de maqueta; y la carga priorizada evita que la foto importante llegue tarde. Ninguna es decorativa: cada una protege una métrica.',
+      'Abajo, el ejemplo en vivo —una imagen montada y anotada—. Cada punto numerado se desglosa en su tarjeta: qué resuelve y qué atributo o regla del sistema lo respalda.',
+    ]}
+  >
+    <ModAnatomy partes={partes}>
+      <div class="im" role="img" aria-label="Una imagen de producto montada: ruta validada, AVIF, alt y dimensiones fijas">
+        <div class="im__frame">
+          <span class="im__photo" aria-hidden="true"><span class="im__tag">AVIF · 38 KB</span></span>
+          <span class="im__badge">NOM-115</span>
+        </div>
+        <ul class="im__attrs">
+          <li><span class="im__pin im__pin--1">1</span><code>src="/images/productos/casco.avif"</code></li>
+          <li><span class="im__pin im__pin--2">2</span><code>formato AVIF · ~38 KB</code></li>
+          <li><span class="im__pin im__pin--3">3</span><code>alt="Casco de seguridad rojo NOM-115"</code></li>
+          <li><span class="im__pin im__pin--4">4</span><code>width="640" height="360" loading="eager"</code></li>
+        </ul>
+      </div>
+    </ModAnatomy>
+  </ModSection>
+
+  {/* ── 3b) VARIANTES ── */}
+  <ModSection
+    surface
+    eyebrow="Variantes"
+    title="Cómo se usa la imagen"
+    desc="Desde una foto única (lo común) hasta una galería en la ficha, un badge superpuesto o la primera foto con prioridad LCP. Todas son configuraciones reales; la última es la red de seguridad, no un diseño."
+    body={[
+      'No hay un único montaje: hay una foto obligatoria y varias formas de aprovecharla. Un producto simple va con una imagen; uno visual suma galería; uno con norma lleva badge; el primero del grid se prioriza para el LCP. Y por debajo, la garantía: sin imagen válida, no hay producto.',
+      'Abajo, cinco configuraciones —cuatro son formas reales de usar la imagen; la quinta es lo que pasa cuando falta—. Cada una con el contexto donde aplica.',
+    ]}
+  >
+    <GaleriaDisenos ariaLabel="Formas de usar la imagen de un producto">
+      {disenos.map((d) => (
+        <DisenoCard nombre={d.nombre} tag={d.tag} desc={d.desc}>
+          <div class="imv" role="img" aria-label={d.nombre}>
+            {d.nombre.includes('única') && <span class="imv__ph"></span>}
+            {d.nombre.includes('galería') && <><span class="imv__ph imv__ph--big"></span><span class="imv__row"><i></i><i></i><i></i></span></>}
+            {d.nombre.includes('badge') && <span class="imv__ph"><b class="imv__bdg">NOM-115</b></span>}
+            {d.nombre.includes('LCP') && <span class="imv__ph imv__ph--lcp"><b class="imv__lcp">eager · high</b></span>}
+            {d.nombre.includes('build falla') && <span class="imv__ph imv__ph--err">⚠ build ✕</span>}
+          </div>
+        </DisenoCard>
+      ))}
+    </GaleriaDisenos>
+
+    <GuiaNota titulo="La foto pesa poco por construcción · la ruta se valida en build" archivo="src/content.config.ts · src/components/ProductCard.astro">
+      <p>
+        Dos garantías están de fábrica. La <strong>ruta</strong> se valida con una regex en
+        <code>content.config.ts</code>: una imagen fuera de <code>/images/</code> rompe el build.
+        Y el <strong>montaje</strong> (AVIF, <code>width</code>/<code>height</code> fijos, carga
+        <code>eager</code>/<code>lazy</code>) lo aporta <code>ProductCard</code>, igual para todo el
+        catálogo. Tú eliges la foto y el <code>alt</code>; el resto lo cuida el sistema.
+      </p>
+    </GuiaNota>
+  </ModSection>
+
+  {/* ── 3c) RESPONSIVE Y MÓVIL ── */}
+  <ModSection
+    eyebrow="Responsive y móvil"
+    title="La foto, en el teléfono"
+    desc="La imagen es fluida (ocupa el ancho de la card sin desbordar ni deformarse) y a la vez anti-CLS (reserva el hueco con width/height). En móvil, donde los datos cuestan, AVIF pesa poco y la primera foto carga con prioridad."
+    body={[
+      'En el teléfono la foto hace dos cosas a la vez que parecen opuestas: es fluida —escala al ancho de la card sin desbordar el viewport— y al mismo tiempo reserva su hueco exacto con las dimensiones del HTML, así que no hay salto cuando carga. Una (max-width:100%) la pone el CSS; la otra (width/height) el atributo. Juntas: imagen flexible sin CLS.',
+      'Y donde los datos móviles cuestan, AVIF es el que más rinde: la misma foto, una fracción del peso. La primera del grid carga con prioridad para que el visitante vea algo de inmediato; el resto espera al scroll. Abajo, los dos patrones con su receta.',
+    ]}
+  >
+    <ModResponsive>
+      <ModPattern
+        title="1 · Fluida y anti-CLS a la vez"
+        desc="<code>max-width: 100%</code> la hace fluida (no desborda); <code>width</code>/<code>height</code> en el HTML reservan el hueco (no salta). El CSS y el atributo colaboran: foto flexible <strong>sin</strong> CLS."
+        receta={{ titulo: 'CSS · imagen fluida + anti-CLS', lang: 'css', code: recetaFluida }}
+      >
+        <MarcoMovil ariaLabel="La foto del producto ocupa el ancho de la card sin desbordar ni saltar">
+          <div class="im2">
+            <span class="im2__card"><i class="im2__img"><b class="im2__t2">AVIF</b></i><b class="im2__t"></b><b class="im2__d"></b></span>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+
+      <ModPattern
+        title="2 · La primera foto, con prioridad (LCP)"
+        desc="La 1ª card del grid sobre el pliegue recibe <code>priority</code>: su foto carga en <code>eager</code> con <code>fetchpriority=&quot;high&quot;</code>. El resto, <code>lazy</code>: el visitante ve la vitrina al instante y lo de abajo entra con el scroll."
+        receta={{ titulo: 'Astro · LCP en la primera card', lang: 'astro', code: recetaLcp }}
+      >
+        <MarcoMovil ariaLabel="La primera foto carga con prioridad; las de abajo en diferido">
+          <div class="im2">
+            <span class="im2__card"><i class="im2__img im2__img--hi"><b class="im2__t2">eager · high</b></i><b class="im2__t"></b></span>
+            <span class="im2__card im2__card--lazy"><i class="im2__img"><b class="im2__t2">lazy</b></i><b class="im2__t"></b></span>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+    </ModResponsive>
+  </ModSection>
+
+  {/* ── 4) ¿DÓNDE VA? ── */}
+  <ModSection
+    surface
+    eyebrow="Posición"
+    title="¿Dónde viven las fotos?"
+    desc="Los archivos AVIF viven en /public/images/productos/ y se referencian como /images/... La ruta se declara en el frontmatter de cada .md; el montaje (dimensiones, carga) lo hace la ProductCard y la ficha."
+    body={[
+      'Las fotos físicas viven en la carpeta /public/images/productos/ del proyecto; Astro sirve /public en la raíz, así que una foto en /public/images/productos/casco.avif se referencia como /images/productos/casco.avif. Esa es la ruta que va en el frontmatter (image:) y la que la regex valida. Conviene nombrar el archivo con la keyword del producto (casco-seguridad-nom-115.avif), no IMG_4821.avif.',
+      'El producto solo declara la ruta; el montaje vive en los componentes: la ProductCard pone width/height, loading y fetchpriority en la card del catálogo, y ProductLayout hace lo propio en la ficha (foto grande + galería). Así la política de imágenes —dimensiones, carga, anti-CLS— se decide una vez para todo el sitio, no foto a foto.',
+    ]}
+  />
+
+  {/* ── 5) CÓMO SE ARMA ── */}
+  <ModSection
+    eyebrow="Implementación"
+    title="Cómo se construye"
+    desc="La regex que valida la ruta (content.config.ts), el comando que optimiza a AVIF antes de subir, y cómo la ProductCard monta el <img> con dimensiones fijas y carga según posición."
+    body={[
+      'La validación es una sola línea: un z.string().regex(/^\\/images\\//) reutilizable (imagePath) que comparten image y gallery. Antes de subir, la foto se optimiza a AVIF con ImageMagick (q50, ~1280px) y se nombra con la keyword. Esos dos pasos —validar la ruta, optimizar el archivo— son el contrato de entrada de toda imagen del catálogo.',
+      'En el render, la ProductCard computa eager = priority || index < 4 y emite un <img> con width/height fijos (16:9), loading eager o lazy según el índice, y fetchpriority="high" solo si priority. Cero JavaScript: HTML estático generado en build. Abajo, las recetas: el esquema, el comando AVIF y el montaje del <img>.',
+    ]}
+  >
+    <div class="recetas">
+      <Receta titulo="content.config.ts · la imagen obligatoria (regex)" lang="ts" code={recetaSchema} />
+      <Receta titulo="Terminal · optimizar a AVIF antes de subir (ImageMagick)" lang="bash" code={recetaAvif} />
+      <Receta titulo="HTML · cómo monta la imagen la ProductCard" lang="html" code={recetaImg} />
+    </div>
+
+    <ModProse>
+      <p>
+        En concreto: <code>imagePath</code> es un <code>z.string().regex(/^\/images\//)</code> que
+        valida <code>image</code> (obligatoria) y cada entrada de <code>gallery</code> (opcional). Una
+        ruta fuera de <code>/images/</code> detiene el build con un mensaje claro. Las fotos se sirven
+        desde <code>/public/images/</code>; nómbralas con la keyword del producto para el SEO de imágenes.
+      </p>
+      <p>
+        En la card, la imagen lleva <code>width="640" height="360"</code> (16:9) para reservar el hueco
+        —<strong>cero CLS</strong>—, <code>loading</code> calculado (<code>eager</code> las 4 primeras,
+        <code>lazy</code> el resto) y <code>fetchpriority="high"</code> solo en la primera con
+        <code>priority</code> —<strong>LCP cuidado</strong>—. El <code>alt</code> cae a <code>title</code>
+        si no se pasa, pero escribirlo descriptivo es lo que aprovecha la foto para accesibilidad y SEO.
+      </p>
+    </ModProse>
+  </ModSection>
+
+  {/* ── 6) BUENAS PRÁCTICAS ── */}
+  <ModSection
+    surface
+    eyebrow="Buenas prácticas"
+    title="Qué hacer y qué evitar"
+    desc="Una buena foto de catálogo cabe en cinco hábitos: ruta /images válida, AVIF ligero, alt con keyword, dimensiones fijas 16:9 y priority solo en la primera. El resto lo vigila el sistema."
+    body={[
+      'Ninguno de estos hábitos es opcional si quieres un catálogo rápido y accesible. La ruta validada y las dimensiones fijas las refuerza el sistema (la regex y la card); el formato AVIF, el alt descriptivo y el uso correcto de priority quedan a tu disciplina —son justo donde una foto suma o resta—.',
+      'La buena noticia: el sistema atrapa lo crítico (una ruta inválida rompe el build) y monta lo repetitivo (dimensiones, carga). Lo que aportas tú es elegir una buena foto, optimizarla y describirla. Abajo, lo que conviene y lo que conviene evitar.',
+    ]}
+  >
+    <ModDosDonts sis={sis} nos={nos} />
+  </ModSection>
+
+  {/* Cierre */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+
+  <RelatedLinks
+    title="Continúa con la guía"
+    desc="Las piezas vecinas del flujo de crear un producto."
+    links={[
+      { label: 'Las categorías', href: '/productos/guia/las-categorias', desc: 'El enum cerrado que organiza el catálogo.' },
+      { label: 'El precio', href: '/productos/guia/el-precio', desc: 'Precio público o «bajo cotización» por WhatsApp.' },
+      { label: 'La ficha', href: '/productos/guia/la-ficha', desc: 'La página de detalle, con galería y especificaciones.' },
+    ]}
+    limit={3}
+  />
+</PageLayout>
+
+<style>
+  .recetas { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
+
+  /* ── Ejemplo en vivo: imagen montada + atributos ── */
+  .im { margin: var(--sp-6) auto 0; max-width: 540px; display: grid; gap: var(--sp-4); grid-template-columns: 1fr; }
+  @media (min-width: 560px) { .im { grid-template-columns: 200px 1fr; align-items: center; } }
+  .im__frame { position: relative; aspect-ratio: 16/9; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--c-border); }
+  .im__photo { position: absolute; inset: 0; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); display: grid; place-items: end start; }
+  .im__tag { font-size: 9px; font-weight: 700; color: var(--c-primary-dark); background: #fff; border-radius: 4px; padding: 2px 6px; margin: 6px; }
+  .im__badge { position: absolute; top: 6px; left: 6px; font-size: 9px; font-weight: 700; color: #fff; background: var(--c-ink); border-radius: 4px; padding: 2px 6px; }
+  .im__attrs { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .im__attrs li { position: relative; padding-left: 28px; font-size: var(--text-xs); }
+  .im__attrs code { font-family: ui-monospace, Menlo, monospace; font-size: .72rem; color: var(--c-ink-2); }
+  .im__pin { position: absolute; left: 0; top: -1px; display: inline-grid; place-items: center; width: 19px; height: 19px; border-radius: 50%; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-size: .6rem; font-weight: 700; }
+
+  /* ── Variantes ── */
+  .imv { width: 100%; display: flex; flex-direction: column; gap: 4px; }
+  .imv__ph { position: relative; display: block; height: 54px; border-radius: 6px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .imv__ph--big { height: 66px; }
+  .imv__ph--lcp { box-shadow: 0 0 0 2px var(--c-primary); }
+  .imv__ph--err { display: grid; place-items: center; background: rgba(239,68,68,.1); color: #dc2626; font-size: 12px; font-weight: 700; }
+  .imv__row { display: flex; gap: 4px; }
+  .imv__row i { flex: 1; height: 20px; border-radius: 4px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .imv__bdg { position: absolute; top: 5px; left: 5px; font-style: normal; font-size: 8px; font-weight: 700; color: #fff; background: var(--c-ink); border-radius: 4px; padding: 1px 5px; }
+  .imv__lcp { position: absolute; bottom: 5px; right: 5px; font-style: normal; font-size: 7px; font-weight: 700; color: #fff; background: rgba(0,0,0,.5); border-radius: 4px; padding: 1px 5px; }
+
+  /* ── Mockups móviles ── */
+  .im2 { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .im2__card { display: grid; gap: 6px; padding: 8px; border-radius: 9px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .im2__card--lazy { opacity: .85; }
+  .im2__img { position: relative; display: block; height: 76px; border-radius: 6px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .im2__img--hi { box-shadow: inset 0 0 0 2px #fff, 0 0 0 2px var(--c-primary); }
+  .im2__t2 { position: absolute; bottom: 5px; left: 5px; font-style: normal; font-size: 8px; font-weight: 700; color: var(--c-primary-dark); background: #fff; border-radius: 4px; padding: 1px 5px; }
+  .im2__t { height: 9px; width: 70%; border-radius: 4px; background: var(--c-ink); opacity: .8; }
+  .im2__d { height: 7px; width: 92%; border-radius: 4px; background: var(--c-surface); border: 1px solid var(--c-border); }
+</style>

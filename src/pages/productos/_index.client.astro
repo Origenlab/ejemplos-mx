@@ -1,0 +1,144 @@
+---
+// ============================================================================
+// _index.client.astro — CATÁLOGO cliente (/productos, categoría L2) homologado.
+// El generador lo instala como productos/index.astro (reemplaza la versión-guía,
+// que embebe MarcoMovil/Receta/@lib/productos). 100% data-driven:
+//   · grid desde la colección `productos`  · categorías desde TAXONOMY  · copy SITE.
+// pageType="category" → JSON-LD CollectionPage + ItemList (lib/seo.ts).
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro';
+import Hero from '@components/Hero.astro';
+import SectionHeading from '@components/SectionHeading.astro';
+import ProductCard from '@components/ProductCard.astro';
+import RelatedLinks from '@components/RelatedLinks.astro';
+import FAQAccordion from '@components/FAQAccordion.astro';
+import CTABanner from '@components/CTABanner.astro';
+import { getCollection } from 'astro:content';
+import { waUrl, WA_MESSAGES, SITE, KEYWORDS, PRODUCT_CATEGORIES } from '@config/site';
+
+const productos = (await getCollection('productos', ({ data }) => !data.draft)).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+
+// Categorías REALES presentes en la colección → enlaces a sus landings
+// /productos/categoria/<cat> (el hub baja a la categoría: cierra el crawl).
+const catsPresentes = [...new Set(productos.map((p) => p.data.category))];
+
+// Etiqueta de categoría data-driven desde TAXONOMY (no hardcodear por sitio).
+const CAT_LABEL: Record<string, string> = Object.fromEntries(
+  PRODUCT_CATEGORIES.map((c) => [c.slug, c.label]),
+);
+
+const items = productos.map((p) => ({
+  name: p.data.title,
+  path: `/productos/${p.id}`,
+  image: p.data.image,
+  description: p.data.description,
+}));
+
+const faqs = [
+  { question: '¿Cómo sé qué necesito?', answer: 'Escríbenos por WhatsApp con tu caso y te recomendamos la opción adecuada, sin venderte de más.' },
+  { question: '¿Por qué las fichas no muestran precio?', answer: 'Cotizamos según cantidades y servicio, así que trabajamos bajo cotización por WhatsApp en lugar de publicar una cifra que podría no aplicar a tu caso.' },
+  { question: '¿Venden con servicio?', answer: 'Sí. Además de la venta ofrecemos los servicios relacionados; puedes cotizar producto y servicio juntos.' },
+];
+
+const schemaData = {
+  list: { name: SITE.name, description: SITE.description, path: '/productos', items },
+  faqs,
+};
+---
+
+<PageLayout
+  title={`${KEYWORDS[0]} | catálogo`}
+  description={SITE.description}
+  pageType="category"
+  schemaData={schemaData}
+  breadcrumbs={[{ label: 'Productos' }]}
+>
+  <Hero badge="Catálogo" title="Nuestro" accent="catálogo" subtitle={SITE.description} />
+
+  {catsPresentes.length > 1 && (
+    <section class="section section--surface">
+      <div class="container">
+        <SectionHeading
+          eyebrow="Por categoría"
+          title="Explora por"
+          titleAccent="categoría"
+          desc="Entra directo a la familia que buscas; cada una tiene su propia página."
+        />
+        <ul class="cats">
+          {catsPresentes.map((c) => (
+            <li>
+              <a class="cat-link" href={`/productos/categoria/${c}`}>
+                {CAT_LABEL[c] ?? (c.charAt(0).toUpperCase() + c.slice(1))}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )}
+
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        eyebrow="Catálogo"
+        title="Lo que"
+        titleAccent="ofrecemos"
+        desc="Cada ficha enlaza a su detalle. El badge indica la familia."
+      />
+      <div class="grid">
+        {productos.map((p, i) => (
+          <ProductCard
+            title={p.data.title}
+            href={`/productos/${p.id}`}
+            image={p.data.image}
+            imageAlt={p.data.title}
+            badge={CAT_LABEL[p.data.category] ?? p.data.category}
+            description={p.data.description}
+            index={i}
+            priority={i === 0}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--surface">
+    <div class="container">
+      <RelatedLinks current="productos" title="Explora también" desc="Otras familias del catálogo." />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <FAQAccordion items={faqs} title="Preguntas frecuentes" openFirst />
+    </div>
+  </section>
+
+  <CTABanner
+    heading="¿Listo para cotizar?"
+    desc="Cuéntanos qué necesitas y te respondemos con opciones, disponibilidad y tiempos. Asesoría sin compromiso."
+    btns={[
+      { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.productos), icon: 'wa', primary: true, external: true },
+      { label: 'Ver servicios', href: '/servicios', icon: 'arrow' },
+    ]}
+    badge="Respuesta rápida · Atención personalizada"
+    variant="dark"
+    centered={true}
+  />
+</PageLayout>
+
+<style>
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  .cats { list-style: none; margin: var(--sp-6) 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+  .cat-link { display: inline-flex; align-items: center; padding: var(--sp-3) var(--sp-5); border-radius: var(--radius-full); background: var(--c-white); border: 1px solid var(--c-border); color: var(--c-ink); font-family: var(--font-heading); font-weight: var(--weight-semibold); font-size: var(--text-sm); text-decoration: none; transition: border-color .15s, color .15s; }
+  .cat-link:hover { border-color: var(--c-primary); color: var(--c-primary); }
+  .grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 768px) {
+    .section { padding: var(--sp-10) 0; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  }
+</style>

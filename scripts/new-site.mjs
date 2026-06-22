@@ -78,16 +78,42 @@ const rmGlob = (dir, re) => { const D = path.join(DEST, dir); if (!fs.existsSync
 console.log('→ Retirando capa didáctica (modo guía) …');
 rm('src/pages/modulos');
 rm('src/pages/niveles');
+rm('src/pages/blog/anatomia');               // páginas guía «anatomía del blog» (usan módulos guía)
+rm('src/pages/productos/guia');              // páginas guía del catálogo (la-coleccion, las-categorias)
 rm('articulos-buenas-practicas-astro');
 rm('docs');                                  // docs de plantilla (regenéralos por sitio si quieres)
 ['GuiaNota', 'GaleriaDisenos', 'DisenoCard', 'MarcoMovil', 'Receta', 'GuiaAnatomia', 'HeaderSpecimen']
   .forEach((c) => rm(`src/components/${c}.astro`));
+rm('src/components/modulos');                 // ModSection/ModProse/… (componentes guía, usan Receta)
 rm('src/lib/modules.ts');
 rm('src/lib/niveles.ts');
+rm('src/lib/blogAnatomia.ts');               // lib guía (importa @lib/modules)
+rm('src/lib/productos.ts');                  // lib guía del catálogo-demo (PRODUCTO_GUIA_*)
 // contenido demo (se reemplaza por el del cliente)
 ['articulos', 'productos', 'servicios', 'casos', 'zonas'].forEach((c) => { rmGlob(`src/content/${c}`, /\.(md|mdx)$/); });
 // imágenes demo (placeholders del sector se generan aparte)
 (function walkImg(d) { const D = path.join(DEST, d); if (!fs.existsSync(D)) return; for (const e of fs.readdirSync(D, { withFileTypes: true })) { const p = path.join(d, e.name); e.isDirectory() ? walkImg(p) : /\.(avif|svg|png|jpe?g|webp)$/.test(e.name) && fs.rmSync(path.join(DEST, p), { force: true }); } })('public/images');
+
+// ── 2b) instalar PÁGINAS CANÓNICAS del cliente (reemplazan las versiones-guía) ─
+// Varias páginas-guía (home, catálogo) embeben módulos solo-guía (MarcoMovil/
+// Receta/@lib/*); en vez de destriparlas (deja imports huérfanos → build roto),
+// se SUSTITUYEN por su variante limpia `_<nombre>.client.astro` (mismo diseño,
+// data-driven). Cada `_X.client.astro` reemplaza al hermano `X.astro`.
+console.log('→ Instalando páginas canónicas (_*.client.astro → *.astro) …');
+{
+  let swapped = 0;
+  for (const rel of walkAstro('src/pages')) {
+    const base = path.basename(rel);
+    const m = base.match(/^_(.+)\.client\.astro$/);
+    if (!m) continue;
+    const src = path.join(DEST, rel);
+    const dst = path.join(DEST, path.dirname(rel), `${m[1]}.astro`);
+    if (fs.existsSync(dst)) fs.rmSync(dst, { force: true });
+    fs.renameSync(src, dst);
+    swapped++;
+  }
+  console.log(`  ${swapped} página(s) canónica(s) instalada(s).`);
+}
 
 // ── 3) limpiar <GuiaNota> de páginas + columna Módulos del Footer ────────────
 console.log('→ Limpiando GuiaNota y columna Módulos del Footer …');
@@ -146,7 +172,16 @@ const checkSrc = path.join(TEMPLATE_ROOT, 'scripts/check-demo.mjs');
 const checkDst = path.join(DEST, 'scripts/check-demo.mjs');
 if (fs.existsSync(checkSrc)) { fs.mkdirSync(path.dirname(checkDst), { recursive: true }); fs.copyFileSync(checkSrc, checkDst); }
 const pjPath = path.join(DEST, 'package.json');
-if (fs.existsSync(pjPath)) { const pj = JSON.parse(fs.readFileSync(pjPath, 'utf8')); pj.scripts ||= {}; pj.scripts['check:demo'] = 'node scripts/check-demo.mjs'; fs.writeFileSync(pjPath, JSON.stringify(pj, null, 2) + '\n'); }
+if (fs.existsSync(pjPath)) {
+  const pj = JSON.parse(fs.readFileSync(pjPath, 'utf8'));
+  pj.scripts ||= {};
+  pj.scripts['check:demo'] = 'node scripts/check-demo.mjs';
+  // Gate REAL de deploy: el build del sitio CLIENTE falla si quedan placeholders
+  // (NAP demo, TODO, dominio plantilla). El CI corre `npm run build` → no se publica
+  // un sitio con datos demo. (El template ejemplos.mx NO lleva este gate: ES demo.)
+  pj.scripts.build = 'node scripts/check-demo.mjs && astro check && astro build';
+  fs.writeFileSync(pjPath, JSON.stringify(pj, null, 2) + '\n');
+}
 // el generador no se copia a sí mismo al sitio cliente
 fs.rmSync(path.join(DEST, 'scripts/new-site.mjs'), { force: true });
 
@@ -156,6 +191,8 @@ console.log('Siguientes pasos (las 3 zonas + QA):');
 console.log('  1. src/config/site.ts   → CONTACT (NAP real), KEYWORDS, TAXONOMY, SHOWCASE, WA_MESSAGES, organization/business.');
 console.log('  2. src/styles/tokens.css→ --c-primary (+ -light/-dark/-rgb) de la marca.');
 console.log('  3. src/content/*        → catálogo y contenido reales (Markdown/MDX).');
-console.log('  4. public/images/*      → fotos reales en AVIF, nombradas por keyword.');
+console.log('  4. public/images/*      → fotos reales en AVIF (o `node scripts/gen-placeholders.mjs` para placeholders por categoría).');
+console.log('     La home ya es la CANÓNICA homologada (Hero·TrustBar·Catálogo·Servicios·ProcessSteps·CompanyAbout·FAQ·CTA).');
+console.log('     RiskGuide/NormsTable se activan llenando riskRows/normRows en src/pages/index.astro (sector-específicos).');
 console.log('  5. cd ' + DEST + ' && npm install && npm run check:demo && npm run build');
 console.log('  6. Crear el proyecto «' + PROJECT + '» en Cloudflare Pages + secreto CLOUDFLARE_API_TOKEN.\n');

@@ -17,6 +17,7 @@
 import PageLayout from "./PageLayout.astro";
 import RelatedLinks from "@components/RelatedLinks.astro";
 import CTABanner from "@components/CTABanner.astro";
+import Img from "@components/Img.astro";
 import { SITE, waUrl } from "@config/site";
 
 export interface Props {
@@ -105,7 +106,7 @@ const waLink = waUrl(`Hola, leí "${title}" en su blog y tengo una pregunta.`);
 
     {image && (
       <figure class="post__hero">
-        <img src={image} alt={imageAlt ?? title} width="1200" height="630" fetchpriority="high" />
+        <Img src={image} alt={imageAlt ?? title} width={1200} height={630} priority />
       </figure>
     )}
 

@@ -36,7 +36,7 @@
  *   RENTADEILUMINACION: breadcrumb duplicado en layout + componente).
  * ========================================================================== */
 
-import { SITE, CONTACT } from '@config/site';
+import { SITE, CONTACT, SOCIAL } from '@config/site';
 
 /* ──────────────────────────────────────────────────────────────────────────
  * @id de las entidades raíz del grafo. Todo nodo apunta a estos por @id, de
@@ -47,6 +47,26 @@ const ORG_ID = `${SITE.url}/#organization`;
 const WEBSITE_ID = `${SITE.url}/#website`;
 const BUSINESS_ID = `${SITE.url}/#localbusiness`;
 const LOGO_ID = `${SITE.url}/#logo`;
+
+/* sameAs canónico de la entidad: combina organization.sameAs con los perfiles
+ * REALES de SOCIAL (site.ts). El cliente llena SOCIAL una vez (footer + sameAs) y
+ * la Organization deja de quedarse sin sameAs — señal #1 de desambiguación de
+ * entidad en el Knowledge Graph. Filtra vacíos/no-URLs (check:demo cuida lo demo). */
+const ORG_SAMEAS: string[] = [
+  ...new Set([
+    ...((SITE.organization?.sameAs ?? []) as string[]),
+    ...SOCIAL.map((s) => s.url),
+  ]),
+].filter((u) => typeof u === 'string' && /^https?:\/\//.test(u));
+
+/* author honesto (E-E-A-T): si no hay autor humano real, o el "autor" es el
+ * nombre de la marca/empresa, atribuye a la Organización por @id en vez de
+ * fabricar un Person con nombre de marca (autoría difusa = señal débil). */
+function authorNode(name?: string) {
+  const brand = String(SITE.organization?.name ?? SITE.name).trim().toLowerCase();
+  const n = (name ?? '').trim();
+  return n && n.toLowerCase() !== brand ? { '@type': 'Person', name: n } : { '@id': ORG_ID };
+}
 
 /* ════════════════════════════════════════════════════════════════════════════
  * 1) UTILIDADES DE URL Y TEXTO  (origen: BOMBERO/src/utils/seo.ts)
@@ -409,7 +429,7 @@ export function orgSchema() {
       areaServed: 'MX',
       availableLanguage: ['es-MX', 'Spanish'],
     },
-    ...(SITE.organization?.sameAs?.length ? { sameAs: SITE.organization.sameAs } : {}),
+    ...(ORG_SAMEAS.length ? { sameAs: ORG_SAMEAS } : {}),
   };
 }
 
@@ -507,7 +527,7 @@ export function localBusinessSchema(overrides?: { areaServed?: string[] }) {
         }
       : {}),
     areaServed: (overrides?.areaServed ?? (b as any).areaServed ?? ['Ciudad de México']).map((name: string) => ({ '@type': 'City', name })),
-    ...(SITE.organization?.sameAs?.length ? { sameAs: SITE.organization.sameAs } : {}),
+    ...(ORG_SAMEAS.length ? { sameAs: ORG_SAMEAS } : {}),
   };
 }
 
@@ -743,7 +763,7 @@ export function articleSchema(a: ArticleData) {
     datePublished: a.datePublished,
     dateModified: a.dateModified ?? a.datePublished,
     inLanguage: SITE.locale ?? 'es-MX',
-    author: a.author ? { '@type': 'Person', name: a.author } : { '@id': ORG_ID },
+    author: authorNode(a.author),
     publisher: { '@id': ORG_ID },
     isPartOf: { '@id': WEBSITE_ID },
     mainEntityOfPage: { '@type': 'WebPage', '@id': url },
@@ -806,7 +826,7 @@ export function techArticleSchema(input: TechArticleData): Record<string, unknow
     datePublished: input.datePublished,
     dateModified: input.dateModified ?? input.datePublished,
     inLanguage: SITE.locale ?? 'es-MX',
-    author: input.author ? { '@type': 'Person', name: input.author } : { '@id': ORG_ID },
+    author: authorNode(input.author),
     publisher: { '@id': ORG_ID },
     isPartOf: { '@id': WEBSITE_ID },
     ...(input.image ? { image: absImage(input.image) } : {}),

@@ -19,6 +19,7 @@ import SectionHeading from "@components/SectionHeading.astro";
 import FAQAccordion from "@components/FAQAccordion.astro";
 import CTABanner from "@components/CTABanner.astro";
 import RelatedLinks from "@components/RelatedLinks.astro";
+import Img from "@components/Img.astro";
 import { waUrl, telUrl } from "@config/site";
 
 export interface Props {
@@ -68,6 +69,12 @@ const waLink = waUrl(`Hola, quiero cotizar: ${title}. ¿Precio y disponibilidad?
 
 const breadcrumbs = [
   { label: "Productos", href: "/productos" },
+  // Eslabón de CATEGORÍA (jerarquía hub→categoría→ficha): enlaza a la landing de
+  // categoría /productos/categoria/<cat>. Crea el nivel intermedio que faltaba en
+  // el crawl y reparte autoridad de la ficha hacia su categoría.
+  ...(category
+    ? [{ label: category.charAt(0).toUpperCase() + category.slice(1), href: `/productos/categoria/${category}` }]
+    : []),
   { label: title },
 ];
 
@@ -103,10 +110,10 @@ const schemaData = {
   <header class="prod-hero">
     <div class="container prod-hero__grid">
       <div class="prod-hero__media">
-        {image && <img src={image} alt={title} width="640" height="480" fetchpriority="high" />}
+        {image && <Img src={image} alt={title} width={640} height={480} priority />}
         {gallery.length > 0 && (
           <div class="prod-hero__thumbs">
-            {gallery.map((g) => <img src={g.src} alt={g.alt} loading="lazy" width="120" height="90" />)}
+            {gallery.map((g) => <Img src={g.src} alt={g.alt} width={120} height={90} />)}
           </div>
         )}
       </div>

@@ -13,10 +13,10 @@ import { waUrl, WA_MESSAGES } from '@config/site'
 
 // Principios — data-driven (grid de valores). DEMO de la plantilla.
 const principios = [
-  { t: 'Una sola fuente de verdad', d: 'Cada dato vive en un solo lugar y se reutiliza. Menos errores, cambios que se propagan solos y un sitio coherente de punta a punta.' },
-  { t: 'Velocidad real', d: 'Sitios estáticos que cargan en un parpadeo. El rendimiento no es un lujo: es lo primero que siente quien entra y lo que premia el buscador.' },
-  { t: 'Contenido editable', d: 'El contenido va en Markdown, separado del diseño. Publicar o corregir no exige tocar código ni depender de nadie.' },
-  { t: 'SEO desde el cimiento', d: 'Estructura, metadatos y datos estructurados pensados desde el primer commit, no parcheados al final.' },
+  { t: 'Asesoría honesta', d: 'Te recomendamos lo que de verdad necesitas, en lenguaje claro y sin venderte de más.' },
+  { t: 'Conforme a norma', d: 'Cumplimos la normatividad aplicable a tu giro y te entregamos el soporte que lo respalda.' },
+  { t: 'Cumplimos lo prometido', d: 'Lo que acordamos por escrito —alcance, tiempos y precio— es lo que entregamos.' },
+  { t: 'Trato directo', d: 'Hablas con quien hace el trabajo, no con un intermediario. Respuesta directa por WhatsApp.' },
 ]
 
 const cierreItems = [
@@ -30,7 +30,7 @@ const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotiz
 
 <PageLayout
   title="Nosotros — quiénes somos"
-  description="Conoce a Ejemplos.mx: cómo trabajamos y los principios de cada sitio que construimos —velocidad, contenido editable y SEO desde el cimiento. Página DEMO."
+  description="Quiénes somos: cómo trabajamos y en qué creemos. Asesoría honesta, cumplimiento de lo prometido y trato directo con cada cliente."
   pageType="page"
   breadcrumbs={[{ label: 'Nosotros' }]}
   guia={false}
@@ -38,11 +38,11 @@ const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotiz
   <Hero
     badge="Quiénes somos"
     title="Detrás de"
-    accent="cada sitio"
-    subtitle="No hacemos páginas sueltas: construimos sistemas web que se mantienen rápidos, coherentes y fáciles de editar con el tiempo."
+    accent="cada trabajo"
+    subtitle="No improvisamos: cada trabajo sigue un método claro, del primer contacto a la entrega, para darte un resultado que cumple lo prometido."
     descRight={[
-      'Esta página presenta a la empresa: a qué se dedica, cómo trabaja y en qué cree. En un sitio real es donde la persona confirma que detrás hay un equipo serio —con un método, no improvisación—. La confianza se gana mostrando cómo se hacen las cosas, no solo afirmando que se hacen bien.',
-      'En esta plantilla el texto es de ejemplo, pero la estructura es la que usa un "Nosotros" que convierte: una presentación clara, una forma de trabajar concreta y un puñado de principios verificables. Reemplaza el contenido por la historia real del cliente antes de publicar.',
+      'Antes de contratar conviene saber quién está detrás y cómo trabaja. Aquí te lo contamos sin rodeos: un equipo con un método, no improvisación, para que sepas qué esperar y por qué puedes confiar.',
+      'Creemos en la asesoría honesta, el cumplimiento y el trato directo. Resolvemos lo que necesitas con claridad, te lo explicamos en lenguaje sencillo y respondemos por el trabajo que hacemos.',
     ]}
   />
 
@@ -61,10 +61,10 @@ const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotiz
         layout="duo"
         eyebrow="Cómo trabajamos"
         title="Método, no improvisación"
-        desc="Un proceso claro que va del objetivo del negocio al sitio publicado, sin sorpresas."
+        desc="Un proceso claro que va de tu necesidad al trabajo entregado, sin sorpresas."
         body={[
-          'Empezamos por entender el objetivo: qué tiene que lograr el sitio y para quién. Con eso definimos la estructura, el contenido y la conversión antes de escribir una línea de código. Pensar primero ahorra rehacer después.',
-          'Construimos sobre un sistema probado —componentes reutilizables, contenido en Markdown y una sola fuente de verdad— para que el resultado sea rápido, coherente y fácil de mantener. Al entregar, el cliente puede editar su contenido sin depender de nadie.',
+          'Empezamos por entender qué necesitas y para qué. Con eso definimos el alcance, los tiempos y el costo antes de empezar, para que no haya sorpresas a mitad del camino.',
+          'Ejecutamos con un proceso probado y comunicación clara en cada paso. Al terminar, te entregamos el trabajo y el soporte que lo respalda.',
         ]}
       />
     </div>
@@ -76,7 +76,7 @@ const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotiz
         eyebrow="En qué creemos"
         title="Los principios que guían el"
         titleAccent="trabajo"
-        desc="Cuatro convicciones que se notan en cada sitio que entregamos."
+        desc="Cuatro convicciones que se notan en cómo atendemos a cada cliente."
       />
       <div class="principios">
         {principios.map((p) => (

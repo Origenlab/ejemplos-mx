@@ -27,7 +27,7 @@ const tipoLabel = (t: string) => (t === 'operativo' ? 'Operativo' : 'Comercial')
 
 <PageLayout
   title="Cobertura"
-  description="Zonas que atiende Ejemplos.mx: cobertura por ciudad y estado, cada una con su página de detalle. SEO local data-driven. Datos DEMO de la plantilla."
+  description="Zonas que atendemos: cobertura por ciudad y estado, cada una con su página de detalle. Cotiza por WhatsApp."
   pageType="category"
   breadcrumbs={[{ label: 'Cobertura' }]}
   guia={false}
@@ -36,10 +36,10 @@ const tipoLabel = (t: string) => (t === 'operativo' ? 'Operativo' : 'Comercial')
     badge="Categoría · Cobertura"
     title="Dónde"
     accent="atendemos"
-    subtitle="Las zonas donde operamos, cada una con su página propia: el patrón con el que un negocio cubre varias ubicaciones sin canibalizar su SEO."
+    subtitle="Las zonas donde damos servicio, cada una con su página propia, para que sepas si llegamos a donde estás."
     descRight={[
-      'La cobertura es clave para el SEO local: cada zona merece su propia página, con su nombre, sus colonias y sus datos, para responder a búsquedas como "servicio en <ciudad>". Una sola página genérica que mencione todas las zonas compite mal; varias páginas específicas posicionan cada una por su cuenta.',
-      'La lista sale de COVERAGE_STATES en site.ts, la misma fuente del menú. Cada tarjeta lleva a una página de zona generada automáticamente. Distinguimos zona "operativa" (donde damos servicio directo) de "comercial" (donde atendemos a distancia). Datos DEMO de la plantilla.',
+      'Atendemos varias zonas y cada una tiene su página, con su nombre y sus datos. Así puedes ver si llegamos a tu ubicación y qué incluye el servicio en tu área.',
+      'Distinguimos zona operativa (servicio directo) de comercial (atención a distancia). ¿No ves tu zona? Escríbenos y te confirmamos cobertura y tiempos.',
     ]}
   />
 
@@ -70,7 +70,7 @@ const tipoLabel = (t: string) => (t === 'operativo' ? 'Operativo' : 'Comercial')
           <CategoryCard
             label={z.label}
             href={`/cobertura/${z.slug}`}
-            blurb={`Cobertura ${tipoLabel(z.type).toLowerCase()} en ${z.label}. Página de zona DEMO con el patrón de SEO local: nombre, alcance y servicios disponibles.`}
+            blurb={`Cobertura ${tipoLabel(z.type).toLowerCase()} en ${z.label}: alcance, colonias y servicios disponibles en la zona.`}
             badge={tipoLabel(z.type)}
             ctaLabel="Ver zona"
             index={i}
