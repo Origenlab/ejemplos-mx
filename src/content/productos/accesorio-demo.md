@@ -2,7 +2,7 @@
 title: "Accesorio complementario · uso general"
 description: "Accesorio complementario de uso general: compatible con toda la línea de equipos, suma una función o protege tu inversión. La pieza que redondea la instalación. (Producto DEMO de la plantilla.)"
 category: "accesorios"
-image: "/images/productos/componentes-plantilla-astro-markdown.avif"
+image: "/images/productos/producto-accesorio-demo.avif"
 price: "Cotizar"
 sku: "DEMO-AC-001"
 brand: "Compatibles"

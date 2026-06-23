@@ -84,6 +84,11 @@ export default defineConfig({
   output: 'static',
   trailingSlash: 'never', // Canónico B5. Canonical normalizado sin slash final.
 
+  // Prefetch nativo de Astro 6: pre-carga las páginas internas al hacer hover sobre
+  // los enlaces, reduciendo el tiempo de navegación percibido 200-400 ms. No tiene
+  // costo de bundle (usa <link rel="prefetch"> nativo del browser).
+  prefetch: { defaultStrategy: 'hover' },
+
   // Redirects permanentes: rutas antiguas /productos/categoria/* → /productos/*.
   // Necesarios para no romper enlaces externos ni perder juice SEO acumulado.
   redirects: {

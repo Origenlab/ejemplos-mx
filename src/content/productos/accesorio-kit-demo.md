@@ -2,7 +2,7 @@
 title: "Kit de accesorios · instalación completa"
 description: "Kit de accesorios para una instalación completa: reúne en un paquete las piezas que normalmente se compran sueltas, a mejor precio y listas para montar. Ahorra tiempo y evita faltantes. (Producto DEMO.)"
 category: "accesorios"
-image: "/images/servicios/soporte-mantenimiento-web-astro.avif"
+image: "/images/productos/producto-accesorio-kit.avif"
 price: "Desde $890 MXN"
 sku: "DEMO-AC-002"
 brand: "Compatibles"

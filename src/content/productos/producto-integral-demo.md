@@ -2,7 +2,7 @@
 title: "Solución integral · equipo más accesorios"
 description: "Solución integral que combina el equipo base con su kit de accesorios y la puesta en marcha: todo coordinado en una sola compra, con un único responsable. Para quien prefiere no armar el rompecabezas. (DEMO.)"
 category: "general"
-image: "/images/servicios/consultoria-desarrollo-web-astro.avif"
+image: "/images/productos/producto-integral.avif"
 price: "Cotizar"
 sku: "DEMO-GE-001"
 brand: "Integral"

@@ -2,7 +2,7 @@
 title: "Equipo base · línea estándar"
 description: "Equipo base de la línea estándar: la opción de entrada del catálogo, lista para instalar y compatible con el resto de la línea. Ideal para arrancar un proyecto sin sobre-especificar. (Producto DEMO de la plantilla.)"
 category: "equipos"
-image: "/images/productos/desarrollo-web-astro-profesional.avif"
+image: "/images/productos/producto-equipo-base.avif"
 price: "Desde $1,250 MXN"
 sku: "DEMO-EQ-001"
 brand: "Línea Estándar"

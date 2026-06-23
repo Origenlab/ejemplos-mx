@@ -2,7 +2,7 @@
 title: "Equipo profesional · alto rendimiento"
 description: "Equipo profesional de alto rendimiento para uso intensivo y proyectos exigentes: mayor capacidad, materiales reforzados y soporte técnico prioritario. La opción cuando la línea estándar se queda corta. (Producto DEMO.)"
 category: "equipos"
-image: "/images/productos/sitio-web-rapido-astro.avif"
+image: "/images/productos/producto-equipo-pro.avif"
 price: "Desde $3,900 MXN"
 sku: "DEMO-EQ-002"
 brand: "Línea Pro"

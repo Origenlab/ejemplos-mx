@@ -2,7 +2,7 @@
 title: "Equipo compacto · espacios reducidos"
 description: "Equipo compacto para espacios reducidos: el mismo desempeño de la línea estándar en un formato más pequeño y ligero, fácil de instalar donde el espacio manda. (Producto DEMO de la plantilla.)"
 category: "equipos"
-image: "/images/showcase/texto-venta-contenido-markdown.avif"
+image: "/images/productos/producto-equipo-compacto.avif"
 price: "Cotizar"
 sku: "DEMO-EQ-003"
 brand: "Línea Estándar"

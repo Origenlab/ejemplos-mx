@@ -61,12 +61,12 @@ export function siblingsProductos(slug: string): SiblingItem[] {
 // ============================================================================
 const IMG = '/images'
 export const PRODUCTO_GUIA_CARD_META: Record<string, { image: string; chips: string[] }> = {
-  'la-coleccion':  { image: `${IMG}/productos/componentes-plantilla-astro-markdown.avif`, chips: ['Un .md por producto', 'Zod .strict()', 'Nunca .astro suelto'] },
-  'las-categorias':{ image: `${IMG}/showcase/enlaces-internos-navegacion-web.avif`,       chips: ['Enum cerrado', 'Badge en la card', 'site.ts ↔ esquema'] },
-  'las-imagenes':  { image: `${IMG}/showcase/imagen-optimizada-avif-sitio-web.avif`,      chips: ['Ruta /images', 'AVIF + alt', 'Cero CLS'] },
-  'el-precio':     { image: `${IMG}/servicios/consultoria-desarrollo-web-astro.avif`,     chips: ['Campo opcional', 'Bajo cotización', 'Offer honesto'] },
-  'la-ficha':      { image: `${IMG}/productos/desarrollo-web-astro-profesional.avif`,     chips: ['ProductLayout L4', 'Bloques opcionales', 'WhatsApp-first'] },
-  'el-schema':     { image: `${IMG}/showcase/jerarquia-titulos-seo-pagina-web.avif`,      chips: ['Product + Offer', 'ItemList del grid', 'Un emisor · B3'] },
+  'la-coleccion':  { image: `${IMG}/productos/producto-guia-la-coleccion.avif`,   chips: ['Un .md por producto', 'Zod .strict()', 'Nunca .astro suelto'] },
+  'las-categorias':{ image: `${IMG}/productos/producto-guia-las-categorias.avif`, chips: ['Enum cerrado', 'Badge en la card', 'site.ts ↔ esquema'] },
+  'las-imagenes':  { image: `${IMG}/productos/producto-guia-las-imagenes.avif`,   chips: ['Ruta /images', 'AVIF + alt', 'Cero CLS'] },
+  'el-precio':     { image: `${IMG}/productos/producto-guia-el-precio.avif`,      chips: ['Campo opcional', 'Bajo cotización', 'Offer honesto'] },
+  'la-ficha':      { image: `${IMG}/productos/producto-guia-la-ficha.avif`,       chips: ['ProductLayout L4', 'Bloques opcionales', 'WhatsApp-first'] },
+  'el-schema':     { image: `${IMG}/productos/producto-guia-el-schema.avif`,      chips: ['Product + Offer', 'ItemList del grid', 'Un emisor · B3'] },
 }
 
 // ============================================================================

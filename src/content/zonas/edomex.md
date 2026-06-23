@@ -4,7 +4,7 @@ description: "Atendemos los principales municipios del Estado de México y su zo
 zoneName: "Estado de México"
 type: "estado"
 state: "Estado de México"
-image: "/images/zonas/cobertura-desarrollo-web-ciudad-de-mexico.avif"
+image: "/images/zonas/cobertura-desarrollo-web-estado-de-mexico.avif"
 colonias:
   - "Naucalpan"
   - "Tlalnepantla"
