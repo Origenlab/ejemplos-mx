@@ -1,0 +1,287 @@
+---
+// ============================================================================
+// /guia/ — PORTAL de guías del sistema EJEMPLOS.mx.
+// ----------------------------------------------------------------------------
+// El entry point para programadores y desarrolladores que quieren entender el
+// sistema completo. Expone las 5 series de guías, su propósito y el orden de
+// lectura recomendado para construir un sitio Astro profesional desde cero.
+//
+// Las 5 series:
+//   • /modulos       → 16 piezas UI (los ladrillos del diseño)
+//   • /niveles       → 4 tipos de página (la arquitectura de la jerarquía)
+//   • /blog/anatomia → 7 complementos del blog (sidebar, paginación…)
+//   • /productos/guia→ 6 piezas del flujo de producto (colección→schema)
+//   • /servicios/guia→ 6 piezas del flujo de servicio (copy→conversión)
+//
+// Estructura del sistema por capas:
+//   Capa 1 · Arquitectura: Módulos + Niveles — las piezas y la jerarquía
+//   Capa 2 · Contenido:    Productos + Servicios + Blog — los flujos de creación
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import CategoryCard from '@components/CategoryCard.astro'
+import FAQAccordion from '@components/FAQAccordion.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import { waUrl, WA_MESSAGES } from '@config/site'
+
+// ── Las 5 series del sistema ───────────────────────────────────────────────
+// Definidas aquí (no en site.ts) porque son meta-datos de la guía, no datos
+// de negocio. Cada entrada tiene lo que necesita CategoryCard.
+const series = [
+  {
+    label: 'Módulos',
+    href: '/modulos',
+    image: '/images/showcase/imagen-optimizada-avif-sitio-web.avif',
+    imageAlt: 'Vista de la serie de módulos UI del sitio: topbar, header, hero y footer',
+    badge: '16 piezas',
+    blurb: 'Los ladrillos UI del sitio: topbar, header, breadcrumbs, hero, menú de secciones, encabezados, cards, reseñas, FAQ, CTA, formulario, footer y WhatsApp flotante. Cada uno con anatomía, variantes y recetas de código.',
+    chips: ['UI', 'Componentes', 'Chrome'],
+  },
+  {
+    label: 'Niveles',
+    href: '/niveles',
+    image: '/images/showcase/jerarquia-titulos-seo-pagina-web.avif',
+    imageAlt: 'Diagrama de los 4 niveles de profundidad de una página web: L1 a L4',
+    badge: '4 tipos de página',
+    blurb: 'Los 4 tipos de página según su profundidad en el árbol del sitio: L1 home, L2 índice de sección, L3 detalle de entidad y L4 sub-ficha. Qué migas de pan lleva cada uno y qué plantilla usa.',
+    chips: ['Jerarquía', 'Breadcrumbs', 'Arquitectura'],
+  },
+  {
+    label: 'Anatomía del blog',
+    href: '/blog/anatomia',
+    image: '/images/showcase/texto-venta-contenido-markdown.avif',
+    imageAlt: 'Vista de los complementos del blog: sidebar, paginación y artículos en Markdown',
+    badge: '7 complementos',
+    blurb: 'Cómo está hecho el blog por dentro: sidebar con enlaces internos, paginación automática, artículos en MDX, tarjetas del listado, archivos de categoría y etiqueta, y bloque de artículos relacionados.',
+    chips: ['Blog', 'MDX', 'SEO'],
+  },
+  {
+    label: 'Guía de productos',
+    href: '/productos/guia',
+    image: '/images/productos/desarrollo-web-astro-profesional.avif',
+    imageAlt: 'Flujo completo de creación de un producto: colección, categorías, imágenes, precio, ficha y schema',
+    badge: '6 flujos',
+    blurb: 'El camino completo de crear un producto en el sitio: colección Markdown validada por Zod, categorías con enum cerrado, imágenes AVIF optimizadas, precio opcional, ficha generada sola y schema JSON-LD automático.',
+    chips: ['Colección', 'Zod', 'JSON-LD'],
+  },
+  {
+    label: 'Guía de servicios',
+    href: '/servicios/guia',
+    image: '/images/servicios/consultoria-desarrollo-web-astro.avif',
+    imageAlt: 'Flujo completo de creación de una página de servicio: colección, copy, alcance, proceso, objeciones y conversión',
+    badge: '6 flujos',
+    blurb: 'El camino completo de crear una página de servicio profesional: colección Markdown, propuesta de valor en el hero, alcance honesto, proceso predecible, FAQ de objeciones y cierre WhatsApp-first.',
+    chips: ['Servicios', 'WhatsApp', 'Conversión'],
+  },
+]
+
+// ── FAQs de la guía del sistema ───────────────────────────────────────────────
+const faqs = [
+  {
+    question: '¿En qué orden leo las guías?',
+    answer: 'El orden recomendado es por capas: primero Módulos (qué piezas hay), luego Niveles (cómo se organiza el árbol), y después los flujos de contenido según lo que vayas a crear —Productos si montas un catálogo, Servicios si armas páginas de servicio, Blog si publicas artículos—. No necesitas leer todas antes de empezar: elige la que resuelve tu siguiente decisión.',
+  },
+  {
+    question: '¿Necesito leer las 5 series antes de empezar a construir?',
+    answer: 'No. Cada serie es autónoma y se puede leer de forma independiente. Si ya entiendes cómo funciona Astro y solo quieres saber cómo crear productos, ve directamente a /productos/guia. Las series se enlazan entre sí en sus SectionMenus para que puedas saltar cuando algo te haga falta.',
+  },
+  {
+    question: '¿Por qué 5 series separadas en vez de una sola guía?',
+    answer: 'Porque responden preguntas distintas. Módulos responde «¿qué piezas UI están disponibles?»; Niveles responde «¿qué tipo de página debo crear aquí?»; las guías de contenido responden «¿cómo creo un producto/servicio/artículo concreto?». Una sola guía mezclada sería más difícil de consultar.',
+  },
+  {
+    question: '¿Qué es el SSoT (Single Source of Truth) que mencionan las guías?',
+    answer: 'Es el principio de que cada dato vive en un solo lugar y se lee desde ahí en todas partes. En este sistema, src/config/site.ts es el SSoT de la navegación, las taxonomías y los mensajes de WhatsApp. Cambiar un dato ahí lo actualiza en el menú, el footer, el schema y todos los componentes sin tocar nada más.',
+  },
+  {
+    question: '¿Puedo usar solo una parte del sistema?',
+    answer: 'Sí. El sistema está diseñado en capas desacopladas. Puedes usar el chrome (topbar+header+footer) sin el blog, crear un catálogo de productos sin una sección de servicios, o tener un blog sin catálogo. Cada parte está suficientemente aislada para funcionar sola. Lo único que es global e indivisible es site.ts y los estilos base (tokens.css, mobile.css).',
+  },
+]
+
+// Menú de cierre
+const cierreItems = [
+  { label: 'Módulos', href: '/modulos', sub: 'Empieza por las piezas' },
+  { label: 'Niveles', href: '/niveles', sub: 'Luego la jerarquía' },
+  { label: 'Guía de productos', href: '/productos/guia', sub: 'Primer flujo de contenido' },
+  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
+]
+const cierreCta = {
+  label: 'Cotizar por WhatsApp',
+  href: waUrl(WA_MESSAGES.cotizar),
+  sub: 'Respuesta inmediata',
+  external: true,
+}
+---
+
+<PageLayout
+  title="Guías del sistema — el manual completo para construir tu sitio Astro"
+  description="Las 5 guías del sistema Ejemplos.mx para construir un sitio Astro profesional: módulos UI, niveles de página, anatomía del blog, flujo de productos y flujo de servicios."
+  pageType="page"
+  breadcrumbs={[{ label: 'La guía' }]}
+  guia={false}
+>
+  <Hero
+    badge="Guías del sistema"
+    title="Las guías del sistema:"
+    accent="5 series, un solo camino"
+    subtitle="Todo lo que necesitas para construir un sitio Astro profesional con contenido en Markdown: las piezas UI, la jerarquía de páginas y los tres flujos de contenido. Cada serie, a fondo."
+    descRight={[
+      'El sistema está organizado en dos capas. La capa de arquitectura —Módulos y Niveles— documenta las piezas con las que se arma cada página y los tipos de página que existen. La capa de contenido —Productos, Servicios y Blog— documenta cómo llenar esas páginas con datos reales.',
+      'Cada serie es autónoma y tiene su hub con el molde canónico de 10 secciones por pieza: qué es, para qué sirve, anatomía, variantes, responsive, dónde va, cómo se construye, buenas prácticas, navegación y relacionados. Lee en orden o entra directamente al flujo que necesitas.',
+    ]}
+  />
+
+  {/* ── 1) ¿CÓMO ESTÁ ORGANIZADO EL SISTEMA? ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="El sistema"
+        title="Dos capas, cinco series"
+        desc="El sistema separa la arquitectura (qué piezas hay y cómo se jerarquizan) del contenido (cómo se crean los datos reales). Cada capa tiene sus guías propias."
+        body={[
+          'La capa de arquitectura responde preguntas de diseño y estructura: ¿qué módulo UI resuelve este problema? ¿En qué nivel de profundidad debería ir esta página? Módulos documenta cada pieza del chrome y del cuerpo; Niveles documenta los cuatro tipos de página y qué plantilla, migas de pan y rol le corresponde a cada uno.',
+          'La capa de contenido responde preguntas de flujo y creación: ¿cómo creo un producto? ¿Cómo armo la página de un servicio? ¿Cómo estructuro el blog? Las tres guías —Productos, Servicios, Blog— documentan cada decisión del camino: desde el archivo Markdown hasta el schema JSON-LD. La misma lógica, tres flujos distintos.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 2) LAS 5 SERIES — vitrina de CategoryCards ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Las series"
+        title="Las 5 guías del sistema"
+        desc="Una tarjeta por serie: qué documenta, cuántas piezas tiene y cuáles son sus conceptos clave. Entra a cualquiera para ver su hub completo con todas las piezas."
+        body={[
+          'Cada tarjeta abre el hub de una serie. Allí encontrarás todas las piezas como cards, cada una desplegada «a fondo» con información y galería, y la serie completa con variantes, patrones responsive y FAQ. Es el MISMO card del catálogo —coherencia en todo el sistema—.',
+          'Las dos primeras series (Módulos y Niveles) son la base: úsalas para entender las piezas disponibles y la jerarquía antes de crear contenido. Las tres últimas son los flujos de creación: úsalas cuando tengas claro qué tipo de contenido vas a añadir.',
+        ]}
+      />
+      <div class="showcase">
+        {series.map((s, i) => (
+          <CategoryCard
+            label={s.label}
+            href={s.href}
+            image={s.image}
+            imageAlt={s.imageAlt}
+            badge={s.badge}
+            blurb={s.blurb}
+            subcategories={s.chips.map((c) => ({ label: c, href: s.href }))}
+            ctaLabel="Ver la serie"
+            index={i}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3) ORDEN DE LECTURA ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Por dónde empezar"
+        title="El camino recomendado"
+        desc="No es obligatorio leer las 5 series. Si empiezas desde cero, sigue el orden de las capas: arquitectura primero, contenido después."
+        body={[
+          'Empieza por Módulos: entiende qué piezas UI están disponibles y cómo se combinan. Luego lee Niveles: sabrás en qué tipo de página va cada módulo y qué migas de pan debe llevar. Con esa base, cualquiera de los tres flujos de contenido —Productos, Servicios, Blog— se puede leer en el orden que tu proyecto lo necesite.',
+          'Si ya sabes cómo funciona Astro y solo quieres resolver un problema concreto —"¿cómo agrego un producto?" o "¿cómo estructuro el FAQ de un servicio?"— entra directamente a la pieza que responde esa pregunta. Cada serie es autónoma: sus SectionMenus de cierre te llevan a las series hermanas cuando las necesitas.',
+        ]}
+      />
+
+      <div class="camino">
+        <div class="capa">
+          <div class="capa__badge capa__badge--arq">Capa 1 · Arquitectura</div>
+          <div class="capa__series">
+            <a href="/modulos" class="capa__serie">
+              <span class="capa__n">01</span>
+              <div>
+                <strong class="capa__label">Módulos</strong>
+                <span class="capa__desc">Las 16 piezas UI del sitio</span>
+              </div>
+            </a>
+            <span class="capa__arrow" aria-hidden="true">→</span>
+            <a href="/niveles" class="capa__serie">
+              <span class="capa__n">02</span>
+              <div>
+                <strong class="capa__label">Niveles</strong>
+                <span class="capa__desc">Los 4 tipos de página</span>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <div class="capa">
+          <div class="capa__badge capa__badge--con">Capa 2 · Contenido</div>
+          <div class="capa__series">
+            <a href="/productos/guia" class="capa__serie">
+              <span class="capa__n">03</span>
+              <div>
+                <strong class="capa__label">Productos</strong>
+                <span class="capa__desc">Catálogo con Markdown</span>
+              </div>
+            </a>
+            <span class="capa__arrow" aria-hidden="true">→</span>
+            <a href="/servicios/guia" class="capa__serie">
+              <span class="capa__n">04</span>
+              <div>
+                <strong class="capa__label">Servicios</strong>
+                <span class="capa__desc">Páginas de servicio</span>
+              </div>
+            </a>
+            <span class="capa__arrow" aria-hidden="true">→</span>
+            <a href="/blog/anatomia" class="capa__serie">
+              <span class="capa__n">05</span>
+              <div>
+                <strong class="capa__label">Blog</strong>
+                <span class="capa__desc">Artículos y complementos</span>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 4) FAQ ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <FAQAccordion items={faqs} title="Preguntas frecuentes sobre el sistema" openFirst />
+    </div>
+  </section>
+
+  {/* Cierre */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Empieza por aquí" />
+</PageLayout>
+
+<style>
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* Vitrina: 1 → 2 → 3 (3 pares de series) — mobile-first */
+  .showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .showcase { grid-template-columns: repeat(3, 1fr); } }
+
+  /* Camino de lectura */
+  .camino { display: grid; gap: var(--sp-6); margin-top: var(--sp-6); }
+  .capa { border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: var(--sp-5); background: var(--c-white); }
+  .capa__badge { display: inline-flex; align-items: center; font-size: var(--text-xs); font-weight: var(--weight-semibold); letter-spacing: .05em; border-radius: var(--radius-sm); padding: .25rem .75rem; margin-bottom: var(--sp-4); }
+  .capa__badge--arq { background: color-mix(in srgb, var(--c-primary) 12%, transparent); color: var(--c-primary-dark); }
+  .capa__badge--con { background: color-mix(in srgb, var(--c-accent, #10b981) 12%, transparent); color: #065f46; }
+  .capa__series { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3); }
+  .capa__serie { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); border-radius: var(--radius-md); border: 1px solid var(--c-border); background: var(--c-surface); text-decoration: none; transition: border-color .15s, box-shadow .15s; flex: 1; min-width: 160px; }
+  .capa__serie:hover { border-color: var(--c-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 10%, transparent); }
+  .capa__n { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-size: var(--text-sm); font-weight: var(--weight-black); flex-shrink: 0; }
+  .capa__label { display: block; font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .capa__desc { display: block; font-size: var(--text-xs); color: var(--c-ink-2); margin-top: .125rem; }
+  .capa__arrow { font-size: var(--text-lg); color: var(--c-ink-3, var(--c-ink-2)); flex-shrink: 0; }
+  @media (max-width: 640px) { .capa__arrow { display: none; } .capa__serie { flex: none; width: 100%; } }
+</style>

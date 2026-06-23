@@ -7,13 +7,20 @@
 // de detalle (/blog/anatomia/<slug>). Data-driven desde BLOG_ANATOMIA (site.ts,
 // SSoT) — la misma fuente del dropdown «Blog» del Header. Los 'listo' enlazan;
 // los 'proximo' se muestran como roadmap (sin enlace, para no romper con 404s).
+//
+// Molde homologado con /modulos, /niveles, /productos/guia y /servicios/guia:
+// Hero · concepto · vitrina cards · a fondo (CategoryDetail) · responsive (3 pats)
+// · FAQ · SectionMenu. Data-driven desde BLOG_ANATOMIA (SSoT).
 // ============================================================================
 import PageLayout from '@layouts/PageLayout.astro'
 import Hero from '@components/Hero.astro'
 import SectionHeading from '@components/SectionHeading.astro'
 import CategoryCard from '@components/CategoryCard.astro'
 import CategoryDetail from '@components/CategoryDetail.astro'
+import FAQAccordion from '@components/FAQAccordion.astro'
 import GuiaNota from '@components/GuiaNota.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
 import SectionMenu from '@components/SectionMenu.astro'
 import { BLOG_ANATOMIA, waUrl, WA_MESSAGES } from '@config/site'
 import { ANATOMIA_CARD_META as META, ANATOMIA_AFONDO, anatomiaGallery } from '@lib/blogAnatomia'
@@ -21,11 +28,70 @@ import { ANATOMIA_CARD_META as META, ANATOMIA_AFONDO, anatomiaGallery } from '@l
 const partes = BLOG_ANATOMIA
 const listos = partes.filter((p) => p.estado === 'listo').length
 
+// ── Recetas de la sección «Responsive y móvil» — código real del sistema ──
+const recetaSidebar = `/* mobile.css · el sidebar baja DEBAJO del artículo en pantallas angostas.
+   No desaparece: los enlaces de categorías siguen accesibles, solo cambian de lugar. */
+.article-grid { display: grid; grid-template-columns: 1fr 300px; gap: var(--sp-6); }
+@media (max-width: 900px) {
+  .article-grid { grid-template-columns: 1fr; }        /* 1 columna */
+  .sidebar      { order: 2; }                           /* sidebar al final */
+  .article-body { order: 1; }                           /* artículo primero */
+}`
+
+const recetaCard = `/* mobile.css · la card de artículo se toca cómodo en el teléfono. */
+@media (max-width: 1024px) {
+  a, button, [role="button"] {
+    -webkit-tap-highlight-color: rgba(91, 61, 245, .15); /* feedback al tap */
+  }
+}
+@media (max-width: 768px) {
+  /* imagen de la card ocupa el ancho completo */
+  .acard__img { width: 100%; aspect-ratio: 16/9; object-fit: cover; }
+  /* botón «Leer artículo» con área táctil mínima de 44 px */
+  .acard__cta { min-height: 44px; display: inline-flex; align-items: center; }
+}`
+
+const recetaPaginacion = `/* La paginación del listado es mobile-first: botones apilados en móvil.
+   El link «Anterior» y «Siguiente» tienen área táctil de 44px. */
+.pagination { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2); }
+@media (max-width: 480px) {
+  /* en pantallas muy estrechas, solo Anterior/Siguiente (los números se ocultan) */
+  .pagination__num { display: none; }
+  .pagination__prev, .pagination__next { flex: 1; justify-content: center; }
+}
+/* área táctil de 44 px en cualquier botón de paginación */
+.pagination a, .pagination button { min-height: 44px; display: inline-flex; align-items: center; }`
+
+// ── FAQs del índice de la anatomía del blog ───────────────────────────────────
+const faqs = [
+  {
+    question: '¿Cuántas piezas tiene el blog en este sistema?',
+    answer: 'Siete: sidebar (columna lateral con links), paginación (partir el listado), artículos (el contenido en Markdown), tarjeta de artículo (la card del listado), archivo de categoría, archivo de etiqueta y bloque de artículos relacionados. Todas están en estado "listo" y cada una tiene su página de detalle con el molde de 10 secciones.',
+  },
+  {
+    question: '¿Cómo publico un artículo nuevo?',
+    answer: 'Crea un archivo .mdx en src/content/blog/ con su frontmatter (título, descripción, categoría, imagen, fecha). El artículo aparece automáticamente en el listado /blog, en el archivo de categoría y en la paginación. No tocas ningún .astro: el contenido va en Markdown, el diseño ya está.',
+  },
+  {
+    question: '¿Qué es el sidebar y dónde aparece?',
+    answer: 'El sidebar es la columna lateral del blog: lista las categorías, las etiquetas más usadas y artículos recientes. Aparece en el layout ArticleLayout (cada artículo individual). En móvil se apila debajo del artículo para no robarle espacio al contenido. Es el motor de enlazado interno del blog: distribuye PageRank hacia todas las secciones.',
+  },
+  {
+    question: '¿La paginación se genera automáticamente?',
+    answer: 'Sí. El archivo src/pages/blog/pagina/[page].astro usa getStaticPaths() con paginate() de Astro. Solo tienes que definir PAGE_SIZE en lib/blog.ts (por defecto 9 artículos por página). Si publicas el artículo número 10, la página /blog/pagina/2 se crea sola en el siguiente build.',
+  },
+  {
+    question: '¿Cómo funciona el bloque de artículos relacionados?',
+    answer: 'Cada artículo puede declarar un array relatedSlugs en su frontmatter apuntando a slugs de otros artículos. El ArticleLayout lee esos slugs, obtiene los artículos de la colección y renderiza el bloque "Sigue leyendo" con sus tarjetas. Si relatedSlugs está vacío, el bloque no aparece. Sin inventar relaciones falsas.',
+  },
+]
+
+// Menú de cierre
 const cierreItems = [
   { label: 'Complemento Sidebar', href: '/blog/anatomia/sidebar', sub: 'El primero, a fondo' },
   { label: 'El blog', href: '/blog', sub: 'Volver al listado' },
   { label: 'Módulos del sitio', href: '/modulos', sub: 'La serie hermana' },
-  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
+  { label: 'La guía completa', href: '/guia', sub: 'Las 5 series del sistema' },
 ]
 const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotizar), sub: 'Respuesta inmediata', external: true }
 ---
@@ -74,7 +140,7 @@ const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotiz
         desc={`Los ${listos > 1 ? `${listos} complementos publicados` : 'complementos del blog'}, cada uno como tarjeta: foto, nombre, qué hace y las piezas que lo componen. Entra a cualquiera para verlo a fondo.`}
         body={[
           'Cada tarjeta es una pieza real del blog: foto, nombre, qué hace y los elementos que lo componen. Es el MISMO card del catálogo —no inventamos un diseño aparte—, porque la coherencia es justo lo que esta serie enseña.',
-          'Empezamos por el sidebar; la paginación y los artículos llegan después. Los marcados como «próximamente» ya tienen su lugar en el mapa: se publican con el mismo molde.',
+          'Son los siete complementos del blog: sidebar, paginación, artículos, tarjeta de artículo, archivo de categoría, archivo de etiqueta y artículos relacionados. Cada uno con su página de detalle y el molde de 10 secciones.',
         ]}
       />
       <div class="showcase">
@@ -139,6 +205,100 @@ const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotiz
     </div>
   </section>
 
+  {/* ── 4) RESPONSIVE Y MÓVIL — cómo se adaptan las piezas del blog al teléfono ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="El blog, en el teléfono"
+        desc="El sidebar no desaparece: baja debajo del artículo. La paginación se simplifica. Las cards son cómodas de tocar. Cada pieza del blog tiene su regla móvil clara."
+        body={[
+          'El blog tiene tres zonas que cambian en el teléfono: el sidebar pasa de columna derecha a bloque bajo el artículo (el contenido siempre va primero); la paginación colapsa los números y deja solo Anterior/Siguiente para no desbordar; y las cards del listado crecen al área táctil de 44 px para evitar taps fallidos.',
+          'Ninguna de estas reglas requiere JS: son CSS puros vía mobile.css y el grid del ArticleLayout. Lo que el teléfono elimina —los números de paginación, el sidebar lateral— no se pierde: cambia de lugar o de forma. El contenido siempre está accesible.',
+        ]}
+      />
+
+      <div class="pats">
+        {/* 1 · Sidebar apilado */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="El sidebar baja debajo del artículo en el teléfono">
+              <div class="vm-head"><span class="vm-logo">E</span><span class="vm-sp"></span></div>
+              <div class="vm-one">
+                <div class="vm-art">
+                  <b class="vm-art__t"></b>
+                  <span class="vm-art__line"></span>
+                  <span class="vm-art__line"></span>
+                  <span class="vm-art__line vm-art__line--short"></span>
+                </div>
+                <div class="vm-side">
+                  <b class="vm-side__t">Categorías</b>
+                  <span class="vm-side__chip">Astro</span>
+                  <span class="vm-side__chip">SEO</span>
+                </div>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · El sidebar baja al final</h3>
+            <p class="pat__desc">En escritorio el sidebar va a la derecha en una segunda columna. En el teléfono la rejilla colapsa a una columna: el artículo sube (order: 1) y el sidebar baja (order: 2). Los links de categorías siguen accesibles, pero el contenido va primero.</p>
+            <Receta titulo="CSS · sidebar apilado en móvil" lang="css" code={recetaSidebar} />
+          </div>
+        </article>
+
+        {/* 2 · Card táctil */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Card de artículo con imagen y botón cómodos de tocar">
+              <div class="vm-head"><span class="vm-logo">E</span><span class="vm-sp"></span></div>
+              <div class="vm-one">
+                <span class="vm-card">
+                  <i class="vm-card__img"><b class="vm-card__badge">SEO</b></i>
+                  <b class="vm-card__t"></b>
+                  <b class="vm-card__d"></b>
+                  <span class="vm-cta">Leer artículo<i class="vm-ruler">44px</i></span>
+                </span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · Cards cómodas de tocar</h3>
+            <p class="pat__desc">La imagen ocupa el ancho completo en el teléfono; el botón «Leer artículo» crece al área táctil mínima de 44 px. En el teléfono se toca con el dedo —el cursor no existe— y un área pequeña genera abandono.</p>
+            <Receta titulo="mobile.css · card de artículo táctil" lang="css" code={recetaCard} />
+          </div>
+        </article>
+
+        {/* 3 · Paginación simplificada */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="La paginación colapsa a solo Anterior y Siguiente en pantallas estrechas">
+              <div class="vm-head"><span class="vm-logo">E</span><span class="vm-sp"></span></div>
+              <div class="vm-one">
+                <div class="vm-pag">
+                  <span class="vm-pag__btn">← Anterior</span>
+                  <span class="vm-pag__btn vm-pag__btn--next">Siguiente →</span>
+                </div>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · Paginación simplificada</h3>
+            <p class="pat__desc">En pantallas muy estrechas los números de página se ocultan; quedan solo «Anterior» y «Siguiente» a todo el ancho. El visitante siempre sabe cómo navegar sin que los botones queden diminutos o desborden.</p>
+            <Receta titulo="CSS · paginación colapsable" lang="css" code={recetaPaginacion} />
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 5) FAQ ── */}
+  <section class="section">
+    <div class="container">
+      <FAQAccordion items={faqs} title="Preguntas frecuentes sobre la anatomía del blog" openFirst />
+    </div>
+  </section>
+
   {/* Cierre: menú de navegación full-width. */}
   <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
 </PageLayout>
@@ -149,11 +309,48 @@ const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.cotiz
   .section--surface { background: var(--c-surface); }
   @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
 
-  /* Vitrina de complementos: misma rejilla del catálogo (1 → 2 → 4 por fila). */
+  /* Vitrina de complementos: misma rejilla del catálogo (1 → 2 → 3 por fila). */
   .showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
   @media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
   @media (min-width: 1024px) { .showcase { grid-template-columns: repeat(3, 1fr); } }
 
   /* Pila «a fondo» (CategoryDetail) — separación uniforme, SIN zig-zag (= /modulos). */
   .afondo { display: grid; gap: clamp(2.5rem, 6vw, 5rem); margin-top: var(--sp-6); }
+
+  /* Sección responsive: teléfono | explicación + receta */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pat__desc code { font-family: ui-monospace, Menlo, monospace; font-size: .85em; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
+
+  /* Mockups — prefijo .vm (vitrina mockup), scoped a esta página */
+  .vm-head { display: flex; align-items: center; gap: 7px; padding: 8px 11px; background: var(--c-white); border-bottom: 1px solid var(--c-border); }
+  .vm-logo { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-black); font-size: 12px; }
+  .vm-sp { margin-left: auto; }
+  .vm-one { padding: 12px; display: grid; gap: 10px; }
+
+  /* Artículo + sidebar apilados */
+  .vm-art { padding: 8px; border-radius: 9px; background: var(--c-white); border: 1px solid var(--c-border); display: grid; gap: 5px; }
+  .vm-art__t { height: 9px; width: 75%; border-radius: 4px; background: var(--c-ink); opacity: .8; }
+  .vm-art__line { height: 6px; width: 100%; border-radius: 3px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .vm-art__line--short { width: 60%; }
+  .vm-side { padding: 8px; border-radius: 9px; background: var(--c-surface); border: 1px solid var(--c-border); display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+  .vm-side__t { width: 100%; height: 8px; border-radius: 3px; background: var(--c-ink); opacity: .6; }
+  .vm-side__chip { font-size: 9px; color: var(--c-ink-2); background: var(--c-white); border: 1px solid var(--c-border); border-radius: 99px; padding: 2px 6px; }
+
+  /* Card de artículo */
+  .vm-card { display: grid; gap: 6px; padding: 8px; border-radius: 9px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .vm-card__img { position: relative; display: block; height: 70px; border-radius: 6px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .vm-card__badge { position: absolute; top: 5px; left: 5px; font-size: 8px; font-weight: 700; color: var(--c-primary-dark); background: #fff; border-radius: 4px; padding: 1px 5px; }
+  .vm-card__t { height: 9px; width: 80%; border-radius: 4px; background: var(--c-ink); opacity: .8; }
+  .vm-card__d { height: 6px; width: 100%; border-radius: 3px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .vm-cta { position: relative; display: grid; place-items: center; min-height: 30px; border-radius: 7px; background: var(--c-primary); color: #fff; font-size: 11px; font-weight: 700; }
+  .vm-ruler { position: absolute; right: 8px; font-style: normal; font-size: 8px; font-weight: 700; color: #fff; background: rgba(255,255,255,.22); border-radius: 4px; padding: 1px 4px; }
+
+  /* Paginación */
+  .vm-pag { display: flex; gap: 6px; padding: 12px 8px; }
+  .vm-pag__btn { flex: 1; display: grid; place-items: center; min-height: 32px; border-radius: 7px; background: var(--c-surface); border: 1px solid var(--c-border); font-size: 10px; font-weight: 700; color: var(--c-ink-2); }
+  .vm-pag__btn--next { background: var(--c-primary); color: #fff; border-color: var(--c-primary); }
 </style>

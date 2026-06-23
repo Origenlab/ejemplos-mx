@@ -404,6 +404,22 @@ export const NAV: readonly NavItem[] = [
     items: NIVELES.filter((n) => n.estado === 'listo').map((n) => ({ label: n.label, href: n.href, desc: n.desc })),
   },
   {
+    // La guía completa del sistema: entry point para programadores que quieren
+    // entender el sistema completo. Lista las 5 series (Módulos, Niveles,
+    // Blog/anatomía, Productos/guía, Servicios/guía) con sus hubs.
+    label: 'Guía',
+    href: '/guia',
+    panel: 'dropdown',
+    allLabel: 'Ver la guía completa',
+    items: [
+      { label: 'Módulos', href: '/modulos', desc: 'Las 16 piezas UI del sitio' },
+      { label: 'Niveles', href: '/niveles', desc: 'Los 4 tipos de página' },
+      { label: 'Anatomía del blog', href: '/blog/anatomia', desc: '7 complementos del blog' },
+      { label: 'Guía de productos', href: '/productos/guia', desc: 'El flujo de crear un producto' },
+      { label: 'Guía de servicios', href: '/servicios/guia', desc: 'El flujo de crear un servicio' },
+    ],
+  },
+  {
     label: 'Cobertura',
     href: '/cobertura',
     panel: 'dropdown',

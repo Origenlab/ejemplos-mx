@@ -1,0 +1,154 @@
+---
+title: "Astro 6 Fonts API: fuentes web correctas sin dolor de cabeza"
+description: "La Fonts API de Astro 6 automatiza self-hosting, preloads y fallbacks de fuentes. Análisis honesto de qué resuelve y qué sigue siendo tu responsabilidad."
+category: "novedades"
+heroImage: "/images/articulos/guia-plantilla-astro-contenido-markdown.avif"
+pubDate: 2026-06-23
+author: "Ejemplos.mx"
+tags: ["astro", "fonts-api", "astro-6", "performance", "web-fonts", "self-hosting", "cls", "cwv"]
+seoTitle: "Astro 6 Fonts API: self-hosting automático de fuentes"
+seoDescription: "La Fonts API de Astro 6 automatiza self-hosting, preloads y fallbacks para eliminar CLS y requests externos de Google Fonts. Análisis completo."
+---
+
+Las fuentes web tienen una cualidad particular como problema técnico: parecen resueltas, pero no lo están. Llevan resueltas "casi" desde que Google Fonts las popularizó en 2010. Y sin embargo, en 2026, sigo viendo proyectos en producción con un Google Fonts `@import` que bloquea el render, sin preloads, sin fallbacks ajustados, con un CLS de 0.15 en cada visita porque la fuente del sistema tiene proporciones distintas a la fuente descargada.
+
+No es ignorancia. Es que hacerlo correctamente requiere un nivel de conocimiento y de trabajo manual que supera ampliamente lo que parece justificado para "simplemente cambiar la fuente del sitio". Descargar los archivos WOFF2 manualmente. Escribir los `@font-face` con los rangos unicode correctos. Agregar los `<link rel="preload">` en el head con el atributo `as="font"` y `crossorigin`. Calcular `size-adjust`, `ascent-override` y `descent-override` para la familia fallback. Actualizar la Content Security Policy para incluir el hash del estilo de fuente. Y hacer todo esto de nuevo cada vez que cambias de fuente o añades un peso nuevo.
+
+El problema no es que sea imposible. Es que es suficientemente tedioso y suficientemente especializado como para que la mayoría de equipos lo salte o lo haga a medias. La consecuencia son esos 0.15 de CLS, esas solicitudes a servidores de Google que registran las IPs de los visitantes, esos 400ms adicionales en el TTFB porque la fuente no tenía preload.
+
+La **Fonts API de Astro 6** es la respuesta del framework a este problema. Y es, en mi opinión, una de las features más subestimadas de la versión 6, precisamente porque resuelve algo que los desarrolladores habían aprendido a ignorar.
+
+## Qué hace exactamente la Fonts API
+
+La API toma tres responsabilidades que antes eran tuyas:
+
+**Descarga y self-hosting:** Astro descarga los archivos de fuente del proveedor durante el build y los incluye en tu directorio de assets estáticos. En producción, las fuentes se sirven desde tu propio dominio. Google Fonts nunca recibe solicitudes de los visitantes de tu sitio —solo del proceso de build, que ocurre en tu servidor de CI.
+
+**Preloads automáticos:** El componente `Font` genera automáticamente los tags `<link rel="preload">` para los archivos más críticos (normalmente el peso regular del subset latin-ext). No tienes que saber qué archivos necesitan preload ni cuál es la sintaxis correcta.
+
+**Fallbacks con métricas ajustadas:** Aquí está el trabajo más sofisticado. Astro analiza las tablas de métricas de la fuente descargada y genera una familia `@font-face` de fallback —basada en una fuente del sistema— con propiedades `size-adjust`, `ascent-override` y `descent-override` calculadas para minimizar el layout shift. El resultado es que el texto antes y después de cargar la fuente personalizada ocupa prácticamente el mismo espacio, y el CLS cae a valores negligibles.
+
+## Configuración y uso
+
+La configuración vive en `astro.config.mjs`:
+
+```javascript
+import { defineConfig, fontProviders } from 'astro/config';
+
+export default defineConfig({
+  fonts: [
+    {
+      name: 'Inter',
+      cssVariable: '--font-inter',
+      provider: fontProviders.fontsource(),
+      weights: ['400', '500', '700'],
+      subsets: ['latin', 'latin-ext'],
+    },
+    {
+      name: 'JetBrains Mono',
+      cssVariable: '--font-mono',
+      provider: fontProviders.fontsource(),
+      weights: ['400', '700'],
+      subsets: ['latin'],
+    },
+  ],
+});
+```
+
+Y en el layout base, importas el componente `Font` desde `astro:assets`:
+
+```astro
+---
+import { Font } from 'astro:assets';
+---
+
+<head>
+  <meta charset="utf-8" />
+  <title>{title}</title>
+
+  <!-- Preload para la fuente principal, fallback ajustado incluido -->
+  <Font cssVariable="--font-inter" preload />
+  <!-- Sin preload para la fuente secundaria (menos crítica) -->
+  <Font cssVariable="--font-mono" />
+
+  <style is:global>
+    body {
+      font-family: var(--font-inter), system-ui, sans-serif;
+    }
+
+    code, pre {
+      font-family: var(--font-mono), 'Courier New', monospace;
+    }
+  </style>
+</head>
+```
+
+Lo que genera Astro en el HTML final no es un `@import` a servidores externos. Es un `<link rel="preload">` apuntando a un archivo WOFF2 en tu propio dominio, seguido del `@font-face` con la fuente real y el `@font-face` del fallback ajustado. Todo generado automáticamente, todo correcto.
+
+## Los proveedores disponibles
+
+**Fontsource** es la opción recomendada para la gran mayoría de proyectos. Es un repositorio de más de 1.500 fuentes open source (incluyendo todas las de Google Fonts) distribuidas como paquetes npm. La ventaja frente a usar directamente Google Fonts es la independencia de infraestructura: los archivos vienen de npm registry durante el build, no de servidores de Google, y la versión de la fuente está fijada en tu `package.json`.
+
+**Google Fonts** también es soportado directamente. Astro descarga los archivos durante el build desde los servidores de Google, pero los sirve desde tu dominio en producción. La diferencia práctica con Fontsource es que Google Fonts tiene acceso a sus propios archivos más actualizados, mientras que Fontsource puede estar un ciclo de lanzamiento detrás. Para la mayoría de proyectos, la diferencia es irrelevante.
+
+**Fuentes locales** para proyectos que tienen una tipografía propietaria o una licencia de fuente específica:
+
+```javascript
+import { defineConfig, fontProviders } from 'astro/config';
+
+export default defineConfig({
+  fonts: [
+    {
+      name: 'Satoshi',
+      cssVariable: '--font-satoshi',
+      provider: fontProviders.local({
+        src: [
+          {
+            path: './src/fonts/Satoshi-Regular.woff2',
+            weight: '400',
+            style: 'normal',
+          },
+          {
+            path: './src/fonts/Satoshi-Medium.woff2',
+            weight: '500',
+            style: 'normal',
+          },
+          {
+            path: './src/fonts/Satoshi-Bold.woff2',
+            weight: '700',
+            style: 'normal',
+          },
+        ],
+      }),
+    },
+  ],
+});
+```
+
+Con fuentes locales, Astro sigue generando los fallbacks ajustados automáticamente, que es probablemente el beneficio más valioso de la API incluso cuando los archivos de fuente ya los tienes.
+
+## El CLS: el número que importa
+
+El Cumulative Layout Shift que las fuentes causan es uno de los Core Web Vitals más subestimados. La mayoría de proyectos lo atribuyen a imágenes sin dimensiones o a contenido que aparece dinámicamente, y pasan por alto que la sustitución de fuente —el momento en que la fuente del sistema se reemplaza por la descargada— puede mover visualmente todo el texto de una página.
+
+Un `size-adjust` bien calculado puede reducir ese shift de 0.12 a 0.01. La diferencia en términos de Core Web Vitals es la diferencia entre "necesita mejorar" y "bueno". Y en términos de experiencia del usuario, es la diferencia entre ese salto visual irritante en el primer segundo de carga y una página que se ve estable desde el principio.
+
+Lo que hace la Fonts API aquí no es magia: lee las tablas `hhea` y `OS/2` del archivo de fuente (donde están las métricas de altura, descenso y line-gap), calcula los valores CSS para que el fallback de Arial o Helvetica tenga proporciones equivalentes, y genera el `@font-face` correspondiente. Es un trabajo que herramientas como `fontaine` o el script de cálculo de métricas de `@next/font` también hacen. La novedad es que en Astro 6 es parte del framework, no una dependencia adicional.
+
+## Lo que la Fonts API no hace (y deberías saber)
+
+La API resuelve la descarga, el self-hosting y los fallbacks. Pero hay responsabilidades que siguen siendo tuyas.
+
+**La elección de pesos y subsets.** Si incluyes ocho pesos de Inter cuando tu diseño solo usa tres, estás descargando y sirviendo archivos innecesarios. La Fonts API no optimiza por uso: descarga lo que le pides. Revisar qué pesos y subsets realmente usa tu CSS sigue siendo trabajo del desarrollador.
+
+**El número de fuentes.** Cada familia tipográfica adicional es más kilobytes de descarga, más elementos en el `<head>`, más fallbacks a generar. La Fonts API hace más fácil añadir fuentes, lo que paradójicamente puede tentarte a añadir más de las necesarias. Dos familias bien elegidas (una para texto, una para código o headings) generalmente son suficientes para cualquier proyecto.
+
+**La estrategia `font-display`.** Por defecto, Astro usa `font-display: swap`, que muestra la fuente del sistema hasta que la personalizada está disponible. Esto minimiza el FOIT (Flash of Invisible Text) pero puede causar el FOUT (Flash of Unstyled Text). Para algunos diseños, `optional` puede ser mejor. La Fonts API permite configurarlo, pero la decisión sigue siendo tuya.
+
+## Mi conclusión: es la feature que hace correcto lo que hacíamos mal
+
+La Fonts API de Astro 6 no hace nada que un desarrollador meticuloso no pudiera hacer manualmente antes. Eso es exactamente su punto fuerte: hace automáticamente lo que antes requería meticulosidad para hacerse bien, y que en la práctica se hacía a medias o no se hacía.
+
+Las fuentes bien implementadas —con self-hosting, preloads y fallbacks ajustados— no son un lujo de proyectos enterprise. Son parte de una experiencia de usuario decente en cualquier sitio. Que Astro 6 las convierta en la opción por defecto, accesible con cinco líneas de configuración, es exactamente el tipo de decisión que diferencia un framework que se preocupa por los resultados de uno que solo se preocupa por las features.
+
+Si mantienes un proyecto Astro existente y tienes fuentes externas cargando desde Google Fonts hoy, la migración a la Fonts API es probablemente la mejora más rápida de Core Web Vitals que puedes hacer esta semana.

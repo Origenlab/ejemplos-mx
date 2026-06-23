@@ -25,6 +25,8 @@
 
 import { SITE } from "@config/site";
 import { buildMeta, buildSchema, buildKeywordTitle, buildKeywordDescription, type PageType, type SchemaData } from "@lib/seo";
+import { Font } from 'astro:assets';
+import { ClientRouter } from 'astro:transitions';
 
 // Tokens de diseño (FUENTE ÚNICA, C2). Se importa UNA sola vez aquí — todo el
 // sitio cuelga de BaseLayout, así que basta este import para exponer las
@@ -157,15 +159,19 @@ const jsonLd = buildSchema(pageType, schemaData);
     <meta name="theme-color" content="#5b3df5" />
 
     {/*
-      ── Fuentes self-hosted anti-CLS (C3) ──
-      Esta PLANTILLA usa la pila system-ui de tokens.css (sin woff2 propios), por
-      eso los preload van comentados: descomentándolos sin el archivo real darían
-      404. Al elegir tipografía propia, coloca los woff2 en /public/fonts, ajusta
-      --font-body / --font-heading en src/styles/tokens.css y descomenta:
-        <link rel="preload" href="/fonts/inter-400.woff2" as="font" type="font/woff2" crossorigin />
-        <link rel="preload" href="/fonts/outfit-700.woff2" as="font" type="font/woff2" crossorigin />
-      Self-host + font-display:swap + preload. NO Google Fonts CDN.
+      ── Fonts API (Astro 6) — Inter (body) + Outfit (headings) ──
+      El proveedor Fontsource descargó los woff2 durante el build y los sirve
+      desde este dominio (no Google CDN). <Font preload> emite:
+        - <link rel="preload"> para el subconjunto crítico (latin)
+        - @font-face con la fuente real
+        - @font-face del fallback con size-adjust/ascent-override calculados
+          para CLS ≈ 0 (texto del sistema mismo tamaño que Inter/Outfit).
+      --font-body / --font-heading en tokens.css son placeholders system-ui;
+      esta <Font> los sobreescribe con el valor correcto vía cssVariable.
+      Configurado en astro.config.mjs → bloque `fonts: [...]`.
     */}
+    <Font cssVariable="--font-body" preload />
+    <Font cssVariable="--font-heading" />
 
     {/*
       ── Preconnect CDN de imágenes (E3) — opcional ──
@@ -178,6 +184,17 @@ const jsonLd = buildSchema(pageType, schemaData);
       (preload de imagen LCP, RSS alternate, JSON-LD puntual). Patrón PROYECTORED.
     */}
     <slot name="head" />
+
+    {/*
+      ── View Transitions (ClientRouter) ──
+      Habilita navegación SPA con CSS View Transitions: el browser intercambia
+      el contenido de la página sin recarga completa (fade de 200ms por defecto).
+      El bundle del ClientRouter es ~4 KB. Combina bien con el prefetch hover
+      (ya habilitado en astro.config) — el prefetch pre-carga la página,
+      ClientRouter hace la transición sin parpadeo.
+      Ref: https://docs.astro.build/en/guides/view-transitions/
+    */}
+    <ClientRouter />
 
     {/* ── JSON-LD: un <script> por nodo del grafo, generado por buildSchema ──
        is:inline obligatorio: JSON-LD es DATA, no JS — saltar el bundler

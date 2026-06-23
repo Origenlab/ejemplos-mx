@@ -1,0 +1,110 @@
+---
+title: "Compilador Rust y Sätteri: Astro abandona JS en su core"
+description: "Astro 6 reescribe su compilador en Rust y estrena Sätteri para Markdown. Qué ganas, qué pierdes y qué significa esta apuesta para el ecosistema."
+category: "novedades"
+heroImage: "/images/articulos/novedades-sistema-produccion-web-astro.avif"
+pubDate: 2026-06-23
+author: "Ejemplos.mx"
+tags: ["astro", "rust", "satteri", "performance", "astro-6", "build", "markdown", "compilador"]
+seoTitle: "Compilador Rust y Sätteri en Astro 6: qué cambia realmente"
+seoDescription: "Astro 6 apuesta por Rust en su compilador .astro y en Sätteri para Markdown. Análisis honesto: qué ganas, qué pierdes y qué señala sobre el futuro."
+---
+
+Cuando un framework de JavaScript decide reescribir parte de su toolchain en Rust, hay dos formas de leerlo. La primera: el equipo está persiguiendo la moda de Rust en el ecosistema de herramientas de frontend (Biome, Rolldown, OXC, esbuild). La segunda: el problema de rendimiento que enfrentan es lo suficientemente concreto y lo suficientemente serio como para que ninguna solución en JavaScript —por bien optimizada que esté— sea la herramienta correcta.
+
+Astro 6 toma esa apuesta con dos componentes paralelos: un **compilador experimental para archivos `.astro` escrito en Rust** (sucesor del compilador Go que existía desde el inicio del framework) y **Sätteri**, un procesador de Markdown completamente nuevo también en Rust, que reemplaza el pipeline de `remark` + `rehype` del ecosistema `unified` que Astro ha usado desde siempre.
+
+La apuesta me parece bien fundada. Y al mismo tiempo tiene un costo real que conviene entender antes de migrar.
+
+## Por qué existía un compilador en Go (y por qué ya no era suficiente)
+
+La historia del compilador de Astro es más interesante de lo que parece en los changelogs. Desde la primera versión pública, el compilador de archivos `.astro` —el componente que transforma el formato `---frontmatter--- + template` en JavaScript ejecutable— estuvo escrito en Go. No en JavaScript, no en Rust: en Go.
+
+La razón era pragmática: Go compila a binarios nativos que npm puede incluir como dependencias, es significativamente más rápido que JavaScript puro para parsing, y tiene concurrencia nativa vía goroutines. Para 2021, cuando Astro empezaba, era una elección razonable para obtener rendimiento sin los tradeoffs de Rust (curva de aprendizaje, borrow checker, tiempo de compilación del propio compilador).
+
+El compilador Go funcionó durante cuatro años y sigue funcionando. Pero a medida que los proyectos Astro crecían en número de componentes y complejidad de templates, empezaban a emerger patrones problemáticos: mensajes de error poco descriptivos que decían "Unexpected token" sin contexto suficiente para localizar el problema; comportamientos inconsistentes en edge cases de templates complejos; y una base de código que el equipo del compilador —principalmente expertos en JavaScript y Rust— mantenía a distancia de su zona de confort.
+
+El cambio a Rust surgió, según cuenta el equipo, de un experimento con IA: explorar qué tan difícil sería portar el compilador Go a Rust. La respuesta fue "menos difícil de lo esperado, y el resultado es mejor". El compilador Rust produjo diagnósticos más precisos desde el principio, identificó más errores como advertencias en lugar de fallos silenciosos, y en ciertos patrones fue más confiable que el Go.
+
+## Habilitando el compilador Rust
+
+En Astro 6, el compilador Rust está disponible como feature experimental. Para activarlo:
+
+```bash
+npm install @astrojs/compiler-rs
+```
+
+```javascript
+// astro.config.mjs
+import { defineConfig } from 'astro/config';
+
+export default defineConfig({
+  experimental: {
+    rustCompiler: true,
+  },
+});
+```
+
+El compilador Rust es un drop-in replacement del Go: lee los mismos archivos `.astro`, produce el mismo JavaScript de salida, y los errores se reportan en el mismo punto del proceso de build. Para el código correcto, el comportamiento es idéntico. La diferencia está en los errores: el compilador Rust dice exactamente qué línea, qué columna, y en muchos casos, qué debería haber en lugar de lo que encontró.
+
+El impacto en velocidad del compilador Rust puro es menor en proyectos pequeños. Lo que hace que valga la pena adoptarlo ahora —incluso antes de que sea el default— es reportar al equipo de Astro los casos donde el comportamiento difiere del Go. Cada reporte es datos que acelera la ruta hacia que sea el default en Astro 7.
+
+## Sätteri: el fin del cuello de botella de unified
+
+Aquí es donde la apuesta Rust de Astro 6 tiene impacto inmediato y medible.
+
+El pipeline de Markdown de Astro ha estado construido sobre el ecosistema `unified` desde el inicio. `remark` parsea Markdown a un AST (Abstract Syntax Tree). Plugins de `remark` transforman ese AST (`remark-gfm` para GitHub Flavored Markdown, `remark-reading-time` para tiempo de lectura estimado, `remark-toc` para tabla de contenidos automática). `rehype` convierte el AST a HTML. Plugins de `rehype` transforman el HTML (`rehype-autolink-headings`, `rehype-pretty-code` para syntax highlighting). El resultado final es el HTML que Astro incluye en la página.
+
+Este sistema es flexible, extensible, y tiene un ecosistema de plugins enorme. También es el cuello de botella principal en builds de sitios con mucho contenido Markdown o MDX. No porque `unified` sea particularmente malo, sino porque JavaScript tiene límites fundamentales para este tipo de trabajo: muchas operaciones de string, mucho garbage collection, un event loop que no puede paralelizar el trabajo de forma nativa.
+
+**Sätteri** (`@astrojs/markdown-satteri`) reemplaza todo ese pipeline con un procesador escrito en Rust. No es un wrapper de Rust sobre unified: es una implementación independiente de CommonMark + GFM + las extensiones de Astro, optimizada para correr dentro del proceso de build de Astro con concurrencia real.
+
+Las cifras reportadas por el equipo de Astro son las más concretas que he visto para cualquier optimización de build en el ecosistema JavaScript: la documentación oficial de Astro (un sitio con miles de páginas MDX) redujo su tiempo de build en más de un minuto al cambiar a Sätteri. La documentación de Cloudflare obtuvo mejoras similares.
+
+```bash
+npm install @astrojs/markdown-satteri
+```
+
+```javascript
+// astro.config.mjs
+import { defineConfig } from 'astro/config';
+import { satteri } from '@astrojs/markdown-satteri';
+
+export default defineConfig({
+  markdown: {
+    processor: satteri(),
+  },
+});
+```
+
+Con esa configuración, todos los archivos `.md` y `.mdx` del proyecto pasan por Sätteri en lugar de unified. En el 99% de los casos, el output HTML es idéntico.
+
+## El costo real: los plugins de remark y rehype
+
+Aquí está la parte incómoda que los anuncios de Sätteri tienden a subrayar menos: los plugins de remark y rehype no funcionan con Sätteri.
+
+Sätteri es un procesador independiente de unified. No existe el concepto de "AST de remark" en su pipeline; procesa Markdown directamente a HTML en Rust. Eso significa que `remark-reading-time`, `rehype-autolink-headings`, `rehype-pretty-code`, `remark-toc`, y cualquier otro plugin del ecosistema unified son incompatibles.
+
+Para proyectos sin plugins custom de remark/rehype, la migración es directa: instala Sätteri, actualiza la configuración, ejecuta el build, verifica que el output sea idéntico. Fin.
+
+Para proyectos con plugins, la situación es más compleja. Algunas funcionalidades tienen equivalentes nativos en Sätteri (el syntax highlighting lo maneja Shiki 4 directamente, que Astro 6 incluye como dependencia). Otras no tienen equivalente disponible todavía y requieren esperar a que la comunidad construya alternativas o implementarlas de otra forma (directivas de componente Astro en lugar de transformaciones de rehype, por ejemplo).
+
+Mi recomendación concreta: inventaría los plugins de remark/rehype que usas actualmente en tu proyecto antes de evaluar la migración a Sätteri. Si usas más de tres plugins custom, probablemente Sätteri no esté listo para ti todavía. Si usas uno o dos, vale la pena investigar si hay equivalentes nativos.
+
+## La ola Rust en el toolchain de frontend
+
+Astro no está solo en esta apuesta. El ecosistema de herramientas de frontend ha tenido una migración sistemática hacia Rust en los últimos tres años. Biome reemplaza a Prettier y ESLint para formatting y linting. Rolldown (la reimplementación de Rollup en Rust, base de Vite 7) promete builds de bundling significativamente más rápidos. OXC provee un parser de JavaScript y TypeScript en Rust que es dramáticamente más rápido que los equivalentes en JavaScript.
+
+El patrón es siempre el mismo: herramientas que procesan grandes volúmenes de código de forma repetitiva se benefician de la velocidad de Rust, la concurrencia real y la ausencia de garbage collection de una forma que JavaScript no puede replicar. El costo es integración con el ecosistema existente de plugins JavaScript, que en muchos casos requiere wrappers o puentes.
+
+Astro con Sätteri y el compilador Rust está haciendo la misma apuesta que esas herramientas. La diferencia es que Astro tiene un ecosistema de plugins de remark/rehype mucho más central para muchos proyectos que los plugins de Rollup o las reglas de ESLint. El tradeoff de compatibilidad es, por tanto, más visible.
+
+## Mi conclusión: la dirección es correcta, el timing requiere calibración
+
+La apuesta de Astro por Rust en su core es la decisión técnica correcta a largo plazo. Los límites de rendimiento de JavaScript para toolchain de compilación son reales y el equipo lo sabe mejor que nadie. Un compilador `.astro` que produce diagnósticos más precisos y un procesador Markdown que elimina minutos del build de sitios grandes son mejoras concretas que se traducen en experiencia de desarrollo mejor y costos de CI más bajos.
+
+Lo que matizaría en el timing: el compilador Rust está en experimental y la ruta a producción depende de que la comunidad reporte los edge cases. Sätteri todavía no tiene paridad completa con el ecosistema de plugins de unified. Astro 7 es el objetivo declarado para que ambas sean las opciones por defecto.
+
+Para proyectos nuevos que empiezan en 2026, mi recomendación es diseñar sin dependencias de plugins de remark/rehype cuando sea posible, y habilitar Sätteri desde el inicio para ganar el rendimiento de build desde el día uno. Para proyectos existentes con plugins, monitorear el roadmap de Sätteri y hacer la migración cuando los plugins que usas tengan equivalentes.
+
+Lo que no haría es ignorar estas herramientas porque son experimentales. El compilador Rust es lo suficientemente estable para usarlo en desarrollo y reportar issues. Sätteri, en proyectos sin plugins custom, es lo suficientemente estable para producción. El ecosistema Rust en el toolchain de frontend no es una moda: es la dirección de la industria, y Astro está posicionándose correctamente para esa transición.

@@ -1,6 +1,6 @@
 // astro.config.mjs — config Astro 6 SSG. Canónico: PROYECTORED/astro.config.mjs + MESECI (trailingSlash:'never')
 // @ts-check
-import { defineConfig } from 'astro/config';
+import { defineConfig, fontProviders } from 'astro/config';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import sitemap from '@astrojs/sitemap';
@@ -170,6 +170,33 @@ export default defineConfig({
     '/productos/categoria/accesorios': '/productos/accesorios',
     '/productos/categoria/general':    '/productos/general',
   },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // FONTS API (Astro 6) — self-hosting automático + preloads + fallbacks CLS.
+  // Descarga Inter y Outfit de Fontsource durante el build y los sirve desde
+  // el propio dominio. El componente <Font cssVariable> en BaseLayout emite los
+  // @font-face con size-adjust/ascent-override calculados para CLS ≈ 0.
+  // subsets: latin-ext cubre ñ, á, é, ó, ú, ü (ES-MX). Pesos alineados con
+  // los font-weight del sistema de diseño (tokens.css --weight-*).
+  // ─────────────────────────────────────────────────────────────────────────
+  fonts: [
+    {
+      name: 'Inter',
+      cssVariable: '--font-body',
+      provider: fontProviders.fontsource(),
+      weights: ['400', '500', '600', '700'],
+      subsets: ['latin', 'latin-ext'],
+      display: 'swap',
+    },
+    {
+      name: 'Outfit',
+      cssVariable: '--font-heading',
+      provider: fontProviders.fontsource(),
+      weights: ['600', '700', '800'],
+      subsets: ['latin', 'latin-ext'],
+      display: 'swap',
+    },
+  ],
 
   integrations: [sitemap(sitemapOptions), mdx()],
 
