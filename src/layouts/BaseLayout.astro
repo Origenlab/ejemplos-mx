@@ -116,6 +116,17 @@ const jsonLd = buildSchema(pageType, schemaData);
     <link rel="canonical" href={meta.canonical} />
     <meta name="robots" content={meta.robots} />
 
+    {/* ── hreflang self-referential (O5) ──
+        Declara el idioma canónico de esta URL. x-default señala el fallback
+        global. Ambas apuntan a la misma URL (sitio monolingüe en es-MX) para
+        preparar la estructura ante una posible expansión a otros mercados sin
+        refactorizar el <head>. Patrón recomendado por Google Search Central. */}
+    <link rel="alternate" hreflang="es-MX" href={meta.canonical} />
+    <link rel="alternate" hreflang="x-default" href={meta.canonical} />
+
+    {/* ── RSS alternate (O2): descubrimiento del feed por lectores y crawlers ── */}
+    <link rel="alternate" type="application/rss+xml" title={`Blog de ${SITE.name}`} href="/rss.xml" />
+
     {/* ── Open Graph (derivado de los campos planos de buildMeta) ── */}
     <meta property="og:type" content={meta.type} />
     <meta property="og:title" content={meta.title} />

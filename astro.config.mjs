@@ -2,6 +2,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import { fileURLToPath } from 'node:url';
+import { execSync } from 'node:child_process';
 import sitemap from '@astrojs/sitemap';
 import mdx from '@astrojs/mdx';
 
@@ -14,6 +15,72 @@ import mdx from '@astrojs/mdx';
 // ─────────────────────────────────────────────────────────────────────────────
 /** @param {string} p */
 const r = (p) => fileURLToPath(new URL(p, import.meta.url));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// lastmod desde git log (O4) — señal de frescura real para el sitemap.
+// ─────────────────────────────────────────────────────────────────────────────
+// Estrategia: mapea la URL del sitemap al archivo fuente más probable y consulta
+// su fecha de último commit. Fallback silencioso si git no está disponible o el
+// archivo no tiene historial. Google solo usa lastmod cuando es consistente y
+// veraz; con new Date() en cada build lo ignora por completo.
+//
+// Mapeo URL → archivo fuente:
+//   /blog/<slug>        → src/content/articulos/<slug>.mdx
+//   /productos/<slug>   → src/content/productos/<slug>.md
+//   /servicios/<slug>   → src/content/servicios/<slug>.md
+//   /cobertura/<slug>   → src/content/zonas/<slug>.md
+//   /* (páginas raíz)   → src/pages/<path>.astro
+// ─────────────────────────────────────────────────────────────────────────────
+const BASE = fileURLToPath(new URL('.', import.meta.url));
+
+/**
+ * Obtiene la fecha ISO del último commit que tocó `relPath` (relativo al repo).
+ * Devuelve `null` si git falla, el archivo no existe o no tiene historial.
+ * @param {string} relPath
+ * @returns {string | null}
+ */
+function gitLastmod(relPath) {
+  try {
+    const date = execSync(`git log -1 --format="%aI" -- "${relPath}"`, {
+      cwd: BASE,
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'ignore'], // silencia stderr
+    }).trim();
+    return date || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Infiere el archivo fuente más probable a partir de la URL del sitemap.
+ * @param {string} url — URL absoluta (e.g. https://ejemplos.mx/blog/breadcrumbs-seo…)
+ * @returns {string | null} — ruta relativa al repo (e.g. src/content/articulos/…mdx)
+ */
+function urlToSourceFile(url) {
+  const path = new URL(url).pathname; // /blog/breadcrumbs-seo-jsonld-astro
+
+  // Blog: /blog/<slug> → colección articulos (.mdx)
+  const blog = path.match(/^\/blog\/(.+)$/);
+  if (blog) return `src/content/articulos/${blog[1]}.mdx`;
+
+  // Productos: /productos/<slug no-categoría> → colección productos (.md)
+  const prod = path.match(/^\/productos\/(?!equipos|accesorios|general|guia)(.+)$/);
+  if (prod) return `src/content/productos/${prod[1]}.md`;
+
+  // Servicios: /servicios/<slug> → colección servicios (.md)
+  const serv = path.match(/^\/servicios\/(.+)$/);
+  if (serv) return `src/content/servicios/${serv[1]}.md`;
+
+  // Cobertura: /cobertura/<slug> → colección zonas (.md)
+  const zona = path.match(/^\/cobertura\/(.+)$/);
+  if (zona) return `src/content/zonas/${zona[1]}.md`;
+
+  // Páginas estáticas: mapeo directo a src/pages/
+  if (path === '/') return 'src/pages/index.astro';
+  const page = path.replace(/^\//, '');
+  return `src/pages/${page}.astro`;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Opciones de sitemap. Origen del patrón: PROYECTORED (filter + serialize con
@@ -66,8 +133,15 @@ const sitemapOptions = {
       item.changefreq = /** @type {any} */ ('monthly');
     }
 
-    // lastmod omitido a propósito: poner new Date() en cada build hace que
-    // Google ignore el campo en todo el sitio (señal no confiable). — PROYECTORED
+    // lastmod desde git log: fecha real del último commit del archivo fuente.
+    // Es veraz (no varía en cada build) → Google lo utiliza para programar
+    // el recrawl. Fallback: el campo se omite si no hay historial disponible.
+    const sourceFile = urlToSourceFile(url);
+    if (sourceFile) {
+      const lastmod = gitLastmod(sourceFile);
+      if (lastmod) item.lastmod = lastmod;
+    }
+
     return item;
   },
 };

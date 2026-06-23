@@ -15,6 +15,7 @@ import CategoryDetail from '@components/CategoryDetail.astro'
 import SectionMenu from '@components/SectionMenu.astro'
 import MarcoMovil from '@components/MarcoMovil.astro'
 import Receta from '@components/Receta.astro'
+import FAQAccordion from '@components/FAQAccordion.astro'
 import GuiaNota from '@components/GuiaNota.astro'
 import { MODULOS, waUrl, WA_MESSAGES } from '@config/site'
 import { MODULE_CARD_META as MOD_META, MODULE_AFONDO, moduleGallery } from '@lib/modules'
@@ -53,6 +54,30 @@ const recetaCard = `/* mobile.css · la card entera se toca cómodo en el teléf
 // La presentación de cada card de módulo (foto + chips) es SSoT COMPARTIDO en
 // lib/modules.ts (MODULE_CARD_META, importado arriba como MOD_META) — reusado por
 // la home (vitrina «el sistema»).
+
+// ── FAQs del ÍNDICE de módulos ─────────────────────────────────────────────────
+const faqs = [
+  {
+    question: '¿Cuántos módulos tiene el sitio?',
+    answer: 'La plantilla incluye 16 módulos, ordenados de arriba a abajo según su posición en el layout: topbar, header, breadcrumbs, hero, section-menu, section-heading, category-card, category-detail, product-card, service-card, review, FAQ, CTA banner, formulario de contacto, footer y WhatsApp flotante. Todos están en estado "listo" y cada uno tiene su página de detalle con el molde de 10 secciones.',
+  },
+  {
+    question: '¿Cómo agrego un módulo nuevo al sitio?',
+    answer: 'Crea el componente en src/components/NombreModulo.astro, agrégalo al array MODULOS en site.ts con estado:"proximo" y crea su página de detalle en src/pages/modulos/<slug>.astro siguiendo el molde de 10 secciones. Cuando la página esté lista, cambia el estado a "listo" y el dropdown del Header lo mostrará automáticamente.',
+  },
+  {
+    question: '¿Un módulo puede reutilizarse en varias páginas?',
+    answer: 'Sí, esa es la ventaja principal. Un módulo se construye una vez y se reutiliza en todas las páginas que lo necesiten. Cambiar el componente actualiza todas sus instancias a la vez, sin perseguir copias dispersas. El Hero, el SectionMenu y el Footer son ejemplos que aparecen en decenas de páginas sin duplicar código.',
+  },
+  {
+    question: '¿En qué se diferencia un módulo de un layout?',
+    answer: 'Un layout (PageLayout, ArticleLayout) es el armazón completo de una página: importa el chrome (topbar + header + footer), gestiona el <head> y emite el JSON-LD. Un módulo es una pieza de contenido que va dentro de ese armazón: Hero, CategoryCard, FAQAccordion. El layout da la estructura; los módulos dan el contenido.',
+  },
+  {
+    question: '¿El chrome (topbar + header + footer) va automáticamente en todas las páginas?',
+    answer: 'Sí. El chrome está encapsulado en PageLayout y ArticleLayout. Cualquier página que use uno de esos layouts obtiene el topbar, header y footer automáticamente sin importarlos ni duplicarlos. Solo las páginas que no usan un layout estándar (como páginas de error o redirecciones) necesitan gestionarlo a mano.',
+  },
+]
 
 // Menú de cierre (reemplaza al antiguo CTABanner): siguiente paso útil + el sitio.
 // Patrón canónico del home: «el menú reparte, el último botón (WhatsApp) convierte».
@@ -265,6 +290,13 @@ const cierreCta = {
           teléfono, sin diseñar dos veces ni mantener media queries por componente.
         </p>
       </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── FAQ ── */}
+  <section class="section">
+    <div class="container">
+      <FAQAccordion items={faqs} title="Preguntas frecuentes sobre los módulos" openFirst />
     </div>
   </section>
 

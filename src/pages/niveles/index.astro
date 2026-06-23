@@ -17,6 +17,7 @@ import CategoryDetail from '@components/CategoryDetail.astro'
 import SectionMenu from '@components/SectionMenu.astro'
 import MarcoMovil from '@components/MarcoMovil.astro'
 import Receta from '@components/Receta.astro'
+import FAQAccordion from '@components/FAQAccordion.astro'
 import GuiaNota from '@components/GuiaNota.astro'
 import { NIVELES, waUrl, WA_MESSAGES } from '@config/site'
 import { NIVEL_CARD_META as NIV_META } from '@lib/niveles'
@@ -60,6 +61,30 @@ const POOL = [
   `${IMG}/productos/componentes-plantilla-astro-markdown.avif`,
   `${IMG}/productos/sitio-web-rapido-astro.avif`,
   `${IMG}/servicios/consultoria-desarrollo-web-astro.avif`,
+]
+
+// ── FAQs del ÍNDICE de niveles ─────────────────────────────────────────────────
+const faqs = [
+  {
+    question: '¿Cuántos niveles tiene un sitio en este sistema?',
+    answer: 'Cuatro: L1 (la home), L2 (índice de sección como /productos o /servicios), L3 (ficha de una entidad a fondo como un producto o módulo) y L4 (sub-ficha o variante cuando una entidad se subdivide). No todos los sitios necesitan L4; muchos van bien hasta L3.',
+  },
+  {
+    question: '¿Cómo sé en qué nivel está una página?',
+    answer: 'Cuenta los saltos desde la raíz. La home es L1 (0 saltos). /productos es L2 (1 salto). /productos/equipo-base es L3 (2 saltos). /productos/equipo-base/variante-roja sería L4 (3 saltos). Las migas de pan lo reflejan: cuantos más segmentos tiene la ruta, más profundo el nivel.',
+  },
+  {
+    question: '¿Es obligatorio usar los 4 niveles?',
+    answer: 'No. El sistema te da el molde de los 4; tú usas los que tu sitio necesita. Un sitio de servicios simples puede funcionar con L1+L2+L3 (home + servicios + detalle de servicio) sin ningún L4. L4 se justifica cuando una entidad tiene variantes reales que merecen su propia URL: colores, tallas, modelos, paquetes.',
+  },
+  {
+    question: '¿Por qué las migas de pan cambian con el nivel?',
+    answer: 'Las migas de pan (Breadcrumbs) reflejan la profundidad en la jerarquía: L1 no tiene (es el origen), L2 muestra solo «Inicio › Sección», L3 agrega el nombre de la sección y L4 agrega el nombre de la categoría padre. El componente Breadcrumbs recibe el prop breadcrumbs del PageLayout y lo construye automáticamente desde los datos de cada página.',
+  },
+  {
+    question: '¿Puede una página del sitio cambiar de nivel?',
+    answer: 'En la práctica, no: el nivel se fija al diseñar la arquitectura del sitio. Lo que sí puede pasar es que un sitio que empezó con L3 como hoja terminal decida agregar variantes y convertir esa L3 en padre de un nuevo L4. Ese cambio implica crear las nuevas páginas L4, ajustar las migas y posiblemente hacer redirects de las URLs anteriores.',
+  },
 ]
 
 // Menú de cierre: «el menú reparte, el último botón (WhatsApp) convierte».
@@ -320,6 +345,13 @@ const AFONDO: Record<string, { body: string[]; points: string[] }> = {
           sin diseñar dos veces ni mantener media queries por componente.
         </p>
       </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── FAQ ── */}
+  <section class="section">
+    <div class="container">
+      <FAQAccordion items={faqs} title="Preguntas frecuentes sobre los niveles" openFirst />
     </div>
   </section>
 
