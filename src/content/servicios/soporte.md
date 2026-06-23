@@ -2,7 +2,7 @@
 title: "Soporte y mantenimiento continuo"
 description: "El trabajo no termina en la entrega. Te acompañamos con mantenimiento, mejoras y respuesta directa para que todo siga funcionando con el tiempo."
 category: "mantenimiento"
-image: "/images/servicios/soporte-mantenimiento-web-astro.avif"
+image: "/images/servicios/servicio-soporte.avif"
 pricing:
   unit: "mes"
   note: "Planes de mantenimiento bajo cotización; también atendemos servicios puntuales."

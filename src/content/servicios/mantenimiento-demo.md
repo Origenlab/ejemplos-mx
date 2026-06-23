@@ -2,7 +2,7 @@
 title: "Servicio de mantenimiento de ejemplo"
 description: "Segundo servicio DEMO, categoría mantenimiento, para demostrar cómo el catálogo de servicios lista varias entradas y cómo se filtran los borradores con draft."
 category: "mantenimiento"
-image: "/images/servicios/soporte-mantenimiento-web-astro.avif"
+image: "/images/servicios/servicio-mantenimiento-demo.avif"
 includes:
   - "Revisión periódica de ejemplo"
   - "Reporte de estado"

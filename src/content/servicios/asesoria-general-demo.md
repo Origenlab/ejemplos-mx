@@ -2,7 +2,7 @@
 title: "Asesoría general de ejemplo"
 description: "Tercer servicio DEMO en la categoría general. Ficha mínima con solo los campos obligatorios del esquema, útil como punto de partida para un servicio nuevo."
 category: "general"
-image: "/images/servicios/consultoria-desarrollo-web-astro.avif"
+image: "/images/servicios/servicio-asesoria-general.avif"
 order: 3
 ---
 

@@ -62,12 +62,12 @@ export function siblingsServicios(slug: string): SiblingItem[] {
 // ============================================================================
 const IMG = '/images'
 export const SERVICIO_GUIA_CARD_META: Record<string, { image: string; chips: string[] }> = {
-  'la-coleccion':   { image: `${IMG}/productos/componentes-plantilla-astro-markdown.avif`, chips: ['Un .md por servicio', 'Zod .strict()', 'Contenido ≠ diseño'] },
-  'el-copy':        { image: `${IMG}/showcase/texto-venta-contenido-markdown.avif`,        chips: ['Propuesta de valor', 'Hero sin CTAs', 'descRight = 2 párrafos'] },
-  'el-alcance':     { image: `${IMG}/servicios/consultoria-desarrollo-web-astro.avif`,     chips: ['includes[] concreto', 'pricing.note honesta', 'Lead cualificado'] },
-  'el-proceso':     { image: `${IMG}/servicios/implementacion-deploy-sitio-astro.avif`,    chips: ['3 pasos canónicos', 'Predecible · Reproducible', 'Reduce soporte'] },
-  'las-objeciones': { image: `${IMG}/showcase/jerarquia-titulos-seo-pagina-web.avif`,      chips: ['faqs[] fuente única', 'FAQPage schema', 'Una objeción = un FAQ'] },
-  'la-conversion':  { image: `${IMG}/servicios/soporte-mantenimiento-web-astro.avif`,      chips: ['WhatsApp-first', 'waUrl() siempre', 'Un CTA principal'] },
+  'la-coleccion':   { image: `${IMG}/servicios/servicio-guia-la-coleccion.avif`,    chips: ['Un .md por servicio', 'Zod .strict()', 'Contenido ≠ diseño'] },
+  'el-copy':        { image: `${IMG}/servicios/servicio-guia-el-copy.avif`,          chips: ['Propuesta de valor', 'Hero sin CTAs', 'descRight = 2 párrafos'] },
+  'el-alcance':     { image: `${IMG}/servicios/servicio-guia-el-alcance.avif`,       chips: ['includes[] concreto', 'pricing.note honesta', 'Lead cualificado'] },
+  'el-proceso':     { image: `${IMG}/servicios/servicio-guia-el-proceso.avif`,       chips: ['3 pasos canónicos', 'Predecible · Reproducible', 'Reduce soporte'] },
+  'las-objeciones': { image: `${IMG}/servicios/servicio-guia-las-objeciones.avif`,   chips: ['faqs[] fuente única', 'FAQPage schema', 'Una objeción = un FAQ'] },
+  'la-conversion':  { image: `${IMG}/servicios/servicio-guia-la-conversion.avif`,    chips: ['WhatsApp-first', 'waUrl() siempre', 'Un CTA principal'] },
 }
 
 // ============================================================================
@@ -162,16 +162,16 @@ export const SERVICIO_GUIA_AFONDO: Record<string, { body: string[]; points: stri
 // Mismo patrón que productoGuiaGallery() en lib/productos.ts.
 // ============================================================================
 export const SERVICIO_GUIA_GALLERY_POOL: readonly string[] = [
-  `${IMG}/servicios/consultoria-desarrollo-web-astro.avif`,
-  `${IMG}/servicios/implementacion-deploy-sitio-astro.avif`,
-  `${IMG}/servicios/soporte-mantenimiento-web-astro.avif`,
-  `${IMG}/productos/desarrollo-web-astro-profesional.avif`,
-  `${IMG}/productos/componentes-plantilla-astro-markdown.avif`,
-  `${IMG}/productos/sitio-web-rapido-astro.avif`,
-  `${IMG}/showcase/imagen-optimizada-avif-sitio-web.avif`,
-  `${IMG}/showcase/jerarquia-titulos-seo-pagina-web.avif`,
-  `${IMG}/showcase/texto-venta-contenido-markdown.avif`,
-  `${IMG}/showcase/enlaces-internos-navegacion-web.avif`,
+  `${IMG}/servicios/servicio-guia-la-coleccion.avif`,
+  `${IMG}/servicios/servicio-guia-el-copy.avif`,
+  `${IMG}/servicios/servicio-guia-el-alcance.avif`,
+  `${IMG}/servicios/servicio-guia-el-proceso.avif`,
+  `${IMG}/servicios/servicio-guia-las-objeciones.avif`,
+  `${IMG}/servicios/servicio-guia-la-conversion.avif`,
+  `${IMG}/servicios/servicio-consultoria.avif`,
+  `${IMG}/servicios/servicio-implementacion.avif`,
+  `${IMG}/servicios/servicio-soporte.avif`,
+  `${IMG}/servicios/servicio-asesoria-general.avif`,
 ]
 
 export type ServicioGuiaGallery = {

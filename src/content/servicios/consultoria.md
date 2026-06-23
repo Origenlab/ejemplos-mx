@@ -2,7 +2,7 @@
 title: "Consultoría y diagnóstico para tu proyecto"
 description: "Antes de invertir, definimos contigo qué necesitas y por qué. Diagnóstico claro, alcance recomendado y una propuesta por escrito — sin venderte de más."
 category: "general"
-image: "/images/servicios/consultoria-desarrollo-web-astro.avif"
+image: "/images/servicios/servicio-consultoria.avif"
 pricing:
   unit: "servicio"
   note: "Bajo cotización según el alcance. La primera asesoría es sin compromiso."

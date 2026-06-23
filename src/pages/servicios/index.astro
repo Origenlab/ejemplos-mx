@@ -43,7 +43,7 @@ const demoPilares = [
 // al giro real del cliente: cuerpos, puntos clave e imágenes deben ser reales.
 const SERVICIOS_AFONDO: Record<string, { body: string[]; points: string[]; image: string }> = {
   consultoria: {
-    image: '/images/servicios/consultoria-desarrollo-web-astro.avif',
+    image: '/images/servicios/servicio-consultoria.avif',
     body: [
       'La consultoría define el alcance antes de escribir una sola línea de código. Analizamos el objetivo del sitio, la audiencia, la arquitectura de URLs y las necesidades técnicas para proponer un plan claro: qué se construye, en qué orden y por qué. El diagnóstico es el primer entregable —no una reunión informal sin conclusiones.',
       'En un sitio Astro, la consultoría incluye la decisión de qué piezas del sistema se activan según el giro: colecciones, taxonomía, blog, SEO técnico. El cliente sabe exactamente qué recibirá antes de confirmar. El diagnóstico escrito es la base del trato.',
@@ -56,7 +56,7 @@ const SERVICIOS_AFONDO: Record<string, { body: string[]; points: string[]; image
     ],
   },
   implementacion: {
-    image: '/images/servicios/implementacion-deploy-sitio-astro.avif',
+    image: '/images/servicios/servicio-implementacion.avif',
     body: [
       'La implementación construye el sitio sobre el diagnóstico acordado. Configuramos el repositorio, integramos las colecciones de contenido, conectamos las herramientas del cliente (dominio, Cloudflare, formularios) y publicamos un sitio estático que carga en menos de un segundo con un Lighthouse > 95 en todas las métricas.',
       'El sitio resultante es 100% editable en Markdown: el cliente (o su equipo) puede modificar precios, textos, imágenes y productos sin tocar código. El entregable incluye la guía de edición y una sesión de transferencia para que el cliente opere con autonomía desde el primer día.',
@@ -69,7 +69,7 @@ const SERVICIOS_AFONDO: Record<string, { body: string[]; points: string[]; image
     ],
   },
   soporte: {
-    image: '/images/servicios/soporte-mantenimiento-web-astro.avif',
+    image: '/images/servicios/servicio-soporte.avif',
     body: [
       'El soporte mantiene el sitio funcionando después de la entrega: actualizaciones de contenido, publicación de artículos del blog, ajustes de precio, nuevas fichas de producto o servicio. Las solicitudes entran por WhatsApp; la respuesta inicial es en menos de 4 horas en días hábiles. Sin tickets, sin formularios, sin colas.',
       'Para cambios técnicos (migración de dominio, ajuste de schema, nuevo módulo), el soporte incluye diagnóstico y alcance por escrito antes de ejecutar. El cliente no recibe facturas sorpresa por trabajos no acordados.',
@@ -85,12 +85,12 @@ const SERVICIOS_AFONDO: Record<string, { body: string[]; points: string[]; image
 
 // ── GALERÍA POR SERVICIO ──────────────────────────────────────────────────────
 const POOL = [
-  '/images/servicios/consultoria-desarrollo-web-astro.avif',
-  '/images/servicios/implementacion-deploy-sitio-astro.avif',
-  '/images/servicios/soporte-mantenimiento-web-astro.avif',
-  '/images/productos/desarrollo-web-astro-profesional.avif',
-  '/images/productos/componentes-plantilla-astro-markdown.avif',
-  '/images/showcase/imagen-optimizada-avif-sitio-web.avif',
+  '/images/servicios/servicio-consultoria.avif',
+  '/images/servicios/servicio-implementacion.avif',
+  '/images/servicios/servicio-soporte.avif',
+  '/images/servicios/servicio-guia-el-alcance.avif',
+  '/images/servicios/servicio-guia-el-proceso.avif',
+  '/images/servicios/servicio-guia-las-objeciones.avif',
 ]
 function servGallery(id: string, i: number) {
   const main = SERVICIOS_AFONDO[id]?.image ?? POOL[0]

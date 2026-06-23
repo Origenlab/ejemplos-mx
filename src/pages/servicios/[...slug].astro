@@ -1,26 +1,29 @@
 ---
 // ============================================================================
-// /servicios/<id> — Detalle de servicio (Nivel L4).
+// /servicios/<id> — Detalle de servicio (Nivel L3).
 // ----------------------------------------------------------------------------
-// Ruta dinámica generada desde SERVICES (TAXONOMY en site.ts, SSoT) — "manda el
-// menú": los slugs son los `id` de SERVICES (consultoria · implementacion ·
-// soporte), idénticos a los que enlaza el dropdown del Header. El contenido de
-// apoyo (qué incluye, proceso) es DEMO y vive en este archivo como mapa local.
+// Molde de 9 secciones: mismo kit Mod* que /modulos/*. Mockups bespoke por
+// servicio: documento de propuesta (consultoría), pipeline de deploy
+// (implementación), chat de soporte (soporte). DisenoCards con mini-UIs vivas.
 // ============================================================================
-import PageLayout from '@layouts/PageLayout.astro'
-import Hero from '@components/Hero.astro'
-import SectionHeading from '@components/SectionHeading.astro'
-import GuiaNota from '@components/GuiaNota.astro'
-import FAQAccordion from '@components/FAQAccordion.astro'
-import SectionMenu from '@components/SectionMenu.astro'
+import PageLayout    from '@layouts/PageLayout.astro'
+import Hero          from '@components/Hero.astro'
+import SectionMenu   from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard    from '@components/DisenoCard.astro'
+import MarcoMovil    from '@components/MarcoMovil.astro'
+import ModSection    from '@components/modulos/ModSection.astro'
+import ModBenefits   from '@components/modulos/ModBenefits.astro'
+import ModAnatomy    from '@components/modulos/ModAnatomy.astro'
+import ModResponsive from '@components/modulos/ModResponsive.astro'
+import ModPattern    from '@components/modulos/ModPattern.astro'
+import ModProse      from '@components/modulos/ModProse.astro'
+import ModDosDonts   from '@components/modulos/ModDosDonts.astro'
 import { getCollection, render } from 'astro:content'
 import { SERVICES, COVERAGE_STATES, waUrl, WA_MESSAGES } from '@config/site'
+import { siblingsServicios } from '@lib/servicios'
 
 export async function getStaticPaths() {
-  // El detalle RICO de cada servicio vive en la colección `servicios` (un .md por
-  // servicio, nombrado con el MISMO slug que su id en SERVICES). Si existe, manda;
-  // si no, se usa el alcance genérico de respaldo. NAV y rutas siguen saliendo de
-  // SERVICES (sync) → cero riesgo de romper el menú.
   const entries = await getCollection('servicios', ({ data }) => !data.draft)
   return SERVICES.map((s) => ({
     params: { slug: s.id },
@@ -30,59 +33,227 @@ export async function getStaticPaths() {
 
 const { servicio, entry } = Astro.props
 const { id, label, desc } = servicio
+const ServiceContent = entry ? (await render(entry)).Content : null
+const pricingNote = entry?.data.pricing?.note
+const includes = entry?.data.includes ?? []
+const faqs = entry?.data.faqs?.length ? entry.data.faqs : [
+  { question: '¿Cómo se cotiza?', answer: 'Por WhatsApp con la descripción del proyecto. Respondemos con propuesta de alcance y precio en menos de 24 h hábiles.' },
+  { question: '¿Atienden mi zona?', answer: 'Atendemos en todo México de forma remota. Para CDMX podemos coordinar reuniones presenciales cuando se requiera.' },
+]
 
-// Contenido de apoyo DEMO por servicio (qué incluye). Reemplázalo por el real.
-const DETALLE: Record<string, { incluye: string[]; lede: string }> = {
+// ── Datos ricos por servicio ─────────────────────────────────────────────────
+const DATA: Record<string, {
+  accent: string
+  subtitle: string
+  descRight: [string, string]
+  defTitle: string; defDesc: string; defBody: [string, string]
+  beneficios: { titulo: string; desc: string }[]
+  partes: { n: number; nombre: string; que: string; dato: string }[]
+  disenos: { nombre: string; tag: string; desc: string }[]
+  posBody: [string, string]
+  procesoTitle: string; procesoBody: [string, string]
+  sis: string[]; nos: string[]
+}> = {
+
   consultoria: {
-    lede: 'Antes de construir, decidir bien. Definimos qué tiene que lograr tu sitio y cómo lo logrará.',
-    incluye: ['Diagnóstico del objetivo de negocio', 'Arquitectura de información y mapa de páginas', 'Definición de alcance, contenido y conversión'],
+    accent: 'diagnóstico y propuesta',
+    subtitle: 'Antes de construir, decidir bien. Definimos qué necesita tu proyecto — en lenguaje claro, por escrito, sin venderte de más.',
+    descRight: [
+      'La consultoría es la etapa que más se saltea y la que más errores evita. No es una reunión informal: es un diagnóstico de tu caso específico que termina en una propuesta por escrito con alcance, tiempos y costo.',
+      'El entregable no es una presentación de ventas: es la herramienta con la que decides si avanzas, con quién y sobre qué. Si el proyecto no tiene sentido, te lo decimos antes de cobrarte un peso.',
+    ],
+    defTitle: '¿Qué es la consultoría?',
+    defDesc: 'El diagnóstico que convierte una idea vaga en un plan accionable — antes de invertir en ejecución.',
+    defBody: [
+      'La consultoría es la etapa de análisis y recomendación que viene antes de cualquier trabajo ejecutivo. No construimos nada todavía: escuchamos tu caso, identificamos qué resuelve de verdad tu necesidad y te lo explicamos con claridad. El diagnóstico es el primer entregable, no un paso de ventas.',
+      'Es útil siempre que haya incertidumbre sobre el qué: qué tipo de sitio conviene, cuántas páginas tienen sentido, qué tan prioritario es el blog, si vale la pena una ficha por servicio o basta con una landing. Esas decisiones tomadas mal al inicio cuestan mucho más después.',
+    ],
+    beneficios: [
+      { titulo: 'Decisión informada', desc: 'Sabes qué construir y por qué antes de comprometerte. El diagnóstico elimina el «creo que necesito» y lo reemplaza por un plan con fundamento.' },
+      { titulo: 'Propuesta honesta', desc: 'El alcance lo define el problema, no el presupuesto máximo. Si algo no aporta, no entra en la propuesta.' },
+      { titulo: 'Menos retrabajo', desc: 'Cambiar de dirección a mitad de la implementación cuesta mucho más que tomar bien la decisión al inicio. La consultoría se paga sola.' },
+    ],
+    partes: [
+      { n: 1, nombre: 'Escucha del caso',    que: 'Entendemos el objetivo, la audiencia y el contexto antes de hacer cualquier recomendación.',         dato: 'WhatsApp / videollamada' },
+      { n: 2, nombre: 'Diagnóstico',         que: 'Análisis del proyecto: tipo de sitio, arquitectura de páginas, prioridades técnicas y de contenido.',  dato: 'Documento escrito' },
+      { n: 3, nombre: 'Recomendación',       que: 'Qué conviene hacer, en qué orden y por qué. Incluye lo que no conviene hacer ahora.',                  dato: 'Mapa de URLs · Alcance' },
+      { n: 4, nombre: 'Propuesta ejecutiva', que: 'Alcance específico, entregables, tiempos y costo — por escrito y en lenguaje claro.',                   dato: 'PDF / doc compartido' },
+    ],
+    disenos: [
+      { nombre: 'Proyecto nuevo',        tag: 'Desde cero',          desc: 'No existe sitio todavía. La consultoría define qué construir: tipo de sitio, páginas clave, taxonomía, y qué contenido se necesita antes de diseñar.' },
+      { nombre: 'Sitio sin conversiones', tag: 'Revisión existente',  desc: 'Hay sitio pero no genera contactos. El diagnóstico identifica dónde se pierde el visitante: velocidad, copy, falta de CTA, arquitectura de información.' },
+      { nombre: 'Presupuesto acotado',   tag: 'Priorización',         desc: 'Hay un límite claro y hay que decidir en qué invertirlo. La consultoría prioriza qué tiene más impacto para el objetivo y qué puede esperar.' },
+      { nombre: 'Propuesta interna',     tag: 'Justificación',         desc: 'Hay que presentarle el proyecto a un socio o consejo. La consultoría produce el documento que sustenta la decisión con datos y argumentos.' },
+    ],
+    posBody: [
+      'La consultoría va al inicio: es el paso 0, antes de diseñar, escribir contenido o elegir herramientas. Sin ella, la implementación parte de supuestos — y los supuestos se corrigen durante el trabajo, que es cuando más cuesta.',
+      'Puede contratarse sola (para quien quiere el diagnóstico y ejecutará por su cuenta) o como primera etapa de un proyecto completo. En ambos casos, el entregable es el mismo: un documento que deja claro qué se hace y por qué.',
+    ],
+    procesoTitle: 'Del primer mensaje al diagnóstico',
+    procesoBody: [
+      'Empieza con una conversación por WhatsApp o llamada — sin formularios. Preparamos un cuestionario breve para entender el negocio, la audiencia y los objetivos con detalle. El diagnóstico se hace sobre esas respuestas y sobre una revisión directa del contexto.',
+      'El entregable llega en 3 a 5 días hábiles: un documento con el análisis, la recomendación de alcance y la propuesta ejecutiva. Si algo no queda claro, lo revisamos en una segunda sesión sin costo adicional. Sin presión para avanzar.',
+    ],
+    sis: [
+      'Llega con tu objetivo claro, aunque no sepas cómo lograrlo — ese es el trabajo de la consultoría.',
+      'Pide el diagnóstico por escrito: si no está en papel, no hay forma de comparar ni de rendirle cuentas.',
+      'Usa la propuesta para comparar con otras opciones: el documento es tuyo y puedes mostrarlo a quien quieras.',
+      'Contrata la consultoría antes de la implementación, incluso si parece «obvio» lo que necesitas.',
+    ],
+    nos: [
+      'No saltes directo a la implementación «para ahorrar»: el retrabajo posterior cuesta más que el diagnóstico.',
+      'No des por bueno un diagnóstico que no explica el porqué de cada recomendación.',
+      'No confundas propuesta con presupuesto: la propuesta define el alcance; el presupuesto sale del alcance.',
+      'No aceptes un alcance vago («hacemos el sitio completo»): exige entregables con nombre y definición de terminado.',
+    ],
   },
+
   implementacion: {
-    lede: 'De la definición al sitio publicado: construcción rápida, editable y lista para crecer.',
-    incluye: ['Construcción del sitio en Astro', 'Contenido en Markdown, separado del diseño', 'Publicación, dominio y puesta en marcha'],
+    accent: 'del plan a la entrega',
+    subtitle: 'Ejecutamos lo acordado con un proceso claro, comunicación en cada paso y un resultado documentado que puedes verificar.',
+    descRight: [
+      'La implementación construye sobre lo que ya se decidió. El alcance está fijado en la propuesta y cualquier cambio se discute antes de ejecutarlo: nunca recibes trabajo que no aprobaste ni facturas inesperadas.',
+      'Entregamos un sitio Astro estático: rápido, editable en Markdown y publicado en Cloudflare Pages. El código y el contenido son tuyos — sin dependencia del proveedor, sin licencias que pagar.',
+    ],
+    defTitle: '¿Qué es la implementación?',
+    defDesc: 'La ejecución del alcance acordado: del repositorio vacío al sitio publicado, documentado y verificado contigo.',
+    defBody: [
+      'La implementación es la etapa de construcción: levantamos el sitio sobre el diagnóstico o propuesta aprobados. Configuramos el repositorio, integramos las colecciones de contenido, conectamos el dominio, desplegamos en Cloudflare Pages y hacemos la verificación final contigo.',
+      'La diferencia con «hacemos un sitio» es que aquí el alcance está delimitado por escrito desde antes de empezar. Cada entregable tiene un nombre y una definición de terminado; cuando todos están listos, la implementación cierra.',
+    ],
+    beneficios: [
+      { titulo: 'Velocidad real', desc: 'Sitio estático Astro: Lighthouse > 95, TTFB < 300 ms en Cloudflare CDN global. Sin plugins que ralenticen ni bases de datos que fallen.' },
+      { titulo: 'Contenido en tus manos', desc: 'Todo el contenido vive en archivos Markdown. Puedes editarlo tú mismo desde el primer día, sin tocar código ni depender del proveedor.' },
+      { titulo: 'Sin sorpresas en la factura', desc: 'Cada cambio fuera del alcance se comunica con su impacto antes de ejecutarse. Nunca recibes trabajo que no aprobaste.' },
+    ],
+    partes: [
+      { n: 1, nombre: 'Configuración del entorno', que: 'Repositorio, estructura de proyecto, Astro 6, integraciones y variables. La base sobre la que todo corre.',          dato: 'GitHub · Node 22 · Astro 6' },
+      { n: 2, nombre: 'Colecciones y contenido',   que: 'Cada tipo de contenido en su colección Markdown con esquema Zod. Separar el dato del diseño es lo que hace el sitio editable.', dato: 'src/content/ · Zod schema' },
+      { n: 3, nombre: 'Deploy y dominio',           que: 'Publicación en Cloudflare Pages, configuración de dominio y DNS. El sitio es verificable desde el primer build parcial.',      dato: 'Cloudflare Pages · GitHub Actions' },
+      { n: 4, nombre: 'Verificación y entrega',    que: 'Revisión conjunta, guía de edición y sesión de transferencia. El cliente opera con autonomía desde el primer día.',            dato: 'Checklist de entrega · Guía .md' },
+    ],
+    disenos: [
+      { nombre: 'Sitio nuevo completo',    tag: 'Desde propuesta',    desc: 'El caso más común: sitio completo sobre propuesta aprobada. Home, servicios o productos, blog y contacto. Entrega en 3 a 5 semanas.' },
+      { nombre: 'Landing de lanzamiento', tag: 'MVP rápido',          desc: 'Una sola página de alta conversión para validar una propuesta de valor. Sin blog ni catálogo. Una semana de trabajo, lista para probar.' },
+      { nombre: 'Migración a Astro',      tag: 'Desde WordPress',     desc: 'Contenido migrado a Markdown, tema reemplazado por componentes Astro, publicado en Cloudflare. Sin tiempo de caída y con mejor rendimiento.' },
+      { nombre: 'Módulo adicional',       tag: 'Sitio existente',     desc: 'Se agrega una sección que no estaba en el alcance original: catálogo de productos, sección de blog, integración de reseñas o formulario.' },
+    ],
+    posBody: [
+      'La implementación es el paso 2: entra cuando la consultoría terminó o cuando el cliente llega con el alcance definido. Sin un alcance claro no puede comprometerse a tiempos ni a entregables concretos — por eso la propuesta previa no es opcional.',
+      'Cuando termina, abre el soporte. La implementación cierra con la guía de edición y la sesión de transferencia precisamente para que el siguiente paso sea fluido: el cliente sabe operar el sitio y el soporte sabe de dónde partir.',
+    ],
+    procesoTitle: 'Del repositorio al sitio en vivo',
+    procesoBody: [
+      'Arrancamos con la revisión de la propuesta y la configuración del entorno. Desde el inicio tienes acceso al repositorio para seguir el avance. A mitad del proyecto publicamos en un subdominio de staging para que revises con calma antes de la entrega final.',
+      'La entrega incluye el sitio en tu dominio, la guía de edición en Markdown y una sesión de transferencia donde explicamos cómo actualizar contenido, agregar páginas y publicar en el blog. El sitio es 100 % tuyo: código, dominio y contenido.',
+    ],
+    sis: [
+      'Aprueba el alcance por escrito antes de que empiece el trabajo: es tu garantía de lo que recibirás.',
+      'Aprovecha el staging para revisar con tiempo: los cambios antes de la entrega final no tienen costo adicional.',
+      'Haz la sesión de transferencia aunque creas que no la necesitas: vale más de lo que parece.',
+      'Pide la guía de edición en texto y guárdala: es el manual de operación de tu sitio.',
+    ],
+    nos: [
+      'No agregues requerimientos nuevos durante la ejecución sin acordar el impacto en tiempos y costo primero.',
+      'No ignores las preguntas técnicas del equipo: cada duda sin respuesta detiene el avance.',
+      'No saltes la verificación final: es el momento para señalar lo que no quedó como se acordó.',
+      'No pierdas acceso al repositorio ni al dashboard de Cloudflare — son tuyos, no los cedas.',
+    ],
   },
+
   soporte: {
-    lede: 'Un sitio vivo se cuida. Mantenemos, mejoramos y publicamos contigo después del lanzamiento.',
-    incluye: ['Mantenimiento técnico y mejoras', 'Publicación continua de contenido', 'Monitoreo, respaldos y soporte'],
+    accent: 'acompañamiento continuo',
+    subtitle: 'El trabajo no termina en la entrega. Mantenemos, mejoramos y respondemos para que tu sitio siga funcionando con el tiempo.',
+    descRight: [
+      'El soporte entra donde termina la implementación. Se encarga de lo que ningún sitio se ahorra: actualizaciones de contenido, corrección de errores, nuevas necesidades que van surgiendo y comunicación directa cuando algo falla.',
+      'El canal es WhatsApp, la respuesta es en horario hábil y el principio es el mismo que en todo: alcance claro antes de ejecutar. Sin sorpresas, sin tareas fantasma, sin facturas por trabajo que no acordaste.',
+    ],
+    defTitle: '¿Qué es el soporte?',
+    defDesc: 'El servicio continuo que mantiene el sitio operando, actualizado y respondiendo a las necesidades que van surgiendo.',
+    defBody: [
+      'El soporte cubre tres tipos de trabajo: el mantenimiento preventivo (que el sitio no se rompa), el correctivo (arreglar lo que se rompe) y las mejoras (lo que va creciendo con el negocio: nuevas secciones, precios actualizados, artículos de blog).',
+      'La diferencia con el soporte estándar de agencia es el canal: WhatsApp. La solicitud entra como conversación — con contexto, sin demora. Y para trabajos que van más allá del mantenimiento rutinario, el alcance se acuerda antes de ejecutar.',
+    ],
+    beneficios: [
+      { titulo: 'Respuesta directa', desc: 'WhatsApp en horario hábil, sin tickets ni formularios. La solicitud entra como conversación — con nombre, contexto y sin intermediarios.' },
+      { titulo: 'Sin retención forzada', desc: 'Por evento o plan periódico, según lo que encaje mejor. No hay contrato mínimo ni penalización por no continuar. Pagas por el trabajo realizado.' },
+      { titulo: 'Alcance previo siempre', desc: 'Para trabajos más allá de una actualización puntual, el alcance se acuerda antes. Nunca recibes sorpresas en la factura.' },
+    ],
+    partes: [
+      { n: 1, nombre: 'Actualización de contenido', que: 'Textos, precios, imágenes, fichas de producto o servicio. Lo más frecuente — se resuelve en horas desde la solicitud.',     dato: 'WhatsApp → Markdown → Push' },
+      { n: 2, nombre: 'Corrección de errores',      que: 'Enlace roto, formulario que no envía, layout descuadrado. Se prioriza sobre el resto del trabajo del día.',              dato: 'Diagnóstico → fix → verif.' },
+      { n: 3, nombre: 'Mejoras y nuevas secciones', que: 'Funcionalidades nuevas que no estaban en el alcance original. Siempre con propuesta de alcance escrita antes de ejecutar.', dato: 'Propuesta → ejecución' },
+      { n: 4, nombre: 'Mantenimiento preventivo',   que: 'Revisión periódica de Core Web Vitals, dependencias y configuración. Evita que los problemas pequeños se conviertan en urgencias.', dato: 'Reporte mensual opcional' },
+    ],
+    disenos: [
+      { nombre: 'Plan mensual',              tag: 'Operación continua',   desc: 'Horas reservadas cada mes para actualizaciones, correcciones y mejoras. Ideal si el contenido cambia con frecuencia o el sitio es parte activa del negocio.' },
+      { nombre: 'Atención puntual',          tag: 'Por evento',           desc: 'Algo concreto ahora: un error urgente, un cambio de precios, una nueva sección. Se cotiza y ejecuta sin compromiso de continuidad.' },
+      { nombre: 'Post-lanzamiento',          tag: 'Primeras semanas',     desc: 'El período después de publicar siempre trae ajustes. Cobertura específica para ese período crítico donde surgen correcciones de copy, imágenes y formularios.' },
+      { nombre: 'Traspaso de mantenimiento', tag: 'Sitio de terceros',    desc: 'Ya tienes un sitio Astro y quieres que alguien lo mantenga. Diagnóstico del estado actual antes de tomar el mantenimiento — sin sorpresas.' },
+    ],
+    posBody: [
+      'El soporte es el tercer paso: viene después de la implementación y mantiene vivo lo que se construyó. Puede contratarse de forma independiente — para quien ya tiene un sitio Astro y necesita mantenimiento — o como continuación natural de la implementación.',
+      'Su relación con la consultoría también es directa: cuando las mejoras acumuladas llegan a un punto donde tiene más sentido redefinir el alcance del sitio que seguir sumando piezas, la consultoría vuelve a entrar. El soporte bien llevado identifica ese momento antes de que sea urgente.',
+    ],
+    procesoTitle: 'De la solicitud al cambio publicado',
+    procesoBody: [
+      'Escribes por WhatsApp con la solicitud, respondemos con un tiempo estimado y ejecutamos. Para actualizaciones de contenido el ciclo es de horas; para correcciones urgentes, priorizamos sobre el resto del trabajo del día.',
+      'Para cambios que implican desarrollo (nueva sección, integración, rediseño parcial), la respuesta inicial es un alcance por escrito con tiempo y costo antes de cualquier línea de código. Sabes exactamente qué estás aprobando antes de decir que sí.',
+    ],
+    sis: [
+      'Sé específico en las solicitudes: «cambiar el precio de X a $Y» es mejor que «actualizar precios».',
+      'Guarda el acceso al repositorio y al dashboard de Cloudflare — aunque no lo uses, son tuyos.',
+      'Pide el reporte mensual si quieres visibilidad de lo que se hizo y el estado del sitio.',
+      'Comunica los cambios de negocio antes de que lleguen urgentes: el soporte planificado cuesta menos.',
+    ],
+    nos: [
+      'No acumules cambios pequeños durante semanas y los mandes todos juntos como urgente.',
+      'No des por hecho el alcance: si hay duda sobre si algo está incluido, pregunta antes de asumir.',
+      'No pierdas el acceso a Cloudflare ni al repositorio — recuperarlo toma tiempo y dinero.',
+      'No esperes a que algo se rompa para contratar mantenimiento: el preventivo es más barato que el correctivo.',
+    ],
   },
 }
-// Alcance e info: de la colección si hay ficha .md; si no, respaldo genérico.
-const fallback = DETALLE[id] ?? { lede: desc, incluye: ['Alcance a medida', 'Acompañamiento técnico', 'Entrega documentada'] }
-const det = entry
-  ? { lede: entry.data.description, incluye: entry.data.includes ?? fallback.incluye }
-  : fallback
-const pricingNote = entry?.data.pricing?.note
-const ServiceContent = entry ? (await render(entry)).Content : null
 
-// Proceso genérico (3 pasos) — mismo molde para todo servicio.
-const proceso = [
-  { n: '01', t: 'Diagnóstico', d: 'Entendemos el objetivo y el contexto para proponer con fundamento, no a ciegas.' },
-  { n: '02', t: 'Propuesta y ejecución', d: 'Definimos alcance y entregables claros, y ejecutamos sobre un sistema probado.' },
-  { n: '03', t: 'Entrega y seguimiento', d: 'Entregamos documentado y acompañamos para que puedas operar con autonomía.' },
-]
+const d = DATA[id] ?? DATA['consultoria']
 
-const faqsInline = [
-  { question: '¿Atienden mi zona?', answer: 'Cubrimos varias zonas. Escríbenos tu ubicación por WhatsApp y te confirmamos cobertura y tiempos para este servicio.' },
-  { question: '¿Cómo se cotiza?', answer: 'Cada proyecto se cotiza según su alcance. Escríbenos por WhatsApp con tu necesidad y te damos una propuesta con entregables y tiempos claros.' },
-  { question: '¿Puedo combinar varios servicios?', answer: 'Sí. Nuestros servicios están pensados para encadenarse según lo que necesites.' },
-]
-// Si la ficha de colección trae faqs propias, mandan; si no, las genéricas.
-const faqs = entry?.data.faqs?.length ? entry.data.faqs : faqsInline
+// Recetas responsive
+const recetaWA = `<!-- waUrl() construye el enlace — nunca wa.me a mano.
+     El mensaje precargado sale de WA_MESSAGES en site.ts. -->
+<a href={waUrl(WA_MESSAGES.servicios)}
+   class="btn-wa" target="_blank" rel="noopener noreferrer">
+  Cotizar por WhatsApp
+</a>
 
-// Relacionados — los otros servicios (interlinking).
-const otros = SERVICES.filter((s) => s.id !== id)
+// site.ts:
+export const WA_MESSAGES = {
+  servicios: 'Hola, quiero cotizar un servicio',
+}`
 
-const cierreItems = [
-  ...otros.map((s) => ({ label: s.label, href: `/servicios/${s.id}`, sub: 'Otro servicio' })),
-  { label: 'Todos los servicios', href: '/servicios', sub: 'Volver al catálogo' },
-  { label: 'Contacto', href: '/contacto', sub: 'Hablemos de tu proyecto' },
-]
-const cierreCta = { label: 'Cotizar este servicio', href: waUrl(WA_MESSAGES.servicios), sub: 'Respuesta inmediata', external: true }
+const recetaCierre = `/* CTA principal: full-width en móvil, auto en escritorio.
+   safe-area evita que lo tape la barra de gestos del iPhone. */
+.cta-wa {
+  display: grid; place-items: center;
+  width: 100%; min-height: 52px;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@media (min-width: 640px) {
+  .cta-wa { width: auto; min-width: 220px; }
+}`
+
+// Cierre
+const cierreItems = siblingsServicios(id)
+const cierreCta = {
+  label: 'Cotizar por WhatsApp',
+  href: waUrl(WA_MESSAGES.servicios),
+  sub: 'Respuesta en < 24 h',
+  external: true,
+}
 ---
 
 <PageLayout
-  title={`${label} — servicio`}
-  description={desc}
+  title={`${label} — servicio profesional`}
+  description={entry?.data.seoDescription ?? desc}
   pageType="service"
   schemaData={{
     service: {
@@ -97,106 +268,821 @@ const cierreCta = { label: 'Cotizar este servicio', href: waUrl(WA_MESSAGES.serv
   breadcrumbs={[{ label: 'Servicios', href: '/servicios' }, { label }]}
   guia={false}
 >
+
   <Hero
-    badge="Servicio"
-    title={label}
-    accent=""
-    subtitle={det.lede}
-    descRight={[
-      desc,
-      'Aquí encuentras lo concreto de este servicio: qué incluye, cómo trabajamos y las dudas más frecuentes. Si te queda alguna pregunta, escríbenos por WhatsApp y te respondemos.',
-    ]}
+    badge={`Servicio · ${id === 'consultoria' ? 'Diagnóstico' : id === 'implementacion' ? 'Construcción' : 'Mantenimiento'}`}
+    title={`${label}:`}
+    accent={d.accent}
+    subtitle={d.subtitle}
+    descRight={[d.descRight[0], d.descRight[1]]}
   />
 
-  <section class="section">
-    <div class="container">
-      <GuiaNota titulo="Qué es esta página (detalle de servicio · L4)" archivo="src/pages/servicios/[...slug].astro">
-        <p>
-          Una sola ruta dinámica (<code>[...slug].astro</code>) genera el detalle de
-          <strong>todos</strong> los servicios. Los slugs son los <code>id</code> de
-          <code>SERVICES</code> en <code>site.ts</code> (consultoria · implementacion · soporte) — los
-          mismos que enlaza el menú. El texto de apoyo es DEMO; en un sitio real conviene moverlo a una
-          Content Collection <code>servicios</code> con esos slugs.
-        </p>
-      </GuiaNota>
+  {/* ── 1) DEFINICIÓN ── */}
+  <ModSection
+    eyebrow="Definición"
+    title={d.defTitle}
+    desc={d.defDesc}
+    body={[d.defBody[0], d.defBody[1]]}
+  />
 
-      <SectionHeading
-        layout="duo"
-        eyebrow="Qué incluye"
-        title={`Qué resuelve ${label}`}
-        desc="El alcance concreto del servicio: lo que recibes y por qué importa."
-        body={[
-          det.lede,
-          'A la derecha, lo que incluye el servicio. Te lo entregamos por escrito antes de empezar: qué se hace, en qué formato y cuándo, para que no haya malentendidos.',
-        ]}
-      />
+  {/* ── 2) POR QUÉ IMPORTA — beneficios ── */}
+  <ModSection
+    surface
+    eyebrow="Por qué importa"
+    title="¿Para qué sirve?"
+    desc={`Las tres razones concretas por las que ${label.toLowerCase()} pertenece en todo proyecto bien hecho.`}
+    body={[
+      'Cada beneficio sale de la misma fuente: la claridad antes de empezar. Cuando el alcance está definido, el proceso documentado y la comunicación es directa, los problemas se reducen a una fracción.',
+      'El denominador común es la confianza: saber qué va a pasar antes de que pase. No es un lujo de proyectos grandes — es lo mínimo que cualquier cliente merece.',
+    ]}
+  >
+    <ModBenefits items={d.beneficios} />
+  </ModSection>
 
-      <ul class="incluye">
-        {det.incluye.map((it) => (
-          <li class="incluye__item">
-            <span class="incluye__check" aria-hidden="true">✓</span>
-            <span>{it}</span>
-          </li>
-        ))}
-      </ul>
-      {pricingNote && <p class="pricing-note">{pricingNote}</p>}
-      {ServiceContent && (
-        <div class="prose">
-          <ServiceContent />
+  {/* ── 3) ANATOMÍA — entregables + mockup en vivo ── */}
+  <ModSection
+    eyebrow="Anatomía"
+    title="Qué recibes"
+    desc={`Los cuatro entregables de ${label.toLowerCase()}: qué es cada uno, para qué sirve y cómo llega.`}
+    body={[
+      'Cada pieza tiene un propósito — no son pasos burocráticos, sino los elementos que hacen el trabajo verificable.',
+      includes.length > 0
+        ? `Incluye: ${includes.join(', ')}.${pricingNote ? ' · ' + pricingNote : ''}`
+        : 'Los cuatro entregables se producen en orden. El último — verificación o transferencia — es el que cierra el servicio formalmente.',
+    ]}
+  >
+    <ModAnatomy partes={d.partes}>
+      {/* ── Mockup bespoke: propuesta (consultoria) ── */}
+      {id === 'consultoria' && (
+        <div class="mck-propuesta" role="img" aria-label="Propuesta de proyecto por escrito">
+          <div class="mp__header">
+            <span class="mp__label">PROPUESTA DE PROYECTO</span>
+            <span class="mp__date">junio 2026</span>
+          </div>
+          <div class="mp__body">
+            <div class="mp__row">
+              <span class="mp__num">01</span>
+              <div class="mp__content">
+                <span class="mp__title">Escucha y objetivo</span>
+                <span class="mp__line"></span>
+              </div>
+              <span class="mp__check">✓</span>
+            </div>
+            <div class="mp__row">
+              <span class="mp__num">02</span>
+              <div class="mp__content">
+                <span class="mp__title">Diagnóstico del proyecto</span>
+                <span class="mp__line"></span>
+              </div>
+              <span class="mp__check">✓</span>
+            </div>
+            <div class="mp__row">
+              <span class="mp__num">03</span>
+              <div class="mp__content">
+                <span class="mp__title">Recomendación de alcance</span>
+                <span class="mp__line mp__line--short"></span>
+              </div>
+              <span class="mp__check">✓</span>
+            </div>
+            <div class="mp__row mp__row--active">
+              <span class="mp__num mp__num--active">04</span>
+              <div class="mp__content">
+                <span class="mp__title">Propuesta ejecutiva</span>
+                <div class="mp__pills">
+                  <span>Alcance</span><span>Tiempos</span><span>Costo</span>
+                </div>
+              </div>
+              <span class="mp__badge">Lista para aprobar</span>
+            </div>
+          </div>
+          <div class="mp__footer">
+            <span class="mp__firma">EJEMPLOS.MX · Trato directo · Sin venderte de más</span>
+            <span class="mp__cta">Aprobar propuesta →</span>
+          </div>
         </div>
       )}
-    </div>
-  </section>
 
-  <section class="section section--surface">
-    <div class="container">
-      <SectionHeading
-        eyebrow="Cómo trabajamos"
-        title="Un proceso claro en tres"
-        titleAccent="pasos"
-        desc="El mismo método para todo servicio: diagnosticar, ejecutar y acompañar."
-      />
-      <div class="proceso">
-        {proceso.map((p) => (
-          <article class="paso">
-            <span class="paso__n">{p.n}</span>
-            <h3 class="paso__t">{p.t}</h3>
-            <p class="paso__d">{p.d}</p>
-          </article>
-        ))}
-      </div>
-    </div>
-  </section>
+      {/* ── Mockup bespoke: pipeline deploy (implementacion) ── */}
+      {id === 'implementacion' && (
+        <div class="mck-pipeline" role="img" aria-label="Pipeline de deploy: código a sitio publicado">
+          <div class="pl__stages">
+            <div class="pl__stage pl__stage--done">
+              <span class="pl__icon">⬡</span>
+              <span class="pl__name">Repositorio</span>
+              <span class="pl__sub">GitHub · main</span>
+              <span class="pl__dot pl__dot--done"></span>
+            </div>
+            <div class="pl__arrow">→</div>
+            <div class="pl__stage pl__stage--done">
+              <span class="pl__icon">⚙</span>
+              <span class="pl__name">Build</span>
+              <span class="pl__sub">astro build · 1.2 s</span>
+              <span class="pl__dot pl__dot--done"></span>
+            </div>
+            <div class="pl__arrow">→</div>
+            <div class="pl__stage pl__stage--done">
+              <span class="pl__icon">☁</span>
+              <span class="pl__name">CDN Global</span>
+              <span class="pl__sub">Cloudflare Pages</span>
+              <span class="pl__dot pl__dot--done"></span>
+            </div>
+            <div class="pl__arrow">→</div>
+            <div class="pl__stage pl__stage--live">
+              <span class="pl__icon">✓</span>
+              <span class="pl__name">Live</span>
+              <span class="pl__sub">tuempresa.com</span>
+              <span class="pl__dot pl__dot--live"></span>
+            </div>
+          </div>
+          <div class="pl__metrics">
+            {[['Perf','99'],['SEO','100'],['A11y','97'],['BP','100']].map(([l,v]) => (
+              <div class="pl__metric">
+                <span class="pl__metric-val">{v}</span>
+                <span class="pl__metric-label">{l}</span>
+              </div>
+            ))}
+          </div>
+          <div class="pl__url">
+            <span class="pl__url-bar">https://tuempresa.com</span>
+            <span class="pl__url-badge">✓ Verificado con el cliente</span>
+          </div>
+        </div>
+      )}
 
-  <section class="section">
-    <div class="container">
-      <FAQAccordion items={faqs} title="Preguntas frecuentes" openFirst />
-    </div>
-  </section>
+      {/* ── Mockup bespoke: chat de soporte (soporte) ── */}
+      {id === 'soporte' && (
+        <div class="mck-chat" role="img" aria-label="Chat de soporte por WhatsApp con flujo de solicitud">
+          <div class="ch__header">
+            <span class="ch__av">E</span>
+            <div class="ch__info">
+              <span class="ch__name">EJEMPLOS.MX · Soporte</span>
+              <span class="ch__status">● en línea · responde en &lt; 4 h</span>
+            </div>
+          </div>
+          <div class="ch__msgs">
+            <div class="ch__msg ch__msg--out">
+              <span>Hola, necesito actualizar los precios del catálogo.</span>
+              <span class="ch__time">10:32</span>
+            </div>
+            <div class="ch__msg ch__msg--in">
+              <span>¡Hola! Con gusto. ¿Son varios o uno en específico?</span>
+              <span class="ch__time">10:33</span>
+            </div>
+            <div class="ch__msg ch__msg--out">
+              <span>El equipo base y el equipo pro.</span>
+              <span class="ch__time">10:34</span>
+            </div>
+            <div class="ch__msg ch__msg--in ch__msg--done">
+              <span>✓ Listo, ya está actualizado. Revisa en /productos.</span>
+              <span class="ch__time">10:51 · 19 min</span>
+            </div>
+          </div>
+          <div class="ch__footer">
+            <span class="ch__tag">Solicitud puntual · contenido · resuelta</span>
+          </div>
+        </div>
+      )}
+    </ModAnatomy>
+  </ModSection>
 
-  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Otros servicios y contacto" />
+  {/* ── 4) CUÁNDO USARLO — escenarios con mini-UIs ── */}
+  <ModSection
+    surface
+    eyebrow="Cuándo usarlo"
+    title="Escenarios y modalidades"
+    desc={`En qué situaciones ${label.toLowerCase()} encaja mejor y cómo varía según el punto del proyecto.`}
+    body={[
+      'No hay un caso único: el mismo servicio se usa de formas distintas según el contexto. Lo que cambia es el punto de entrada, no el proceso ni los entregables.',
+      'Cuatro escenarios reales — cada uno con su señal de cuándo encaja mejor.',
+    ]}
+  >
+    <GaleriaDisenos ariaLabel={`Escenarios de ${label}`}>
+
+      {/* ────────── CONSULTORÍA ────────── */}
+      {id === 'consultoria' && (
+        <>
+          <DisenoCard {...d.disenos[0]}>
+            <div class="sce sce--sitemap" role="img" aria-label="Sitemap de proyecto nuevo">
+              <div class="sm__tree">
+                <div class="sm__root">
+                  <span class="sm__node sm__node--root">Home</span>
+                </div>
+                <div class="sm__branches">
+                  <div class="sm__branch">
+                    <span class="sm__line sm__line--v"></span>
+                    <span class="sm__node">Servicios</span>
+                    <span class="sm__node sm__node--child">Consultoría</span>
+                    <span class="sm__node sm__node--child sm__node--new">+ nuevo</span>
+                  </div>
+                  <div class="sm__branch">
+                    <span class="sm__line sm__line--v"></span>
+                    <span class="sm__node">Blog</span>
+                  </div>
+                  <div class="sm__branch">
+                    <span class="sm__line sm__line--v"></span>
+                    <span class="sm__node sm__node--cta">Contacto</span>
+                  </div>
+                </div>
+              </div>
+              <span class="sce__label">Arquitectura definida antes de construir</span>
+            </div>
+          </DisenoCard>
+
+          <DisenoCard {...d.disenos[1]}>
+            <div class="sce sce--funnel" role="img" aria-label="Funnel de conversión con diagnóstico">
+              <div class="fn__stages">
+                <div class="fn__stage">
+                  <div class="fn__bar" style="width:100%"><span>1,200 visitas</span></div>
+                </div>
+                <div class="fn__stage fn__stage--drop">
+                  <span class="fn__arrow">↓ 34%</span>
+                  <div class="fn__bar fn__bar--mid" style="width:66%"><span>408 páginas vistas</span></div>
+                </div>
+                <div class="fn__stage fn__stage--drop">
+                  <span class="fn__arrow fn__arrow--red">↓ 12%</span>
+                  <div class="fn__bar fn__bar--low" style="width:12%"><span class="fn__short">49 contactos</span></div>
+                </div>
+              </div>
+              <span class="sce__label">El diagnóstico muestra dónde se pierde</span>
+            </div>
+          </DisenoCard>
+
+          <DisenoCard {...d.disenos[2]}>
+            <div class="sce sce--priority" role="img" aria-label="Priorización de alcance con presupuesto acotado">
+              <div class="pr__list">
+                <div class="pr__item pr__item--p1">
+                  <span class="pr__badge">P1</span>
+                  <span class="pr__name">Sitio base + SEO técnico</span>
+                  <span class="pr__check">✓</span>
+                </div>
+                <div class="pr__item pr__item--p2">
+                  <span class="pr__badge">P2</span>
+                  <span class="pr__name">Blog + artículos clave</span>
+                  <span class="pr__check pr__check--later">mes 2</span>
+                </div>
+                <div class="pr__item pr__item--p3">
+                  <span class="pr__badge pr__badge--dim">P3</span>
+                  <span class="pr__name pr__name--dim">E-commerce completo</span>
+                  <span class="pr__check pr__check--later">mes 4</span>
+                </div>
+              </div>
+              <span class="sce__label">Más impacto con el presupuesto disponible</span>
+            </div>
+          </DisenoCard>
+
+          <DisenoCard {...d.disenos[3]}>
+            <div class="sce sce--doc" role="img" aria-label="Propuesta interna para aprobar">
+              <div class="dc__card">
+                <div class="dc__top">
+                  <span class="dc__chip">PROPUESTA · APROBACIÓN INTERNA</span>
+                </div>
+                <div class="dc__rows">
+                  <div class="dc__row"><span class="dc__key">Objetivo</span><span class="dc__val dc__val--ok">✓ Definido</span></div>
+                  <div class="dc__row"><span class="dc__key">Alcance</span><span class="dc__val dc__val--ok">✓ Documentado</span></div>
+                  <div class="dc__row"><span class="dc__key">ROI estimado</span><span class="dc__val dc__val--ok">✓ Justificado</span></div>
+                  <div class="dc__row"><span class="dc__key">Proveedor</span><span class="dc__val">EJEMPLOS.MX</span></div>
+                </div>
+                <span class="dc__sign">Pendiente de firma del director →</span>
+              </div>
+            </div>
+          </DisenoCard>
+        </>
+      )}
+
+      {/* ────────── IMPLEMENTACIÓN ────────── */}
+      {id === 'implementacion' && (
+        <>
+          <DisenoCard {...d.disenos[0]}>
+            <div class="sce sce--build" role="img" aria-label="Pipeline de sitio nuevo completo">
+              <div class="bld__flow">
+                <div class="bld__step bld__step--done"><span class="bld__ic">◎</span><span>Propuesta</span></div>
+                <span class="bld__arr">→</span>
+                <div class="bld__step bld__step--done"><span class="bld__ic">⚙</span><span>Build</span></div>
+                <span class="bld__arr">→</span>
+                <div class="bld__step bld__step--done"><span class="bld__ic">☁</span><span>Staging</span></div>
+                <span class="bld__arr">→</span>
+                <div class="bld__step bld__step--live"><span class="bld__ic">✓</span><span>Live</span></div>
+              </div>
+              <div class="bld__pages">
+                {['Home','Servicios','Productos','Blog','Contacto'].map((p) => (
+                  <span class="bld__page">{p}</span>
+                ))}
+              </div>
+              <span class="sce__label">3 a 5 semanas · entrega documentada</span>
+            </div>
+          </DisenoCard>
+
+          <DisenoCard {...d.disenos[1]}>
+            <div class="sce sce--landing" role="img" aria-label="Landing de lanzamiento MVP">
+              <div class="ld__frame">
+                <span class="ld__badge">Servicio · Consultoría</span>
+                <span class="ld__h1">Diagnóstico web</span>
+                <span class="ld__h1 ld__h1--accent">profesional</span>
+                <span class="ld__sub">Propuesta por escrito en 48 h.</span>
+                <div class="ld__ctas">
+                  <span class="ld__btn ld__btn--pri">Cotizar →</span>
+                  <span class="ld__btn ld__btn--out">Ver más</span>
+                </div>
+              </div>
+              <span class="sce__label">Una página · una semana · una propuesta</span>
+            </div>
+          </DisenoCard>
+
+          <DisenoCard {...d.disenos[2]}>
+            <div class="sce sce--migra" role="img" aria-label="Migración de WordPress a Astro">
+              <div class="mg__compare">
+                <div class="mg__side mg__side--wp">
+                  <span class="mg__logo mg__logo--wp">WP</span>
+                  <span class="mg__name">WordPress</span>
+                  <div class="mg__items">
+                    <span class="mg__item mg__item--bad">PHP · tema</span>
+                    <span class="mg__item mg__item--bad">MySQL · plugins</span>
+                    <span class="mg__item mg__item--bad">Perf: 61 / 100</span>
+                  </div>
+                </div>
+                <div class="mg__arrow">→</div>
+                <div class="mg__side mg__side--astro">
+                  <span class="mg__logo mg__logo--astro">Å</span>
+                  <span class="mg__name">Astro 6</span>
+                  <div class="mg__items">
+                    <span class="mg__item mg__item--ok">Componentes</span>
+                    <span class="mg__item mg__item--ok">Markdown · sin BD</span>
+                    <span class="mg__item mg__item--ok">Perf: 99 / 100</span>
+                  </div>
+                </div>
+              </div>
+              <span class="sce__label">Sin tiempo de caída · contenido preservado</span>
+            </div>
+          </DisenoCard>
+
+          <DisenoCard {...d.disenos[3]}>
+            <div class="sce sce--module" role="img" aria-label="Módulo adicional en sitio existente">
+              <div class="mod__site">
+                <div class="mod__section mod__section--done">Header</div>
+                <div class="mod__section mod__section--done">Hero</div>
+                <div class="mod__section mod__section--done">Servicios</div>
+                <div class="mod__section mod__section--new">
+                  <span class="mod__new-badge">+ NUEVO</span>
+                  Catálogo de productos
+                </div>
+                <div class="mod__section mod__section--done">Footer</div>
+              </div>
+              <span class="sce__label">Alcance acordado antes de agregar la pieza</span>
+            </div>
+          </DisenoCard>
+        </>
+      )}
+
+      {/* ────────── SOPORTE ────────── */}
+      {id === 'soporte' && (
+        <>
+          <DisenoCard {...d.disenos[0]}>
+            <div class="sce sce--calendar" role="img" aria-label="Plan mensual de mantenimiento">
+              <div class="cal__header">
+                <span class="cal__month">JUNIO 2026</span>
+                <span class="cal__tag">Plan mensual</span>
+              </div>
+              <div class="cal__grid">
+                {['L','M','X','J','V'].map((d2) => <span class="cal__day cal__day--label">{d2}</span>)}
+                {[false,false,'✓',false,'✓','✓',false,'✓',false,false,'✓','✓',false,false,'✓',false,'✓',false,false,'✓'].map((v) =>
+                  <span class={`cal__day ${v ? 'cal__day--done' : ''}`}>{v || ''}</span>
+                )}
+              </div>
+              <span class="sce__label">8 actualizaciones · todo en tiempo</span>
+            </div>
+          </DisenoCard>
+
+          <DisenoCard {...d.disenos[1]}>
+            <div class="sce sce--punct" role="img" aria-label="Atención puntual por WhatsApp">
+              <div class="pt__msgs">
+                <div class="pt__msg pt__msg--out">
+                  <span>Precio del equipo base: cambiar a $12,500</span>
+                </div>
+                <div class="pt__msg pt__msg--in">
+                  <span>En cuánto tiempo lo necesitas?</span>
+                </div>
+                <div class="pt__msg pt__msg--out">
+                  <span>Hoy si es posible 🙏</span>
+                </div>
+                <div class="pt__msg pt__msg--in pt__msg--done">
+                  <span>✓ Listo. Publicado en /productos/equipo-base</span>
+                </div>
+              </div>
+              <span class="sce__label">WhatsApp · sin ticket · resuelto en 2 h</span>
+            </div>
+          </DisenoCard>
+
+          <DisenoCard {...d.disenos[2]}>
+            <div class="sce sce--lh" role="img" aria-label="Métricas Lighthouse post-lanzamiento">
+              <div class="lh__header">
+                <span class="lh__url">tuempresa.com</span>
+                <span class="lh__date">semana 3 post-launch</span>
+              </div>
+              <div class="lh__scores">
+                {[['Perf','99'],['SEO','100'],['A11y','97'],['BP','100']].map(([label,val]) => (
+                  <div class="lh__score">
+                    <span class="lh__val">{val}</span>
+                    <span class="lh__label">{label}</span>
+                    <div class="lh__bar"><div class="lh__fill" style={`width:${val}%`}></div></div>
+                  </div>
+                ))}
+              </div>
+              <span class="sce__label">Core Web Vitals · todo en verde</span>
+            </div>
+          </DisenoCard>
+
+          <DisenoCard {...d.disenos[3]}>
+            <div class="sce sce--handoff" role="img" aria-label="Diagnóstico de traspaso de mantenimiento">
+              <div class="hf__card">
+                <div class="hf__header">
+                  <span class="hf__title">DIAGNÓSTICO DE TRASPASO</span>
+                </div>
+                <div class="hf__rows">
+                  <div class="hf__row"><span class="hf__key">Stack</span><span class="hf__val">Astro 6 · CF Pages</span></div>
+                  <div class="hf__row"><span class="hf__key">Estado CWV</span><span class="hf__val hf__val--ok">✓ Verde</span></div>
+                  <div class="hf__row"><span class="hf__key">Deuda técnica</span><span class="hf__val hf__val--warn">3 items menores</span></div>
+                  <div class="hf__row"><span class="hf__key">Accesos</span><span class="hf__val hf__val--ok">✓ Verificados</span></div>
+                </div>
+                <span class="hf__cta">Tomar mantenimiento →</span>
+              </div>
+            </div>
+          </DisenoCard>
+        </>
+      )}
+
+    </GaleriaDisenos>
+  </ModSection>
+
+  {/* ── 5) CONVERSIÓN MÓVIL ── */}
+  <ModSection
+    eyebrow="Conversión y móvil"
+    title="Cómo contacta el cliente desde el teléfono"
+    desc="El 70% de los primeros contactos llegan desde el móvil. El CTA de WhatsApp tiene que funcionar a un toque."
+    body={[
+      'La conversión en este catálogo es WhatsApp-first: el cliente no llena un formulario, escribe por WhatsApp con su necesidad. El enlace siempre se construye con waUrl() y el mensaje sale de WA_MESSAGES en site.ts — centralizado, sin wa.me escrito a mano.',
+      'En el teléfono el botón tiene que ser fácil de alcanzar, tener al menos 44 px de alto y estar siempre visible. La barra de safe-area del iPhone evita que quede tapado por la barra de gestos.',
+    ]}
+  >
+    <ModResponsive>
+      <ModPattern
+        title="1 · CTA de WhatsApp en el cierre — siempre a la vista"
+        desc="El botón de WhatsApp cierra la página (SectionMenu) y también flota de respaldo. En el teléfono ocupa el ancho completo para maximizar el área táctil."
+        receta={{ titulo: 'CSS · CTA full-width + safe-area-inset', lang: 'css', code: recetaCierre }}
+      >
+        <MarcoMovil ariaLabel="CTA de WhatsApp en el cierre de la página del servicio">
+          <div class="cvr-head">
+            <span class="cvr-logo">S</span>
+            <span class="cvr-sp"></span>
+            <span class="cvr-ic" aria-hidden="true">≡</span>
+          </div>
+          <div class="cvr-skel">
+            <span></span><span style="width:100%"></span>
+            <span style="width:85%"></span><span style="width:60%"></span>
+          </div>
+          <div class="cvr-cierre">
+            <span class="cvr-eyebrow">{label}</span>
+            <div class="cvr-links">
+              <span class="cvr-link"></span>
+              <span class="cvr-link" style="width:70%"></span>
+            </div>
+            <span class="cvr-btn">Cotizar por WhatsApp</span>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+
+      <ModPattern
+        title="2 · waUrl() con mensaje precargado — nunca wa.me a mano"
+        desc="El enlace de WhatsApp se construye con <code>waUrl()</code> y el mensaje sale de <code>WA_MESSAGES</code> en <code>site.ts</code>. Centraliza el número y el texto — cambia una vez y se actualiza en todo el sitio."
+        receta={{ titulo: 'Astro · waUrl() con mensaje precargado', lang: 'html', code: recetaWA }}
+      >
+        <MarcoMovil ariaLabel="WhatsApp con mensaje precargado desde el CTA del servicio">
+          <div class="cvr-wa">
+            <div class="cvr-wa__header">
+              <span class="cvr-wa__av">E</span>
+              <div>
+                <b class="cvr-wa__name">EJEMPLOS.MX</b>
+                <span class="cvr-wa__sub">en línea</span>
+              </div>
+            </div>
+            <div class="cvr-wa__body">
+              <div class="cvr-wa__bubble">
+                Hola, {id === 'soporte' ? 'necesito soporte para mi sitio' : id === 'implementacion' ? 'quiero cotizar una implementación' : 'me interesa una consultoría'}
+              </div>
+              <span class="cvr-wa__time">ahora · enviado automáticamente</span>
+            </div>
+            <div class="cvr-wa__bar">
+              <span class="cvr-wa__input"></span>
+              <span class="cvr-wa__send">➤</span>
+            </div>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+    </ModResponsive>
+  </ModSection>
+
+  {/* ── 6) DÓNDE ENCAJA EN EL FLUJO ── */}
+  <ModSection
+    surface
+    eyebrow="En el flujo del proyecto"
+    title="¿Dónde encaja?"
+    desc="Cómo se relaciona con los otros dos servicios y en qué punto del proyecto entra este."
+    body={[d.posBody[0], d.posBody[1]]}
+  />
+
+  {/* ── 7) EL PROCESO ── */}
+  <ModSection
+    eyebrow="El proceso"
+    title={d.procesoTitle}
+    desc="Sin pasos ocultos: así se desarrolla el trabajo desde el primer mensaje hasta el cierre."
+    body={[d.procesoBody[0], d.procesoBody[1]]}
+  >
+    {ServiceContent && (
+      <ModProse>
+        <ServiceContent />
+      </ModProse>
+    )}
+  </ModSection>
+
+  {/* ── 8) BUENAS PRÁCTICAS ── */}
+  <ModSection
+    surface
+    eyebrow="Buenas prácticas"
+    title="Qué hacer y qué evitar"
+    desc={`Los hábitos que hacen funcionar ${label.toLowerCase()} — y los que lo hacen fallar.`}
+    body={[
+      'Cada punto sale de lo que realmente pasa en los proyectos. Los que van bien comparten los de la izquierda; los que se complican tienen en común alguno de los errores de la derecha.',
+      'No son normas arbitrarias: son el patrón que emerge cuando el alcance está claro, la comunicación es directa y el trabajo se documenta.',
+    ]}
+  >
+    <ModDosDonts sis={d.sis} nos={d.nos} />
+  </ModSection>
+
+  {/* ── CIERRE ── */}
+  <SectionMenu
+    items={cierreItems}
+    cta={cierreCta}
+    ariaLabel={`Más sobre ${label} y otros servicios`}
+  />
+
 </PageLayout>
 
 <style>
-  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
-  .section { padding: var(--sp-8) 0; }
-  .section--surface { background: var(--c-surface); }
-  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+  /* ==========================================================================
+     MOCKUPS BESPOKE — solo CSS de esta página.
+     El armazón (.section/.container/.bene/.partes/.prose/.dodont/.pats/.pat)
+     vive en el kit (src/components/modulos/*).
+     ========================================================================== */
 
-  .incluye { list-style: none; margin: var(--sp-6) 0 0; padding: 0; display: grid; gap: var(--sp-3); max-width: 60ch; }
-  .incluye__item { display: flex; gap: var(--sp-3); align-items: start; font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
-  .incluye__check { flex-shrink: 0; display: grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-full); background: var(--c-primary-light); color: var(--c-primary); font-weight: var(--weight-bold); font-size: var(--text-sm); }
+  /* ── PROPUESTA (consultoría) ─────────────────────────────────────────────── */
+  .mck-propuesta {
+    margin-top: var(--sp-6);
+    border: 1px solid var(--c-border); border-radius: var(--radius-lg);
+    background: var(--c-white); overflow: hidden;
+    max-width: 560px; box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  }
+  .mp__header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--sp-3) var(--sp-5);
+    background: var(--c-primary); color: #fff;
+  }
+  .mp__label { font-family: var(--font-heading); font-size: var(--text-xs); font-weight: var(--weight-bold); letter-spacing: .08em; }
+  .mp__date  { font-size: var(--text-xs); opacity: .75; }
+  .mp__body  { padding: var(--sp-4) var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-3); }
+  .mp__row   { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3); border-radius: var(--radius-md); border: 1px solid var(--c-border); background: var(--c-surface); }
+  .mp__row--active { background: var(--c-primary-light); border-color: var(--c-primary); }
+  .mp__num   { flex-shrink: 0; font-family: var(--font-heading); font-size: var(--text-sm); font-weight: var(--weight-black); color: var(--c-muted); width: 28px; }
+  .mp__num--active { color: var(--c-primary); }
+  .mp__content { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .mp__title { font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .mp__line  { height: 6px; width: 70%; border-radius: 3px; background: var(--c-border); }
+  .mp__line--short { width: 45%; }
+  .mp__pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .mp__pills span { font-size: .625rem; font-weight: var(--weight-bold); text-transform: uppercase; letter-spacing: .04em; padding: 2px 8px; border-radius: var(--radius-full); background: var(--c-primary); color: #fff; }
+  .mp__check { font-size: var(--text-sm); color: #16a34a; font-weight: var(--weight-bold); }
+  .mp__badge { flex-shrink: 0; font-size: var(--text-xs); font-weight: var(--weight-semibold); color: var(--c-primary); background: var(--c-white); border: 1px solid var(--c-primary); padding: 2px 10px; border-radius: var(--radius-full); }
+  .mp__footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--sp-3); padding: var(--sp-3) var(--sp-5); background: var(--c-surface); border-top: 1px solid var(--c-border); }
+  .mp__firma  { font-size: var(--text-xs); color: var(--c-muted); }
+  .mp__cta    { font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--c-primary); }
 
-  .pricing-note { margin: var(--sp-4) 0 0; font-size: var(--text-sm); color: var(--c-muted); }
-  .prose { margin-top: var(--sp-5); max-width: 65ch; }
-  .prose :global(h2) { font-family: var(--font-heading); font-size: var(--text-xl); color: var(--c-ink); margin: var(--sp-5) 0 var(--sp-2); }
-  .prose :global(p) { color: var(--c-ink-2); line-height: var(--leading-relaxed); margin: 0 0 var(--sp-3); }
-  .prose :global(strong) { color: var(--c-ink); }
+  /* ── PIPELINE (implementación) ──────────────────────────────────────────── */
+  .mck-pipeline {
+    margin-top: var(--sp-6); display: flex; flex-direction: column; gap: var(--sp-4);
+    padding: var(--sp-5); border: 1px solid var(--c-border); border-radius: var(--radius-lg);
+    background: #0f172a; max-width: 600px;
+  }
+  .pl__stages { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+  .pl__stage  { display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; }
+  .pl__icon   { font-size: 20px; line-height: 1; }
+  .pl__name   { font-size: var(--text-xs); font-weight: var(--weight-bold); color: #fff; }
+  .pl__sub    { font-size: .625rem; color: #64748b; }
+  .pl__dot    { width: 8px; height: 8px; border-radius: 50%; }
+  .pl__dot--done { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+  .pl__dot--live { background: #22c55e; box-shadow: 0 0 10px #22c55e, 0 0 20px #22c55e40; }
+  .pl__stage--done .pl__icon { color: #94a3b8; }
+  .pl__stage--live .pl__icon { color: #22c55e; font-size: 24px; }
+  .pl__arrow  { color: #334155; font-size: 18px; }
+  .pl__metrics { display: flex; gap: var(--sp-3); }
+  .pl__metric { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .pl__metric-val   { font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-black); color: #22c55e; }
+  .pl__metric-label { font-size: var(--text-xs); color: #64748b; text-transform: uppercase; letter-spacing: .05em; }
+  .pl__url    { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
+  .pl__url-bar { font-family: ui-monospace, monospace; font-size: var(--text-xs); color: #22c55e; padding: 4px 10px; background: #1e293b; border-radius: var(--radius-sm); }
+  .pl__url-badge { font-size: var(--text-xs); color: #16a34a; background: #dcfce7; padding: 3px 10px; border-radius: var(--radius-full); font-weight: var(--weight-semibold); }
 
-  .proceso { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
-  @media (min-width: 768px) { .proceso { grid-template-columns: repeat(3, 1fr); } }
-  .paso { padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-lg); }
-  .paso__n { font-family: var(--font-heading); font-size: var(--text-xl); font-weight: var(--weight-black); color: var(--c-primary); }
-  .paso__t { font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-bold); color: var(--c-ink); margin: var(--sp-2) 0; }
-  .paso__d { font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--c-ink-2); margin: 0; }
+  /* ── CHAT SOPORTE ───────────────────────────────────────────────────────── */
+  .mck-chat {
+    margin-top: var(--sp-6); border-radius: var(--radius-lg); overflow: hidden;
+    border: 1px solid var(--c-border); max-width: 480px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  }
+  .ch__header { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); background: #075e54; }
+  .ch__av     { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #25d366; color: #fff; font-weight: 700; font-size: 15px; flex-shrink: 0; }
+  .ch__name   { font-weight: var(--weight-bold); color: #fff; font-size: var(--text-sm); display: block; }
+  .ch__status { font-size: var(--text-xs); color: #a7f3d0; }
+  .ch__msgs   { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-4); background: #e5ddd5; }
+  .ch__msg    { max-width: 80%; padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-md); font-size: var(--text-sm); display: flex; flex-direction: column; gap: 2px; }
+  .ch__msg--out { background: #fff; border-radius: 0 var(--radius-md) var(--radius-md); align-self: flex-start; }
+  .ch__msg--in  { background: #dcf8c6; border-radius: var(--radius-md) 0 var(--radius-md) var(--radius-md); align-self: flex-end; }
+  .ch__msg--done { background: #bbf7d0; }
+  .ch__time   { font-size: .6rem; color: #888; align-self: flex-end; }
+  .ch__footer { padding: var(--sp-2) var(--sp-4); background: #f0f0f0; border-top: 1px solid var(--c-border); }
+  .ch__tag    { font-size: var(--text-xs); color: var(--c-muted); }
+
+  /* ── ESCENARIOS DisenoCard — base ───────────────────────────────────────── */
+  .sce {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: var(--sp-2); width: 100%; padding: var(--sp-3);
+    min-height: 120px;
+  }
+  .sce__label {
+    font-size: .625rem; font-weight: var(--weight-semibold); text-transform: uppercase;
+    letter-spacing: .05em; color: var(--c-muted); margin-top: var(--sp-1);
+  }
+
+  /* Sitemap (consultoría #0) */
+  .sce--sitemap { justify-content: flex-start; }
+  .sm__tree  { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; }
+  .sm__root  { display: flex; justify-content: center; }
+  .sm__node  { display: inline-block; padding: 3px 10px; border-radius: var(--radius-sm); border: 1px solid var(--c-primary); background: var(--c-primary-light); color: var(--c-primary); font-size: var(--text-xs); font-weight: var(--weight-semibold); }
+  .sm__node--root { background: var(--c-primary); color: #fff; }
+  .sm__node--cta  { background: #dcfce7; border-color: #16a34a; color: #16a34a; }
+  .sm__node--new  { background: #fef3c7; border-color: #d97706; color: #d97706; border-style: dashed; }
+  .sm__node--child { font-size: .625rem; }
+  .sm__branches { display: flex; gap: var(--sp-3); justify-content: center; padding-top: 4px; }
+  .sm__branch   { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .sm__line--v  { display: block; width: 1px; height: 8px; background: var(--c-border); }
+
+  /* Funnel (consultoría #1) */
+  .fn__stages { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+  .fn__stage  { display: flex; align-items: center; gap: var(--sp-2); }
+  .fn__bar    { padding: 4px 10px; border-radius: var(--radius-sm); background: var(--c-primary); color: #fff; font-size: var(--text-xs); font-weight: var(--weight-semibold); white-space: nowrap; overflow: hidden; }
+  .fn__bar--mid  { background: #f59e0b; }
+  .fn__bar--low  { background: #ef4444; min-width: 80px; }
+  .fn__short { font-size: .6rem; }
+  .fn__stage--drop { padding-left: var(--sp-2); }
+  .fn__arrow     { font-size: var(--text-xs); color: var(--c-muted); flex-shrink: 0; }
+  .fn__arrow--red { color: #ef4444; font-weight: var(--weight-bold); }
+
+  /* Prioridad (consultoría #2) */
+  .pr__list { display: flex; flex-direction: column; gap: 5px; width: 100%; }
+  .pr__item { display: flex; align-items: center; gap: var(--sp-2); padding: 5px 8px; border-radius: var(--radius-sm); border: 1px solid var(--c-border); }
+  .pr__item--p1 { background: var(--c-primary-light); border-color: var(--c-primary); }
+  .pr__item--p2 { background: #fef9c3; border-color: #ca8a04; }
+  .pr__item--p3 { background: var(--c-surface); opacity: .7; }
+  .pr__badge { font-size: .625rem; font-weight: var(--weight-black); text-transform: uppercase; padding: 2px 6px; border-radius: 3px; background: var(--c-primary); color: #fff; }
+  .pr__item--p2 .pr__badge { background: #ca8a04; }
+  .pr__item--p3 .pr__badge { background: var(--c-border); color: var(--c-muted); }
+  .pr__name { flex: 1; font-size: var(--text-xs); font-weight: var(--weight-medium); color: var(--c-ink); }
+  .pr__name--dim { color: var(--c-muted); }
+  .pr__check { font-size: var(--text-xs); color: #16a34a; font-weight: var(--weight-bold); }
+  .pr__check--later { font-size: .6rem; color: var(--c-muted); font-style: italic; }
+
+  /* Documento/propuesta interna (consultoría #3) */
+  .sce--doc { padding: var(--sp-2); }
+  .dc__card { width: 100%; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-md); overflow: hidden; }
+  .dc__top  { padding: 5px 10px; background: var(--c-primary); }
+  .dc__chip { font-size: .6rem; font-weight: var(--weight-bold); letter-spacing: .06em; color: rgba(255,255,255,.85); text-transform: uppercase; }
+  .dc__rows { padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; }
+  .dc__row  { display: flex; justify-content: space-between; align-items: center; font-size: var(--text-xs); }
+  .dc__key  { color: var(--c-muted); }
+  .dc__val  { font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .dc__val--ok { color: #16a34a; }
+  .dc__sign { display: block; padding: 5px 10px; font-size: .625rem; color: var(--c-primary); background: var(--c-primary-light); border-top: 1px solid var(--c-border); }
+
+  /* Build pipeline (implementación #0) */
+  .sce--build { padding: var(--sp-2); align-items: stretch; }
+  .bld__flow  { display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap; }
+  .bld__step  { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 8px; border-radius: var(--radius-sm); border: 1px solid var(--c-border); background: var(--c-surface); }
+  .bld__step--done { border-color: #0d9488; background: #ccfbf1; }
+  .bld__step--live { border-color: #16a34a; background: #dcfce7; }
+  .bld__ic   { font-size: 14px; }
+  .bld__step span:last-child { font-size: .625rem; font-weight: var(--weight-bold); color: var(--c-ink); }
+  .bld__step--done span:last-child { color: #0d9488; }
+  .bld__step--live span:last-child { color: #16a34a; }
+  .bld__arr  { color: var(--c-muted); font-size: 12px; }
+  .bld__pages { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+  .bld__page  { font-size: .625rem; padding: 2px 7px; border-radius: var(--radius-full); border: 1px solid var(--c-border); background: var(--c-white); color: var(--c-ink-2); }
+
+  /* Landing MVP (implementación #1) */
+  .sce--landing { padding: var(--sp-2); }
+  .ld__frame { width: 100%; padding: var(--sp-3); border-radius: var(--radius-sm); background: #0f172a; display: flex; flex-direction: column; gap: 4px; }
+  .ld__badge { display: inline-block; font-size: .6rem; font-weight: 700; color: var(--c-primary-light); background: rgba(91,61,245,.3); padding: 2px 7px; border-radius: 99px; align-self: flex-start; }
+  .ld__h1    { font-family: var(--font-heading); font-size: 15px; font-weight: 900; color: #fff; line-height: 1.1; }
+  .ld__h1--accent { color: var(--c-primary-light); }
+  .ld__sub   { font-size: .6rem; color: #94a3b8; }
+  .ld__ctas  { display: flex; gap: 5px; margin-top: 3px; }
+  .ld__btn   { font-size: .625rem; font-weight: 700; padding: 4px 10px; border-radius: 5px; }
+  .ld__btn--pri { background: var(--c-primary); color: #fff; }
+  .ld__btn--out { border: 1px solid #334155; color: #94a3b8; }
+
+  /* Migración WP→Astro (implementación #2) */
+  .sce--migra  { padding: var(--sp-2); }
+  .mg__compare { display: flex; align-items: center; gap: var(--sp-2); width: 100%; }
+  .mg__side    { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: var(--sp-2); border-radius: var(--radius-sm); border: 1px solid var(--c-border); }
+  .mg__side--wp    { background: #fef2f2; border-color: #fca5a5; }
+  .mg__side--astro { background: #fff7ed; border-color: #fed7aa; }
+  .mg__logo { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; font-weight: 900; font-size: 11px; }
+  .mg__logo--wp    { background: #2271b1; color: #fff; }
+  .mg__logo--astro { background: #ff5d01; color: #fff; }
+  .mg__name { font-size: .625rem; font-weight: 700; color: var(--c-ink); }
+  .mg__items { display: flex; flex-direction: column; gap: 3px; width: 100%; }
+  .mg__item  { font-size: .575rem; padding: 2px 5px; border-radius: 3px; text-align: center; }
+  .mg__item--bad { background: #fee2e2; color: #b91c1c; }
+  .mg__item--ok  { background: #dcfce7; color: #15803d; }
+  .mg__arrow { font-size: 18px; color: var(--c-primary); font-weight: 900; flex-shrink: 0; }
+
+  /* Módulo adicional (implementación #3) */
+  .sce--module { padding: var(--sp-2); }
+  .mod__site { width: 100%; display: flex; flex-direction: column; gap: 3px; }
+  .mod__section { padding: 4px 10px; border-radius: 4px; font-size: .625rem; font-weight: 600; }
+  .mod__section--done { background: var(--c-surface); color: var(--c-muted); border: 1px solid var(--c-border); }
+  .mod__section--new  { background: #e0f2fe; color: #0369a1; border: 2px dashed #38bdf8; display: flex; align-items: center; gap: 6px; }
+  .mod__new-badge { font-size: .55rem; font-weight: 900; background: #0369a1; color: #fff; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; }
+
+  /* Calendario (soporte #0) */
+  .sce--calendar { padding: var(--sp-2) var(--sp-3); align-items: stretch; }
+  .cal__header { display: flex; justify-content: space-between; align-items: center; }
+  .cal__month  { font-size: var(--text-xs); font-weight: var(--weight-bold); color: var(--c-ink); }
+  .cal__tag    { font-size: .575rem; padding: 2px 6px; background: #dcfce7; color: #16a34a; border-radius: 99px; font-weight: 700; }
+  .cal__grid   { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; width: 100%; }
+  .cal__day    { display: grid; place-items: center; height: 20px; border-radius: 4px; font-size: .625rem; color: var(--c-muted); }
+  .cal__day--label { font-weight: 700; color: var(--c-ink-2); }
+  .cal__day--done  { background: #dcfce7; color: #16a34a; font-weight: 700; }
+
+  /* Atención puntual (soporte #1) */
+  .sce--punct { padding: var(--sp-2); }
+  .pt__msgs   { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+  .pt__msg    { max-width: 88%; padding: 5px 9px; border-radius: var(--radius-sm); font-size: var(--text-xs); }
+  .pt__msg--out  { background: var(--c-surface); border: 1px solid var(--c-border); align-self: flex-start; color: var(--c-ink); border-radius: 0 8px 8px; }
+  .pt__msg--in   { background: #dcf8c6; align-self: flex-end; border-radius: 8px 0 8px 8px; color: var(--c-ink); }
+  .pt__msg--done { background: #bbf7d0; }
+
+  /* Lighthouse post-launch (soporte #2) */
+  .sce--lh { padding: var(--sp-2); align-items: stretch; }
+  .lh__header { display: flex; justify-content: space-between; align-items: center; }
+  .lh__url    { font-size: var(--text-xs); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .lh__date   { font-size: .575rem; color: var(--c-muted); }
+  .lh__scores { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-2); }
+  .lh__score  { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; border-radius: var(--radius-sm); background: var(--c-surface); }
+  .lh__val    { font-family: var(--font-heading); font-size: 16px; font-weight: var(--weight-black); color: #16a34a; }
+  .lh__label  { font-size: .575rem; color: var(--c-muted); text-transform: uppercase; letter-spacing: .04em; }
+  .lh__bar    { width: 100%; height: 4px; background: var(--c-border); border-radius: 2px; overflow: hidden; }
+  .lh__fill   { height: 100%; background: #16a34a; border-radius: 2px; }
+
+  /* Traspaso (soporte #3) */
+  .sce--handoff { padding: var(--sp-2); }
+  .hf__card   { width: 100%; border: 1px solid var(--c-border); border-radius: var(--radius-sm); overflow: hidden; background: var(--c-white); }
+  .hf__header { padding: 5px 10px; background: #16a34a; }
+  .hf__title  { font-size: .6rem; font-weight: 700; letter-spacing: .06em; color: #fff; text-transform: uppercase; }
+  .hf__rows   { padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; }
+  .hf__row    { display: flex; justify-content: space-between; align-items: center; font-size: var(--text-xs); }
+  .hf__key    { color: var(--c-muted); }
+  .hf__val    { font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .hf__val--ok   { color: #16a34a; }
+  .hf__val--warn { color: #d97706; }
+  .hf__cta    { display: block; padding: 5px 10px; font-size: .625rem; font-weight: 700; color: #16a34a; background: #dcfce7; border-top: 1px solid var(--c-border); }
+
+  /* ── MarcoMovil mockups (conversión móvil) ──────────────────────────────── */
+  .cvr-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--c-white); border-bottom: 1px solid var(--c-border); flex-shrink: 0; }
+  .cvr-logo { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-black); font-size: 12px; }
+  .cvr-sp   { margin-left: auto; }
+  .cvr-ic   { font-size: 16px; color: var(--c-ink-2); }
+  .cvr-skel { display: grid; gap: 9px; padding: 14px; flex: 1; }
+  .cvr-skel span { height: 10px; border-radius: 5px; background: var(--c-surface); width: 70%; }
+  .cvr-cierre { display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--c-white); border-top: 1px solid var(--c-border); }
+  .cvr-eyebrow { font-size: 9px; font-weight: var(--weight-bold); color: var(--c-primary); text-transform: uppercase; letter-spacing: .04em; }
+  .cvr-links { display: flex; flex-direction: column; gap: 5px; }
+  .cvr-link  { height: 7px; border-radius: 4px; background: var(--c-surface); border: 1px solid var(--c-border); width: 80%; }
+  .cvr-btn   { display: grid; place-items: center; min-height: 32px; background: var(--c-primary); color: #fff; border-radius: var(--radius-sm); font-size: 10px; font-weight: var(--weight-bold); }
+  .cvr-wa    { display: flex; flex-direction: column; flex: 1; background: #e5ddd5; }
+  .cvr-wa__header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #075e54; flex-shrink: 0; }
+  .cvr-wa__av   { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #25d366; color: #fff; font-weight: 700; font-size: 12px; flex-shrink: 0; }
+  .cvr-wa__name { font-size: 12px; font-weight: 700; color: #fff; display: block; }
+  .cvr-wa__sub  { font-size: 10px; color: #a7f3d0; }
+  .cvr-wa__body { flex: 1; padding: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+  .cvr-wa__bubble { background: #fff; border-radius: 0 8px 8px 8px; padding: 6px 10px; font-size: 11px; color: #111; max-width: 85%; box-shadow: 0 1px 2px rgba(0,0,0,.1); }
+  .cvr-wa__time   { font-size: 9px; color: #666; }
+  .cvr-wa__bar    { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: #f0f0f0; flex-shrink: 0; }
+  .cvr-wa__input  { flex: 1; height: 24px; border-radius: 12px; background: #fff; border: 1px solid #ddd; }
+  .cvr-wa__send   { font-size: 14px; color: #075e54; }
 </style>

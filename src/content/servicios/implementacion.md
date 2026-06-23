@@ -2,7 +2,7 @@
 title: "Implementación: ejecutamos el trabajo acordado"
 description: "De la propuesta a la entrega: ejecutamos lo acordado con un proceso claro, comunicación en cada paso y un resultado documentado que puedes verificar."
 category: "instalacion"
-image: "/images/servicios/implementacion-deploy-sitio-astro.avif"
+image: "/images/servicios/servicio-implementacion.avif"
 pricing:
   unit: "servicio"
   note: "Bajo cotización según el alcance definido en la propuesta."
