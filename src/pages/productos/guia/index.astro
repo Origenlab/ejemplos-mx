@@ -1,0 +1,350 @@
+---
+// ============================================================================
+// /productos/guia/ — ÍNDICE de la serie «Guía de productos».
+// ----------------------------------------------------------------------------
+// Hermana de /modulos y /niveles, acotada al FLUJO de crear un producto. Antes
+// vivía embebida en el hub /productos; al reposicionar /productos como catálogo
+// de venta (2026-06-22), la guía se mudó aquí, con índice propio (un trabajo por
+// página). Las 6 fichas /productos/guia/<slug> NO cambian.
+//
+// Data-driven desde PRODUCTOS_GUIA (site.ts, SSoT) — la misma fuente del dropdown
+// «Productos» del Header. Presenta el concepto, lista las 6 piezas como cards, las
+// abre «a fondo» (CategoryDetail) y cierra con responsive + FAQ + SectionMenu.
+// pageType="page" (documentación), igual que /modulos y /niveles.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import CategoryCard from '@components/CategoryCard.astro'
+import CategoryDetail from '@components/CategoryDetail.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import FAQAccordion from '@components/FAQAccordion.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import { PRODUCTOS_GUIA, waUrl, WA_MESSAGES } from '@config/site'
+import { PRODUCTO_GUIA_CARD_META as PG_META, PRODUCTO_GUIA_AFONDO, productoGuiaGallery } from '@lib/productos'
+
+// ── La GUÍA (data-driven desde PRODUCTOS_GUIA, SSoT) ─────────────────────────
+const guiaListos = PRODUCTOS_GUIA.filter((p) => p.estado === 'listo')
+const piezas = guiaListos.length
+
+// ── Recetas de la sección «Responsive y móvil» — código real del sistema ──
+const recetaGrid = `/* La vitrina de la guía es mobile-first: 1 → 2 → 3.
+   Arranca en UNA columna en el teléfono y crece con el ancho disponible.
+   Nunca al revés. */
+.showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
+@media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .showcase { grid-template-columns: repeat(3, 1fr); } }`
+
+const recetaImg = `/* tokens.css + mobile.css · la foto de la card, fluida y ligera. */
+img, picture, video, canvas, svg { max-width: 100%; }  /* nunca más ancha que su caja */
+
+@media (max-width: 768px) {
+  img, video { height: auto; }   /* escala manteniendo la proporción 16:9 */
+}
+/* La foto es AVIF con width/height fijos → reserva el hueco (cero CLS). */`
+
+const recetaCard = `/* mobile.css · la card se toca cómodo en el teléfono. */
+@media (max-width: 1024px) {
+  a, button, [role="button"], label {
+    -webkit-tap-highlight-color: rgba(91, 61, 245, .15);  /* feedback al tap */
+  }
+}
+@media (max-width: 768px) {
+  /* chips de subcategoría con altura tappable */
+  .ccard__sub { min-height: 40px; display: inline-flex; align-items: center; }
+}`
+
+// ── FAQs de la GUÍA (cómo se crean productos en el sistema) ──────────────────
+const faqs = [
+  {
+    question: '¿Cómo agrego un producto nuevo al catálogo?',
+    answer:
+      'Crea un archivo .md en src/content/productos/ con el frontmatter requerido (título, descripción, categoría e imagen). El grid del catálogo y su ficha individual se generan solos. No se toca ningún .astro.',
+  },
+  {
+    question: '¿Necesito saber programar para crear un producto?',
+    answer:
+      'No. Escribes texto en Markdown; el esquema Zod valida el frontmatter en build-time y la ficha de detalle (L4) se genera sola desde la colección. Contenido y diseño van por separado.',
+  },
+  {
+    question: '¿Por qué algunas fichas no muestran precio?',
+    answer:
+      'El campo price es opcional. Si se omite, el sistema usa el modelo "bajo cotización" por WhatsApp en lugar de inventar una cifra —y el schema emite un Offer honesto, no un precio falso.',
+  },
+  {
+    question: '¿Dónde se definen las categorías de producto?',
+    answer:
+      'En el enum cerrado PRODUCT_CATEGORIES de src/content.config.ts (equipos · accesorios · general), sincronizado con TAXONOMY en site.ts. Un enum, no texto libre: evita el SEO fragmentado.',
+  },
+  {
+    question: '¿Cuántas piezas tiene la guía?',
+    answer:
+      'Seis, en orden de flujo: la colección, las categorías, las imágenes, el precio, la ficha y el schema. Cada una con su página de detalle y el mismo molde de 10 secciones que Módulos y Niveles.',
+  },
+]
+
+// Menú de cierre: «el menú reparte, el último botón (WhatsApp) convierte».
+const cierreItems = [
+  { label: 'La colección', href: '/productos/guia/la-coleccion', sub: 'Empieza la guía' },
+  { label: 'El catálogo', href: '/productos', sub: 'Volver al catálogo de venta' },
+  { label: 'Módulos', href: '/modulos', sub: 'Las piezas del sitio' },
+  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
+]
+const cierreCta = {
+  label: 'Cotizar por WhatsApp',
+  href: waUrl(WA_MESSAGES.productos),
+  sub: 'Respuesta inmediata',
+  external: true,
+}
+---
+
+<PageLayout
+  title="Guía de productos — cómo crear un producto en el sitio"
+  description="La guía exacta de cómo crear un producto en un sitio Astro: la colección Markdown, las categorías, las imágenes, el precio, la ficha de detalle y el schema. Pieza por pieza."
+  pageType="page"
+  breadcrumbs={[{ label: 'Productos', href: '/productos' }, { label: 'La guía' }]}
+  guia={false}
+>
+  <Hero
+    badge="Productos · La guía"
+    title="Cómo se crea un producto:"
+    accent="de la colección al schema"
+    subtitle="La guía exacta de cómo crear un producto en este sitio, pieza por pieza: dónde vive, cómo se valida, cómo se ilustra, cómo se tarifa, qué página genera y qué SEO emite."
+    descRight={[
+      'Mientras la serie Módulos documenta las piezas con las que se arma cada página y Niveles documenta los tipos de página por su profundidad, esta serie documenta el FLUJO de crear un producto. Son seis decisiones encadenadas, cada una con su propia ficha.',
+      'Todo descansa en el mismo principio del sistema: una sola fuente de verdad y contenido separado del diseño. Un producto es un archivo Markdown validado por Zod; el catálogo, la ficha y el JSON-LD se generan solos desde esa colección.',
+    ]}
+  />
+
+  {/* ── Nota guía del índice ── */}
+  <section class="section">
+    <div class="container">
+      <GuiaNota titulo="Qué es esta página (índice de la guía de productos)" archivo="src/pages/productos/guia/index.astro">
+        <p>
+          Es el <strong>índice de la guía</strong> «cómo crear productos»: el
+          catálogo de venta vive en <a href="/productos">/productos</a>; aquí se
+          explica cómo está hecho, pieza por pieza. La lista de abajo sale de
+          <code>PRODUCTOS_GUIA</code> en <code>site.ts</code> (SSoT), la misma
+          fuente del dropdown «Productos» del Header. Cada pieza tiene su página
+          <code>/productos/guia/&lt;slug&gt;</code> con el molde de 10 secciones.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 1) ¿QUÉ ES UN CATÁLOGO DE PRODUCTOS? ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Concepto"
+        title="¿Qué es un catálogo de productos?"
+        desc="Una sección (L2) que lista las fichas de producto del sitio y manda a cada detalle. En esta plantilla NO se escribe a mano: cada producto es un archivo Markdown y el grid se genera solo."
+        body={[
+          'Un catálogo es la página que reúne lo que vendes y reparte al visitante hacia la ficha correcta. Aquí cada producto vive como un archivo .md en una colección, con su frontmatter validado por un esquema. La página lee la colección, ordena y pinta una card por producto: agregar o quitar un .md actualiza el catálogo solo, sin tocar la página.',
+          'Pensar el catálogo como datos —y no como pantallas dibujadas a mano— es lo que lo mantiene coherente y escalable. Diez productos o mil se ven y se navegan igual; el SEO (la lista, las fichas, el schema) se emite solo; y quien edita el catálogo escribe texto, no código. Esta guía documenta cada parte de ese flujo.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 2) LA GUÍA — las 6 piezas de «cómo crear productos» (vitrina) ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="La guía"
+        title="Cómo se crea un producto, pieza por pieza"
+        desc={`Las ${piezas} piezas del flujo, cada una como tarjeta: foto, nombre, qué resuelve y sus ideas clave. Entra a cualquiera para verla a fondo, con el mismo molde de las series Módulos y Niveles.`}
+        body={[
+          'Crear un producto bien hecho son seis decisiones encadenadas: dónde vive (la colección), cómo se ordena (las categorías), cómo entra por los ojos (las imágenes), cómo se tarifa (el precio), qué página genera (la ficha) y qué SEO emite (el schema). Cada tarjeta abre una de ellas.',
+          'Es el MISMO card del catálogo —no inventamos un diseño aparte—, porque la coherencia es justo lo que esta serie enseña. Cada pieza tiene su página de detalle con el molde de 10 secciones: qué es, para qué sirve, qué lleva, cómo se ve en móvil, dónde encaja y cómo se construye.',
+        ]}
+      />
+      <div class="showcase">
+        {guiaListos.map((p, i) => {
+          const meta = PG_META[p.slug]
+          return (
+            <CategoryCard
+              label={p.label}
+              href={p.href}
+              image={meta?.image}
+              imageAlt={`Imagen de ejemplo de «${p.label}» en la guía de productos`}
+              badge={p.estado === 'listo' ? 'Guía' : 'Próximamente'}
+              blurb={p.desc}
+              subcategories={(meta?.chips ?? []).map((c) => ({ label: c, href: p.href }))}
+              ctaLabel="Ver la pieza"
+              disabled={p.estado !== 'listo'}
+              index={i}
+            />
+          )
+        })}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3) CADA PIEZA, POR DENTRO — bloques «a fondo» (CategoryDetail) ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Por dentro"
+        title="Cada pieza, por dentro"
+        desc="El índice te dice qué es cada pieza; aquí la abrimos. Mismo formato para todas: qué resuelve, qué decisiones implica y en qué se fija al construirla."
+        body={[
+          'Es el mismo bloque «a fondo» del catálogo del home —información a la izquierda, galería a la derecha, idéntico para cada pieza—. Reusar el patrón es, otra vez, la lección: el sitio se arma con piezas que ya existen.',
+          'Aquí está cada pieza del flujo abierta con la misma estructura. Las mismas seis que ves arriba como tarjetas; entra a cualquiera para la versión completa con recetas de código.',
+        ]}
+      />
+      <div class="afondo">
+        {guiaListos.map((p, i) => (
+          <CategoryDetail
+            eyebrow="La pieza a fondo"
+            title={p.label}
+            body={PRODUCTO_GUIA_AFONDO[p.slug].body}
+            points={PRODUCTO_GUIA_AFONDO[p.slug].points}
+            cta={p.estado === 'listo' ? { label: `Ver «${p.label}»`, href: p.href } : undefined}
+            gallery={productoGuiaGallery(p.slug, p.label, i)}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 4) RESPONSIVE Y MÓVIL — la vitrina de la guía en el teléfono ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="La vitrina, en el teléfono"
+        desc="La rejilla no «se encoge»: se reordena. De varias columnas a una sola, con fotos que nunca desbordan y cards que se tocan cómodo."
+        body={[
+          'La vitrina (.showcase) está pensada mobile-first: nace en una columna y crece conforme hay ancho. Nunca al revés: así el caso base (el teléfono) es el más simple y robusto, y el escritorio solo añade.',
+          'Lo demás lo resuelve el sistema central: las imágenes AVIF son fluidas y llevan width/height fijos (cero saltos de maqueta), y toda la card es un único enlace con área táctil cómoda. Cada patrón, abajo, con su vista en el teléfono y su receta.',
+        ]}
+      />
+
+      <div class="pats">
+        {/* 1 · Rejilla → 1 columna */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="La vitrina de la guía baja a una sola columna en el teléfono">
+              <div class="vm-head"><span class="vm-logo">E</span><span class="vm-sp"></span><span class="vm-burg" aria-hidden="true">≡</span></div>
+              <div class="vm-stack">
+                <span class="vm-mini"><i class="vm-mini__img"></i><b class="vm-mini__t"></b><span class="vm-mini__chips"><i></i><i></i></span></span>
+                <span class="vm-mini"><i class="vm-mini__img"></i><b class="vm-mini__t"></b><span class="vm-mini__chips"><i></i><i></i></span></span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · De varias columnas a una</h3>
+            <p class="pat__desc">La vitrina es <strong>mobile-first</strong>: declara una columna y crece con <code>repeat(…, 1fr)</code> en escritorio. Baja a una columna en el teléfono sin tocar la card —el responsive vive en la rejilla—.</p>
+            <Receta titulo="CSS · grid mobile-first" lang="css" code={recetaGrid} />
+          </div>
+        </article>
+
+        {/* 2 · Imagen fluida AVIF */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="La foto de la card ocupa el ancho sin desbordar ni deformarse">
+              <div class="vm-head"><span class="vm-logo">E</span><span class="vm-sp"></span></div>
+              <div class="vm-one">
+                <span class="vm-card">
+                  <i class="vm-card__img"><b class="vm-card__tag">AVIF</b></i>
+                  <b class="vm-card__t"></b>
+                  <b class="vm-card__d"></b>
+                </span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · Fotos ligeras que nunca desbordan</h3>
+            <p class="pat__desc">Cada foto es <strong>AVIF</strong> con <code>width</code>/<code>height</code> fijos: ocupa el ancho de la card, escala manteniendo su proporción y reserva el hueco antes de cargar (cero CLS). La primera del grid carga con prioridad para cuidar el LCP.</p>
+            <Receta titulo="CSS · imagen fluida + anti-CLS" lang="css" code={recetaImg} />
+          </div>
+        </article>
+
+        {/* 3 · Card táctil */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Card cómoda de tocar, con área táctil de al menos 44 px">
+              <div class="vm-head"><span class="vm-logo">E</span><span class="vm-sp"></span></div>
+              <div class="vm-one">
+                <span class="vm-card">
+                  <i class="vm-card__img"></i>
+                  <b class="vm-card__t"></b>
+                  <span class="vm-chips"><i class="vm-chip">Foto</i><i class="vm-chip">Badge</i><i class="vm-chip">Título</i></span>
+                  <span class="vm-cta">Ver la pieza<i class="vm-ruler">44px</i></span>
+                </span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · Cards cómodas de tocar</h3>
+            <p class="pat__desc">En el teléfono se toca con el dedo, no con un cursor: toda la card es un único enlace (clic-en-cualquier-lado) con área táctil de 44 px, y lleva un realce de toque suave para confirmar el tap.</p>
+            <Receta titulo="mobile.css · card táctil" lang="css" code={recetaCard} />
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 5) FAQ ── */}
+  <section class="section">
+    <div class="container">
+      <FAQAccordion items={faqs} title="Preguntas frecuentes" openFirst />
+    </div>
+  </section>
+
+  {/* Cierre: menú de navegación full-width. */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+</PageLayout>
+
+<style>
+  /* Estructura (tokens.css = fuente única; scoped por página). */
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* ── Vitrina de la guía: 1 → 2 → 3 por fila (mobile-first) ── */
+  .showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .showcase { grid-template-columns: repeat(3, 1fr); } }
+
+  /* ── Pila «a fondo» (CategoryDetail) — separación uniforme, SIN zig-zag ── */
+  .afondo { display: grid; gap: clamp(2.5rem, 6vw, 5rem); margin-top: var(--sp-6); }
+
+  /* ── Sección «Responsive y móvil»: teléfono | explicación + receta ── */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pat__desc code { font-family: ui-monospace, Menlo, monospace; font-size: .85em; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
+
+  /* Mockups de la vitrina con prefijo .vm (vitrina mockup), scoped a esta página. */
+  .vm-head { display: flex; align-items: center; gap: 7px; padding: 8px 11px; background: var(--c-white); border-bottom: 1px solid var(--c-border); }
+  .vm-logo { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-black); font-size: 12px; }
+  .vm-sp { margin-left: auto; }
+  .vm-burg { font-size: 16px; color: var(--c-ink-2); }
+
+  .vm-stack { display: grid; gap: 10px; padding: 12px; }
+  .vm-one { padding: 12px; }
+  .vm-mini, .vm-card { display: grid; gap: 6px; padding: 8px; border-radius: 9px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .vm-mini__img, .vm-card__img { position: relative; display: block; border-radius: 6px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .vm-mini__img { height: 38px; }
+  .vm-card__img { height: 92px; }
+  .vm-card__tag { position: absolute; top: 6px; left: 6px; font-size: 8px; font-weight: 700; letter-spacing: .04em; color: var(--c-primary-dark); background: #fff; border-radius: 4px; padding: 1px 5px; }
+  .vm-mini__t, .vm-card__t { height: 9px; width: 70%; border-radius: 4px; background: var(--c-ink); opacity: .8; }
+  .vm-card__d { height: 7px; width: 92%; border-radius: 4px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .vm-mini__chips { display: flex; gap: 4px; }
+  .vm-mini__chips i { width: 26px; height: 9px; border-radius: 99px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .vm-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .vm-chip { font-style: normal; font-size: 9px; color: var(--c-ink-2); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 99px; padding: 3px 7px; }
+  .vm-cta { position: relative; display: grid; place-items: center; min-height: 30px; margin-top: 2px; border-radius: 7px; background: var(--c-primary); color: #fff; font-size: 11px; font-weight: 700; }
+  .vm-ruler { position: absolute; right: 8px; font-style: normal; font-size: 8px; font-weight: 700; color: #fff; background: rgba(255,255,255,.22); border-radius: 4px; padding: 1px 4px; }
+</style>

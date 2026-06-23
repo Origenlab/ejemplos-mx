@@ -19,6 +19,7 @@ import SectionHeading from "@components/SectionHeading.astro";
 import FAQAccordion from "@components/FAQAccordion.astro";
 import CTABanner from "@components/CTABanner.astro";
 import RelatedLinks from "@components/RelatedLinks.astro";
+import ReviewCard from "@components/ReviewCard.astro";
 import Img from "@components/Img.astro";
 import { waUrl, telUrl } from "@config/site";
 
@@ -38,10 +39,13 @@ export interface Props {
   // ── Bloques opcionales ──
   gallery?: { src: string; alt: string }[];
   features?: string[];
+  variants?: string[];
   specs?: { label: string; value: string }[];
   applications?: string[];
   certifications?: string[];
   faqs?: { question: string; answer: string }[];
+  /** Reseñas REALES desde la colección `casos` (B4: nunca fabricadas). */
+  reviews?: { quote: string; name: string; role?: string; rating?: number }[];
   related?: { label: string; href: string; description?: string }[];
 }
 
@@ -58,10 +62,12 @@ const {
   price,
   gallery = [],
   features = [],
+  variants = [],
   specs = [],
   applications = [],
   certifications = [],
   faqs = [],
+  reviews = [],
   related = [],
 } = Astro.props;
 
@@ -70,10 +76,10 @@ const waLink = waUrl(`Hola, quiero cotizar: ${title}. ¿Precio y disponibilidad?
 const breadcrumbs = [
   { label: "Productos", href: "/productos" },
   // Eslabón de CATEGORÍA (jerarquía hub→categoría→ficha): enlaza a la landing de
-  // categoría /productos/categoria/<cat>. Crea el nivel intermedio que faltaba en
-  // el crawl y reparte autoridad de la ficha hacia su categoría.
+  // categoría /productos/<cat>. Crea el nivel intermedio que faltaba en el crawl
+  // y reparte autoridad de la ficha hacia su categoría.
   ...(category
-    ? [{ label: category.charAt(0).toUpperCase() + category.slice(1), href: `/productos/categoria/${category}` }]
+    ? [{ label: category.charAt(0).toUpperCase() + category.slice(1), href: `/productos/${category}` }]
     : []),
   { label: title },
 ];
@@ -123,6 +129,12 @@ const schemaData = {
         <p class="prod-hero__lede">{description}</p>
         {features.length > 0 && (
           <ul class="prod-features">{features.map((f) => <li>{f}</li>)}</ul>
+        )}
+        {variants.length > 0 && (
+          <div class="prod-variants">
+            <span class="prod-variants__label">Modelos y variantes</span>
+            <ul class="prod-variants__list">{variants.map((v) => <li>{v}</li>)}</ul>
+          </div>
         )}
         <p class="prod-price">{price ?? "Precio bajo cotización"}</p>
         <div class="prod-hero__actions">
@@ -188,6 +200,19 @@ const schemaData = {
     </aside>
   </div>
 
+  {reviews.length > 0 && (
+    <section class="prod-reviews">
+      <div class="container">
+        <SectionHeading eyebrow="Reseñas" title={`Lo que dicen sobre ${title}`} />
+        <div class="prod-reviews__grid">
+          {reviews.map((r) => (
+            <ReviewCard quote={r.quote} name={r.name} role={r.role} rating={r.rating} />
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
   <CTABanner
     heading={`¿Necesitas ${category} para tu proyecto?`}
     desc="Mándanos lo que buscas y te cotizamos con precio, disponibilidad y tiempos de entrega."
@@ -206,6 +231,10 @@ const schemaData = {
   .prod-hero__title { font-family: var(--font-heading); font-size: var(--text-fluid-3xl); line-height: 1.1; margin-top: var(--space-2); }
   .prod-hero__lede { color: var(--color-text-muted); margin: var(--space-3) 0; }
   .prod-features { padding-left: var(--space-5); margin: var(--space-3) 0; }
+  .prod-variants { margin: var(--space-3) 0; }
+  .prod-variants__label { display: block; font-size: var(--text-sm); color: var(--color-text-muted); margin-bottom: var(--space-2); }
+  .prod-variants__list { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: 0; list-style: none; }
+  .prod-variants__list li { font-size: var(--text-sm); border: 1px solid var(--color-border); border-radius: var(--radius-full); padding: .2em .7em; }
   .prod-price { font-size: var(--text-xl); font-weight: 700; color: var(--color-primary); }
   .prod-hero__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-4); }
 
@@ -220,6 +249,11 @@ const schemaData = {
   .prod-widget--cta { background: var(--color-surface); }
   .prod-widget__price { font-size: var(--text-lg); font-weight: 700; color: var(--color-primary); margin: var(--space-2) 0 var(--space-3); }
   .btn--block { width: 100%; margin-top: var(--space-2); }
+
+  .prod-reviews { padding: var(--space-8) 0; background: var(--color-surface); }
+  .prod-reviews__grid { display: grid; grid-template-columns: 1fr; gap: var(--space-5); margin-top: var(--space-5); }
+  @media (min-width: 768px) { .prod-reviews__grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .prod-reviews__grid { grid-template-columns: repeat(3, 1fr); } }
 
   @media (min-width: 1024px) {
     .prod-hero__grid { grid-template-columns: 1fr 1fr; align-items: start; }

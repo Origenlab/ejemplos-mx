@@ -63,22 +63,22 @@ export function siblingsModules(slug: string): SiblingItem[] {
 // ============================================================================
 const IMG = '/images'
 export const MODULE_CARD_META: Record<string, { image: string; chips: string[] }> = {
-  'topbar':              { image: `${IMG}/showcase/imagen-optimizada-avif-sitio-web.avif`,        chips: ['Contacto', 'Horario', 'WhatsApp'] },
-  'header':              { image: `${IMG}/productos/desarrollo-web-astro-profesional.avif`,        chips: ['Logotipo', 'Navegación', 'Menú móvil'] },
-  'breadcrumbs':         { image: `${IMG}/showcase/enlaces-internos-navegacion-web.avif`,          chips: ['Ruta', 'Jerarquía', 'Volver'] },
-  'hero':                { image: `${IMG}/showcase/jerarquia-titulos-seo-pagina-web.avif`,         chips: ['H1 único', 'Subtítulo', 'Llamada'] },
-  'section-menu':        { image: `${IMG}/servicios/implementacion-deploy-sitio-astro.avif`,       chips: ['Botones', 'Saltos', 'CTA'] },
-  'section-heading':     { image: `${IMG}/showcase/texto-venta-contenido-markdown.avif`,           chips: ['Eyebrow', 'Título', 'Descripción'] },
-  'category-card':       { image: `${IMG}/productos/componentes-plantilla-astro-markdown.avif`,    chips: ['Imagen + alt', 'Título H3', 'Chips + CTA'] },
-  'category-detail':     { image: `${IMG}/productos/sitio-web-rapido-astro.avif`,                  chips: ['Dos columnas', 'Galería', 'CTA'] },
-  'product-card':        { image: `${IMG}/productos/desarrollo-web-astro-profesional.avif`,        chips: ['Imagen 16:9 + badge', 'Título H3 + descripción', 'CTA inline + LCP'] },
-  'service-card':        { image: `${IMG}/servicios/consultoria-desarrollo-web-astro.avif`,        chips: ['Icono SVG · 56×56', 'Título H3 + descripción', 'CTA dual (ficha o WhatsApp)'] },
-  'review':              { image: `${IMG}/casos/caso-exito-proyecto-web-astro.avif`,               chips: ['Estrellas · 5/5', 'Cita + cliente + rol', 'Avatar con iniciales'] },
-  'faq':                 { image: `${IMG}/articulos/guia-plantilla-astro-contenido-markdown.avif`, chips: ['Pregunta · summary tappable', 'Respuesta · admite HTML', 'Schema FAQPage opcional'] },
-  'cta-banner':          { image: `${IMG}/servicios/soporte-mantenimiento-web-astro.avif`,         chips: ['Heading + desc + badge', 'btns[] tipados (wa/arrow/phone/quote)', '3 variantes: red · dark · light'] },
-  'contact-form':        { image: `${IMG}/articulos/novedades-sistema-produccion-web-astro.avif`,  chips: ['Form HTML5 nativo', 'Validación es-MX + honeypot', 'Envío a WhatsApp · waUrl()'] },
-  'footer':              { image: `${IMG}/zonas/cobertura-desarrollo-web-ciudad-de-mexico.avif`,   chips: ['CTA + NAP + 4 cols + legales', 'Data-driven desde site.ts', 'Schema Organization en lib/seo.ts'] },
-  'whatsapp-flotante':   { image: `${IMG}/showcase/imagen-optimizada-avif-sitio-web.avif`,         chips: ['Botón', 'Fijo', 'Mensaje'] },
+  'topbar':              { image: `${IMG}/showcase/modulo-topbar-preview.avif`,          chips: ['Contacto', 'Horario', 'WhatsApp'] },
+  'header':              { image: `${IMG}/showcase/modulo-header-preview.avif`,         chips: ['Logotipo', 'Navegación', 'Menú móvil'] },
+  'breadcrumbs':         { image: `${IMG}/showcase/modulo-breadcrumbs-preview.avif`,    chips: ['Ruta', 'Jerarquía', 'Volver'] },
+  'hero':                { image: `${IMG}/showcase/modulo-hero-preview.avif`,           chips: ['H1 único', 'Subtítulo', 'Llamada'] },
+  'section-menu':        { image: `${IMG}/showcase/modulo-section-menu-preview.avif`,   chips: ['Botones', 'Saltos', 'CTA'] },
+  'section-heading':     { image: `${IMG}/showcase/modulo-section-heading-preview.avif`,chips: ['Eyebrow', 'Título', 'Descripción'] },
+  'category-card':       { image: `${IMG}/showcase/modulo-category-card-preview.avif`,  chips: ['Imagen + alt', 'Título H3', 'Chips + CTA'] },
+  'category-detail':     { image: `${IMG}/showcase/modulo-category-detail-preview.avif`,chips: ['Dos columnas', 'Galería', 'CTA'] },
+  'product-card':        { image: `${IMG}/showcase/modulo-product-card-preview.avif`,   chips: ['Imagen 16:9 + badge', 'Título H3 + descripción', 'CTA inline + LCP'] },
+  'service-card':        { image: `${IMG}/showcase/modulo-service-card-preview.avif`,   chips: ['Icono SVG · 56×56', 'Título H3 + descripción', 'CTA dual (ficha o WhatsApp)'] },
+  'review':              { image: `${IMG}/showcase/modulo-review-preview.avif`,         chips: ['Estrellas · 5/5', 'Cita + cliente + rol', 'Avatar con iniciales'] },
+  'faq':                 { image: `${IMG}/showcase/modulo-faq-preview.avif`,            chips: ['Pregunta · summary tappable', 'Respuesta · admite HTML', 'Schema FAQPage opcional'] },
+  'cta-banner':          { image: `${IMG}/showcase/modulo-cta-banner-preview.avif`,     chips: ['Heading + desc + badge', 'btns[] tipados (wa/arrow/phone/quote)', '3 variantes: red · dark · light'] },
+  'contact-form':        { image: `${IMG}/showcase/modulo-contact-form-preview.avif`,   chips: ['Form HTML5 nativo', 'Validación es-MX + honeypot', 'Envío a WhatsApp · waUrl()'] },
+  'footer':              { image: `${IMG}/showcase/modulo-footer-preview.avif`,         chips: ['CTA + NAP + 4 cols + legales', 'Data-driven desde site.ts', 'Schema Organization en lib/seo.ts'] },
+  'whatsapp-flotante':   { image: `${IMG}/showcase/modulo-whatsapp-preview.avif`,       chips: ['Botón', 'Fijo', 'Mensaje'] },
 }
 
 // ============================================================================

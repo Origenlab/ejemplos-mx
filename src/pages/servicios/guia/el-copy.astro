@@ -1,0 +1,391 @@
+---
+// ============================================================================
+// /servicios/guia/el-copy — PIEZA «El copy» de la guía de servicios.
+// ----------------------------------------------------------------------------
+// Segunda pieza del flujo: cómo comunicar el valor del servicio en el Hero.
+// Propuesta de valor directa, sin CTAs en el hero, descRight en 2 párrafos.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import RelatedLinks from '@components/RelatedLinks.astro'
+import ModSection from '@components/modulos/ModSection.astro'
+import ModBenefits from '@components/modulos/ModBenefits.astro'
+import ModAnatomy from '@components/modulos/ModAnatomy.astro'
+import ModResponsive from '@components/modulos/ModResponsive.astro'
+import ModPattern from '@components/modulos/ModPattern.astro'
+import ModProse from '@components/modulos/ModProse.astro'
+import ModDosDonts from '@components/modulos/ModDosDonts.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+import { siblingsServicios } from '@lib/servicios'
+
+const cierreItems = siblingsServicios('el-copy')
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.servicios), sub: 'Respuesta inmediata', external: true }
+
+const partes = [
+  {
+    n: 1,
+    nombre: 'Badge — contexto de sección',
+    que: 'Etiqueta corta que ubica al visitante: «Servicio», «Guía de servicios · El copy». Aparece sobre el título, en mayúsculas pequeñas. Da contexto sin consumir jerarquía tipográfica.',
+    dato: 'badge: string — «Servicio» | «Servicio · Consultoría»',
+  },
+  {
+    n: 2,
+    nombre: 'title + accent — la entidad central',
+    que: 'El H1 de la página. title es la parte principal (color ink); accent es el fragmento destacado (color primary). Juntos forman la propuesta de valor breve: «Consultoría:» + «asesoría honesta». Lleva la keyword principal.',
+    dato: 'title: string + accent: string → <h1>title <em>accent</em></h1>',
+  },
+  {
+    n: 3,
+    nombre: 'subtitle — la propuesta de valor en una frase',
+    que: 'Una sola frase directa que responde: ¿qué resuelve este servicio y para quién? No describe el proceso —eso va en el cuerpo—; orienta al visitante sobre si esto es para él. 15–25 palabras.',
+    dato: 'subtitle: string — 1 frase directa, ≤25 palabras, sin CTAs',
+  },
+  {
+    n: 4,
+    nombre: 'descRight — 2 párrafos complementarios',
+    que: 'Dos párrafos que amplían el subtitle SIN repetirlo. El primero profundiza en el problema que resuelve; el segundo explica qué sigue (cómo funciona, qué recibirá). NUNCA llevan CTAs ni botones de venta.',
+    dato: 'descRight: [string, string] — amplían, complementan, cero CTAs',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Orientación antes que persuasión',
+    desc: 'El hero responde «¿estoy en el lugar correcto?» antes de intentar vender. Un visitante orientado que decide seguir leyendo convierte más que uno que recibió 3 botones antes de saber qué ofreces.',
+  },
+  {
+    titulo: 'Keyword-first sin spam',
+    desc: 'El title+accent lleva la keyword principal del servicio en las primeras palabras —así sobrevive el truncado en Google y carga el peso de ranking—, pero entra de forma natural en la propuesta de valor, sin apilar términos.',
+  },
+  {
+    titulo: 'descRight = el argumento, no el resumen',
+    desc: 'Los dos párrafos complementan lo que el subtitle no puede decir en una frase: profundizan en el problema, explican el método y anticipan el resultado. No repiten el subtitle —amplían desde otro ángulo.',
+  },
+]
+
+const sis = [
+  'Escribe el subtitle desde el problema del cliente: «Antes de invertir, conviene saber exactamente qué necesitas y por qué» es mejor que «Ofrecemos un servicio de consultoría».',
+  'La keyword principal del servicio va en title o accent (primeras palabras del H1). Así carga el ranking y el CTR en el resultado de Google.',
+  'descRight[0] = qué resuelve (el problema, el dolor). descRight[1] = qué sigue (cómo funciona, qué recibirá). Dos párrafos distintos, no el mismo ángulo dos veces.',
+  'Mantén el subtitle en ≤25 palabras. Si necesitas más, estás describiendo el proceso, no la propuesta: mueve ese texto a descRight.',
+  'La regla es una: sin CTAs en el hero. No «Cotiza aquí», no «Escríbenos», no «Ver precios». El hero orienta; el cierre convierte.',
+]
+const nos = [
+  'NO pongas CTAs ni botones de venta en el hero. El hero no es la zona de conversión — el SectionMenu de cierre y el CTABanner sí lo son.',
+  'NO repitas el subtitle en descRight con otras palabras: amplía, no parafrasea. «Antes de invertir…» no puede reaparecer en otra forma en el párrafo siguiente.',
+  'NO describas el proceso en el subtitle: guárdalo para el alcance y el proceso. El subtitle responde «¿es esto para mí?», no «¿cómo lo hacen?».',
+  'NO dejes el accent vacío: si no hay parte destacada natural, únela al title. Un accent vacío genera un H1 incompleto y roto tipográficamente.',
+  'NO uses adjetivos vacíos: «profesional», «de calidad», «integral». Cada adjetivo debe ser respaldable y específico; si no, elimínalo.',
+]
+
+const disenos = [
+  {
+    nombre: 'Servicio técnico',
+    tag: 'Implementación · Instalación',
+    desc: 'title = nombre del servicio, accent = el resultado. subtitle = qué resuelve en términos concretos. descRight[0] = el problema que elimina; descRight[1] = cómo se entrega.',
+  },
+  {
+    nombre: 'Servicio de acompañamiento',
+    tag: 'Consultoría · Asesoría',
+    desc: 'title = la acción de asesorar, accent = el resultado esperado. subtitle = qué tipo de decisión facilita. descRight[0] = el coste de no decidir bien; descRight[1] = qué se lleva al final.',
+  },
+  {
+    nombre: 'Servicio continuo',
+    tag: 'Soporte · Mantenimiento',
+    desc: 'title = la permanencia del servicio, accent = la tranquilidad. subtitle = qué está cubierto en el tiempo. descRight[0] = el riesgo de no tener soporte; descRight[1] = cómo se activa.',
+  },
+  {
+    nombre: 'Hub de servicios (L2)',
+    tag: 'Landing · Categoría',
+    desc: 'La landing /servicios no es un detalle de servicio: es un índice. Su hero presenta el catálogo, no un servicio. title = lo que ofrece la empresa; descRight = cómo encontrar el servicio correcto.',
+  },
+  {
+    nombre: 'Servicio geolocalizado',
+    tag: 'Local · Cobertura',
+    desc: 'Suma la zona en el badge y en el subtitle: «Servicio · CDMX» + «Disponibles en CDMX y zona metropolitana». La keyword local entra en el H1 sin forzar.',
+  },
+  {
+    nombre: 'Servicio estacional',
+    tag: 'Temporada · Urgente',
+    desc: 'El badge lleva el contexto temporal: «Servicio · Disponible ahora». El subtitle puede mencionar tiempos de respuesta: «Instalamos en 48 h». El urgency es real, no fabricado.',
+  },
+]
+
+const recetaHero = `---
+// src/pages/servicios/[...slug].astro — el hero de cada servicio
+// Los textos del hero salen del frontmatter del .md (o del mapa DETALLE local).
+// Regla: cero CTAs en el hero. El subtitle = propuesta de valor directa.
+---
+<Hero
+  badge="Servicio"
+  title={label}          {/* keyword principal del servicio */}
+  accent=""              {/* parte destacada del H1 en color primary */}
+  subtitle={det.lede}    {/* propuesta de valor, ≤25 palabras, sin CTAs */}
+  descRight={[
+    desc,                {/* qué resuelve (el problema) */}
+    'Aquí encuentras lo concreto: qué incluye, cómo trabajamos y las dudas frecuentes.',
+    {/* qué sigue: cómo funciona, qué recibirá */}
+  ]}
+/>`
+
+const recetaCopy = `/* Checklist del copy del hero de servicio:
+   ✓ badge      → «Servicio» | «Servicio · Categoría»
+   ✓ title      → nombre del servicio (keyword principal)
+   ✓ accent     → resultado o matiz destacado (en color primary)
+   ✓ subtitle   → propuesta de valor ≤25 palabras, desde el problema del cliente
+   ✓ descRight  → [qué resuelve, qué sigue] — nunca el mismo ángulo dos veces
+   ✗ NO button/CTA en el hero
+   ✗ NO adjetivos vacíos (profesional, integral, de calidad)
+   ✗ NO repetir el subtitle en descRight */`
+
+const recetaMovil = `/* El hero es 2 columnas en escritorio (title izq · descRight der).
+   En móvil apila: title arriba, descRight abajo. Sin ajustes manuales:
+   el Hero component lo resuelve con su CSS. */
+@media (max-width: 768px) {
+  /* Hero.astro ya apila por defecto; solo ajusta el spacing si es necesario. */
+  .hero__content { gap: var(--sp-5); }
+}`
+---
+
+<PageLayout
+  title="El copy del servicio — propuesta de valor en el hero"
+  description="Cómo comunicar el servicio en el hero: badge, title+accent, subtitle y descRight. La propuesta de valor en 5 segundos, sin CTAs y sin adjetivos vacíos."
+  pageType="page"
+  schemaType="TechArticle"
+  guia={false}
+  breadcrumbs={[{ label: 'Servicios', href: '/servicios' }, { label: 'La guía', href: '/servicios/guia' }, { label: 'El copy' }]}
+>
+  <Hero
+    badge="Guía de servicios · El copy"
+    title="El copy:"
+    accent="propuesta de valor en 5 segundos"
+    subtitle="El visitor decide si sigue leyendo en los primeros 5 segundos. El hero tiene cuatro piezas —badge, title+accent, subtitle y descRight— y ninguna de ellas lleva un botón de venta."
+    descRight={[
+      'El copy del servicio no describe el proceso desde adentro: presenta el problema que el cliente vino a resolver y por qué este servicio lo resuelve. La diferencia es de perspectiva: desde el cliente, no desde el proveedor.',
+      'Esta pieza documenta cómo se arma cada elemento del Hero para un servicio: qué función cumple, cómo se escribe y qué errores conviene evitar. El hero orienta; el cierre convierte.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <ModSection
+    eyebrow="Definición"
+    title="¿Qué es el copy del servicio?"
+    desc="El texto del Hero que comunica qué resuelve el servicio y para quién, en los primeros 5 segundos de la visita. No enumera tareas ni describe procesos: orienta la decisión del cliente."
+    body={[
+      'El copy del servicio es el conjunto de textos del Hero: badge, title+accent, subtitle y descRight. No es la descripción completa del servicio —eso va en el alcance y el proceso—; es la primera capa, la que responde «¿esto es lo que necesito?» antes de que el visitante decida si sigue leyendo o cierra la pestaña.',
+      'La diferencia entre un hero efectivo y uno que no convierte suele estar en la perspectiva: el inefectivo describe el servicio desde adentro («Ofrecemos implementación con tecnología de punta»); el efectivo lo presenta desde el problema del cliente («Del acuerdo al sitio publicado, con un proceso claro y sin sorpresas»). Mismo servicio, distinto ángulo.',
+    ]}
+  />
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <ModSection
+    surface
+    eyebrow="Función e importancia"
+    title="¿Para qué sirve?"
+    desc="Orienta al visitante, valida que llegó al lugar correcto y le da suficiente contexto para decidir si quiere seguir leyendo. No vende — eso lo hace el cierre."
+    body={[
+      'El hero cumple un único trabajo: que el visitante correcto se quede. No tiene que convencer a todos —solo a quienes el servicio les resuelve algo. Un hero honesto que describe exactamente para quién es el servicio reduce el rebote de visitantes mal cualificados y retiene a los que sí pueden contratar.',
+      'El segundo trabajo es SEO: el title+accent es el H1 de la página y la keyword principal del servicio debe ir en las primeras palabras. Así carga el peso de ranking y el CTR en el resultado de Google. Pero entra de forma natural en la propuesta —no apilada al inicio—.',
+    ]}
+  >
+    <ModBenefits items={beneficios} />
+  </ModSection>
+
+  {/* ── 3) ¿QUÉ LLEVA? — anatomía ── */}
+  <ModSection
+    eyebrow="Anatomía"
+    title="Las 4 piezas del Hero de servicio"
+    desc="Badge, title+accent, subtitle y descRight. Cada una con una función específica. El hero funciona cuando las cuatro hacen su trabajo sin solaparse."
+    body={[
+      'Las cuatro piezas se leen en cascada: el badge da contexto («Servicio»), el title+accent da nombre a la entidad, el subtitle responde «¿es esto para mí?» y el descRight amplía para quien quiere más detalle antes de comprometerse. La cascada funciona si cada pieza hace su trabajo sin robarle el de la siguiente.',
+      'Abajo, cada pieza con su función y su regla de escritura. El ejemplo en vivo muestra cómo se ven juntas en la página.',
+    ]}
+  >
+    <ModAnatomy partes={partes}>
+      <div class="hero-mock" role="img" aria-label="Ejemplo del hero de un servicio con sus cuatro piezas">
+        <span class="hm__badge">Servicio · Consultoría</span>
+        <h1 class="hm__h1">Consultoría: <em>asesoría honesta</em></h1>
+        <p class="hm__sub">Antes de invertir, definimos contigo qué necesitas y por qué — diagnóstico claro, sin venderte de más.</p>
+        <div class="hm__right">
+          <p class="hm__p">Descripción del problema que resuelve el servicio. Qué pasa cuando no se resuelve y por qué este servicio lo aborda de forma correcta.</p>
+          <p class="hm__p">Qué sigue: cómo funciona el servicio, qué recibirá el cliente al final del proceso. El siguiente paso natural.</p>
+        </div>
+        <span class="hm__nota">⟵ Sin botones aquí</span>
+      </div>
+    </ModAnatomy>
+  </ModSection>
+
+  {/* ── Variantes ── */}
+  <ModSection
+    surface
+    eyebrow="Variantes"
+    title="Tipos de hero según el servicio"
+    desc="El molde es el mismo para todos —badge, title+accent, subtitle, descRight—; lo que cambia es el ángulo del copy según el tipo de servicio. Seis variantes reales del sistema."
+    body={[
+      'No hay un copy universal: hay un molde universal con textos que varían según lo que el cliente viene a resolver. Un servicio técnico habla de resultados concretos; uno de acompañamiento habla de decisiones; uno continuo habla de tranquilidad en el tiempo.',
+      'Abajo, seis variantes —todas válidas con el mismo Hero component—. Solo cambia el texto, no el componente.',
+    ]}
+  >
+    <GaleriaDisenos ariaLabel="Variantes del copy del hero según el tipo de servicio">
+      {disenos.map((d) => (
+        <DisenoCard nombre={d.nombre} tag={d.tag} desc={d.desc}>
+          <div class="cop">
+            <span class="cop__badge">Servicio</span>
+            <span class="cop__h1"></span>
+            <span class="cop__sub"></span>
+            <div class="cop__right"><span></span><span></span></div>
+          </div>
+        </DisenoCard>
+      ))}
+    </GaleriaDisenos>
+  </ModSection>
+
+  {/* ── Responsive ── */}
+  <ModSection
+    eyebrow="Responsive y móvil"
+    title="El hero, en el teléfono"
+    desc="El hero de 2 columnas (title izq · descRight der) apila en el teléfono: title arriba, descRight abajo. El Hero component lo resuelve sin código extra."
+    body={[
+      'El Hero component ya está construido para apilar en móvil: las 2 columnas de escritorio se convierten en 1 columna con el mismo orden. El badge, el H1, el subtitle y el descRight se leen de arriba a abajo de forma natural —mismo flujo que en escritorio, adaptado al ancho del teléfono.',
+      'La regla de «sin CTAs en el hero» aplica con más fuerza en móvil: la pantalla es pequeña y un botón en el hero compite con el H1 por la atención. El botón de WhatsApp flotante ya está siempre visible; el CTA principal del cierre cierra la página.',
+    ]}
+  >
+    <ModResponsive>
+      <ModPattern
+        title="Hero 2 col → 1 col en móvil"
+        desc="title izq + descRight der en escritorio → apilados en móvil. El componente ya lo resuelve. Sin código extra ni breakpoints en la página."
+        receta={{ titulo: 'Astro · el hero del servicio (sin CTAs)', lang: 'astro', code: recetaHero }}
+      >
+        <MarcoMovil ariaLabel="El hero apila sus dos columnas en una sola en el teléfono">
+          <div class="hm-mob">
+            <span class="hm-mob__badge">Servicio</span>
+            <b class="hm-mob__h1"></b>
+            <b class="hm-mob__sub"></b>
+            <div class="hm-mob__right"><span></span><span></span></div>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+
+      <ModPattern
+        title="Checklist del copy antes de publicar"
+        desc="Cinco preguntas que validan el copy del hero antes de subir la página. Si alguna falla, la pieza que no cumple necesita revisión."
+        receta={{ titulo: 'Checklist · copy del hero de servicio', lang: 'text', code: recetaCopy }}
+      >
+        <MarcoMovil ariaLabel="Checklist del copy del hero en el teléfono">
+          <div class="hm-mob hm-mob--check">
+            <span class="hm-mob__row hm-mob__row--ok">✓ badge contextual</span>
+            <span class="hm-mob__row hm-mob__row--ok">✓ keyword en H1</span>
+            <span class="hm-mob__row hm-mob__row--ok">✓ subtitle ≤25 palabras</span>
+            <span class="hm-mob__row hm-mob__row--ok">✓ descRight = 2 ángulos</span>
+            <span class="hm-mob__row hm-mob__row--no">✗ sin CTAs en hero</span>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+    </ModResponsive>
+  </ModSection>
+
+  {/* ── ¿Dónde va? ── */}
+  <ModSection
+    surface
+    eyebrow="Posición"
+    title="¿Dónde vive el copy del servicio?"
+    desc="En el Hero de la ficha L3 del servicio (/servicios/<slug>). El hero es siempre el primer componente de la página, antes del alcance, el proceso y las FAQs."
+    body={[
+      'El copy del servicio vive en el Hero de la ficha de detalle. En el sistema, el hero es siempre el primer componente de la página —antes del breadcrumb anidado, antes del alcance, antes del proceso—. Es lo primero que ve el visitante y lo que determina si sigue leyendo.',
+      'Para el hub /servicios (L2), el hero también es el primero, pero el copy es distinto: no presenta un servicio específico sino el catálogo completo. La propuesta de valor es «qué tipo de trabajo ofrece la empresa», no «qué resuelve este servicio».',
+    ]}
+  />
+
+  {/* ── Cómo se construye ── */}
+  <ModSection
+    eyebrow="Implementación"
+    title="Cómo se escribe y se construye"
+    desc="El copy se escribe en el .md o en el mapa DETALLE del slug.astro; el Hero component lo renderiza. Cuatro props de texto; cero lógica extra en el componente."
+    body={[
+      'El copy del hero viene de dos fuentes: si el servicio tiene ficha en la colección (src/content/servicios/), el title sale de entry.data.title y el lede de entry.data.description; si no, vienen del mapa DETALLE local del slug.astro (el respaldo genérico). En ambos casos, el Hero component recibe cuatro props de texto.',
+      'El componente no tiene lógica de conversión: no decide si mostrar un CTA o no, no evalúa si el servicio está featured. Recibe texto y lo renderiza. La decisión de NO poner CTAs en el hero es del autor de la página, no del componente.',
+    ]}
+  >
+    <div class="recetas">
+      <Receta titulo="Astro · Hero del servicio — sin CTAs" lang="astro" code={recetaHero} />
+      <Receta titulo="Checklist de copy — antes de publicar" lang="text" code={recetaCopy} />
+    </div>
+    <ModProse>
+      <p>
+        La regla canónica del hero de servicio: <strong>orientar, no vender</strong>. El visitante
+        llegó porque tiene una necesidad; el hero la valida y le dice «sí, estás en el lugar
+        correcto». Los CTAs de conversión van al SectionMenu de cierre y al CTABanner, donde el
+        visitante ya leyó lo que necesitaba y está listo para actuar. Un hero que presiona antes
+        de informar sube el rebote sin aumentar las conversiones.
+      </p>
+    </ModProse>
+  </ModSection>
+
+  {/* ── Buenas prácticas ── */}
+  <ModSection
+    surface
+    eyebrow="Buenas prácticas"
+    title="Qué hacer y qué evitar"
+    desc="Casi todo el copy falla por el mismo motivo: se escribe desde el servicio, no desde el cliente. La regla de oro es ponerse en el lugar del visitante que llega sin saber si esto es para él."
+    body={[
+      'Los errores más comunes no son de redacción: son de perspectiva. Un subtitle que describe el proceso en lugar de la propuesta, un descRight que repite el subtitle en otras palabras, un hero con tres botones compitiendo. La corrección es siempre la misma: volver al cliente.',
+    ]}
+  >
+    <ModDosDonts sis={sis} nos={nos} />
+  </ModSection>
+
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando la guía de servicios" />
+  <RelatedLinks
+    title="Continúa con la guía"
+    desc="Las siguientes piezas del flujo."
+    links={[
+      { label: 'El alcance', href: '/servicios/guia/el-alcance', desc: 'Qué incluye el servicio: la lista honesta.' },
+      { label: 'El proceso', href: '/servicios/guia/el-proceso', desc: 'Los 3 pasos del trabajo.' },
+      { label: 'La conversión', href: '/servicios/guia/la-conversion', desc: 'El cierre WhatsApp-first.' },
+    ]}
+    limit={3}
+  />
+</PageLayout>
+
+<style>
+  .recetas { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
+
+  /* Mockup del hero */
+  .hero-mock { display: grid; gap: var(--sp-3); padding: var(--sp-5); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-lg); margin-top: var(--sp-6); position: relative; }
+  .hm__badge { font-size: var(--text-xs); font-weight: var(--weight-bold); letter-spacing: .06em; color: var(--c-muted); text-transform: uppercase; }
+  .hm__h1 { font-family: var(--font-heading); font-size: clamp(1.25rem, 3vw, 1.75rem); font-weight: var(--weight-black); color: var(--c-ink); margin: 0; }
+  .hm__h1 em { font-style: normal; color: var(--c-primary); }
+  .hm__sub { font-size: var(--text-sm); color: var(--c-ink-2); line-height: var(--leading-relaxed); max-width: 52ch; margin: 0; }
+  .hm__right { display: grid; gap: var(--sp-2); border-left: 3px solid var(--c-primary-light); padding-left: var(--sp-4); }
+  .hm__p { font-size: var(--text-sm); color: var(--c-ink-2); line-height: var(--leading-relaxed); margin: 0; }
+  .hm__nota { font-size: var(--text-xs); color: var(--c-primary); background: var(--c-primary-light); border-radius: var(--radius-sm); padding: 3px 8px; justify-self: start; }
+
+  /* Mockup variantes */
+  .cop { display: grid; gap: 5px; width: 100%; }
+  .cop__badge { font-size: 8px; font-weight: 700; letter-spacing: .06em; color: var(--c-muted); text-transform: uppercase; }
+  .cop__h1 { height: 14px; width: 80%; border-radius: 4px; background: var(--c-ink); opacity: .8; }
+  .cop__sub { height: 9px; width: 92%; border-radius: 4px; background: var(--c-ink-2); opacity: .5; }
+  .cop__right { display: grid; gap: 4px; border-left: 2px solid var(--c-primary-light); padding-left: 8px; margin-top: 2px; }
+  .cop__right span { height: 7px; border-radius: 4px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .cop__right span:first-child { width: 100%; }
+  .cop__right span:last-child { width: 75%; }
+
+  /* Mockup móvil */
+  .hm-mob { padding: 12px; display: flex; flex-direction: column; gap: 7px; }
+  .hm-mob__badge { font-size: 8px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--c-muted); }
+  .hm-mob__h1 { height: 12px; width: 85%; border-radius: 4px; background: var(--c-ink); opacity: .8; }
+  .hm-mob__sub { height: 9px; width: 95%; border-radius: 4px; background: var(--c-ink-2); opacity: .5; }
+  .hm-mob__right { display: grid; gap: 5px; border-left: 2px solid var(--c-primary-light); padding-left: 8px; }
+  .hm-mob__right span { height: 7px; border-radius: 4px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .hm-mob__right span:first-child { width: 100%; }
+  .hm-mob__right span:last-child { width: 70%; }
+  .hm-mob--check { gap: 5px; }
+  .hm-mob__row { font-size: 9px; padding: 5px 8px; border-radius: 6px; }
+  .hm-mob__row--ok { background: rgba(16, 185, 129, .08); color: #065f46; border: 1px solid rgba(16, 185, 129, .2); }
+  .hm-mob__row--no { background: rgba(239, 68, 68, .08); color: #991b1b; border: 1px solid rgba(239, 68, 68, .2); }
+</style>

@@ -1,0 +1,406 @@
+---
+// ============================================================================
+// /servicios/guia/el-proceso — PIEZA «El proceso» de la guía de servicios.
+// ----------------------------------------------------------------------------
+// Cuarta pieza: los 3 pasos del trabajo. Predecible, reproducible, sin
+// incertidumbre para el cliente. El grid .proceso con artículos numerados.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import RelatedLinks from '@components/RelatedLinks.astro'
+import ModSection from '@components/modulos/ModSection.astro'
+import ModBenefits from '@components/modulos/ModBenefits.astro'
+import ModAnatomy from '@components/modulos/ModAnatomy.astro'
+import ModResponsive from '@components/modulos/ModResponsive.astro'
+import ModPattern from '@components/modulos/ModPattern.astro'
+import ModProse from '@components/modulos/ModProse.astro'
+import ModDosDonts from '@components/modulos/ModDosDonts.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+import { siblingsServicios } from '@lib/servicios'
+
+const cierreItems = siblingsServicios('el-proceso')
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.servicios), sub: 'Respuesta inmediata', external: true }
+
+const partes = [
+  {
+    n: 1,
+    nombre: 'Número de paso — .paso__n',
+    que: 'El identificador ordinal del paso: «01», «02», «03». Grande, en color primary, en font-heading black. No es un icono: el número es suficiente y más directo. Da jerarquía visual y permite referencias («en el paso 2 te comunicamos el avance»).',
+    dato: '.paso__n — font-heading black, color primary, font-size xl',
+  },
+  {
+    n: 2,
+    nombre: 'Título del paso — .paso__t',
+    que: 'Un sustantivo o frase corta que nombra el paso: «Diagnóstico», «Propuesta y ejecución», «Entrega y seguimiento». Sin verbo en imperativo; sin «paso» en el nombre. ≤4 palabras. Es el nombre que el cliente usará para referirse al paso.',
+    dato: '.paso__t — font-heading bold, ≤4 palabras, sin imperativos',
+  },
+  {
+    n: 3,
+    nombre: 'Descripción del paso — .paso__d',
+    que: 'Una o dos frases que explican qué ocurre en ese paso: qué hace el equipo, qué recibe el cliente, cuánto tarda si aplica. Verbos en primera persona plural: «Analizamos», «Ejecutamos», «Entregamos». ≤40 palabras.',
+    dato: '.paso__d — text-base, color ink-2, verbos «Analizamos» / «Entregamos»',
+  },
+  {
+    n: 4,
+    nombre: 'Grid .proceso — layout del bloque',
+    que: 'Los pasos se muestran en un grid de 3 columnas en escritorio (repeat(3, 1fr)) que baja a 1 columna en móvil. Cada paso es un article con borde, fondo blanco y border-radius. La sección es section--surface (fondo gris) para separación visual.',
+    dato: '.proceso — grid 1fr×3 en desk → 1 col en móvil; fondo surface en sección',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'El cliente sabe qué sigue antes de escribir',
+    desc: 'Cuando el proceso está visible en la página, el visitante sabe exactamente qué pasa después de presionar «Cotizar por WhatsApp». Ese primer clic deja de parecer un salto al vacío y se convierte en el paso 1 de algo predecible.',
+  },
+  {
+    titulo: 'Reduce soporte y preguntas en el chat',
+    desc: 'Las preguntas «¿qué hacen exactamente?», «¿cuánto tarda?» y «¿cómo me mantendrán informado?» se responden en la página antes de llegar al chat. El asesor entra en la conversación con el cliente ya orientado, no desde cero.',
+  },
+  {
+    titulo: 'El proceso documentado sostiene la confianza',
+    desc: 'Cuando ocurre un imprevisto —y en cualquier proyecto ocurre—, tener el proceso visible y haberlo cumplido es lo que sostiene la confianza del cliente. No es una sorpresa: es una etapa que ambas partes conocían de antemano.',
+  },
+]
+
+const sis = [
+  'Usa verbos en primera persona plural en la descripción de cada paso: «Analizamos el objetivo», «Ejecutamos según el plan acordado», «Entregamos documentado». Suena como una promesa, no como una instrucción.',
+  'El título de cada paso debe ser un sustantivo o frase corta (≤4 palabras): «Diagnóstico», «Propuesta y ejecución», «Entrega y seguimiento». El cliente lo recordará y lo referenciará.',
+  'Mantén entre 3 y 4 pasos. Con 3 el proceso es memorable; con 4 puede ser necesario para procesos complejos. Con 5 o más el cliente deja de leer y el proceso deja de parecer simple.',
+  'Si el servicio tiene una duración típica, menciónala en la descripción del paso: «Definimos el alcance en 48 h». La especificidad crea confianza; la vaguedad no.',
+  'El proceso es genérico por servicio (aplica a todos los proyectos de ese servicio). Los detalles específicos de un proyecto van en la propuesta por escrito del paso 2.',
+]
+const nos = [
+  'NO uses verbos en imperativo en los títulos de paso: «Diagnóstica», «Ejecuta», «Entrega». El proceso describe lo que el EQUIPO hace, no lo que el cliente debe hacer.',
+  'NO hagas el proceso asimétrico: si el paso 1 tiene 2 frases y el paso 3 tiene 6, el grid se rompe visualmente. Mantén un largo similar en las descripciones.',
+  'NO pongas el proceso ANTES del alcance (includes[]). El orden de lectura es: hero (¿es esto para mí?) → alcance (¿qué recibo?) → proceso (¿cómo funciona?) → FAQs (¿tengo dudas?).',
+  'NO inventes pasos que no ocurren en la realidad del servicio solo para llegar a 3. Un proceso con 2 pasos honestos es mejor que uno con 3 pasos donde el tercero no existe.',
+  'NO uses el proceso como zona de conversión: sin botones ni CTAs dentro del grid de pasos. El proceso informa; el cierre convierte.',
+]
+
+const disenos = [
+  {
+    nombre: 'Proceso canónico 3 pasos',
+    tag: 'Molde estándar · Universal',
+    desc: 'Diagnóstico → Propuesta y ejecución → Entrega y seguimiento. El molde que aplica a la mayoría de servicios profesionales. Simple, memorable, honesto.',
+  },
+  {
+    nombre: 'Proceso 4 pasos',
+    tag: 'Servicio complejo · Etapas',
+    desc: 'Cuando el trabajo tiene una fase intermedia claramente diferenciada: Diagnóstico → Diseño → Implementación → Entrega. Para servicios donde el cliente necesita ver más granularidad.',
+  },
+  {
+    nombre: 'Proceso con tiempos',
+    tag: 'Urgente · SLA · Expectativa',
+    desc: 'Cada paso incluye la duración típica: «Diagnóstico (48 h)», «Ejecución (2–4 semanas)», «Entrega (1 semana de validación)». Para servicios donde el tiempo es un factor de decisión.',
+  },
+  {
+    nombre: 'Proceso con entregables por paso',
+    tag: 'Transparencia · Enterprise',
+    desc: 'Cada paso menciona qué recibe el cliente al final de él: «Propuesta por escrito», «Avance semanal por WhatsApp», «Documento de entrega firmado». Alinea expectativas desde el inicio.',
+  },
+  {
+    nombre: 'Proceso continuo (servicio de soporte)',
+    tag: 'Mantenimiento · Suscripción',
+    desc: 'Para servicios sin inicio/fin definido: Monitoreo → Atención → Mejora continua. El proceso es cíclico, no lineal. La descripción lo hace explícito.',
+  },
+  {
+    nombre: 'Proceso visual (icons)',
+    tag: 'Variante visual · Marketing',
+    desc: 'Cada paso lleva un icono además del número. Visualmente más rico pero con más peso visual. Para páginas donde el componente de proceso es el protagonista.',
+  },
+]
+
+const recetaProceso = `// src/pages/servicios/[...slug].astro — sección «Cómo trabajamos»
+// El array proceso[] es genérico por servicio y vive en el slug.astro.
+// Puede venir del frontmatter si el servicio lo necesita personalizar.
+const proceso = [
+  {
+    n: '01',
+    t: 'Diagnóstico',
+    d: 'Entendemos el objetivo y el contexto para proponer con fundamento, no a ciegas.',
+  },
+  {
+    n: '02',
+    t: 'Propuesta y ejecución',
+    d: 'Definimos el alcance y los entregables claros, y ejecutamos sobre un proceso probado.',
+  },
+  {
+    n: '03',
+    t: 'Entrega y seguimiento',
+    d: 'Entregamos documentado y acompañamos para que puedas operar con autonomía.',
+  },
+]`
+
+const recetaHtml = `{/* HTML del grid de proceso en el slug.astro */}
+<section class="section section--surface">
+  <div class="container">
+    <SectionHeading
+      eyebrow="Cómo trabajamos"
+      title="Un proceso claro en tres"
+      titleAccent="pasos"
+      desc="El mismo método para todo servicio: diagnosticar, ejecutar y acompañar."
+    />
+    <div class="proceso">
+      {proceso.map((p) => (
+        <article class="paso">
+          <span class="paso__n">{p.n}</span>
+          <h3 class="paso__t">{p.t}</h3>
+          <p class="paso__d">{p.d}</p>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>`
+
+const recetaCss = `/* CSS del grid de proceso — scoped al slug.astro */
+.proceso {
+  display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-6);
+}
+@media (min-width: 768px) { .proceso { grid-template-columns: repeat(3, 1fr); } }
+.paso {
+  padding: var(--sp-5); background: var(--c-white);
+  border: 1px solid var(--c-border); border-radius: var(--radius-lg);
+}
+.paso__n {
+  font-family: var(--font-heading); font-size: var(--text-xl);
+  font-weight: var(--weight-black); color: var(--c-primary);
+}
+.paso__t {
+  font-family: var(--font-heading); font-size: var(--text-lg);
+  font-weight: var(--weight-bold); color: var(--c-ink); margin: var(--sp-2) 0;
+}
+.paso__d {
+  font-size: var(--text-base); line-height: var(--leading-relaxed);
+  color: var(--c-ink-2); margin: 0;
+}`
+
+const recetaMovil = `/* El grid de 3 pasos baja a 1 columna en móvil.
+   La tarjeta ocupa el ancho completo; la lectura es de arriba a abajo. */
+.proceso { grid-template-columns: 1fr; }
+@media (min-width: 768px) { .proceso { grid-template-columns: repeat(3, 1fr); } }
+
+/* El número de paso ya es grande por tokens; en móvil agrega más peso visual. */
+@media (max-width: 640px) { .paso__n { font-size: var(--text-2xl); } }`
+---
+
+<PageLayout
+  title="El proceso del servicio — 3 pasos predecibles y reproducibles"
+  description="Cómo documentar el proceso de trabajo de un servicio: los 3 pasos que eliminan la incertidumbre del cliente, reducen soporte y sostienen la confianza."
+  pageType="page"
+  schemaType="TechArticle"
+  guia={false}
+  breadcrumbs={[{ label: 'Servicios', href: '/servicios' }, { label: 'La guía', href: '/servicios/guia' }, { label: 'El proceso' }]}
+>
+  <Hero
+    badge="Guía de servicios · El proceso"
+    title="El proceso:"
+    accent="3 pasos que eliminan la incertidumbre"
+    subtitle="El cliente contrata con más confianza cuando sabe qué pasa después de escribir por WhatsApp. El proceso documentado convierte ese primer clic en el paso 1 de algo predecible."
+    descRight={[
+      'El grid de proceso son 3 artículos con número, título y descripción: Diagnóstico → Propuesta y ejecución → Entrega y seguimiento. El molde canónico del sistema. Simple, memorable, honesto.',
+      'El proceso no está para impresionar: está para reducir la incertidumbre. Cuando el cliente sabe exactamente qué sigue, el primer clic de conversión es más fácil de dar.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <ModSection
+    eyebrow="Definición"
+    title="¿Qué es el proceso del servicio?"
+    desc="El bloque visual que muestra los pasos del trabajo de principio a fin. Predecible, reproducible y documentado. Responde «¿cómo funciona?» antes de que el cliente tenga que preguntar."
+    body={[
+      'El proceso del servicio es la sección que muestra los pasos del trabajo, en orden, con su número, nombre y descripción. No es el proceso interno del equipo —con herramientas, metodologías y cronogramas—; es el proceso del CLIENTE: qué experimenta desde el primer contacto hasta la entrega.',
+      'El molde canónico del sistema son 3 pasos: Diagnóstico (entender el objetivo), Propuesta y ejecución (hacer el trabajo) y Entrega y seguimiento (cerrar y acompañar). Tres es el número que cabe en la memoria y en el grid de 3 columnas. Más de 4 y el proceso deja de parecer simple.',
+    ]}
+  />
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <ModSection
+    surface
+    eyebrow="Función e importancia"
+    title="¿Para qué sirve?"
+    desc="Convierte el primer clic de conversión en algo predecible, reduce las preguntas de soporte y sostiene la confianza del cliente cuando ocurren imprevistos."
+    body={[
+      'El proceso hace tres trabajos: primero, convierte el clic en «Cotizar» en el paso 1 de algo conocido —el cliente ya sabe qué sigue—; segundo, responde en la página las preguntas que de otro modo llegarían al chat («¿cuánto tarda?», «¿cómo me mantendrán informado?»); tercero, da credibilidad al servicio: un proceso documentado dice que el equipo lo ha hecho antes.',
+      'El tercer trabajo es el más sutil pero el más poderoso: cuando ocurre un imprevisto en el trabajo real, haber publicado el proceso y haberlo cumplido es lo que sostiene la confianza del cliente. El imprevisto no es un fracaso del proceso —es una etapa que ambas partes ya conocían.',
+    ]}
+  >
+    <ModBenefits items={beneficios} />
+  </ModSection>
+
+  {/* ── 3) ¿QUÉ LLEVA? — anatomía ── */}
+  <ModSection
+    eyebrow="Anatomía"
+    title="Las 4 partes del bloque de proceso"
+    desc="Número ordinal (.paso__n) + título del paso (.paso__t) + descripción (.paso__d) + grid de 3 columnas (.proceso) en sección con fondo surface."
+    body={[
+      'Cada paso es un article con tres elementos: el número (grande, en color primary, sirve de ancla visual), el título (el nombre del paso, ≤4 palabras) y la descripción (qué hace el equipo en ese paso, con verbos en primera persona plural). Tres elementos por paso, sin adornos.',
+      'El grid .proceso es section--surface (fondo gris) para separación visual de las secciones vecinas (alcance arriba, FAQs abajo). Las tarjetas .paso son fondo blanco sobre el gris: contraste sin sombras.',
+    ]}
+  >
+    <ModAnatomy partes={partes}>
+      <div class="proc-mock" role="img" aria-label="Ejemplo del grid de proceso con sus 3 pasos numerados">
+        {['01 · Diagnóstico', '02 · Ejecución', '03 · Entrega'].map((p, i) => (
+          <article class="pm__paso">
+            <span class="pm__n">{p.split(' · ')[0]}</span>
+            <b class="pm__t">{p.split(' · ')[1]}</b>
+            <span class="pm__d"></span>
+          </article>
+        ))}
+      </div>
+    </ModAnatomy>
+  </ModSection>
+
+  {/* ── Variantes ── */}
+  <ModSection
+    surface
+    eyebrow="Variantes"
+    title="Configuraciones del proceso"
+    desc="Desde el proceso canónico de 3 pasos hasta variantes con tiempos, entregables por paso o procesos cíclicos para servicios de soporte."
+    body={[
+      'El molde de 3 pasos es el correcto para la mayoría de servicios. Las variantes son extensiones justificadas: más pasos cuando el servicio tiene una fase intermedia real; tiempos cuando el cliente los necesita para decidir; entregables por paso cuando el proyecto es de alto valor.',
+    ]}
+  >
+    <GaleriaDisenos ariaLabel="Variantes del proceso según el tipo de servicio">
+      {disenos.map((d) => (
+        <DisenoCard nombre={d.nombre} tag={d.tag} desc={d.desc}>
+          <div class="pv">
+            {['01', '02', '03'].map((n) => (
+              <div class="pv__paso">
+                <span class="pv__n">{n}</span>
+                <div class="pv__lines">
+                  <b class="pv__t"></b>
+                  <b class="pv__d"></b>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DisenoCard>
+      ))}
+    </GaleriaDisenos>
+  </ModSection>
+
+  {/* ── Responsive ── */}
+  <ModSection
+    eyebrow="Responsive y móvil"
+    title="El proceso, en el teléfono"
+    desc="El grid de 3 columnas baja a 1 columna en móvil. Los pasos se leen de arriba a abajo, en el mismo orden. Sin cambios en los artículos .paso."
+    body={[
+      'El grid .proceso es la parte responsive más simple de la página: de 3 columnas en escritorio a 1 columna en móvil. Las tarjetas .paso ocupan el ancho completo; el orden de lectura es el mismo (01, 02, 03 de arriba a abajo).',
+      'El número de paso (.paso__n) ya es grande por tokens; en pantallas pequeñas añade peso visual extra con font-size 2xl. El título y la descripción ajustan solos su line-height.',
+    ]}
+  >
+    <ModResponsive>
+      <ModPattern
+        title="Grid 3 col → 1 col en móvil"
+        desc="El grid de proceso baja a 1 columna en el teléfono. Los pasos se leen de arriba a abajo, en orden, sin cambios en el markup."
+        receta={{ titulo: 'CSS · grid de proceso responsive', lang: 'css', code: recetaMovil }}
+      >
+        <MarcoMovil ariaLabel="El grid de 3 pasos apilado en el teléfono">
+          <div class="pm-mob">
+            {[{n:'01',t:'Diagnóstico'},{n:'02',t:'Ejecución'},{n:'03',t:'Entrega'}].map((p) => (
+              <div class="pm-mob__paso">
+                <span class="pm-mob__n">{p.n}</span>
+                <div class="pm-mob__info"><b class="pm-mob__t">{p.t}</b><span class="pm-mob__d"></span></div>
+              </div>
+            ))}
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+    </ModResponsive>
+  </ModSection>
+
+  {/* ── ¿Dónde va? ── */}
+  <ModSection
+    surface
+    eyebrow="Posición"
+    title="¿Dónde vive el proceso?"
+    desc="En la segunda sección del cuerpo de la ficha L3, después del alcance (includes[]). Es section--surface para separación visual de las secciones vecinas."
+    body={[
+      'El orden de lectura en la ficha de servicio es: hero → alcance → proceso → FAQs → cierre. El proceso va después del alcance porque la pregunta «¿cómo funciona?» viene después de «¿qué recibo?». Alguien que todavía no sabe qué incluye el servicio no está listo para entender el proceso.',
+      'El fondo surface de la sección (section--surface) alterna con el fondo blanco de las secciones vecinas. La alternancia crea separación visual sin bordes ni sombras.',
+    ]}
+  />
+
+  {/* ── Cómo se construye ── */}
+  <ModSection
+    eyebrow="Implementación"
+    title="Cómo se construye"
+    desc="El array proceso[] vive en el slug.astro (o en el frontmatter si el servicio lo necesita personalizar). HTML del grid y CSS de las tarjetas."
+    body={[
+      'El proceso es casi siempre igual para todos los proyectos de un servicio, así que vive en el slug.astro como constante local —no en el frontmatter—. Si algún servicio necesita un proceso específico, se puede añadir un campo proceso[] al frontmatter y pasarlo al componente.',
+    ]}
+  >
+    <div class="recetas">
+      <Receta titulo="slug.astro · el array proceso[]" lang="js" code={recetaProceso} />
+      <Receta titulo="slug.astro · HTML del grid de proceso" lang="astro" code={recetaHtml} />
+      <Receta titulo="CSS · grid + tarjetas + responsive" lang="css" code={recetaCss} />
+    </div>
+    <ModProse>
+      <p>
+        El grid es <code>repeat(3, 1fr)</code> en escritorio y <code>1fr</code> en móvil: una
+        media query, sin lógica extra. Las tarjetas .paso son blancas sobre el fondo surface de
+        la sección: contraste limpio sin sombras. El número de paso (<code>.paso__n</code>) es
+        el ancla visual —grande, en color primary— y lo primero que el lector escanea.
+      </p>
+    </ModProse>
+  </ModSection>
+
+  {/* ── Buenas prácticas ── */}
+  <ModSection
+    surface
+    eyebrow="Buenas prácticas"
+    title="Qué hacer y qué evitar"
+    desc="El proceso falla cuando describe lo que el EQUIPO hace internamente en lugar de lo que el CLIENTE experimenta. El cliente no necesita saber que usan Jira; necesita saber qué sigue después de contratar."
+    body={[
+      'La regla más importante: escribe el proceso desde la perspectiva del cliente, no del equipo. «Usamos metodología ágil con sprints de 2 semanas» describe el proceso interno; «Recibirás un avance cada dos semanas con la oportunidad de dar retroalimentación» describe lo que el cliente experimenta. Son el mismo proceso visto desde ángulos distintos.',
+    ]}
+  >
+    <ModDosDonts sis={sis} nos={nos} />
+  </ModSection>
+
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando la guía de servicios" />
+  <RelatedLinks
+    title="Continúa con la guía"
+    desc="Las siguientes piezas del flujo."
+    links={[
+      { label: 'Las objeciones', href: '/servicios/guia/las-objeciones', desc: 'FAQ como manejo de objeciones.' },
+      { label: 'La conversión', href: '/servicios/guia/la-conversion', desc: 'El cierre WhatsApp-first.' },
+      { label: 'El alcance', href: '/servicios/guia/el-alcance', desc: 'Qué incluye el servicio.' },
+    ]}
+    limit={3}
+  />
+</PageLayout>
+
+<style>
+  .recetas { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
+
+  /* Mockup del proceso */
+  .proc-mock { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); margin-top: var(--sp-6); }
+  .pm__paso { padding: var(--sp-4); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-lg); display: grid; gap: var(--sp-2); }
+  .pm__n { font-family: var(--font-heading); font-size: var(--text-xl); font-weight: var(--weight-black); color: var(--c-primary); }
+  .pm__t { font-family: var(--font-heading); font-size: var(--text-base); font-weight: var(--weight-bold); color: var(--c-ink); }
+  .pm__d { height: 7px; width: 90%; border-radius: 4px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  @media (max-width: 640px) { .proc-mock { grid-template-columns: 1fr; } }
+
+  /* Variantes */
+  .pv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; }
+  .pv__paso { padding: 6px; background: var(--c-white); border: 1px solid var(--c-border); border-radius: 6px; display: grid; gap: 4px; align-content: start; }
+  .pv__n { font-family: var(--font-heading); font-size: 14px; font-weight: 900; color: var(--c-primary); }
+  .pv__lines { display: grid; gap: 3px; }
+  .pv__t { height: 7px; width: 80%; border-radius: 3px; background: var(--c-ink); opacity: .8; }
+  .pv__d { height: 6px; width: 100%; border-radius: 3px; background: var(--c-surface); border: 1px solid var(--c-border); }
+
+  /* Mockup móvil */
+  .pm-mob { padding: 12px; display: grid; gap: 8px; }
+  .pm-mob__paso { display: flex; gap: 10px; align-items: center; padding: 8px; background: var(--c-white); border: 1px solid var(--c-border); border-radius: 8px; }
+  .pm-mob__n { font-family: var(--font-heading); font-size: 16px; font-weight: 900; color: var(--c-primary); flex-shrink: 0; }
+  .pm-mob__info { display: grid; gap: 4px; flex: 1; }
+  .pm-mob__t { height: 9px; width: 70%; border-radius: 4px; background: var(--c-ink); opacity: .8; }
+  .pm-mob__d { height: 7px; width: 90%; border-radius: 4px; background: var(--c-surface); border: 1px solid var(--c-border); }
+</style>

@@ -191,3 +191,84 @@ export function productoGuiaGallery(slug: string, label: string, i: number): Pro
     ],
   }
 }
+
+// ============================================================================
+// CATALOGO_AFONDO — copy del bloque «categoría a fondo» (CategoryDetail).
+// ----------------------------------------------------------------------------
+// SSoT del contenido de cada bloque en la sección «Cada categoría, por dentro»
+// del hub /productos. Mismo patrón que MODULE_AFONDO (lib/modules.ts).
+// El título sale de catLabel() y la galería de catalogoGallery() — aquí solo
+// vive el texto (body + points).
+// Clave = slug de categoría tal como viene de PRODUCT_CATEGORIES (site.ts).
+// ============================================================================
+export const CATALOGO_AFONDO: Record<string, { body: string[]; points: string[] }> = {
+  equipos: {
+    body: [
+      'Los equipos son el núcleo del catálogo: la pieza principal que el cliente viene a comprar. Cada ficha incluye especificaciones técnicas, aplicaciones y, cuando aplica, las certificaciones del fabricante, para que el visitante llegue informado a la conversación y el tiempo de cotización baje a la mitad.',
+      'El catálogo distingue entre línea estándar y línea pro para orientar al cliente según su proyecto, sin obligarlo a pedir asesoría solo para entender la diferencia. El detalle fino se cierra por WhatsApp o formulario, con precio y disponibilidad reales.',
+    ],
+    points: [
+      'Fichas completas: specs, aplicaciones y certificaciones del fabricante',
+      'Línea estándar y pro claramente diferenciadas para orientar sin fricción',
+      'Cotización directa por WhatsApp con disponibilidad y tiempos reales',
+      'Compatible con accesorios del catálogo: ninguna compra queda incompleta',
+    ],
+  },
+  accesorios: {
+    body: [
+      'Los accesorios redondean la compra: son las piezas de montaje, protección y complemento que el cliente necesita junto al equipo principal y que, sin esta sección, tendría que buscar por separado. Agruparlos en su propia categoría elimina el faltante a media instalación.',
+      'Cada accesorio indica su compatibilidad con la línea de equipos del catálogo, sin ambigüedades. Los kits empaquetan varias piezas a mejor precio; el cliente elige si quiere lo mínimo o llegar con todo desde el primer pedido.',
+    ],
+    points: [
+      'Compatibilidad declarada en cada ficha: sin sorpresas al instalar',
+      'Kits que agrupan piezas sueltas: mejor precio y sin faltantes',
+      'Instalación sin herramienta especial en la mayoría de los accesorios',
+      'Refacciones disponibles: protege la inversión en el equipo principal',
+    ],
+  },
+  general: {
+    body: [
+      'La categoría general recibe todo lo que no cabe en equipos ni en accesorios: productos sin familia fija, artículos de temporada o referencias que el cliente pide por nombre. Es el cajón flexible del catálogo real.',
+      'Una ficha válida aquí puede ser tan simple como título, descripción, categoría e imagen —los cuatro campos obligatorios del esquema—. Los campos extra (precio, specs, galería) se agregan cuando el producto los merece, sin huecos que el visitante note.',
+    ],
+    points: [
+      'Para productos sin familia fija: referencias por nombre, artículos de temporada',
+      'Ficha mínima válida con solo 4 campos obligatorios (título, desc, categoría, imagen)',
+      'Campos extra (precio, specs, galería) solo cuando el producto los necesita',
+      'Bloques opcionales: si no tienen datos, no se pintan; cero huecos visibles',
+    ],
+  },
+}
+
+// ── Pool de apoyo para thumbs cuando la categoría tiene menos de 3 imágenes ──
+const CAT_GALLERY_POOL: readonly string[] = [
+  `${IMG}/productos/desarrollo-web-astro-profesional.avif`,
+  `${IMG}/productos/componentes-plantilla-astro-markdown.avif`,
+  `${IMG}/productos/sitio-web-rapido-astro.avif`,
+  `${IMG}/showcase/imagen-optimizada-avif-sitio-web.avif`,
+  `${IMG}/showcase/jerarquia-titulos-seo-pagina-web.avif`,
+  `${IMG}/servicios/consultoria-desarrollo-web-astro.avif`,
+  `${IMG}/servicios/soporte-mantenimiento-web-astro.avif`,
+]
+
+export type CatGallery = {
+  main: { src: string; alt: string }
+  thumbs: { src: string; alt: string }[]
+}
+
+/**
+ * Galería «a fondo» de una categoría del catálogo.
+ * main  = primera imagen de esa categoría.
+ * thumbs = productos 2 y 3 de la categoría, o del pool rotado por `i`.
+ */
+export function catalogoGallery(catLabel: string, imagesInCat: string[], i: number): CatGallery {
+  const len = CAT_GALLERY_POOL.length
+  const [main, t1, t2] = imagesInCat
+  return {
+    main:   { src: main ?? CAT_GALLERY_POOL[i % len],           alt: `Categoría ${catLabel} del catálogo` },
+    thumbs: [
+      { src: t1 ?? CAT_GALLERY_POOL[(i + 1) % len], alt: `Producto de ${catLabel}` },
+      { src: t2 ?? CAT_GALLERY_POOL[(i + 2) % len], alt: `Otro producto de ${catLabel}` },
+    ],
+  }
+}

@@ -1,35 +1,41 @@
 ---
 // ============================================================================
-// /productos/ — CATÁLOGO-HUB de productos (Nivel L2) + ÍNDICE de la guía.
+// /productos/ — CATÁLOGO de venta (Nivel L2). Catálogo PROTAGONISTA.
 // ----------------------------------------------------------------------------
-// Esta página hace DOS trabajos a la vez:
-//   1) Es el CATÁLOGO real (categoría L2): un grid de fichas que NO se escribe a
-//      mano — sale de getCollection('productos') y se ordena por `order`.
-//      pageType="category" → JSON-LD CollectionPage + ItemList (lib/seo.ts).
-//   2) Es el HUB de la GUÍA «cómo crear productos»: serie hermana de /modulos y
-//      /niveles. Presenta el concepto de catálogo y lista las 6 piezas de la
-//      guía (la colección, las categorías, las imágenes, el precio, la ficha, el
-//      schema), cada una con su página /productos/guia/<slug>.
-// Data-driven: el catálogo desde la colección; la guía desde PRODUCTOS_GUIA
-// (site.ts, SSoT) — la misma fuente del dropdown «Productos» del Header.
-// Datos de contacto/WhatsApp: SSoT en site.ts.
+// Reposicionado (2026-06-22): esta página dejó de ser «hub-guía» y ahora es el
+// CATÁLOGO de venta puro, al estilo de las referencias (gamademexico/proyectored).
+// La guía «cómo crear un producto» se mudó a /productos/guia (índice propio).
+//
+// ENSAMBLAJE, no construcción: arma la capa de venta con módulos que YA existen
+// y ya corren en el home — TrustBar · RiskGuide · NormsTable · ProcessSteps ·
+// ReviewCard · ContactForm · CTABanner — más el catálogo data-driven (CategoryCard).
+// Cero componentes nuevos. Cada módulo se DOCUMENTA en el home; aquí solo se usa.
+//
+// pageType="category" → JSON-LD CollectionPage + ItemList (lib/seo.ts) + FAQPage.
+// Datos de contacto/WhatsApp: SSoT en site.ts (regla D4, nunca hardcodeado).
 // ============================================================================
 import PageLayout from '@layouts/PageLayout.astro'
 import Hero from '@components/Hero.astro'
 import SectionHeading from '@components/SectionHeading.astro'
-import ProductCard from '@components/ProductCard.astro'
 import CategoryCard from '@components/CategoryCard.astro'
 import CategoryDetail from '@components/CategoryDetail.astro'
-import SectionMenu from '@components/SectionMenu.astro'
 import MarcoMovil from '@components/MarcoMovil.astro'
 import Receta from '@components/Receta.astro'
+import ReviewCard from '@components/ReviewCard.astro'
+import TrustBar from '@components/TrustBar.astro'
+import RiskGuide from '@components/RiskGuide.astro'
+import NormsTable from '@components/NormsTable.astro'
+import ProcessSteps from '@components/ProcessSteps.astro'
 import FAQAccordion from '@components/FAQAccordion.astro'
+import ContactForm from '@components/ContactForm.astro'
+import SectionMenu from '@components/SectionMenu.astro'
 import GuiaNota from '@components/GuiaNota.astro'
 import { getCollection } from 'astro:content'
-import { PRODUCTOS_GUIA, waUrl, WA_MESSAGES } from '@config/site'
-import { PRODUCTO_GUIA_CARD_META as PG_META, PRODUCTO_GUIA_AFONDO, productoGuiaGallery } from '@lib/productos'
+import { getResenas } from '@lib/casos'
+import { CATALOGO_AFONDO, catalogoGallery } from '@lib/productos'
+import { PRODUCT_CATEGORIES, waUrl, WA_MESSAGES } from '@config/site'
 
-// ── 1) El CATÁLOGO real (data-driven desde la colección) ─────────────────────
+// ── 1) EL CATÁLOGO — data-driven desde la colección (B5: sin enum paralelo) ──
 const productos = (await getCollection('productos', ({ data }) => !data.draft)).sort(
   (a, b) => a.data.order - b.data.order,
 )
@@ -42,342 +48,514 @@ const items = productos.map((p) => ({
   description: p.data.description,
 }))
 
-// ── 2) La GUÍA (data-driven desde PRODUCTOS_GUIA, SSoT) ───────────────────────
-const guiaListos = PRODUCTOS_GUIA.filter((p) => p.estado === 'listo')
-const piezas = guiaListos.length
+// Label canónico de categoría (B5): de la taxonomía única; cap() como respaldo.
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+const catLabel = (s: string) => PRODUCT_CATEGORIES.find((c) => c.slug === s)?.label ?? cap(s)
 
-// ── Recetas de la sección «Responsive y móvil» — código real del sistema ──
-const recetaGrid = `/* La vitrina del catálogo es mobile-first: 1 → auto-fill.
-   Arranca en UNA columna en el teléfono y crece con el ancho disponible
-   (el grid decide cuántas caben con minmax). Nunca al revés. */
-.grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
-@media (min-width: 768px) {
-  .grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
-}`
-
-const recetaImg = `/* tokens.css + mobile.css · la foto del producto, fluida y ligera. */
-img, picture, video, canvas, svg { max-width: 100%; }  /* nunca más ancha que su caja */
-
-@media (max-width: 768px) {
-  img, video { height: auto; }   /* escala manteniendo la proporción 16:9 */
+// Blurb DEMO por categoría (genérico; el cliente lo reemplaza por el suyo).
+const CAT_BLURB: Record<string, string> = {
+  equipos: 'Los productos principales del catálogo: lo que el cliente viene a comprar.',
+  accesorios: 'Complementos, refacciones y extras que acompañan a los equipos.',
+  general: 'Todo lo demás del catálogo que no entra en las otras categorías.',
 }
-/* La foto es AVIF con width/height fijos → reserva el hueco (cero CLS). */`
 
-const recetaCard = `/* mobile.css · la card de producto se toca cómodo en el teléfono. */
-@media (max-width: 1024px) {
-  a, button, [role="button"], label {
-    -webkit-tap-highlight-color: rgba(91, 61, 245, .15);  /* feedback al tap */
+// Vitrina del catálogo = una CategoryCard por categoría REAL presente en la
+// colección (sin categorías vacías). Imagen = la del primer producto; sub-links
+// = las fichas de esa categoría. Réplica del patrón de las referencias.
+const cats = [...new Set(productos.map((p) => p.data.category))]
+const catalogo = cats.map((slug) => {
+  const inCat = productos.filter((p) => p.data.category === slug)
+  return {
+    slug,
+    label: catLabel(slug),
+    href: `/productos/${slug}`,
+    image: inCat[0]?.data.image,
+    images: inCat.slice(0, 3).map((p) => p.data.image).filter(Boolean) as string[],
+    blurb: CAT_BLURB[slug] ?? `${inCat.length} ${inCat.length === 1 ? 'producto' : 'productos'} en esta categoría.`,
+    subs: inCat.slice(0, 6).map((p) => ({ label: p.data.title, href: `/productos/${p.id}` })),
   }
-}
-@media (max-width: 768px) {
-  /* toda la card es un único <a>: área táctil ≥ 44 px, clic-en-cualquier-lado */
-  .pcard__link { display: block; min-height: 44px; }
-}`
+})
+
+// ── 2) SECCIONES DE VENTA reutilizables — datos DEMO genéricos ───────────────
+// Mismos componentes y mismo espíritu que el home (donde se documentan). En un
+// sitio real se alimentan con datos del giro. Las tablas aceptan `columns`.
+const demoPilares = [
+  { icon: 'check', title: 'Atención directa', desc: 'Hablas con quien resuelve, no con un robot. Respuesta por WhatsApp.' },
+  { icon: 'doc', title: 'Todo por escrito', desc: 'Cotización, alcance y tiempos claros antes de comprar.' },
+  { icon: 'shield', title: 'Conforme a norma', desc: 'Productos alineados a la normatividad aplicable a tu giro.' },
+  { icon: 'pin', title: 'Cobertura local', desc: 'Atendemos tu ciudad y la zona metropolitana.' },
+]
+const demoGuiaRows = [
+  { nivel: 'Básico', ejemplos: 'Negocios pequeños y locales', minimo: 'Lo esencial para arrancar', complementos: 'Extras opcionales' },
+  { nivel: 'Intermedio', ejemplos: 'Comercios y oficinas medianas', minimo: 'Cobertura estándar completa', complementos: 'Personalización' },
+  { nivel: 'Completo', ejemplos: 'Empresas e inmuebles grandes', minimo: 'Solución integral', complementos: 'Soporte y seguimiento' },
+]
+const demoNormRows = [
+  { norma: 'Garantía', alcance: 'Respaldo del producto entregado', aplica: 'Todo el catálogo' },
+  { norma: 'Factura', alcance: 'Comprobante fiscal a tu nombre', aplica: 'Quien lo requiera' },
+  { norma: 'Norma aplicable', alcance: 'El estándar que rige tu giro', aplica: 'Según el tipo de producto' },
+]
+const demoPasos = [
+  { num: '01', title: 'Cuéntanos', desc: 'Nos dices qué producto necesitas por WhatsApp o formulario.' },
+  { num: '02', title: 'Cotización', desc: 'Te enviamos precio, disponibilidad y tiempos de entrega.' },
+  { num: '03', title: 'Confirmación', desc: 'Cierras el pedido con todo por escrito, sin sorpresas.' },
+  { num: '04', title: 'Entrega', desc: 'Recibes el producto con su documentación completa.' },
+  { num: '05', title: 'Seguimiento', desc: 'Quedamos disponibles para refacciones y lo que surja.' },
+]
+
+// ── 3) RESEÑAS — prueba social DATA-DRIVEN desde la colección `casos` (B4: solo
+//      testimonios aprobados; nunca fabricados). getResenas aplica el filtro
+//      canónico approved && !draft (lib/casos.ts). Si no hay casos, la sección no
+//      se pinta (cero huecos). ──
+const resenas = await getResenas({ limit: 6 })
 
 // ── FAQs (la MISMA fuente nutre el acordeón visible y el FAQPage del schema) ──
 const faqs = [
   {
-    question: '¿Cómo agrego un producto nuevo al catálogo?',
+    question: '¿Cómo cotizo un producto del catálogo?',
     answer:
-      'Crea un archivo .md en src/content/productos/ con el frontmatter requerido (título, descripción, categoría e imagen). El grid de esta página y su ficha individual se generan solos. No se toca ningún .astro.',
-  },
-  {
-    question: '¿Necesito saber programar para crear un producto?',
-    answer:
-      'No. Escribes texto en Markdown; el esquema Zod valida el frontmatter en build-time y la ficha de detalle (L4) se genera sola desde la colección. Contenido y diseño van por separado.',
+      'Entra a la ficha del producto y usa el botón «Cotizar por WhatsApp», o llena el formulario de esta página. Te respondemos con precio, disponibilidad y tiempos de entrega.',
   },
   {
     question: '¿Por qué algunas fichas no muestran precio?',
     answer:
-      'El campo price es opcional. Si se omite, el sistema usa el modelo "bajo cotización" por WhatsApp en lugar de inventar una cifra —y el schema emite un Offer honesto, no un precio falso.',
+      'Cuando el precio depende de volumen, configuración o entrega, trabajamos «bajo cotización»: pides el contacto y te damos la cifra exacta de tu caso, en lugar de un número que no aplica.',
   },
   {
-    question: '¿Dónde se definen las categorías de producto?',
+    question: '¿Los productos vienen con documentación?',
     answer:
-      'En el enum cerrado PRODUCT_CATEGORIES de src/content.config.ts (equipos · accesorios · general), sincronizado con TAXONOMY en site.ts. Un enum, no texto libre: evita el SEO fragmentado.',
+      'Sí. Cada ficha indica sus especificaciones, aplicaciones y certificaciones cuando corresponde. La documentación del fabricante se entrega con el producto.',
+  },
+  {
+    question: '¿Hacen envíos y entregas?',
+    answer:
+      'Atendemos tu ciudad y la zona metropolitana, con envíos según el producto. Confírmanos tu ubicación al cotizar y te damos el tiempo exacto.',
   },
   {
     question: '¿Los datos de este catálogo son reales?',
     answer:
-      'No. Es una plantilla-guía; los productos son DEMO. Reemplázalos en src/content/productos/ antes de publicar cualquier sitio real.',
+      'No. Es una plantilla-guía: los productos y las reseñas son DEMO. Reemplaza los .md de src/content/productos/ y los testimonios de la colección casos antes de publicar un sitio real.',
   },
 ]
 
 const schemaData = {
   list: {
-    name: 'Productos',
+    name: 'Catálogo de productos',
     description:
-      'Catálogo DEMO de la plantilla (categoría L2) y guía de cómo crear productos en un sitio: la colección, las categorías, las imágenes, el precio, la ficha y el schema.',
+      'Catálogo de productos (categoría L2): explora por categoría, revisa la ficha de cada producto y cotiza por WhatsApp.',
     path: '/productos',
     items,
   },
   faqs,
 }
 
-// Menú de cierre: «el menú reparte, el último botón (WhatsApp) convierte».
+// CTAs del hero (página de VENTA → el hero sí convierte).
+const heroCtas = [
+  { text: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.productos), whatsapp: true },
+  { text: 'Ver el catálogo', href: '#catalogo', variant: 'outline' as const },
+]
+
+// ── Cierre: menú de navegación (SectionMenu — mismo patrón que /modulos) ──
+// Items data-driven desde PRODUCT_CATEGORIES (SSoT en site.ts): si el cliente
+// añade una categoría nueva, el menú de cierre la recoge automáticamente.
+// La regla canónica: «el menú reparte, el último botón (WhatsApp) convierte».
+const CAT_SUB: Record<string, string> = {
+  equipos:    'La familia principal del catálogo',
+  accesorios: 'Complementos y refacciones',
+  general:    'El resto del catálogo',
+}
 const cierreItems = [
-  { label: 'La colección', href: '/productos/guia/la-coleccion', sub: 'Empieza la guía' },
-  { label: 'Servicios', href: '/servicios', sub: 'La otra sección L2' },
-  { label: 'Módulos', href: '/modulos', sub: 'Las piezas del sitio' },
-  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
+  ...PRODUCT_CATEGORIES.map((c) => ({ label: c.label, href: c.href, sub: CAT_SUB[c.slug] ?? c.label })),
+  { label: 'Guía de productos', href: '/productos/guia', sub: 'Cómo se construye el catálogo' },
+  { label: 'Inicio',            href: '/',               sub: 'Volver a la home' },
 ]
 const cierreCta = {
   label: 'Cotizar por WhatsApp',
-  href: waUrl(WA_MESSAGES.productos),
-  sub: 'Respuesta inmediata',
+  href:  waUrl(WA_MESSAGES.productos),
+  sub:   'Respuesta inmediata · Atención directa',
   external: true,
 }
+
+// ── Recetas de la sección «Responsive y móvil» — CSS REAL del sistema ──────
+const recetaVitrina = `/* productos/index.astro · vitrina mobile-first: 1 → 2 → 4 por fila.
+   El caso base (el teléfono) es el más simple; el escritorio solo añade columnas.
+   Con 4 columnas el catálogo escala limpio hasta 4 categorías sin tocar código. */
+.showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
+@media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .showcase { grid-template-columns: repeat(4, 1fr); } }`
+
+const recetaDetail = `/* CategoryDetail.astro · mobile-first: apila en móvil, 2 cols en escritorio.
+   Info siempre primero (orden natural), galería debajo. Sin reverse en ningún caso. */
+.cdetail { display: grid; grid-template-columns: 1fr; gap: var(--sp-6); }
+
+@media (min-width: 768px) {
+  .cdetail { grid-template-columns: 1fr 1fr; gap: clamp(2rem, 5vw, 4rem); }
+}`
+
+const recetaFaq = `/* productos/index.astro · FAQ+formulario: 1 columna en móvil → 2 en escritorio.
+   Jerarquía constante: FAQ primero (resuelve la duda), formulario después (pide el dato). */
+.faqgrid { display: grid; grid-template-columns: 1fr; gap: var(--sp-7); align-items: start; }
+
+@media (min-width: 900px) {
+  .faqgrid { grid-template-columns: 1.1fr .9fr; gap: var(--sp-8); }
+}`
 ---
 
 <PageLayout
-  title="Productos — catálogo de la plantilla y guía para crearlos"
-  description="Catálogo DEMO (categoría L2) y guía exacta de cómo crear productos en un sitio Astro: la colección Markdown, categorías, imágenes, precio, la ficha de detalle y el schema."
+  title="Catálogo de productos — explora por categoría y cotiza"
+  description="Catálogo de productos por categoría: revisa la ficha de cada producto (especificaciones, aplicaciones, certificaciones) y cotiza por WhatsApp. Atención directa y precios claros."
   pageType="category"
   schemaData={schemaData}
   breadcrumbs={[{ label: 'Productos' }]}
   guia={false}
 >
   <Hero
-    badge="Sección del sitio · Productos"
+    badge="Catálogo del sitio"
     title="Productos:"
-    accent="el catálogo y cómo se crea"
-    subtitle="Esta sección es dos cosas a la vez: el catálogo real del sitio —fichas que salen solas de una colección Markdown— y la guía exacta de cómo crear un producto, pieza por pieza, de la colección al schema."
+    accent="el catálogo completo"
+    subtitle="Explora el catálogo por categoría, abre la ficha de cada producto y cotiza por WhatsApp. Precios claros, atención directa y documentación cuando tu proyecto la necesita."
     descRight={[
-      'Mientras la serie Módulos documenta las piezas con las que se arma cada página y Niveles documenta los tipos de página por su profundidad, esta sección documenta el FLUJO de crear un producto: dónde vive, cómo se valida, cómo se ilustra, cómo se tarifa, qué página genera y qué SEO emite. Arriba ves el catálogo funcionando; abajo, cómo está hecho.',
-      'Todo descansa en el mismo principio del sistema: una sola fuente de verdad y contenido separado del diseño. Un producto es un archivo Markdown validado por Zod; el catálogo, la ficha y el JSON-LD se generan solos desde esa colección. Editar el catálogo es escribir texto, no tocar código.',
+      'Cada producto vive como una ficha con su imagen, especificaciones, aplicaciones y certificaciones. Lo que ves aquí se genera solo desde una colección Markdown: agregar o quitar un producto no toca código, solo contenido.',
+      'El modelo es WhatsApp-first: sin carrito ni cifras infladas. Si un precio depende de volumen o configuración, lo trabajamos «bajo cotización» y te damos la cifra exacta de tu caso.',
     ]}
+    ctas={heroCtas}
   />
 
-  {/* ── Nota guía del hub ── */}
-  <section class="section">
-    <div class="container">
-      <GuiaNota titulo="Qué es esta página (catálogo L2 + hub de la guía)" archivo="src/pages/productos/index.astro">
-        <p>
-          Es a la vez la <strong>landing de categoría</strong> (el segundo nivel de la
-          jerarquía Inicio → Categoría → Ficha) y el <strong>índice de la guía</strong>
-          «cómo crear productos». El grid del catálogo no se escribe a mano: sale de
-          <code>getCollection('productos')</code> y se ordena por <code>order</code>. La
-          guía de abajo sale de <code>PRODUCTOS_GUIA</code> en <code>site.ts</code> (SSoT),
-          la misma fuente del dropdown «Productos» del Header. El teléfono y el WhatsApp
-          salen de <code>site.ts</code>, nunca escritos aquí.
-        </p>
-      </GuiaNota>
-    </div>
-  </section>
+  {/* ── Barra de confianza (pilares honestos, no métricas inventadas) ── */}
+  <TrustBar items={demoPilares} />
 
-  {/* ── 1) ¿QUÉ ES UN CATÁLOGO DE PRODUCTOS? ── */}
+  {/* ── 0) ¿QUÉ ES EL CATÁLOGO? — orienta antes de entrar a la vitrina ── */}
   <section class="section">
     <div class="container">
       <SectionHeading
         layout="duo"
-        eyebrow="Concepto"
-        title="¿Qué es un catálogo de productos?"
-        desc="Una sección (L2) que lista las fichas de producto del sitio y manda a cada detalle. En esta plantilla NO se escribe a mano: cada producto es un archivo Markdown y el grid se genera solo."
+        eyebrow="Cómo funciona"
+        title="¿Qué es este catálogo?"
+        desc="Un catálogo data-driven: cada producto es un archivo Markdown, la vitrina se regenera sola y ninguna ficha nueva requiere tocar código."
         body={[
-          'Un catálogo es la página que reúne lo que vendes y reparte al visitante hacia la ficha correcta. Aquí cada producto vive como un archivo .md en una colección, con su frontmatter validado por un esquema. La página lee la colección, ordena y pinta una card por producto: agregar o quitar un .md actualiza el catálogo solo, sin tocar esta página.',
-          'Pensar el catálogo como datos —y no como pantallas dibujadas a mano— es lo que lo mantiene coherente y escalable. Diez productos o mil se ven y se navegan igual; el SEO (la lista, las fichas, el schema) se emite solo; y quien edita el catálogo escribe texto, no código. Esta misma sección documenta cada parte de ese flujo, más abajo.',
+          'El catálogo es el segundo nivel de la arquitectura del sitio: el punto donde el visitante elige qué familia de producto le interesa antes de entrar a la ficha. En esta plantilla no es una pantalla fabricada a mano; se genera desde la colección src/content/productos/. Cada .md define su categoría en el frontmatter; la vitrina agrupa los productos y levanta las cards sola.',
+          'La página también es una landing de venta: TrustBar, guía de selección, proceso, FAQs y formulario comparten el espacio con la vitrina para que el visitante encuentre la siguiente acción sin buscarla. Cada módulo es el mismo que ya vive en el home —documentado allá, usado aquí—, y se activa o desactiva según el giro del cliente sin construir nada desde cero.',
         ]}
       />
     </div>
   </section>
 
-  {/* ── 2) EL CATÁLOGO — el grid REAL de productos (data-driven) ── */}
-  <section class="section section--surface">
+  {/* ── 1) EL CATÁLOGO — vitrina por categoría (CategoryCard con sub-links) ── */}
+  <section class="section section--surface" id="catalogo">
     <div class="container">
       <SectionHeading
         layout="duo"
         eyebrow="El catálogo"
-        title="Las fichas de la colección"
-        desc="Cada tarjeta enlaza a su ficha de producto. El grid sale de getCollection('productos') y se ordena por el campo order. El badge muestra la categoría del esquema: equipos · accesorios · general."
+        title="Explora por categoría"
+        desc="Cada tarjeta abre una categoría con sus productos. Las categorías salen de la propia colección: nunca hay una vacía, y cada ficha hereda su categoría del esquema."
         body={[
-          'Esto es el catálogo funcionando, no un mockup: cada card es un producto real de la colección DEMO, con su imagen, badge de categoría, título y descripción. La misma ProductCard para todo el catálogo —presentación pura, sin schema propio— mantiene la rejilla pareja.',
-          'En un sitio real, reemplazas los .md DEMO por los productos del cliente y esta vitrina se regenera sola. Para entender cada parte de cómo se construye, sigue con la guía justo debajo.',
+          'Esto es el catálogo funcionando: cada categoría enlaza a su landing y a las fichas que contiene. La misma CategoryCard que el resto del sitio —presentación pura, sin schema propio— mantiene la rejilla pareja.',
+          'En un sitio real reemplazas los .md DEMO por los productos del cliente y la vitrina se regenera sola, con sus categorías, sub-links y fichas.',
         ]}
       />
 
-      <div class="grid">
-        {
-          productos.map((p, i) => (
-            <ProductCard
-              title={p.data.title}
-              href={`/productos/${p.id}`}
-              image={p.data.image}
-              imageAlt={p.data.title}
-              badge={p.data.category}
-              description={p.data.description}
-              index={i}
-              priority={i === 0}
-            />
-          ))
-        }
-      </div>
-    </div>
-  </section>
-
-  {/* ── 3) LA GUÍA — las 6 piezas de «cómo crear productos» (vitrina) ── */}
-  <section class="section">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="La guía"
-        title="Cómo se crea un producto, pieza por pieza"
-        desc={`Las ${piezas} piezas del flujo, cada una como tarjeta: foto, nombre, qué resuelve y sus ideas clave. Entra a cualquiera para verla a fondo, con el mismo molde de las series Módulos y Niveles.`}
-        body={[
-          'Crear un producto bien hecho son seis decisiones encadenadas: dónde vive (la colección), cómo se ordena (las categorías), cómo entra por los ojos (las imágenes), cómo se tarifa (el precio), qué página genera (la ficha) y qué SEO emite (el schema). Cada tarjeta abre una de ellas.',
-          'Es el MISMO card del catálogo —no inventamos un diseño aparte—, porque la coherencia es justo lo que esta serie enseña. Cada pieza tiene su página de detalle con el molde de 10 secciones: qué es, para qué sirve, qué lleva, cómo se ve en móvil, dónde encaja y cómo se construye.',
-        ]}
-      />
       <div class="showcase">
-        {guiaListos.map((p, i) => {
-          const meta = PG_META[p.slug]
-          return (
-            <CategoryCard
-              label={p.label}
-              href={p.href}
-              image={meta?.image}
-              imageAlt={`Imagen de ejemplo de «${p.label}» en la guía de productos`}
-              badge={p.estado === 'listo' ? 'Guía' : 'Próximamente'}
-              blurb={p.desc}
-              subcategories={(meta?.chips ?? []).map((c) => ({ label: c, href: p.href }))}
-              ctaLabel="Ver la pieza"
-              disabled={p.estado !== 'listo'}
-              index={i}
-            />
-          )
-        })}
-      </div>
-    </div>
-  </section>
-
-  {/* ── 4) CADA PIEZA, POR DENTRO — bloques «a fondo» (CategoryDetail) ── */}
-  <section class="section section--surface">
-    <div class="container">
-      <SectionHeading
-        layout="duo"
-        eyebrow="Por dentro"
-        title="Cada pieza, por dentro"
-        desc="El índice te dice qué es cada pieza; aquí la abrimos. Mismo formato para todas: qué resuelve, qué decisiones implica y en qué se fija al construirla."
-        body={[
-          'Es el mismo bloque «a fondo» del catálogo del home —información a la izquierda, galería a la derecha, idéntico para cada pieza—. Reusar el patrón es, otra vez, la lección: el sitio se arma con piezas que ya existen.',
-          'Aquí está cada pieza del flujo abierta con la misma estructura. Las mismas seis que ves arriba como tarjetas; entra a cualquiera para la versión completa con recetas de código.',
-        ]}
-      />
-      <div class="afondo">
-        {guiaListos.map((p, i) => (
-          <CategoryDetail
-            eyebrow="La pieza a fondo"
-            title={p.label}
-            body={PRODUCTO_GUIA_AFONDO[p.slug].body}
-            points={PRODUCTO_GUIA_AFONDO[p.slug].points}
-            cta={p.estado === 'listo' ? { label: `Ver «${p.label}»`, href: p.href } : undefined}
-            gallery={productoGuiaGallery(p.slug, p.label, i)}
+        {catalogo.map((c, i) => (
+          <CategoryCard
+            label={c.label}
+            href={c.href}
+            image={c.image}
+            imageAlt={`Categoría ${c.label} del catálogo`}
+            badge={c.label}
+            blurb={c.blurb}
+            subcategories={c.subs}
+            ctaLabel="Ver categoría"
+            index={i}
           />
         ))}
       </div>
     </div>
   </section>
 
-  {/* ── 5) RESPONSIVE Y MÓVIL — la vitrina del catálogo en el teléfono ── */}
+  {/* ── 2) CADA CATEGORÍA, POR DENTRO — un CategoryDetail por categoría ──
+       Mismo patrón que «Cada módulo, por dentro» de /modulos: info izq · galería
+       der, SIN zig-zag (reverse siempre false), gap uniforme. Copy en CATALOGO_AFONDO
+       (lib/productos.ts, SSoT); galería de las propias fotos del catálogo. */}
   <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="El catálogo a fondo"
+        title="Cada categoría, por dentro"
+        desc="La vitrina te muestra las cards; aquí abrimos cada categoría: qué contiene, para quién es y qué respalda cada producto de esa familia."
+        body={[
+          'Cada categoría del catálogo tiene su lógica propia: los equipos son el núcleo, los accesorios redondean la compra y la categoría general acomoda lo que no tiene familia fija. Aquí se explica esa lógica para que el visitante sepa a qué sección entrar antes de ver las fichas.',
+          'Es el mismo bloque «a fondo» del catálogo del home —información a la izquierda, galería a la derecha, idéntico para cada categoría—. Reusar el patrón es, otra vez, la lección: el sitio se arma con piezas que ya existen.',
+        ]}
+      />
+      <div class="afondo">
+        {catalogo.map((c, i) => (
+          <CategoryDetail
+            eyebrow="La categoría a fondo"
+            title={c.label}
+            as="h3"
+            body={CATALOGO_AFONDO[c.slug]?.body ?? []}
+            points={CATALOGO_AFONDO[c.slug]?.points ?? []}
+            cta={{ label: `Ver ${c.label}`, href: c.href }}
+            gallery={catalogoGallery(c.label, c.images, i)}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3) RESPONSIVE Y MÓVIL — cómo se adapta el catálogo al teléfono ──
+       Misma fórmula que /modulos/index: SectionHeading duo + 3 patrones con
+       <MarcoMovil> y <Receta>. Prefijo .pc- (productos catálogo) en los mockups,
+       scoped a esta página. */}
+  <section class="section section--surface">
     <div class="container">
       <SectionHeading
         layout="duo"
         eyebrow="Responsive y móvil"
         title="El catálogo, en el teléfono"
-        desc="La rejilla del catálogo no «se encoge»: se reordena. De varias columnas a una sola, con fotos que nunca desbordan y cards que se tocan cómodo."
+        desc="La vitrina, los bloques de categoría y el FAQ+formulario no se «encogen»: se reordenan. Mobile-first en cada capa, sin diseñar dos veces."
         body={[
-          'La vitrina (.grid) está pensada mobile-first: nace en una columna y crece con auto-fill conforme hay ancho —el grid decide cuántas cards caben—. Nunca al revés: así el caso base (el teléfono) es el más simple y robusto, y el escritorio solo añade.',
-          'Lo demás lo resuelve el sistema central: las imágenes AVIF son fluidas y llevan width/height fijos (cero saltos de maqueta), y toda la card es un único enlace con área táctil cómoda. Cada patrón, abajo, con su vista en el teléfono y su receta.',
+          'El catálogo tiene tres bloques con comportamiento responsive propio: la vitrina de cards (3 columnas → 1), los bloques CategoryDetail de 2 columnas que se apilan verticalmente, y el par FAQ+formulario que pasa de 2 columnas a una sola. Los tres son mobile-first: el caso base es el teléfono y el escritorio solo añade columnas.',
+          'Los tokens del sistema central (mobile.css) aportan lo demás: imágenes fluidas que nunca desbordan su caja, áreas táctiles de 44 px en botones y chips, y ancho al 100 % en móvil. Sin media queries duplicadas por componente y sin diseñar dos veces el mismo layout.',
         ]}
       />
 
       <div class="pats">
-        {/* 1 · Rejilla auto-fill → 1 columna */}
-        <article class="pat">
-          <div class="pat__demo">
-            <MarcoMovil ariaLabel="La vitrina del catálogo baja a una sola columna en el teléfono">
-              <div class="vm-head"><span class="vm-logo">E</span><span class="vm-sp"></span><span class="vm-burg" aria-hidden="true">≡</span></div>
-              <div class="vm-stack">
-                <span class="vm-mini"><i class="vm-mini__img"></i><b class="vm-mini__t"></b><span class="vm-mini__chips"><i></i><i></i></span></span>
-                <span class="vm-mini"><i class="vm-mini__img"></i><b class="vm-mini__t"></b><span class="vm-mini__chips"><i></i><i></i></span></span>
-              </div>
-            </MarcoMovil>
-          </div>
-          <div class="pat__info">
-            <h3 class="pat__title">1 · De auto-fill a una columna</h3>
-            <p class="pat__desc">La vitrina es <strong>mobile-first</strong>: declara una columna y crece con <code>repeat(auto-fill, minmax(260px, 1fr))</code> en escritorio. Baja a una columna en el teléfono sin tocar la card —el responsive vive en la rejilla—.</p>
-            <Receta titulo="CSS · grid auto-fill mobile-first" lang="css" code={recetaGrid} />
-          </div>
-        </article>
 
-        {/* 2 · Imagen fluida AVIF */}
+        {/* 1 · Vitrina 3→2→1 */}
         <article class="pat">
           <div class="pat__demo">
-            <MarcoMovil ariaLabel="La foto del producto ocupa el ancho sin desbordar ni deformarse">
-              <div class="vm-head"><span class="vm-logo">E</span><span class="vm-sp"></span></div>
-              <div class="vm-one">
-                <span class="vm-card">
-                  <i class="vm-card__img"><b class="vm-card__tag">AVIF</b></i>
-                  <b class="vm-card__t"></b>
-                  <b class="vm-card__d"></b>
+            <MarcoMovil ariaLabel="La vitrina de 3 columnas colapsa a una sola columna en el teléfono">
+              <div class="pc-head">
+                <span class="pc-logo">E</span>
+                <span class="pc-sp"></span>
+                <span class="pc-burg" aria-hidden="true">≡</span>
+              </div>
+              <div class="pc-stack">
+                <span class="pc-mini">
+                  <i class="pc-mini__img"></i>
+                  <b class="pc-mini__t"></b>
+                  <span class="pc-mini__chips"><i></i><i></i></span>
+                  <span class="pc-mini__cta">Ver categoría →</span>
+                </span>
+                <span class="pc-mini">
+                  <i class="pc-mini__img"></i>
+                  <b class="pc-mini__t"></b>
+                  <span class="pc-mini__chips"><i></i><i></i></span>
+                  <span class="pc-mini__cta">Ver categoría →</span>
                 </span>
               </div>
             </MarcoMovil>
           </div>
           <div class="pat__info">
-            <h3 class="pat__title">2 · Fotos ligeras que nunca desbordan</h3>
-            <p class="pat__desc">Cada foto es <strong>AVIF</strong> con <code>width</code>/<code>height</code> fijos: ocupa el ancho de la card, escala manteniendo su proporción 16:9 y reserva el hueco antes de cargar (cero CLS). La primera del grid carga con prioridad para cuidar el LCP.</p>
-            <Receta titulo="CSS · imagen fluida + anti-CLS" lang="css" code={recetaImg} />
+            <h3 class="pat__title">1 · De cuatro por fila a una columna</h3>
+            <p class="pat__desc">La vitrina es <strong>mobile-first</strong>: arranca en una columna y suma columnas al haber más ancho —2 en tablet, 4 en escritorio—. El catálogo escala hasta 4 categorías sin tocar código. Las cards no se reescalan: solo cambia cuántas caben por fila.</p>
+            <Receta titulo="productos/index.astro · vitrina mobile-first" lang="css" code={recetaVitrina} />
           </div>
         </article>
 
-        {/* 3 · Card táctil */}
+        {/* 2 · CategoryDetail apilado */}
         <article class="pat">
           <div class="pat__demo">
-            <MarcoMovil ariaLabel="Card de producto cómoda de tocar, con área táctil de al menos 44 px">
-              <div class="vm-head"><span class="vm-logo">E</span><span class="vm-sp"></span></div>
-              <div class="vm-one">
-                <span class="vm-card">
-                  <i class="vm-card__img"></i>
-                  <b class="vm-card__t"></b>
-                  <span class="vm-chips"><i class="vm-chip">Imagen</i><i class="vm-chip">Badge</i><i class="vm-chip">Título</i></span>
-                  <span class="vm-cta">Ver detalles<i class="vm-ruler">44px</i></span>
-                </span>
+            <MarcoMovil ariaLabel="El bloque de categoría a fondo muestra info arriba y galería debajo en el teléfono">
+              <div class="pc-head">
+                <span class="pc-logo">E</span>
+                <span class="pc-sp"></span>
+              </div>
+              <div class="pc-detail">
+                <div class="pc-detail__info">
+                  <span class="pc-eyebrow"></span>
+                  <span class="pc-title"></span>
+                  <span class="pc-body"></span>
+                  <span class="pc-body pc-body--short"></span>
+                  <span class="pc-cta-btn">Ver Equipos →</span>
+                </div>
+                <div class="pc-detail__gal">
+                  <span class="pc-gal__main"></span>
+                  <div class="pc-gal__thumbs"><span></span><span></span></div>
+                </div>
               </div>
             </MarcoMovil>
           </div>
           <div class="pat__info">
-            <h3 class="pat__title">3 · Cards cómodas de tocar</h3>
-            <p class="pat__desc">En el teléfono se toca con el dedo, no con un cursor: toda la card es un único <code>&lt;a&gt;</code> (clic-en-cualquier-lado) con área táctil de 44 px, y lleva un realce de toque suave para confirmar el tap.</p>
-            <Receta titulo="mobile.css · card táctil" lang="css" code={recetaCard} />
+            <h3 class="pat__title">2 · CategoryDetail apilado</h3>
+            <p class="pat__desc">En escritorio cada bloque «a fondo» muestra info y galería en 2 columnas paralelas. En el teléfono se apila: la información aparece primero, la galería debajo. El orden es siempre natural —información antes que imagen—, sin inversión en ningún caso.</p>
+            <Receta titulo="CategoryDetail.astro · apilado en móvil, 2 cols en escritorio" lang="css" code={recetaDetail} />
           </div>
         </article>
+
+        {/* 3 · FAQ + Formulario en columna */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="FAQ y formulario de cotización en columna única en el teléfono">
+              <div class="pc-head">
+                <span class="pc-logo">E</span>
+                <span class="pc-sp"></span>
+              </div>
+              <div class="pc-faqform">
+                <div class="pc-faq">
+                  <span class="pc-faq__item">
+                    <b class="pc-faq__q"></b><i class="pc-faq__ico">▾</i>
+                  </span>
+                  <span class="pc-faq__item pc-faq__item--open">
+                    <div class="pc-faq__row"><b class="pc-faq__q"></b><i class="pc-faq__ico">▴</i></div>
+                    <p class="pc-faq__a"></p>
+                  </span>
+                  <span class="pc-faq__item">
+                    <b class="pc-faq__q"></b><i class="pc-faq__ico">▾</i>
+                  </span>
+                </div>
+                <div class="pc-form">
+                  <span class="pc-form__field"></span>
+                  <span class="pc-form__field"></span>
+                  <span class="pc-form__btn">Cotizar →</span>
+                </div>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · FAQ y formulario en columna única</h3>
+            <p class="pat__desc">En escritorio el FAQ y el formulario de cotización van en 2 columnas (1.1fr · 0.9fr). En el teléfono pasan a columna única: FAQ primero para resolver la duda, formulario debajo para pedir el dato. La jerarquía no cambia, solo el eje.</p>
+            <Receta titulo="productos/index.astro · faqgrid mobile-first" lang="css" code={recetaFaq} />
+          </div>
+        </article>
+
       </div>
 
-      <GuiaNota titulo="La vitrina responsive vive en el sistema" archivo="src/pages/productos/index.astro · src/components/ProductCard.astro · src/styles/mobile.css">
+      <GuiaNota titulo="El responsive del catálogo vive en el sistema" archivo="src/pages/productos/index.astro · src/components/CategoryDetail.astro · src/styles/mobile.css">
         <p>
-          La rejilla <code>.grid</code> se declara <strong>mobile-first</strong> en esta
-          página (1 → auto-fill). La card (<code>ProductCard</code>) y sus imágenes AVIF
-          ya son fluidas y anti-CLS; el toque cómodo y el ancho al 100% en móvil los
-          aporta <code>src/styles/mobile.css</code>, la hoja central del sitio.
+          Los tres layouts de esta página —vitrina <code>.showcase</code>, bloques
+          <code>.afondo</code> y el par <code>.faqgrid</code>— son
+          <strong>mobile-first</strong>: declaran una columna y crecen con
+          <code>min-width</code> al haber más ancho. Los tokens de toque (44 px),
+          imágenes fluidas y ancho al 100 % en móvil los aporta
+          <code>src/styles/mobile.css</code>, la hoja central del sitio.
         </p>
         <p>
-          Resultado: un catálogo que se ve y se navega igual en escritorio y en teléfono,
-          sin diseñar dos veces ni mantener media queries por componente.
+          Resultado: tres layouts distintos que se comportan igual de correctamente
+          en cualquier pantalla, sin duplicar media queries ni mantener código
+          responsive por componente.
         </p>
       </GuiaNota>
     </div>
   </section>
 
-  {/* ── 6) FAQ ── */}
+  {/* ── 4) GUÍA DE SELECCIÓN — orienta y abre la conversación ── */}
+  <RiskGuide
+    eyebrow="Guía de selección"
+    title="Elige según"
+    titleAccent="tu necesidad"
+    desc="Una tabla que orienta al visitante hacia la opción correcta — y abre la conversación."
+    body={[
+      'Cuando el cliente no sabe qué pedir, una tabla de selección lo guía y reduce la fricción: ve su caso reflejado y entiende qué le toca.',
+      'El detalle fino se cierra con un diagnóstico; por eso la tabla termina con un CTA a WhatsApp.',
+    ]}
+    columns={['Nivel', 'Para quién', 'Incluye', 'Complementos']}
+    rows={demoGuiaRows}
+    note="Datos orientativos: ajusta filas y columnas a tu giro. Esta tabla es oro para SEO de cola larga y para calificar al prospecto antes de cotizar."
+    ctaLabel="Cotizar por WhatsApp"
+    ctaHref={waUrl(WA_MESSAGES.cotizar)}
+  />
+
+  {/* ── 4) RESPALDO — qué te respalda (garantía, factura, norma) ── */}
+  <NormsTable
+    eyebrow="Respaldo"
+    title="Lo que te"
+    titleAccent="respalda"
+    desc="No vendes solo un producto: vendes tranquilidad y cumplimiento."
+    body={[
+      'Una tabla de respaldo (garantías, normas, comprobantes) convierte porque responde la pregunta silenciosa: «¿y si algo sale mal?».',
+      'Dilo con precisión: el rigor es señal de autoridad y mejora tu SEO.',
+    ]}
+    columns={['Respaldo', 'Qué cubre', 'Aplica a']}
+    rows={demoNormRows}
+    note="Adapta las filas a tu giro: garantías, normas oficiales aplicables, certificaciones reales, comprobantes. Nunca cites una norma o certificación que no tengas."
+  />
+
+  {/* ── 5) PROCESO — del mensaje al producto entregado ── */}
+  <ProcessSteps
+    eyebrow="Cómo trabajamos"
+    title="De tu mensaje"
+    titleAccent="al producto entregado"
+    desc="Un proceso claro reduce el miedo a dar el primer paso."
+    body={[
+      'Mostrar el proceso en pasos numerados le dice al visitante exactamente qué pasa si te escribe. Menos incertidumbre, más mensajes.',
+      'Descríbelo honesto: sin prometer tiempos que no puedas cumplir.',
+    ]}
+    steps={demoPasos}
+  />
+
+  {/* ── 6) RESEÑAS — prueba social DATA-DRIVEN desde `casos` (B4) ── */}
+  {resenas.length > 0 && (
+    <section class="section">
+      <div class="container">
+        <SectionHeading
+          layout="duo"
+          eyebrow="Reseñas"
+          title="Lo que dicen quienes ya compraron"
+          desc="Prueba social: testimonios concretos de clientes y negocios. Una cita específica —con nombre y rol— convence más que diez adjetivos."
+          body={[
+            'La gente confía en la gente: una frase concreta de un cliente real pesa más que cualquier promesa propia. Por eso una reseña con nombre y rol mueve la decisión.',
+            'Para que funcionen tienen que ser creíbles y reales. Mezcla voces y no todas de cinco estrellas. Regla que no se negocia: usa reseñas REALES, nunca inventadas.',
+          ]}
+        />
+        <div class="reviews">
+          {resenas.map((r) => (
+            <ReviewCard quote={r.quote} name={r.name} role={r.role} rating={r.rating} />
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  {/* ── 7) FAQ + COTIZACIÓN — dudas | formulario a WhatsApp ── */}
   <section class="section section--surface">
-    <div class="container">
-      <FAQAccordion items={faqs} title="Preguntas frecuentes" openFirst />
+    <div class="container faqgrid">
+      <div class="faqgrid__faq">
+        <FAQAccordion items={faqs} title="Preguntas frecuentes" openFirst />
+      </div>
+      <div class="faqgrid__form">
+        <ContactForm
+          heading="Cotiza tu producto"
+          note="Respuesta inmediata · Sin compromiso"
+          asuntos={['Quiero una cotización', 'Disponibilidad y tiempos', 'Asesoría para elegir', 'Otro']}
+        />
+      </div>
     </div>
   </section>
 
-  {/* Cierre: menú de navegación full-width. */}
-  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+  {/* ── Cómo está hecha esta página (identidad didáctica del sitio) ── */}
+  <section class="section">
+    <div class="container">
+      <GuiaNota titulo="Cómo está hecha esta página (catálogo L2 ensamblado)" archivo="src/pages/productos/index.astro">
+        <p>
+          Esta página es el <strong>catálogo de venta</strong> (la landing de
+          categoría, segundo nivel de Inicio → Categoría → Ficha). Se arma con
+          módulos que <strong>ya existen</strong> en el sistema —
+          <code>TrustBar</code>, <code>RiskGuide</code>, <code>NormsTable</code>,
+          <code>ProcessSteps</code>, <code>ReviewCard</code>,
+          <code>ContactForm</code>— cada uno documentado a fondo en el home. El
+          catálogo no se escribe a mano: sale de <code>getCollection('productos')</code>.
+        </p>
+        <p>
+          ¿Quieres ver <strong>cómo se crea un producto</strong>, pieza por pieza
+          (la colección, las categorías, las imágenes, el precio, la ficha y el
+          schema)? Vive en <a href="/productos/guia">la guía de productos</a>. Y un
+          recordatorio: los productos y los <strong>casos son DEMO</strong>. Las
+          reseñas ya salen <strong>data-driven</strong> de la colección
+          <code>casos</code> vía <code>lib/casos.ts</code> (solo aprobados); en un
+          sitio real, reemplaza esos casos por testimonios verificables (regla B4:
+          nunca fabricados).
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── Cierre: menú de navegación full-width (sustituye al CTABanner) ──
+       Mismo patrón que /modulos: el menú reparte a los destinos más útiles
+       desde el catálogo; el último botón (WhatsApp) convierte. */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando el catálogo" />
 </PageLayout>
 
 <style>
@@ -387,45 +565,72 @@ const cierreCta = {
   .section--surface { background: var(--c-surface); }
   @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
 
-  /* ── Grid del catálogo: 1 → auto-fill en escritorio (mobile-first) ── */
-  .grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
-  @media (min-width: 768px) { .grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); } }
-
-  /* ── Vitrina de la guía: MISMA rejilla del catálogo del home (1 → 2 → 4 por fila) ── */
+  /* Vitrina del catálogo: 1 → 2 → 4 por fila (mobile-first).
+     4 columnas en desktop: el catálogo escala a 4 categorías sin tocar código. */
   .showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
   @media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
-  @media (min-width: 1024px) { .showcase { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 1024px) { .showcase { grid-template-columns: repeat(4, 1fr); } }
 
-  /* ── Pila «a fondo» (CategoryDetail) — separación uniforme, SIN zig-zag ── */
+  /* Pila «categoría a fondo» (CategoryDetail) — separación uniforme, SIN zig-zag. */
   .afondo { display: grid; gap: clamp(2.5rem, 6vw, 5rem); margin-top: var(--sp-6); }
 
-  /* ── Sección «Responsive y móvil»: teléfono | explicación + receta ── */
+  /* Rejilla de reseñas: 1 → 2 → 3 (mobile-first). */
+  .reviews { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 640px)  { .reviews { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .reviews { grid-template-columns: repeat(3, 1fr); } }
+
+  /* FAQ | formulario: una columna en móvil, dos en escritorio. */
+  .faqgrid { display: grid; grid-template-columns: 1fr; gap: var(--sp-7); align-items: start; }
+  @media (min-width: 900px) { .faqgrid { grid-template-columns: 1.1fr .9fr; gap: var(--sp-8); } }
+
+  /* ── Sección «Responsive y móvil»: estructura de patrones ──────────────────
+     Misma arquitectura que /modulos/index.astro. Cada .pat = mockup teléfono
+     (izquierda, ancho fijo 254px) + bloque explicación+receta (derecha). */
   .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
-  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
-  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: start; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); align-items: center; } }
   .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
   .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
   .pat__desc code { font-family: ui-monospace, Menlo, monospace; font-size: .85em; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
 
-  /* Mockups de la vitrina con prefijo .vm (vitrina mockup), scoped a esta página. */
-  .vm-head { display: flex; align-items: center; gap: 7px; padding: 8px 11px; background: var(--c-white); border-bottom: 1px solid var(--c-border); }
-  .vm-logo { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-black); font-size: 12px; }
-  .vm-sp { margin-left: auto; }
-  .vm-burg { font-size: 16px; color: var(--c-ink-2); }
+  /* ── Mini-header compartido en los tres mockups (.pc-head) ── */
+  .pc-head { display: flex; align-items: center; gap: 7px; padding: 8px 11px; background: var(--c-white); border-bottom: 1px solid var(--c-border); flex-shrink: 0; }
+  .pc-logo { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-black); font-size: 12px; }
+  .pc-sp { margin-left: auto; }
+  .pc-burg { font-size: 16px; color: var(--c-ink-2); }
 
-  .vm-stack { display: grid; gap: 10px; padding: 12px; }
-  .vm-one { padding: 12px; }
-  .vm-mini, .vm-card { display: grid; gap: 6px; padding: 8px; border-radius: 9px; background: var(--c-white); border: 1px solid var(--c-border); }
-  .vm-mini__img, .vm-card__img { position: relative; display: block; border-radius: 6px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
-  .vm-mini__img { height: 38px; }
-  .vm-card__img { height: 92px; }
-  .vm-card__tag { position: absolute; top: 6px; left: 6px; font-size: 8px; font-weight: 700; letter-spacing: .04em; color: var(--c-primary-dark); background: #fff; border-radius: 4px; padding: 1px 5px; }
-  .vm-mini__t, .vm-card__t { height: 9px; width: 70%; border-radius: 4px; background: var(--c-ink); opacity: .8; }
-  .vm-card__d { height: 7px; width: 92%; border-radius: 4px; background: var(--c-surface); border: 1px solid var(--c-border); }
-  .vm-mini__chips { display: flex; gap: 4px; }
-  .vm-mini__chips i { width: 26px; height: 9px; border-radius: 99px; background: var(--c-surface); border: 1px solid var(--c-border); }
-  .vm-chips { display: flex; flex-wrap: wrap; gap: 4px; }
-  .vm-chip { font-style: normal; font-size: 9px; color: var(--c-ink-2); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 99px; padding: 3px 7px; }
-  .vm-cta { position: relative; display: grid; place-items: center; min-height: 30px; margin-top: 2px; border-radius: 7px; background: var(--c-primary); color: #fff; font-size: 11px; font-weight: 700; }
-  .vm-ruler { position: absolute; right: 8px; font-style: normal; font-size: 8px; font-weight: 700; color: #fff; background: rgba(255,255,255,.22); border-radius: 4px; padding: 1px 4px; }
+  /* ── Patrón 1: vitrina apilada (cards en columna única) ── */
+  .pc-stack { display: grid; gap: 8px; padding: 10px; overflow-y: auto; }
+  .pc-mini { display: grid; gap: 5px; padding: 7px; border-radius: 9px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .pc-mini__img { display: block; height: 52px; border-radius: 6px; background: linear-gradient(135deg, color-mix(in srgb, var(--c-primary) 30%, white), var(--c-primary)); }
+  .pc-mini__t { display: block; height: 8px; width: 58%; border-radius: 4px; background: var(--c-ink); opacity: .75; }
+  .pc-mini__chips { display: flex; gap: 4px; }
+  .pc-mini__chips i { width: 28px; height: 8px; border-radius: 99px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .pc-mini__cta { font-size: 9px; font-weight: 700; color: var(--c-primary); }
+
+  /* ── Patrón 2: CategoryDetail apilado (info arriba, galería abajo) ── */
+  .pc-detail { display: flex; flex-direction: column; gap: 9px; padding: 10px; overflow-y: auto; }
+  .pc-detail__info { display: flex; flex-direction: column; gap: 5px; }
+  .pc-eyebrow { display: block; height: 6px; width: 40%; border-radius: 4px; background: var(--c-primary); opacity: .55; }
+  .pc-title { display: block; height: 10px; width: 70%; border-radius: 4px; background: var(--c-ink); opacity: .85; }
+  .pc-body { display: block; height: 6px; width: 96%; border-radius: 3px; background: var(--c-ink); opacity: .18; }
+  .pc-body--short { width: 68%; }
+  .pc-cta-btn { display: inline-block; font-style: normal; font-size: 9px; font-weight: 700; color: #fff; background: var(--c-primary); border-radius: 6px; padding: 3px 8px; align-self: flex-start; margin-top: 2px; }
+  .pc-detail__gal { display: flex; flex-direction: column; gap: 5px; }
+  .pc-gal__main { display: block; height: 70px; border-radius: 8px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .pc-gal__thumbs { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .pc-gal__thumbs span { display: block; height: 36px; border-radius: 6px; background: var(--c-surface); border: 1px solid var(--c-border); opacity: .6; }
+
+  /* ── Patrón 3: FAQ + Formulario en columna única ── */
+  .pc-faqform { display: flex; flex-direction: column; gap: 8px; padding: 10px; overflow-y: auto; }
+  .pc-faq { display: flex; flex-direction: column; gap: 4px; }
+  .pc-faq__item { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 8px; border-radius: 7px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .pc-faq__item--open { flex-direction: column; align-items: stretch; gap: 4px; background: var(--c-surface); }
+  .pc-faq__row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  .pc-faq__q { display: block; height: 7px; flex: 1; border-radius: 3px; background: var(--c-ink); opacity: .5; }
+  .pc-faq__ico { font-style: normal; font-size: 9px; color: var(--c-primary); flex-shrink: 0; }
+  .pc-faq__a { display: block; margin: 0; height: 5px; width: 88%; border-radius: 3px; background: var(--c-ink); opacity: .18; }
+  .pc-form { display: flex; flex-direction: column; gap: 5px; padding: 8px; border-radius: 9px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .pc-form__field { display: block; height: 22px; border-radius: 5px; border: 1px solid var(--c-border); background: var(--c-surface); }
+  .pc-form__btn { display: grid; place-items: center; height: 26px; margin-top: 2px; border-radius: 7px; background: var(--c-primary); color: #fff; font-size: 10px; font-weight: 700; }
 </style>

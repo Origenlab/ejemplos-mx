@@ -191,12 +191,12 @@ export const TAXONOMY = {
   categories: [
     // CATEGORÍAS REALES de producto (B5). Los `slug` DEBEN coincidir con el enum
     // PRODUCT_CATEGORIES de src/content.config.ts (equipos · accesorios · general);
-    // el `href` apunta a la landing de categoría /productos/categoria/<slug>.
+    // el `href` apunta a la landing de categoría /productos/<slug> (sin /categoria/).
     // Fuente única para: Footer (columna Productos), RelatedLinks, badge del
     // catálogo (CAT_LABEL) y el dropdown «Productos» del Header.
-    { slug: 'equipos', label: 'Equipos', badge: undefined, href: '/productos/categoria/equipos' },
-    { slug: 'accesorios', label: 'Accesorios', badge: undefined, href: '/productos/categoria/accesorios' },
-    { slug: 'general', label: 'General', badge: undefined, href: '/productos/categoria/general' },
+    { slug: 'equipos', label: 'Equipos', badge: undefined, href: '/productos/equipos' },
+    { slug: 'accesorios', label: 'Accesorios', badge: undefined, href: '/productos/accesorios' },
+    { slug: 'general', label: 'General', badge: undefined, href: '/productos/general' },
   ],
   // services: servicios ofrecidos (catálogo o página /servicios).
   services: [
@@ -311,6 +311,27 @@ export const PRODUCTOS_GUIA: readonly ProductoGuia[] = [
   { slug: 'el-schema',     label: 'El schema',     href: '/productos/guia/el-schema',     desc: 'El JSON-LD que sale del catálogo: Product + Offer en la ficha, ItemList en el grid, y la regla de un solo emisor por página.', estado: 'listo' },
 ];
 
+// ── SERVICIOS_GUIA — la guía «cómo crear páginas de servicio profesionales» ──
+// Cuarta serie hermana de MODULOS, NIVELES y PRODUCTOS_GUIA. Si MODULOS documenta
+// las PIEZAS (componentes), NIVELES los TIPOS DE PÁGINA (profundidad) y
+// PRODUCTOS_GUIA el FLUJO DE CREAR UN PRODUCTO, SERVICIOS_GUIA documenta el
+// FLUJO DE CREAR UNA PÁGINA DE SERVICIO PROFESIONAL: la colección, el copy, el
+// alcance, el proceso, las objeciones y la conversión. Cada pieza tiene su página
+// en /servicios/guia/<slug> con el MISMO molde de 10 secciones que /modulos.
+// Alimenta el dropdown «Servicios» del Header y el índice /servicios/guia. SSoT
+// del aspecto (foto + chips) y del cierre (siblingsServicios) viven en
+// src/lib/servicios.ts. Al publicar la página de una pieza, pon estado:'listo'.
+export type ServicioGuia = { slug: string; label: string; href: string; desc: string; estado: 'listo' | 'proximo' };
+export const SERVICIOS_GUIA: readonly ServicioGuia[] = [
+  // En ORDEN DEL FLUJO de creación de una página de servicio profesional.
+  { slug: 'la-coleccion',   label: 'La colección',    href: '/servicios/guia/la-coleccion',   desc: 'Cómo nace un servicio: un archivo Markdown validado por Zod. El frontmatter, los campos y la separación contenido/diseño.', estado: 'listo' },
+  { slug: 'el-copy',        label: 'El copy',         href: '/servicios/guia/el-copy',        desc: 'La propuesta de valor en el hero: cómo comunicar qué resuelve el servicio y para quién en los primeros 5 segundos.', estado: 'listo' },
+  { slug: 'el-alcance',     label: 'El alcance',      href: '/servicios/guia/el-alcance',     desc: 'Qué incluye el servicio: la lista honesta de entregables, la nota de precio transparente y las expectativas claras.', estado: 'listo' },
+  { slug: 'el-proceso',     label: 'El proceso',      href: '/servicios/guia/el-proceso',     desc: 'Los 3 pasos del trabajo: predecible, reproducible y sin incertidumbre para el cliente que aún no firmó nada.', estado: 'listo' },
+  { slug: 'las-objeciones', label: 'Las objeciones',  href: '/servicios/guia/las-objeciones', desc: 'El FAQ del servicio: las preguntas reales del cliente, el manejo de objeciones y la cualificación del lead.', estado: 'listo' },
+  { slug: 'la-conversion',  label: 'La conversión',   href: '/servicios/guia/la-conversion',  desc: 'El cierre del servicio: WhatsApp-first, CTAs honestos y el SectionMenu que convierte sin presionar ni saturar.', estado: 'listo' },
+];
+
 // ── NAV — menú principal del Header (FUENTE ÚNICA: escritorio + móvil) ────────
 // Header.astro itera ESTE array para generar los DOS menús (desktop y móvil) y
 // sus paneles desplegables. Para agregar, quitar o reordenar una entrada del
@@ -337,22 +358,31 @@ export type NavItem = {
 };
 export const NAV: readonly NavItem[] = [
   {
-    // Productos: el enlace principal va al catálogo-hub (L2) /productos; el
-    // dropdown lista la GUÍA «cómo crear productos» (SSoT: PRODUCTOS_GUIA, los
-    // 'listo'). Mismo patrón que Módulos/Niveles/Blog: dropdown con descripción.
+    // Productos: el enlace principal va al CATÁLOGO de venta (L2) /productos; el
+    // dropdown lista las categorías REALES (B5) → su landing de categoría, más un
+    // acceso a la guía «cómo crear productos» (/productos/guia). Catálogo
+    // protagonista: la guía es secundaria (reposicionado 2026-06-22).
     label: 'Productos',
     href: '/productos',
     panel: 'dropdown',
     allLabel: 'Ver catálogo de productos',
-    // Dropdown «Productos» = categorías REALES (B5) → su landing de categoría.
-    items: PRODUCT_CATEGORIES.map((c) => ({ label: c.label, href: c.href, desc: `Ver ${c.label.toLowerCase()}` })),
+    items: [
+      ...PRODUCT_CATEGORIES.map((c) => ({ label: c.label, href: c.href, desc: `Ver ${c.label.toLowerCase()}` })),
+      { label: 'La guía de productos', href: '/productos/guia', desc: 'Cómo crear un producto, pieza por pieza' },
+    ],
   },
   {
+    // Servicios: el enlace principal va al catálogo /servicios; el dropdown lista
+    // los servicios REALES (SERVICES) más un acceso a la guía «cómo crear páginas
+    // de servicio profesionales» (/servicios/guia). Patrón espejo de Productos.
     label: 'Servicios',
     href: '/servicios',
     panel: 'dropdown',
     allLabel: 'Ver todos los servicios',
-    items: SERVICES.map((s) => ({ label: s.label, href: `/servicios/${s.id}`, desc: s.desc })),
+    items: [
+      ...SERVICES.map((s) => ({ label: s.label, href: `/servicios/${s.id}`, desc: s.desc })),
+      { label: 'La guía de servicios', href: '/servicios/guia', desc: 'Cómo crear páginas de servicio profesionales, pieza por pieza' },
+    ],
   },
   {
     // Páginas de módulos del sitio (SSoT: MODULOS). El dropdown lista los 'listo';

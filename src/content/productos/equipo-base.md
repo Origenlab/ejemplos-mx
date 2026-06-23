@@ -1,43 +1,59 @@
 ---
-title: "Equipo base de ejemplo para catálogo"
-description: "Ficha de producto DEMO que muestra cómo se ve un equipo en el catálogo: título, descripción, categoría, imagen y precio editorial. Reemplaza este contenido por un producto real."
+title: "Equipo base · línea estándar"
+description: "Equipo base de la línea estándar: la opción de entrada del catálogo, lista para instalar y compatible con el resto de la línea. Ideal para arrancar un proyecto sin sobre-especificar. (Producto DEMO de la plantilla.)"
 category: "equipos"
 image: "/images/productos/desarrollo-web-astro-profesional.avif"
-price: "Desde $0 (DEMO)"
+price: "Desde $1,250 MXN"
 sku: "DEMO-EQ-001"
-brand: "EJEMPLOS"
+brand: "Línea Estándar"
+gallery:
+  - "/images/productos/componentes-plantilla-astro-markdown.avif"
+  - "/images/productos/sitio-web-rapido-astro.avif"
 featured: true
 order: 1
-seoTitle: "Equipo base de ejemplo | EJEMPLOS"
-seoDescription: "Producto DEMO de la plantilla: ejemplo de ficha de equipo con categoría, imagen y precio editorial para el catálogo."
-keywords: ["plantilla", "producto demo", "catálogo astro"]
+seoTitle: "Equipo base línea estándar | catálogo DEMO"
+seoDescription: "Equipo base de entrada: listo para usar, compatible con la línea y con garantía. Ficha DEMO de la plantilla Astro + Markdown."
+keywords: ["equipo base", "línea estándar", "catálogo demo"]
 features:
-  - "Listo para usar"
-  - "Compatible con el resto del catálogo"
-  - "Garantía del fabricante"
+  - "Listo para instalar y usar"
+  - "Compatible con toda la línea estándar"
+  - "Garantía del fabricante 12 meses"
+variants:
+  - "Estándar"
+  - "Reforzado"
+  - "Compacto"
+  - "Con kit de accesorios"
 specs:
   - label: "Material"
-    value: "Estándar del giro"
+    value: "Acero al carbón con recubrimiento"
   - label: "Dimensiones"
-    value: "Según modelo"
+    value: "Según variante (compacto a reforzado)"
+  - label: "Peso"
+    value: "Desde 4.5 kg"
   - label: "Garantía"
     value: "12 meses"
 applications:
-  - "Uso general en el giro del cliente"
-  - "Proyectos residenciales y comerciales"
+  - "Uso general en proyectos residenciales y comerciales"
   - "Reemplazo o ampliación de equipo existente"
+  - "Arranque de instalaciones nuevas"
 certifications:
   - "Documentación de conformidad disponible bajo solicitud"
+  - "Ficha técnica del fabricante incluida"
+faqs:
+  - question: "¿Qué variante me conviene?"
+    answer: "La estándar cubre la mayoría de los casos; la reforzada para uso intensivo y la compacta donde el espacio manda. Si no estás seguro, te asesoramos por WhatsApp."
+  - question: "¿El precio incluye instalación?"
+    answer: "El precio es del equipo. La instalación se cotiza aparte según el proyecto; pregúntanos y la incluimos en tu cotización."
 ---
 
-## Sobre este producto de ejemplo
+## Equipo base de la línea estándar
 
-Esta es una ficha de producto **DEMO** de la plantilla. Sirve para que
-veas qué campos viven en el frontmatter y cómo se valida contra el esquema Zod en
-`src/content.config.ts`.
+El equipo base es la opción de entrada del catálogo: cubre lo esencial, es
+**compatible con el resto de la línea** y se entrega listo para instalar. Es el
+punto de partida correcto cuando no necesitas sobre-especificar.
 
-- El campo `category` solo acepta valores del enum `PRODUCT_CATEGORIES`.
-- El campo `image` debe ser una ruta absoluta bajo `/images/`.
-- El cuerpo Markdown se renderiza en la página de detalle del producto (parte futura).
+Elige la variante según tu caso —estándar, reforzada o compacta— y, si tienes
+dudas, te recomendamos la correcta por WhatsApp, sin venderte de más.
 
-> Reemplaza este texto por la descripción real del producto del cliente.
+> Producto **DEMO** de la plantilla. Reemplaza este `.md` por un producto real
+> del cliente: el catálogo, la ficha y el schema se regeneran solos.

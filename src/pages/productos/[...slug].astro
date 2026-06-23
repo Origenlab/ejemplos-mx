@@ -7,9 +7,12 @@
 import { getCollection, render } from 'astro:content';
 import ProductLayout from '@layouts/ProductLayout.astro';
 import GuiaNota from '@components/GuiaNota.astro';
+import { getCasosAprobados, resenasFromCasos } from '@lib/casos';
 
 export async function getStaticPaths() {
   const productos = await getCollection('productos', ({ data }) => !data.draft);
+  // Prueba social: casos aprobados (una sola lectura), filtrados por ficha abajo.
+  const casos = await getCasosAprobados();
 
   return productos.map((producto) => {
     // Interlinking (B6): relacionados = hermanos de la colección (excluye el actual).
@@ -22,11 +25,14 @@ export async function getStaticPaths() {
         description: p.data.description,
       }));
 
-    return { params: { slug: producto.id }, props: { producto, related } };
+    // Reseñas de ESTA ficha: casos cuyo relatedProducts incluye este producto (B4).
+    const reviews = resenasFromCasos(casos, { producto: producto.id });
+
+    return { params: { slug: producto.id }, props: { producto, related, reviews } };
   });
 }
 
-const { producto, related } = Astro.props;
+const { producto, related, reviews } = Astro.props;
 const { Content } = await render(producto);
 const d = producto.data;
 
@@ -46,10 +52,12 @@ const faqs = d.faqs;
   price={d.price}
   gallery={d.gallery?.map((src) => ({ src, alt: d.title }))}
   features={d.features}
+  variants={d.variants}
   specs={d.specs}
   applications={d.applications}
   certifications={d.certifications}
   faqs={faqs}
+  reviews={reviews}
   related={related}
 >
   <GuiaNota titulo="Ficha de producto · Nivel L4" archivo={`src/content/productos/${producto.id}.md`}>

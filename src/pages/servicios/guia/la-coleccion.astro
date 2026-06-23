@@ -1,0 +1,452 @@
+---
+// ============================================================================
+// /servicios/guia/la-coleccion — PIEZA «La colección» de la guía de servicios.
+// ----------------------------------------------------------------------------
+// Primera de la serie /servicios/guia/* (la-coleccion · el-copy · el-alcance ·
+// el-proceso · las-objeciones · la-conversion), MISMO molde de 10 secciones
+// que /modulos y /productos/guia.
+//
+// Tema: cómo NACE un servicio en el sitio — un archivo Markdown en
+// src/content/servicios/ validado por un esquema Zod .strict() en build-time.
+// Es la pieza-raíz de la guía: define qué es un servicio como DATO antes de
+// hablar de copy, alcance, proceso, objeciones o conversión.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import RelatedLinks from '@components/RelatedLinks.astro'
+import ModSection from '@components/modulos/ModSection.astro'
+import ModBenefits from '@components/modulos/ModBenefits.astro'
+import ModAnatomy from '@components/modulos/ModAnatomy.astro'
+import ModResponsive from '@components/modulos/ModResponsive.astro'
+import ModPattern from '@components/modulos/ModPattern.astro'
+import ModProse from '@components/modulos/ModProse.astro'
+import ModDosDonts from '@components/modulos/ModDosDonts.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+import { siblingsServicios } from '@lib/servicios'
+
+const cierreItems = siblingsServicios('la-coleccion')
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.servicios), sub: 'Respuesta inmediata', external: true }
+
+// ── Anatomía: los campos del frontmatter ─────────────────────────────────────
+const partes = [
+  {
+    n: 1,
+    nombre: 'Identidad — title + description',
+    que: 'El nombre y la descripción corta del servicio. Zod exige title de 10–110 caracteres y description de 70–280. Ese rango fuerza títulos escaneables y descripciones que dicen algo sin ser un párrafo entero.',
+    dato: 'title: z.string().min(10).max(110) · description: 70–280',
+  },
+  {
+    n: 2,
+    nombre: 'Clasificación — category + order + draft',
+    que: 'Dónde encaja y cómo se ordena. category es un enum CERRADO (instalacion · mantenimiento · general); order define la posición en la landing; draft:true lo oculta (borrador). Controlan el catálogo sin tocar código.',
+    dato: 'category: z.enum(SERVICE_CATEGORIES) · order · draft · featured',
+  },
+  {
+    n: 3,
+    nombre: 'Imagen — image',
+    que: 'La foto del servicio. Obligatoria y validada con una regex: ruta absoluta bajo /images/. Sin imagen válida, el build falla antes de publicar. AVIF ligero, alt descriptivo con la keyword del servicio.',
+    dato: 'image: imagePath (regex ^/images/) — OBLIGATORIA',
+  },
+  {
+    n: 4,
+    nombre: 'Alcance + pricing — includes[] + pricing',
+    que: 'Qué incluye el servicio (lista de entregables) y cómo se cotiza. includes[] es el array de items de la sección «Qué incluye»; pricing.note es la nota de precio honesta (no un número forzado). Ambos opcionales.',
+    dato: 'includes?: string[] · pricing?: { unit?, note? }',
+  },
+  {
+    n: 5,
+    nombre: 'Objeciones + relacionados — faqs[] + related',
+    que: 'Las preguntas frecuentes del servicio y el interlinking. faqs[] alimenta el FAQAccordion y el schema FAQPage. relatedServices/relatedProducts usan reference() tipado: un slug roto falla el build.',
+    dato: 'faqs?: { question, answer }[] · relatedServices/relatedProducts: reference[]',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Crear ≠ programar',
+    desc: 'Para sumar un servicio escribes un archivo Markdown, no editas un .astro. Quien mantiene el catálogo trabaja con texto; quien mantiene el diseño toca el componente una sola vez para todos los servicios. La barrera de entrada baja de «saber Astro» a «saber escribir».',
+  },
+  {
+    titulo: 'Validación en build, no en producción',
+    desc: 'El esquema Zod .strict() revisa cada .md cuando se compila el sitio: campos faltantes, tipos equivocados, categorías inventadas o una imagen fuera de /images/ rompen el build con un mensaje claro —no se publican en silencio—.',
+  },
+  {
+    titulo: 'Una fuente, muchas salidas',
+    desc: 'El mismo .md alimenta la card en el catálogo, la ficha de detalle (L3), el schema Service y el FAQPage. No se duplica el dato: se escribe una vez y cada vista lo lee. Cambiar el título cambia todo a la vez.',
+  },
+]
+
+const sis = [
+  'Crea UN archivo .md por servicio en src/content/servicios/. El nombre del archivo es el slug de la URL (/servicios/<slug>).',
+  'Respeta los rangos de Zod: title 10–110, description 70–280. Si el build se queja, ajusta el texto — no relajes el esquema sin razón.',
+  'Usa draft:true mientras escribes un servicio incompleto: queda fuera del sitio hasta que lo publiques.',
+  'Para que el servicio aparezca en el MENÚ y la landing /servicios, también añádelo al array SERVICES en src/config/site.ts (SSoT del dropdown).',
+  'Usa el campo order para controlar la posición en la landing. Servicios sin order caen al final; reserva 1, 2, 3… para los que van primero.',
+]
+const nos = [
+  'NO hardcodees un servicio dentro de un .astro: rompe la regla D1 (toda entidad repetible vive en una colección) y se queda fuera del schema.',
+  'NO inventes campos en el frontmatter: con .strict() un campo desconocido falla el build, no se ignora en silencio.',
+  'NO uses una categoría fuera del enum SERVICE_CATEGORIES: Zod la rechaza. Si necesitas una nueva, añádela al enum en content.config.ts.',
+  'NO dejes la imagen apuntando a una ruta relativa o fuera de /images/: la regex la rechaza. Siempre ruta absoluta bajo /images/.',
+  'NO confundas la colección con el dropdown del Header: son dos cosas distintas. La colección es el dato; SERVICES en site.ts es la fuente del menú. Ambas deben estar en sync.',
+]
+
+const disenos = [
+  {
+    nombre: 'Mínimo viable',
+    tag: 'Servicio simple · Arranque',
+    desc: 'Los cuatro campos obligatorios: title, description, category e image. Genera una card y una ficha válidas con el modelo «bajo cotización». El punto de partida de cualquier servicio.',
+  },
+  {
+    nombre: 'Con alcance (includes[])',
+    tag: 'Servicio con entregables',
+    desc: 'Suma includes[] con la lista de entregables concretos. La ficha pinta la sección «Qué incluye» con checkmarks. Para servicios donde el cliente necesita saber exactamente qué recibe antes de escribir.',
+  },
+  {
+    nombre: 'Con pricing note',
+    tag: 'Precio transparente',
+    desc: 'Añade pricing.note con una nota de precio honesta («Bajo cotización según el alcance»). La ficha la muestra sin inventar una cifra fija. Para servicios con tarifa variable por proyecto.',
+  },
+  {
+    nombre: 'Con FAQs',
+    tag: 'Manejo de objeciones',
+    desc: 'faqs[] de pregunta/respuesta. La ficha pinta el FAQAccordion y el schema emite FAQPage. Resuelve las objeciones más comunes antes de que lleguen por WhatsApp.',
+  },
+  {
+    nombre: 'Con relacionados',
+    tag: 'Interlinking · Cross-sell',
+    desc: 'relatedServices/relatedProducts con reference() tipado. Enlaza a otras fichas por slug, validado en build. Reparte autoridad interna y sugiere el siguiente paso natural.',
+  },
+  {
+    nombre: 'Borrador (draft: true)',
+    tag: 'En redacción · Roadmap',
+    desc: 'draft:true mantiene el servicio FUERA del sitio: no entra al catálogo, no genera ficha, no aparece en el schema. Quitar el draft (o ponerlo en false) lo activa.',
+  },
+]
+
+// Recetas
+const recetaMd = `---
+# src/content/servicios/consultoria.md  → URL: /servicios/consultoria
+title: "Consultoría y diagnóstico para tu proyecto"
+description: "Antes de invertir, definimos contigo qué necesitas y por qué.
+  Diagnóstico claro, alcance recomendado y propuesta por escrito — sin venderte de más."
+category: "general"           # enum cerrado: instalacion | mantenimiento | general
+image: "/images/servicios/consultoria-desarrollo-web-astro.avif"
+pricing:
+  unit: "servicio"
+  note: "Bajo cotización según el alcance. Primera asesoría sin compromiso."
+includes:
+  - "Diagnóstico de tu necesidad y objetivos"
+  - "Recomendación de alcance en lenguaje claro"
+  - "Propuesta por escrito con tiempos y costo"
+faqs:
+  - question: "¿La asesoría tiene costo?"
+    answer: "La primera asesoría es sin compromiso."
+featured: true
+order: 1
+seoTitle: "Consultoría web | diagnóstico honesto"
+seoDescription: "Diagnóstico claro, alcance recomendado y propuesta por escrito.
+  Asesoría honesta, sin venderte de más."
+---
+
+## Consultoría: decidir bien antes de invertir
+
+Cuerpo en **Markdown**: se renderiza en la ficha de detalle.`
+
+const recetaSchema = `// src/content.config.ts — esquema Zod .strict() para la colección servicios.
+const servicios = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/servicios' }),
+  schema: z.object({
+    title:       z.string().min(10).max(110),
+    description: z.string().min(70).max(280),
+    category:    z.enum(['instalacion', 'mantenimiento', 'general']),
+    image:       imagePath,                       // OBLIGATORIA (regex /images/)
+    pricing: z.object({
+      unit: z.enum(['pieza','set','evento','hora','dia','mes','servicio']).optional(),
+      note: z.string().optional(),
+    }).optional(),
+    includes:        z.array(z.string()).optional(),
+    relatedServices: z.array(reference('servicios')).optional(),
+    relatedProducts: z.array(reference('productos')).optional(),
+    faqs:            faqSchema,
+    featured:        z.boolean().default(false),
+    order:           z.number().default(0),
+    draft:           z.boolean().default(false),
+    ...seoFields,
+  }).strict(),   // ← rechaza cualquier campo desconocido
+})`
+
+const recetaGet = `---
+// Cualquier página lee la colección con getCollection.
+import { getCollection } from 'astro:content'
+
+// Filtra borradores y ordena por 'order'.
+const servicios = (await getCollection('servicios', ({ data }) => !data.draft))
+  .sort((a, b) => a.data.order - b.data.order)
+---
+
+{servicios.map((s) => (
+  <ServiceCard
+    label={s.data.title}
+    href={\`/servicios/\${s.id}\`}
+    image={s.data.image}
+    desc={s.data.description}
+  />
+))}`
+
+const recetaMovil = `/* UNA FUENTE → MUCHAS VISTAS (el mismo .md, en cualquier pantalla).
+   El .md es el dato; no sabe de breakpoints.
+   El responsive vive en los componentes, no en el contenido. */
+.grid { grid-template-columns: 1fr; }
+@media (min-width: 768px) {
+  .grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+}`
+---
+
+<PageLayout
+  title="La colección de servicios — crear un servicio en Markdown"
+  description="Cómo se crea un servicio en un sitio Astro: un archivo Markdown en una Content Collection validada por Zod .strict(). Frontmatter, campos y generación automática."
+  pageType="page"
+  schemaType="TechArticle"
+  guia={false}
+  breadcrumbs={[{ label: 'Servicios', href: '/servicios' }, { label: 'La guía', href: '/servicios/guia' }, { label: 'La colección' }]}
+>
+  <Hero
+    badge="Guía de servicios · La colección"
+    title="La colección:"
+    accent="cómo nace un servicio"
+    subtitle="Crear un servicio en este sitio no es tocar código: es escribir un archivo Markdown. Cada .md es un servicio; un esquema Zod .strict() valida su frontmatter en build-time, y la ficha y el schema se generan solos."
+    descRight={[
+      'Esta es la pieza-raíz de la guía. Antes de hablar de copy, alcance, proceso, objeciones o conversión, conviene fijar qué es un servicio como DATO: una entrada en una Content Collection, no markup dibujado a mano. Esa decisión —contenido en colecciones, nunca hardcodeado— es la regla D1 del sistema.',
+      'Con una consecuencia que conviene marcar de entrada: el contenido y el diseño viven separados. El .md dice QUÉ es el servicio; el componente dice CÓMO se ve. Quien edita el catálogo escribe texto en Markdown; quien mantiene el diseño toca un componente, una vez, para todos los servicios.',
+    ]}
+  />
+
+  {/* ── 1) ¿QUÉ ES? ── */}
+  <ModSection
+    eyebrow="Definición"
+    title="¿Qué es la colección de servicios?"
+    desc="La carpeta src/content/servicios/ donde cada archivo Markdown es un servicio. Astro la carga como Content Collection y valida su frontmatter contra un esquema Zod .strict() en build-time."
+    body={[
+      'La colección de servicios es el conjunto de archivos .md que viven en src/content/servicios/. Cada archivo es un servicio: su frontmatter (la cabecera entre ---) declara los datos —título, descripción, categoría, imagen, pricing, includes, FAQs…— y su cuerpo Markdown es la descripción larga que se renderiza en la ficha. Astro 6 los carga con un loader glob y los expone con getCollection.',
+      'Lo que la vuelve una colección y no «unos archivos sueltos» es el esquema: un objeto Zod .strict() definido en src/content.config.ts que valida CADA servicio cuando se compila el sitio. El esquema es el contrato —qué campos existen, de qué tipo, qué rango— y .strict() es la garantía de que nadie cuela un campo inventado. Si un .md no cumple, el build falla con un mensaje claro.',
+    ]}
+  />
+
+  {/* ── 2) ¿PARA QUÉ SIRVE? ── */}
+  <ModSection
+    surface
+    eyebrow="Función e importancia"
+    title="¿Para qué sirve?"
+    desc="Hace tres trabajos a la vez: baja la barrera de crear un servicio a «saber escribir», valida el contenido en build (no en producción) y convierte un solo .md en la card, la ficha, el schema y el FAQ."
+    body={[
+      'Su función es separar el contenido del código. En un sitio sin colecciones, agregar un servicio significa copiar markup, con el riesgo de romper el diseño en cada copia. Con la colección, agregar un servicio es crear un .md: la landing y la ficha se regeneran solas. Quien escribe no necesita saber Astro; el sistema se encarga del resto.',
+      'Y por eso es la pieza-raíz: el mismo archivo alimenta cuatro salidas —la card del catálogo, la ficha L3, el schema Service y el FAQPage— sin duplicar el dato. La validación Zod atrapa los errores cuando se compila el sitio, no cuando un cliente abre una ficha rota.',
+    ]}
+  >
+    <ModBenefits items={beneficios} />
+  </ModSection>
+
+  {/* ── 3) ¿QUÉ LLEVA? — anatomía ── */}
+  <ModSection
+    eyebrow="Anatomía"
+    title="¿Qué lleva el frontmatter?"
+    desc="Cinco grupos de campos: identidad, clasificación, imagen, alcance+pricing y objeciones+relacionados. Cuatro campos son obligatorios; el resto enriquecen la ficha si vienen."
+    body={[
+      'El frontmatter es la cabecera del .md entre dos líneas de tres guiones. Cada campo cumple un papel y Zod lo vigila: los cuatro obligatorios (title, description, category, image) garantizan que ningún servicio entre incompleto al catálogo; los opcionales (includes, pricing, faqs, relatedServices, seoFields) enriquecen la ficha solo si vienen.',
+      'Abajo, el ejemplo en vivo —un frontmatter real anotado—. Cada punto numerado se desglosa en su tarjeta.',
+    ]}
+  >
+    <ModAnatomy partes={partes}>
+      <div class="fm" role="img" aria-label="Ejemplo de frontmatter de un servicio: identidad, clasificación, imagen, alcance y objeciones">
+        <div class="fm__bar"><span class="fm__dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="fm__name">consultoria.md</span></div>
+        <pre class="fm__code"><span class="fm__rule">---</span>
+<span class="fm__pin fm__pin--1">1</span><span class="fm__k">title:</span> <span class="fm__s">"Consultoría y diagnóstico"</span>
+<span class="fm__k">description:</span> <span class="fm__s">"Diagnóstico claro y propuesta…"</span>
+<span class="fm__pin fm__pin--2">2</span><span class="fm__k">category:</span> <span class="fm__s">"general"</span>
+<span class="fm__k">order:</span> <span class="fm__n">1</span>
+<span class="fm__pin fm__pin--3">3</span><span class="fm__k">image:</span> <span class="fm__s">"/images/servicios/consultoria.avif"</span>
+<span class="fm__pin fm__pin--4">4</span><span class="fm__k">pricing:</span>
+  <span class="fm__k">note:</span> <span class="fm__s">"Bajo cotización"</span>
+<span class="fm__k">includes:</span>
+  <span class="fm__c">- "Diagnóstico y recomendación"</span>
+<span class="fm__pin fm__pin--5">5</span><span class="fm__k">faqs:</span>
+  <span class="fm__c">- question: "¿Tiene costo la asesoría?"</span>
+<span class="fm__rule">---</span></pre>
+      </div>
+    </ModAnatomy>
+  </ModSection>
+
+  {/* ── Variantes ── */}
+  <ModSection
+    surface
+    eyebrow="Variantes"
+    title="Configuraciones del frontmatter"
+    desc="Un servicio puede ir desde lo mínimo (cuatro campos) hasta una ficha rica con alcance, FAQs y relacionados. Todas son configuraciones del esquema actual: se obtienen poniendo o quitando campos opcionales."
+    body={[
+      'No hay un único molde: hay un esquema con cuatro campos obligatorios y varios opcionales que cada servicio activa según lo que necesite. Un servicio simple va al mínimo; uno estratégico lleva includes, FAQs y relacionados.',
+      'Abajo, seis configuraciones —todas válidas hoy—. Cada una con el tipo de servicio donde rinde mejor.',
+    ]}
+  >
+    <GaleriaDisenos ariaLabel="Configuraciones del frontmatter de un servicio">
+      {disenos.map((d) => (
+        <DisenoCard nombre={d.nombre} tag={d.tag} desc={d.desc}>
+          <div class="fmv">
+            <span class="fmv__row fmv__row--req">title · description</span>
+            <span class="fmv__row fmv__row--req">category · image</span>
+            {d.nombre.includes('alcance') && <span class="fmv__row fmv__row--opt">includes[]</span>}
+            {d.nombre.includes('pricing') && <span class="fmv__row fmv__row--opt">pricing.note</span>}
+            {d.nombre.includes('FAQ') && <span class="fmv__row fmv__row--opt">faqs[]</span>}
+            {d.nombre.includes('relacionados') && <span class="fmv__row fmv__row--opt">relatedServices[]</span>}
+            {d.nombre.includes('Borrador') && <span class="fmv__row fmv__row--draft">draft: true</span>}
+            {d.nombre.includes('Mínimo') && <span class="fmv__row fmv__row--muted">— nada opcional —</span>}
+          </div>
+        </DisenoCard>
+      ))}
+    </GaleriaDisenos>
+
+    <GuiaNota titulo="La colección ≠ el dropdown del menú" archivo="src/config/site.ts">
+      <p>
+        Son dos SSoTs distintos: la colección (<code>src/content/servicios/</code>) es el DATO
+        completo de cada servicio; <code>SERVICES</code> en <code>site.ts</code> es la fuente del
+        dropdown del Header y la landing <code>/servicios</code>. Para agregar un servicio al menú
+        y la landing debes añadirlo a <strong>ambos</strong>: el .md para el dato, el array
+        <code>SERVICES</code> para la navegación. Si solo lo añades al .md, la ficha existe pero
+        el menú no lo enlaza.
+      </p>
+    </GuiaNota>
+  </ModSection>
+
+  {/* ── Responsive ── */}
+  <ModSection
+    eyebrow="Responsive y móvil"
+    title="El mismo .md, en cualquier pantalla"
+    desc="El frontmatter no tiene breakpoints. Un servicio es un dato; la card y la ficha lo leen y se adaptan solos. El responsive vive en los componentes, no en el contenido."
+    body={[
+      'La gran ventaja de separar contenido y diseño se nota aquí: el frontmatter es agnóstico de la pantalla. El teléfono y el escritorio reciben el mismo servicio —mismo título, misma imagen, mismo includes[]— y cada vista decide cómo presentarlo.',
+      'Y el filtrado y el orden (draft, order) viven en getCollection, antes de pintar: el teléfono recibe exactamente los servicios publicados y en el mismo orden. Abajo, el patrón con su receta.',
+    ]}
+  >
+    <ModResponsive>
+      <ModPattern
+        title="Una fuente, muchas vistas"
+        desc="El <code>.md</code> es el dato; no sabe de breakpoints. La card, la ficha y el schema lo leen y cada uno se adapta. El responsive vive en el componente, no en el contenido."
+        receta={{ titulo: 'CSS · responsive en el componente (no en el .md)', lang: 'css', code: recetaMovil }}
+      >
+        <MarcoMovil ariaLabel="El mismo Markdown alimenta la card y la ficha en el teléfono">
+          <div class="cm">
+            <span class="cm__src">consultoria.md</span>
+            <span class="cm__arrow">↓</span>
+            <span class="cm__card"><i class="cm__img"></i><b class="cm__t"></b><b class="cm__d"></b></span>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+    </ModResponsive>
+  </ModSection>
+
+  {/* ── ¿Dónde va? ── */}
+  <ModSection
+    surface
+    eyebrow="Posición"
+    title="¿Dónde vive?"
+    desc="Un archivo .md por servicio en src/content/servicios/. El nombre del archivo es el slug de la URL. El esquema vive en src/content.config.ts; ambos se sincronizan con SERVICES en site.ts."
+    body={[
+      'Cada servicio es un archivo en src/content/servicios/<slug>.md, y ese slug es la URL de su ficha (/servicios/<slug>). Para crear un servicio, creas un archivo; para borrarlo, lo borras. El esquema vive aparte, en src/content.config.ts, y los slugs de su enum SERVICE_CATEGORIES deben coincidir con la taxonomía en site.ts.',
+      'Además, el slug del archivo debe coincidir con el id del servicio en el array SERVICES de site.ts, que es la fuente del menú. Si ambos están en sync, el dropdown, la landing y la ficha de detalle apuntan al mismo lugar.',
+    ]}
+  />
+
+  {/* ── Cómo se construye ── */}
+  <ModSection
+    eyebrow="Implementación"
+    title="Cómo se construye"
+    desc="Tres piezas: el esquema Zod .strict() (content.config.ts), un archivo de servicio (.md con frontmatter) y la lectura con getCollection. El loader glob conecta la carpeta con la colección."
+    body={[
+      'El esquema se define una vez con defineCollection: un loader glob apunta a src/content/servicios/**/*.md y un schema Zod .strict() valida cada campo en build. Crear un servicio es escribir el .md; consumirlo es llamar getCollection(\'servicios\'), filtrar drafts y ordenar por order.',
+      'Abajo, las tres recetas reales del sistema.',
+    ]}
+  >
+    <div class="recetas">
+      <Receta titulo="content.config.ts · esquema Zod .strict()" lang="ts" code={recetaSchema} />
+      <Receta titulo="src/content/servicios/consultoria.md" lang="markdown" code={recetaMd} />
+      <Receta titulo="Astro · leer la colección" lang="astro" code={recetaGet} />
+    </div>
+    <ModProse>
+      <p>
+        <code>defineCollection</code> recibe un <code>loader: glob(...)</code> que carga todos los
+        <code>.md</code> y un <code>schema</code> cerrado con <code>.strict()</code>. Un campo mal
+        escrito, una categoría fuera del enum o una imagen sin <code>/images/</code> detienen la
+        compilación con la ruta del archivo y el campo culpable. Al consumir,
+        <code>getCollection('servicios', filtro)</code> devuelve un array tipado donde cada entrada
+        trae <code>id</code> (el slug) y <code>data</code> (el frontmatter validado).
+      </p>
+    </ModProse>
+  </ModSection>
+
+  {/* ── Buenas prácticas ── */}
+  <ModSection
+    surface
+    eyebrow="Buenas prácticas"
+    title="Qué hacer y qué evitar"
+    desc="La colección valida sola cuando se respeta el esquema. El detalle a vigilar: mantener en sync la colección (dato) con SERVICES en site.ts (menú)."
+    body={[
+      'Casi todo se sostiene solo cuando se respeta la colección y el esquema Zod. La única sincronía manual es la que existe entre la colección (archivo .md) y el array SERVICES de site.ts (la fuente del menú): si añades un servicio a la colección pero no a SERVICES, la ficha existe pero el menú no lo enlaza.',
+      'Abajo, lo que conviene y lo que conviene evitar, enfrentados.',
+    ]}
+  >
+    <ModDosDonts sis={sis} nos={nos} />
+  </ModSection>
+
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando la guía de servicios" />
+  <RelatedLinks
+    title="Continúa con la guía"
+    desc="Los siguientes pasos del flujo de crear una página de servicio."
+    links={[
+      { label: 'El copy', href: '/servicios/guia/el-copy', desc: 'La propuesta de valor en el hero.' },
+      { label: 'El alcance', href: '/servicios/guia/el-alcance', desc: 'Qué incluye el servicio: la lista honesta.' },
+      { label: 'El proceso', href: '/servicios/guia/el-proceso', desc: 'Los 3 pasos del trabajo.' },
+    ]}
+    limit={3}
+  />
+</PageLayout>
+
+<style>
+  .recetas { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
+
+  .fm { margin: var(--sp-6) auto 0; max-width: 480px; border: 1px solid #21262d; border-radius: var(--radius-md); overflow: hidden; background: #0d1117; }
+  .fm__bar { display: flex; align-items: center; gap: 10px; padding: .5rem .8rem; background: #161b22; border-bottom: 1px solid #21262d; }
+  .fm__dots { display: inline-flex; gap: 6px; }
+  .fm__dots i { width: 10px; height: 10px; border-radius: 50%; background: #30363d; }
+  .fm__dots i:nth-child(1) { background: #ff5f56; }
+  .fm__dots i:nth-child(2) { background: #ffbd2e; }
+  .fm__dots i:nth-child(3) { background: #27c93f; }
+  .fm__name { font-family: ui-monospace, Menlo, monospace; font-size: var(--text-xs); color: #8b949e; }
+  .fm__code { margin: 0; padding: var(--sp-4) var(--sp-5); font-family: ui-monospace, Menlo, monospace; font-size: .72rem; line-height: 1.9; color: #c9d1d9; white-space: pre-wrap; position: relative; }
+  .fm__rule { color: #6e7681; }
+  .fm__k { color: #79c0ff; }
+  .fm__s { color: #a5d6ff; }
+  .fm__n { color: #ffa657; }
+  .fm__c { color: #8b949e; font-style: italic; }
+  .fm__pin { position: absolute; left: 6px; display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-size: .58rem; font-weight: 700; }
+
+  .fmv { display: flex; flex-direction: column; gap: 4px; width: 100%; font-family: ui-monospace, Menlo, monospace; font-size: 10px; }
+  .fmv__row { padding: 4px 7px; border-radius: 5px; border: 1px solid var(--c-border); }
+  .fmv__row--req { background: rgba(var(--c-primary-rgb), .08); color: var(--c-primary-dark); border-color: rgba(var(--c-primary-rgb), .2); }
+  .fmv__row--opt { background: var(--c-white); color: var(--c-ink-2); }
+  .fmv__row--draft { background: rgba(239,68,68,.08); color: #dc2626; border-color: rgba(239,68,68,.2); }
+  .fmv__row--muted { background: var(--c-surface); color: var(--c-muted); font-style: italic; }
+
+  .cm { padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .cm__src { font-family: ui-monospace, Menlo, monospace; font-size: 10px; color: var(--c-primary-dark); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 6px; padding: 4px 8px; }
+  .cm__arrow { color: var(--c-muted); font-size: 14px; }
+  .cm__card { width: 100%; display: grid; gap: 6px; padding: 8px; border-radius: 9px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .cm__img { display: block; height: 64px; border-radius: 6px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .cm__t { height: 9px; width: 70%; border-radius: 4px; background: var(--c-ink); opacity: .8; }
+  .cm__d { height: 7px; width: 92%; border-radius: 4px; background: var(--c-surface); border: 1px solid var(--c-border); }
+</style>

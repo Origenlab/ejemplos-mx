@@ -1,0 +1,392 @@
+---
+// ============================================================================
+// /servicios/guia/las-objeciones — PIEZA «Las objeciones» de la guía.
+// Quinta de la serie: la-coleccion · el-copy · el-alcance · el-proceso ·
+// las-objeciones · la-conversion.
+// Tema: faqs[] en el frontmatter → FAQAccordion (details/summary nativo, sin JS)
+// + schema FAQPage emitido por buildSchema() en lib/seo.ts.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import RelatedLinks from '@components/RelatedLinks.astro'
+import ModSection from '@components/modulos/ModSection.astro'
+import ModBenefits from '@components/modulos/ModBenefits.astro'
+import ModAnatomy from '@components/modulos/ModAnatomy.astro'
+import ModResponsive from '@components/modulos/ModResponsive.astro'
+import ModPattern from '@components/modulos/ModPattern.astro'
+import ModProse from '@components/modulos/ModProse.astro'
+import ModDosDonts from '@components/modulos/ModDosDonts.astro'
+import { WA_MESSAGES, waUrl } from '@config/site'
+import { siblingsServicios } from '@lib/servicios'
+
+const cierreItems = siblingsServicios('las-objeciones')
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.servicios), sub: 'Respuesta inmediata', external: true }
+
+const partes = [
+  {
+    n: 1,
+    nombre: 'El array faqs[]',
+    que: 'Lista de objetos { question, answer } en el frontmatter del servicio. Zod valida que question y answer sean strings no vacíos. El array es opcional; si viene, FAQAccordion y el schema FAQPage se activan solos.',
+    dato: 'faqs?: { question: string, answer: string }[]',
+  },
+  {
+    n: 2,
+    nombre: 'question — la objeción en voz del cliente',
+    que: 'La pregunta tal como el cliente la haría por WhatsApp. Escrita en su voz («¿Atienden mi zona?»), no desde el proveedor. La pregunta correcta es la que resuelve la objeción real que frena la conversión.',
+    dato: 'question: string — voz del cliente, no del proveedor',
+  },
+  {
+    n: 3,
+    nombre: 'answer — el dato primero',
+    que: 'La respuesta directa: primero el dato («Sí, atendemos toda la CDMX y Estado de México») y luego el matiz si aplica. Sin rodeos. Una respuesta que requiere tres párrafos para llegar al «sí» o el «no» no resuelve la objeción.',
+    dato: 'answer: string — dato primero, matiz después si aplica',
+  },
+  {
+    n: 4,
+    nombre: 'FAQAccordion — details/summary nativo',
+    que: 'El componente que renderiza faqs[] en la ficha L3 con el elemento HTML details/summary: sin JavaScript, accesible de teclado, indexable por crawlers aunque el acordeón esté cerrado.',
+    dato: 'FAQAccordion · details/summary nativo · sin JS · WCAG compliant',
+  },
+  {
+    n: 5,
+    nombre: 'Schema FAQPage — la salida semántica',
+    que: 'El mismo faqs[] alimenta el schema FAQPage via buildSchema(). Una fuente, dos salidas. Nota: desde mayo 2026 Google restringió los FAQPage rich results; el schema sigue siendo correcto semánticamente.',
+    dato: '@type:"FAQPage" en el JSON-LD @graph — misma fuente que el componente',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'Una fuente, dos usos',
+    desc: 'faqs[] en el frontmatter alimenta el FAQAccordion en la página y el schema FAQPage en el JSON-LD. Se escribe una vez en el .md y el sistema hace el resto. Actualizar una respuesta propaga el cambio a ambas salidas en el siguiente build.',
+  },
+  {
+    titulo: 'Sin JavaScript — rendimiento y accesibilidad',
+    desc: 'FAQAccordion usa details/summary nativo: funciona sin una sola línea de JS. Accesible de teclado (Tab + Enter), indexable por Google aunque esté cerrado, compatible con lectores de pantalla sin ARIA adicional. El Core Web Vitals no se ve afectado.',
+  },
+  {
+    titulo: 'Leads cualificados antes del WhatsApp',
+    desc: 'El cliente que llega al chat ya leyó el alcance, el proceso y las FAQs. Las conversaciones son más cortas y van al grano. Las objeciones escritas filtran a quien no encaja antes de que llegue por WhatsApp.',
+  },
+]
+
+const sis = [
+  'Escribe las FAQs en voz del cliente: «¿Cuánto cuesta?» es mejor pregunta que «¿Cuál es su modelo de precios?». La objeción real es la del cliente.',
+  'Responde con el dato primero. «Sí, atendemos CDMX y Estado de México» es una respuesta; «Dependiendo de varios factores…» no lo es.',
+  'Limita faqs[] a 5-8 preguntas por servicio: las que realmente llegan por WhatsApp, no las imaginadas.',
+  'Revisa las FAQs cada trimestre: si las mismas preguntas siguen llegando al chat, las respuestas no son lo suficientemente claras.',
+  'Para FAQs que aplican a todos los servicios, considera una página /preguntas-frecuentes global que complemente las específicas de cada ficha.',
+]
+const nos = [
+  'NO pongas preguntas que nadie hace. Las FAQs son para resolver objeciones reales, no para parecer exhaustivo.',
+  'NO dejes respuestas vagas. «Depende del proyecto» sin especificar de qué depende no resuelve nada. Si varía, da el rango: «Entre 3 y 10 días hábiles».',
+  'NO dupliques en las FAQs el contenido ya explicado en el alcance o el proceso. Cada sección cumple su función.',
+  'NO uses faqs[] como sección de marketing. «¿Por qué son los mejores?» con respuesta elogiosa no es una FAQ.',
+  'NO olvides actualizar las FAQs cuando cambia el servicio. Un precio o zona desactualizados en una FAQ rompen la confianza.',
+]
+
+const disenos = [
+  { nombre: 'Objeción geográfica', tag: 'Zona · Cobertura', desc: '«¿Atienden mi zona?» con las zonas cubiertas y excepciones. Filtra leads fuera del área antes del chat.' },
+  { nombre: 'Objeción de tiempo', tag: 'Tiempo · Plazos', desc: '«¿Cuánto tarda?» con rango estimado. Maneja la expectativa del cliente antes del contacto.' },
+  { nombre: 'Objeción de precio', tag: 'Precio · Cotización', desc: '«¿Cuánto cuesta?» con el modelo de cotización honesto. Explica cómo se determina el precio sin inventar cifras.' },
+  { nombre: 'Objeción de confianza', tag: 'Garantía · Riesgo', desc: '«¿Qué pasa si no quedo satisfecho?» Responde el riesgo percibido antes de comprometerse.' },
+  { nombre: 'Cualificación de lead', tag: 'Perfil · Filtro', desc: '«¿Para quién es este servicio?» Filtra proactivamente a clientes que no encajan antes del WhatsApp.' },
+  { nombre: 'Mínimo (sin faqs[])', tag: 'Borrador · Arranque', desc: 'faqs[] es opcional. Sin él, FAQAccordion y FAQPage se omiten. Se añade cuando se identifican las primeras objeciones reales.' },
+]
+
+const recetaFrontmatter = `---
+# src/content/servicios/instalacion-camaras.md
+title: "Instalación de cámaras de seguridad IP"
+description: "Diseño, instalación y configuración de sistemas de cámaras IP para
+  hogar y negocio. Cobertura CDMX y Estado de México. Garantía de 12 meses."
+category: "instalacion"
+image: "/images/servicios/instalacion-camaras-seguridad-ip.avif"
+faqs:
+  - question: "¿Atienden mi zona?"
+    answer: "Sí. Atendemos toda la Ciudad de México y el Estado de México. Para
+      zonas fuera de esa área, escríbenos por WhatsApp para evaluar."
+  - question: "¿Cuánto tarda la instalación?"
+    answer: "Entre 4 y 8 horas para una instalación residencial estándar (4-8
+      cámaras). Para instalaciones comerciales hacemos diagnóstico previo."
+  - question: "¿Qué garantía tienen?"
+    answer: "12 meses en materiales y 3 meses en mano de obra. Si algo falla
+      por causas de instalación en ese periodo, regresamos sin costo adicional."
+---`
+
+const recetaAccordion = `---
+// src/pages/servicios/[...slug].astro — FAQAccordion condicional.
+import FAQAccordion from '@components/FAQAccordion.astro'
+const { entry } = Astro.props
+---
+{entry.data.faqs && entry.data.faqs.length > 0 && (
+  <section aria-labelledby="faq-heading">
+    <h2 id="faq-heading">Preguntas frecuentes</h2>
+    {/* details/summary nativo: sin JS, accesible, indexable */}
+    <FAQAccordion items={entry.data.faqs} />
+  </section>
+)}`
+
+const recetaSchema = `// lib/seo.ts — faqSchema() y su uso en buildSchema().
+function faqSchema(faqs: { question: string; answer: string }[]) {
+  return {
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((f) => ({
+      '@type': 'Question',
+      name: f.question,
+      acceptedAnswer: { '@type': 'Answer', text: f.answer },
+    })),
+  }
+}
+// buildSchema({ ..., faqs: entry.data.faqs })
+// → incluye FAQPage en el @graph si el array viene y no está vacío.`
+
+const recetaMovil = `/* FAQAccordion responsive: details/summary nativo.
+   Touch target ≥44px en el summary. Ícono con CSS puro, sin JS. */
+.faq-item details summary {
+  padding: var(--sp-4) var(--sp-5);
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.faq-item details[open] summary::after { content: "×"; color: var(--c-primary); }
+.faq-item details:not([open]) summary::after { content: "+"; }`
+---
+
+<PageLayout
+  title="Las objeciones del servicio — faqs[], FAQAccordion y schema FAQPage"
+  description="Cómo documentar las preguntas reales del cliente en faqs[]: el campo que alimenta el FAQAccordion (details/summary nativo, sin JS) y emite el schema FAQPage en el JSON-LD."
+  pageType="page"
+  schemaType="TechArticle"
+  guia={false}
+  breadcrumbs={[{ label: 'Servicios', href: '/servicios' }, { label: 'La guía', href: '/servicios/guia' }, { label: 'Las objeciones' }]}
+>
+  <Hero
+    badge="Guía de servicios · Las objeciones"
+    title="Las objeciones:"
+    accent="FAQs que convierten"
+    subtitle="El campo faqs[] del frontmatter convierte las preguntas reales del cliente en un acordeón nativo (sin JS) y emite el schema FAQPage. Una fuente, dos salidas: el componente en la ficha y el JSON-LD para Google."
+    descRight={[
+      'Las FAQs no son marketing: son las objeciones del cliente escritas en su voz antes de que lleguen por WhatsApp. El cliente que llega al chat ya leyó el alcance, el proceso y las respuestas a sus dudas. Las conversaciones son más cortas, más precisas y cierran antes.',
+      'El FAQAccordion usa details/summary HTML nativo — sin JavaScript, accesible de teclado, indexable por crawlers aunque el acordeón esté cerrado. El mismo array faqs[] emite el schema FAQPage vía buildSchema(). Una sola fuente, ningún dato duplicado.',
+    ]}
+  />
+
+  <ModSection
+    eyebrow="Definición"
+    title="¿Qué es faqs[] y el FAQAccordion?"
+    desc="Un array de { question, answer } en el frontmatter que alimenta el acordeón de la ficha L3 y el schema FAQPage. Si viene, ambas salidas se activan; si no, se omiten."
+    body={[
+      'faqs[] es un campo opcional del frontmatter de cada servicio: una lista de pares pregunta/respuesta que Zod valida en build-time. Si el array viene, la ficha L3 pinta el FAQAccordion y buildSchema() incluye el schema FAQPage en el @graph del JSON-LD. Si no viene, ninguna de las dos cosas aparece.',
+      'El FAQAccordion envuelve cada FAQ en un elemento HTML details/summary. Native browser API: sin JavaScript, sin librerías de UI. Funciona con teclado, es accesible con lectores de pantalla y los crawlers de Google pueden leer el contenido aunque el acordeón esté cerrado en la vista inicial.',
+    ]}
+  />
+
+  <ModSection
+    surface
+    eyebrow="Función e importancia"
+    title="¿Para qué sirve?"
+    desc="Resuelve las objeciones del cliente antes del contacto, reduce la fricción del primer WhatsApp y cualifica el lead. Un lado extra: la semántica FAQPage es útil aunque los rich results de Google sean más restrictivos desde mayo 2026."
+    body={[
+      'Las FAQs cumplen un trabajo de ventas: responden las preguntas que el cliente tiene antes de decidir si escribe por WhatsApp. «¿Atienden mi zona?» filtra por geografía. «¿Cuánto tarda?» maneja la expectativa. «¿Qué pasa si no quedo satisfecho?» resuelve el riesgo percibido. Cada FAQ bien escrita convierte un freno en una razón para seguir adelante.',
+      'El schema FAQPage que emite buildSchema() coloca las preguntas en el JSON-LD. Nota: desde mayo de 2026 Google restringió cuándo muestra FAQPage como resultado enriquecido, aunque el schema sigue siendo semánticamente correcto y la fuente única garantiza que página y schema estén siempre sincronizados.',
+    ]}
+  >
+    <ModBenefits items={beneficios} />
+  </ModSection>
+
+  <ModSection
+    eyebrow="Anatomía"
+    title="¿Qué lleva cada FAQ?"
+    desc="Dos campos: question (la objeción en voz del cliente) y answer (el dato primero). El array completo alimenta el componente y el schema desde una sola fuente."
+    body={[
+      'Cada ítem del array faqs[] es un objeto con dos campos obligatorios: question y answer. Zod los valida como strings no vacíos — una pregunta sin respuesta rompe el build con mensaje claro. El orden del array es el orden de aparición en el acordeón.',
+      'Abajo, el ejemplo anotado de un servicio real. Cada punto numerado explica la decisión detrás del campo.',
+    ]}
+  >
+    <ModAnatomy partes={partes}>
+      <div class="faq" role="img" aria-label="Ejemplo de faqs[]: pregunta en voz del cliente, respuesta con dato primero">
+        <div class="faq__bar"><span class="faq__dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="faq__name">instalacion-camaras.md</span></div>
+        <div class="faq__body">
+          <span class="faq__k"><span class="faq__pin faq__pin--1">1</span>faqs:</span>
+          <span class="faq__item">
+            <span class="faq__q"><span class="faq__pin faq__pin--2">2</span>¿Atienden mi zona?</span>
+            <span class="faq__a"><span class="faq__pin faq__pin--3">3</span>Sí. CDMX y Estado de México.</span>
+          </span>
+          <span class="faq__item">
+            <span class="faq__q">¿Cuánto tarda la instalación?</span>
+            <span class="faq__a">4-8 horas para instalación residencial.</span>
+          </span>
+          <span class="faq__comp"><span class="faq__pin faq__pin--4">4</span>FAQAccordion ← details/summary nativo</span>
+          <span class="faq__comp faq__comp--schema"><span class="faq__pin faq__pin--5">5</span>@type: FAQPage → JSON-LD</span>
+        </div>
+      </div>
+    </ModAnatomy>
+  </ModSection>
+
+  <ModSection
+    surface
+    eyebrow="Variantes"
+    title="Tipos de objeción por servicio"
+    desc="Las FAQs más útiles responden una de cinco familias de objeción: geográfica, temporal, de precio, de confianza y de cualificación."
+    body={[
+      'No hay un catálogo universal: cada servicio tiene sus propias objeciones. Pero casi todas caen en cinco familias. Identificar a cuál pertenece cada pregunta ayuda a redactar la respuesta correcta.',
+      'Abajo, seis configuraciones de faqs[] ordenadas por tipo de objeción.',
+    ]}
+  >
+    <GaleriaDisenos ariaLabel="Tipos de objeción para el campo faqs[]">
+      {disenos.map((d) => (
+        <DisenoCard nombre={d.nombre} tag={d.tag} desc={d.desc}>
+          <div class="faqv">
+            <span class="faqv__q">{d.tag.split(' · ')[0]}</span>
+            <span class="faqv__arrow">↓</span>
+            <span class="faqv__a">Dato primero · respuesta directa</span>
+            {!d.nombre.includes('Mínimo') && <span class="faqv__badge">FAQAccordion + FAQPage</span>}
+            {d.nombre.includes('Mínimo') && <span class="faqv__badge faqv__badge--off">Sin faqs[] — sección omitida</span>}
+          </div>
+        </DisenoCard>
+      ))}
+    </GaleriaDisenos>
+    <GuiaNota titulo="FAQs específicas vs. generales" archivo="src/content/servicios/">
+      <p>
+        Las FAQs de un servicio responden lo específico de ese servicio. Las FAQs generales
+        del negocio (política de garantía, métodos de pago, cobertura global) pueden vivir
+        en una página <code>/preguntas-frecuentes</code> y enlazarse desde cada ficha.
+        No repitas en cada servicio lo que es igual para todos.
+      </p>
+    </GuiaNota>
+  </ModSection>
+
+  <ModSection
+    eyebrow="Responsive y móvil"
+    title="El acordeón nativo en pantallas pequeñas"
+    desc="details/summary es HTML nativo: funciona en móvil sin JavaScript. El único ajuste responsive es el touch target del summary (≥44px) para que el toque sea cómodo."
+    body={[
+      'FAQAccordion no tiene dependencias de JS: cada pregunta es un details y el resumen es un summary. En móvil, el touch target debe ser de al menos 44px de altura (WCAG 2.5.5). El ícono de expandir/cerrar se añade con CSS puro (::after), sin ningún evento de clic en JavaScript.',
+      'En una pantalla de 375px, listar 6 respuestas completas empuja el CTA de conversión muy abajo del fold. Con details/summary, el visitante expande solo lo que le interesa y llega antes al WhatsApp.',
+    ]}
+  >
+    <ModResponsive>
+      <ModPattern
+        title="FAQAccordion nativo en móvil"
+        desc="details/summary HTML puro: sin JS, touch target ≥44px, accesible. El ícono + / × se añade con CSS ::after."
+        receta={{ titulo: 'CSS · touch target y control del ícono sin JS', lang: 'css', code: recetaMovil }}
+      >
+        <MarcoMovil ariaLabel="FAQAccordion en teléfono: preguntas colapsadas, una expandida">
+          <div class="mfaq">
+            <span class="mfaq__title">Preguntas frecuentes</span>
+            <span class="mfaq__item mfaq__item--open">
+              <span class="mfaq__q">¿Atienden mi zona? <b>×</b></span>
+              <span class="mfaq__a">Sí. CDMX y Estado de México.</span>
+            </span>
+            <span class="mfaq__item"><span class="mfaq__q">¿Cuánto tarda? <b>+</b></span></span>
+            <span class="mfaq__item"><span class="mfaq__q">¿Qué garantía tienen? <b>+</b></span></span>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+    </ModResponsive>
+  </ModSection>
+
+  <ModSection
+    surface
+    eyebrow="Posición"
+    title="¿Dónde vive?"
+    desc="faqs[] en el frontmatter del .md. FAQAccordion en la ficha L3 antes del cierre. buildSchema() emite FAQPage desde lib/seo.ts automáticamente."
+    body={[
+      'El campo faqs[] está en el frontmatter del archivo de servicio (src/content/servicios/). El FAQAccordion va en el layout de la ficha L3, antes del cierre: el visitante lee las FAQs, resuelve sus dudas y llega al CTA de WhatsApp con la decisión más madura.',
+      'buildSchema() recibe el array desde la página y lo incluye en el JSON-LD si no está vacío. No hay que tocar lib/seo.ts para añadir FAQs: el cambio en el .md se propaga solo en el siguiente build.',
+    ]}
+  />
+
+  <ModSection
+    eyebrow="Implementación"
+    title="Cómo se construye"
+    desc="Tres piezas: faqs[] en el frontmatter, FAQAccordion condicional en la ficha L3, y la emisión del schema FAQPage desde buildSchema()."
+    body={[
+      'El flujo: se añade faqs[] al .md, se verifica que el layout de la ficha L3 tenga el bloque condicional con FAQAccordion, y buildSchema() hace el resto.',
+      'Abajo, las tres recetas del sistema.',
+    ]}
+  >
+    <div class="recetas">
+      <Receta titulo="frontmatter · campo faqs[] con objeciones reales" lang="markdown" code={recetaFrontmatter} />
+      <Receta titulo="ServiceLayout · FAQAccordion condicional en la ficha L3" lang="astro" code={recetaAccordion} />
+      <Receta titulo="lib/seo.ts · emisión del schema FAQPage" lang="ts" code={recetaSchema} />
+    </div>
+    <ModProse>
+      <p>
+        El bloque condicional en el layout (<code>entry.data.faqs {'&&'} entry.data.faqs.length {'>'} 0</code>)
+        garantiza que <code>FAQAccordion</code> solo aparezca cuando hay preguntas que mostrar.
+        Lo mismo aplica al schema: <code>buildSchema()</code> revisa si el array viene antes de incluir
+        el bloque <code>FAQPage</code> en el <code>@graph</code>.
+      </p>
+    </ModProse>
+  </ModSection>
+
+  <ModSection
+    surface
+    eyebrow="Buenas prácticas"
+    title="Qué hacer y qué evitar"
+    desc="Las FAQs que convierten se escriben desde el cliente, responden con el dato primero y se revisan cuando las mismas preguntas siguen llegando al chat."
+    body={[
+      'La diferencia entre FAQs que funcionan y FAQs que son relleno está en la perspectiva: las que funcionan son las preguntas que el cliente haría si estuviera sentado frente a ti, antes de firmar.',
+      'Abajo, los patrones concretos.',
+    ]}
+  >
+    <ModDosDonts sis={sis} nos={nos} />
+  </ModSection>
+
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando la guía de servicios" />
+  <RelatedLinks
+    title="Continúa con la guía"
+    desc="El siguiente paso: cerrar el servicio con conversión WhatsApp-first."
+    links={[
+      { label: 'La conversión', href: '/servicios/guia/la-conversion', desc: 'WhatsApp-first, CTAs honestos y el SectionMenu que convierte.' },
+      { label: 'El proceso', href: '/servicios/guia/el-proceso', desc: 'Los 3 pasos del trabajo: predecible y sin incertidumbre.' },
+      { label: 'El alcance', href: '/servicios/guia/el-alcance', desc: 'Qué incluye el servicio: la lista honesta de entregables.' },
+    ]}
+    limit={3}
+  />
+</PageLayout>
+
+<style>
+  .recetas { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
+  .faq { margin: var(--sp-6) auto 0; max-width: 480px; border: 1px solid #21262d; border-radius: var(--radius-md); overflow: hidden; background: #0d1117; }
+  .faq__bar { display: flex; align-items: center; gap: 10px; padding: .5rem .8rem; background: #161b22; border-bottom: 1px solid #21262d; }
+  .faq__dots { display: inline-flex; gap: 6px; }
+  .faq__dots i { width: 10px; height: 10px; border-radius: 50%; background: #30363d; }
+  .faq__dots i:nth-child(1) { background: #ff5f56; }
+  .faq__dots i:nth-child(2) { background: #ffbd2e; }
+  .faq__dots i:nth-child(3) { background: #27c93f; }
+  .faq__name { font-family: ui-monospace, Menlo, monospace; font-size: var(--text-xs); color: #8b949e; }
+  .faq__body { padding: var(--sp-4) var(--sp-5); display: flex; flex-direction: column; gap: .6rem; font-family: ui-monospace, Menlo, monospace; font-size: .72rem; position: relative; }
+  .faq__k { color: #79c0ff; font-size: .75rem; }
+  .faq__item { padding: .5rem .75rem; background: #161b22; border-radius: 6px; border: 1px solid #21262d; display: flex; flex-direction: column; gap: .25rem; }
+  .faq__q { color: #a5d6ff; }
+  .faq__a { color: #8b949e; font-style: italic; }
+  .faq__comp { padding: .4rem .75rem; border-radius: 5px; background: rgba(var(--c-primary-rgb), .1); color: var(--c-primary-dark); border: 1px solid rgba(var(--c-primary-rgb), .25); font-size: .65rem; }
+  .faq__comp--schema { background: rgba(99,102,241,.1); color: #6366f1; border-color: rgba(99,102,241,.25); }
+  .faq__pin { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-size: .58rem; font-weight: 700; margin-right: 6px; vertical-align: middle; flex-shrink: 0; }
+  .faq__pin--1, .faq__pin--2, .faq__pin--3, .faq__pin--4, .faq__pin--5 { display: inline-grid; }
+  .faqv { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; font-family: ui-monospace, Menlo, monospace; font-size: 10px; }
+  .faqv__q { padding: 5px 8px; border-radius: 5px; border: 1px solid var(--c-border); background: rgba(var(--c-primary-rgb), .06); color: var(--c-primary-dark); font-style: italic; text-align: center; width: 100%; }
+  .faqv__arrow { color: var(--c-muted); font-size: 12px; }
+  .faqv__a { padding: 4px 8px; border-radius: 5px; border: 1px solid var(--c-border); background: var(--c-white); color: var(--c-ink-2); width: 100%; text-align: center; }
+  .faqv__badge { margin-top: 2px; padding: 3px 7px; border-radius: 10px; background: rgba(var(--c-primary-rgb), .1); color: var(--c-primary-dark); font-size: 9px; }
+  .faqv__badge--off { background: var(--c-surface); color: var(--c-muted); }
+  .mfaq { padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .mfaq__title { font-family: var(--font-heading); font-size: 11px; font-weight: 700; color: var(--c-ink); margin-bottom: 4px; }
+  .mfaq__item { border: 1px solid var(--c-border); border-radius: 7px; background: var(--c-white); overflow: hidden; }
+  .mfaq__item--open { border-color: var(--c-primary-light); }
+  .mfaq__q { display: flex; justify-content: space-between; padding: 9px 10px; font-family: ui-monospace, Menlo, monospace; font-size: 9px; color: var(--c-ink-2); min-height: 44px; align-items: center; }
+  .mfaq__q b { color: var(--c-primary); font-size: 14px; font-weight: 400; }
+  .mfaq__item--open .mfaq__q { color: var(--c-ink); font-weight: 600; }
+  .mfaq__a { padding: 0 10px 9px; font-family: ui-monospace, Menlo, monospace; font-size: 8px; color: var(--c-ink-2); line-height: 1.5; }
+</style>

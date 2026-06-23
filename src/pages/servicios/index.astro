@@ -1,69 +1,226 @@
 ---
 // ============================================================================
-// /servicios/ — Landing de Servicios (categoría L2).
+// /servicios/ — Catálogo de servicios (nivel L2). Landing de venta.
 // ----------------------------------------------------------------------------
-// Lista los servicios desde SERVICES (TAXONOMY en site.ts, SSoT) — la MISMA
-// fuente que alimenta el dropdown «Servicios» del Header. Cada tarjeta enlaza a
-// su página de detalle /servicios/<id>, generada por [...slug].astro. Datos DEMO.
+// ENSAMBLAJE de módulos existentes: TrustBar · CategoryCard · CategoryDetail ·
+// ProcessSteps · ReviewCard · FAQAccordion · ContactForm · CTABanner · SectionMenu.
+// Cero componentes nuevos. Los servicios vienen de SERVICES (SSoT en site.ts);
+// la misma fuente que alimenta el dropdown del Header.
+//
+// pageType="category" → JSON-LD CollectionPage + FAQPage desde schemaData.
+// WhatsApp: siempre waUrl(WA_MESSAGES.servicios) — nunca hardcodeado (D4).
 // ============================================================================
 import PageLayout from '@layouts/PageLayout.astro'
 import Hero from '@components/Hero.astro'
 import SectionHeading from '@components/SectionHeading.astro'
 import CategoryCard from '@components/CategoryCard.astro'
-import GuiaNota from '@components/GuiaNota.astro'
+import CategoryDetail from '@components/CategoryDetail.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import ReviewCard from '@components/ReviewCard.astro'
+import TrustBar from '@components/TrustBar.astro'
+import ProcessSteps from '@components/ProcessSteps.astro'
+import FAQAccordion from '@components/FAQAccordion.astro'
+import ContactForm from '@components/ContactForm.astro'
 import SectionMenu from '@components/SectionMenu.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import { getResenas } from '@lib/casos'
 import { SERVICES, waUrl, WA_MESSAGES } from '@config/site'
 
-const cierreItems = [
-  { label: 'Productos', href: '/productos', sub: 'Catálogo del sitio' },
-  { label: 'Cobertura', href: '/cobertura', sub: 'Zonas que atendemos' },
-  { label: 'Nosotros', href: '/nosotros', sub: 'Cómo trabajamos' },
-  { label: 'Contacto', href: '/contacto', sub: 'Hablemos de tu proyecto' },
+// ── RESEÑAS data-driven desde la colección `casos` (B4: solo aprobadas) ──────
+const resenas = await getResenas({ limit: 6 })
+
+// ── PILARES DE CONFIANZA ─────────────────────────────────────────────────────
+const demoPilares = [
+  { icon: 'check', title: 'Trato directo', desc: 'Hablas con quien resuelve. Sin intermediarios ni centros de atención.' },
+  { icon: 'doc',   title: 'Todo por escrito', desc: 'Alcance, tiempos y condiciones claras antes de empezar. Sin sorpresas.' },
+  { icon: 'pin',   title: 'Proceso en 3 pasos', desc: 'Diagnóstico → Propuesta y ejecución → Entrega y seguimiento.' },
+  { icon: 'shield', title: 'Entrega documentada', desc: 'Cada servicio cierra con un documento de entrega y seguimiento.' },
 ]
-const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.servicios), sub: 'Respuesta inmediata', external: true }
+
+// ── «A FONDO» POR SERVICIO ────────────────────────────────────────────────────
+// Copy de venta y galería por cada servicio del catálogo. Adapta este bloque
+// al giro real del cliente: cuerpos, puntos clave e imágenes deben ser reales.
+const SERVICIOS_AFONDO: Record<string, { body: string[]; points: string[]; image: string }> = {
+  consultoria: {
+    image: '/images/servicios/consultoria-desarrollo-web-astro.avif',
+    body: [
+      'La consultoría define el alcance antes de escribir una sola línea de código. Analizamos el objetivo del sitio, la audiencia, la arquitectura de URLs y las necesidades técnicas para proponer un plan claro: qué se construye, en qué orden y por qué. El diagnóstico es el primer entregable —no una reunión informal sin conclusiones.',
+      'En un sitio Astro, la consultoría incluye la decisión de qué piezas del sistema se activan según el giro: colecciones, taxonomía, blog, SEO técnico. El cliente sabe exactamente qué recibirá antes de confirmar. El diagnóstico escrito es la base del trato.',
+    ],
+    points: [
+      'Diagnóstico por escrito: objetivo, audiencia, arquitectura, prioridades',
+      'Propuesta con alcance definido antes de empezar a construir',
+      'Mapa de URLs y taxonomía validados por el cliente desde el inicio',
+      'Sin sorpresas: todo acordado antes, cambios documentados en el proceso',
+    ],
+  },
+  implementacion: {
+    image: '/images/servicios/implementacion-deploy-sitio-astro.avif',
+    body: [
+      'La implementación construye el sitio sobre el diagnóstico acordado. Configuramos el repositorio, integramos las colecciones de contenido, conectamos las herramientas del cliente (dominio, Cloudflare, formularios) y publicamos un sitio estático que carga en menos de un segundo con un Lighthouse > 95 en todas las métricas.',
+      'El sitio resultante es 100% editable en Markdown: el cliente (o su equipo) puede modificar precios, textos, imágenes y productos sin tocar código. El entregable incluye la guía de edición y una sesión de transferencia para que el cliente opere con autonomía desde el primer día.',
+    ],
+    points: [
+      'Sitio Astro estático: Lighthouse > 95, TTFB < 300 ms en Cloudflare Pages',
+      'Contenido 100% en Markdown: editable sin código, sin dependencia del proveedor',
+      'Integración de dominio, DNS, CDN y formularios incluidos en el alcance',
+      'Entregable con guía de edición + sesión de transferencia al cliente',
+    ],
+  },
+  soporte: {
+    image: '/images/servicios/soporte-mantenimiento-web-astro.avif',
+    body: [
+      'El soporte mantiene el sitio funcionando después de la entrega: actualizaciones de contenido, publicación de artículos del blog, ajustes de precio, nuevas fichas de producto o servicio. Las solicitudes entran por WhatsApp; la respuesta inicial es en menos de 4 horas en días hábiles. Sin tickets, sin formularios, sin colas.',
+      'Para cambios técnicos (migración de dominio, ajuste de schema, nuevo módulo), el soporte incluye diagnóstico y alcance por escrito antes de ejecutar. El cliente no recibe facturas sorpresa por trabajos no acordados.',
+    ],
+    points: [
+      'Respuesta inicial < 4 h hábiles por WhatsApp: sin tickets ni formularios',
+      'Actualizaciones de contenido, precios, imágenes y blog por solicitud',
+      'Cambios técnicos con diagnóstico y alcance por escrito antes de ejecutar',
+      'Sin compromiso mínimo: paga por el trabajo realizado, sin retención forzada',
+    ],
+  },
+}
+
+// ── GALERÍA POR SERVICIO ──────────────────────────────────────────────────────
+const POOL = [
+  '/images/servicios/consultoria-desarrollo-web-astro.avif',
+  '/images/servicios/implementacion-deploy-sitio-astro.avif',
+  '/images/servicios/soporte-mantenimiento-web-astro.avif',
+  '/images/productos/desarrollo-web-astro-profesional.avif',
+  '/images/productos/componentes-plantilla-astro-markdown.avif',
+  '/images/showcase/imagen-optimizada-avif-sitio-web.avif',
+]
+function servGallery(id: string, i: number) {
+  const main = SERVICIOS_AFONDO[id]?.image ?? POOL[0]
+  const len = POOL.length
+  return {
+    main: { src: main, alt: `Vista del servicio ${SERVICES[i]?.label ?? id}` },
+    thumbs: [
+      { src: POOL[(i + 1) % len], alt: `Detalle del servicio` },
+      { src: POOL[(i + 2) % len], alt: `Detalle del proceso` },
+    ],
+  }
+}
+
+// ── PROCESO ───────────────────────────────────────────────────────────────────
+const demoPasos = [
+  { num: '01', title: 'Diagnóstico', desc: 'Analizamos el objetivo y el contexto para proponer con fundamento, no a ciegas. Entregable: diagnóstico por escrito.' },
+  { num: '02', title: 'Propuesta y ejecución', desc: 'Definimos el alcance, los entregables y los tiempos. Ejecutamos y comunicamos avance en cada etapa.' },
+  { num: '03', title: 'Entrega y seguimiento', desc: 'Entregamos documentado y acompañamos para que operes con autonomía desde el primer día.' },
+]
+
+// ── FAQs ─────────────────────────────────────────────────────────────────────
+const faqs = [
+  { question: '¿En qué zona atienden?', answer: 'Atendemos proyectos en todo México de forma remota. Para proyectos en CDMX y zona metropolitana, podemos coordinar reuniones presenciales cuando el proyecto lo requiere.' },
+  { question: '¿Cómo se cotiza un servicio?', answer: 'Escríbenos por WhatsApp con una descripción del proyecto. En menos de 24 horas hábiles te enviamos una propuesta con alcance, tiempos y precio claro.' },
+  { question: '¿Puedo contratar solo el soporte sin la implementación?', answer: 'Sí. El soporte funciona de forma independiente: si ya tienes un sitio Astro o quieres traspasar el mantenimiento, podemos tomar el proyecto desde donde está.' },
+  { question: '¿Cuánto tarda la entrega de un sitio?', answer: 'Depende del alcance. Un sitio estándar con 10–15 páginas tarda entre 3 y 5 semanas desde el diagnóstico hasta la entrega. El plazo exacto va en la propuesta.' },
+  { question: '¿Los servicios incluyen la redacción de contenido?', answer: 'El alcance estándar incluye la integración del contenido que el cliente proporciona. La redacción editorial (artículos de blog, copy de venta) es un servicio adicional que cotizamos por separado.' },
+]
+
+const schemaData = {
+  list: {
+    name: 'Catálogo de servicios',
+    description: 'Servicios de desarrollo y mantenimiento web con Astro: consultoría, implementación y soporte. Cotiza por WhatsApp.',
+    path: '/servicios',
+    items: SERVICES.map((s) => ({ name: s.label, path: `/servicios/${s.id}`, description: s.desc })),
+  },
+  faqs,
+}
+
+// ── CTAs del hero (landing de venta → el hero sí convierte) ──────────────────
+const heroCtas = [
+  { text: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.servicios), whatsapp: true },
+  { text: 'Ver servicios', href: '#catalogo', variant: 'outline' as const },
+]
+
+// ── CIERRE ────────────────────────────────────────────────────────────────────
+const cierreItems = [
+  ...SERVICES.map((s) => ({ label: s.label, href: `/servicios/${s.id}`, sub: s.desc.length > 64 ? s.desc.slice(0, 61) + '…' : s.desc })),
+  { label: 'Guía de servicios', href: '/servicios/guia', sub: 'Cómo se crea una página de servicio profesional' },
+  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
+]
+const cierreCta = {
+  label: 'Cotizar por WhatsApp',
+  href: waUrl(WA_MESSAGES.servicios),
+  sub: 'Respuesta inmediata · Trato directo',
+  external: true,
+}
+
+// ── Recetas responsive ────────────────────────────────────────────────────────
+const recetaVitrina = `/* servicios/index.astro · vitrina mobile-first: 1 → 3 por fila.
+   El caso base (el teléfono) es el más simple; el escritorio solo añade columnas. */
+.showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
+@media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .showcase { grid-template-columns: repeat(3, 1fr); } }`
+
+const recetaDetail = `/* CategoryDetail.astro · mobile-first: apila en móvil, 2 cols en escritorio.
+   Info siempre primero (orden natural), galería debajo. Sin reverse en ningún caso. */
+.cdetail { display: grid; grid-template-columns: 1fr; gap: var(--sp-6); }
+@media (min-width: 768px) {
+  .cdetail { grid-template-columns: 1fr 1fr; gap: clamp(2rem, 5vw, 4rem); }
+}`
+
+const recetaFaq = `/* servicios/index.astro · FAQ+formulario: 1 columna en móvil → 2 en escritorio. */
+.faqgrid { display: grid; grid-template-columns: 1fr; gap: var(--sp-7); align-items: start; }
+@media (min-width: 900px) { .faqgrid { grid-template-columns: 1.1fr .9fr; gap: var(--sp-8); } }`
 ---
 
 <PageLayout
-  title="Servicios"
-  description="Nuestros servicios: lo que ofrecemos, cada uno con su página de detalle. Cotiza por WhatsApp y recibe una recomendación honesta."
+  title="Servicios de desarrollo web Astro — Consultoría, implementación y soporte"
+  description="Servicios profesionales de desarrollo web con Astro: consultoría, implementación y soporte. Sitios estáticos Lighthouse > 95, contenido en Markdown y cotización por WhatsApp."
   pageType="category"
+  schemaData={schemaData}
   breadcrumbs={[{ label: 'Servicios' }]}
   guia={false}
 >
   <Hero
-    badge="Categoría · Servicios"
-    title="Lo que"
-    accent="ofrecemos"
-    subtitle="Del primer contacto a la entrega y el seguimiento: te acompañamos en cada etapa, con trato directo y claridad."
+    badge="Catálogo de servicios"
+    title="Servicios de"
+    accent="desarrollo web profesional"
+    subtitle="Del diagnóstico a la entrega y el seguimiento: sitios Astro que cargan rápido, son fáciles de editar y convierten. Trato directo, alcance por escrito, sin sorpresas."
     descRight={[
-      'Estos son nuestros servicios. Cada uno es una puerta de entrada: entra al que te interesa y conoce el detalle —qué incluye, cómo se trabaja y qué resultado esperar.',
-      'Si no sabes cuál necesitas, escríbenos y te orientamos. Te recomendamos el servicio correcto según tu caso, sin venderte de más.',
+      'Tres servicios con un resultado claro cada uno: consultoría para definir el alcance antes de construir, implementación para publicar el sitio y soporte para mantenerlo operando. El proceso es el mismo en todos: diagnóstico → propuesta → entrega.',
+      'El modelo es WhatsApp-first: escríbenos con tu necesidad y te enviamos una propuesta con alcance, tiempos y precio en menos de 24 horas hábiles. Sin formularios largos ni esperas.',
     ]}
+    ctas={heroCtas}
   />
 
+  {/* ── Barra de confianza ─────────────────────────────────────────────────── */}
+  <TrustBar items={demoPilares} />
+
+  {/* ── Orientación: ¿qué es esta página? ────────────────────────────────── */}
   <section class="section">
     <div class="container">
-      <GuiaNota titulo="Qué es esta página (categoría · servicios)" archivo="src/pages/servicios/index.astro">
-        <p>
-          Landing de categoría que lista los servicios desde <code>SERVICES</code> en
-          <code>site.ts</code> (SSoT). Cada tarjeta enlaza a su detalle <code>/servicios/&lt;id&gt;</code>,
-          generado por la ruta dinámica <code>[...slug].astro</code>. Edita un servicio en
-          <code>site.ts</code> y se actualizan a la vez esta página, el menú y las rutas.
-        </p>
-      </GuiaNota>
+      <SectionHeading
+        layout="duo"
+        eyebrow="Cómo funciona"
+        title="¿Cómo se cotiza un servicio?"
+        desc="Un proceso predecible en 3 pasos: escríbenos por WhatsApp, recibimos la propuesta por escrito y confirmamos el inicio. Sin sorpresas."
+        body={[
+          'Cada servicio parte de un diagnóstico: entendemos el objetivo, la audiencia y el contexto antes de proponer. El diagnóstico es el primer entregable —por escrito, con conclusiones—, no una reunión informal. Sobre él se construye la propuesta con alcance, tiempos y precio claro.',
+          'El cierre del proceso es la entrega documentada y la sesión de transferencia: el cliente sabe cómo operar el sitio desde el primer día. El soporte entra donde termina la implementación y puede tomarse de forma independiente.',
+        ]}
+      />
+    </div>
+  </section>
 
+  {/* ── CATÁLOGO — vitrina de servicios ───────────────────────────────────── */}
+  <section class="section section--surface" id="catalogo">
+    <div class="container">
       <SectionHeading
         layout="duo"
         eyebrow="Nuestros servicios"
-        title="Cómo te ayudamos"
-        desc="Cada servicio con un resultado claro: entra al que necesitas y conoce el detalle."
+        title="El catálogo completo"
+        desc="Tres servicios, un mismo proceso: diagnóstico claro, ejecución documentada y seguimiento real. Cada tarjeta lleva a la ficha del servicio con el detalle completo."
         body={[
-          'Un buen catálogo de servicios no enumera tareas: ordena la decisión del cliente. Cada servicio se presenta con un resultado claro, para que identifiques cuál necesitas y qué sigue.',
-          'Cada tarjeta lleva a una página de detalle con lo que incluye, cómo se trabaja y las preguntas frecuentes. Quien necesita más información, la encuentra a un clic.',
+          'Los tres servicios funcionan solos o en secuencia: la consultoría puede ser el único entregable (para quien quiere el diagnóstico y ejecutará por su cuenta), la implementación puede tomar un diagnóstico previo, y el soporte puede aplicar a un sitio ya publicado.',
+          'Cada ficha de servicio incluye qué está incluido, cómo se trabaja, las preguntas frecuentes y el botón de cotización directo por WhatsApp.',
         ]}
       />
-
-      <div class="grid">
+      <div class="showcase">
         {SERVICES.map((s, i) => (
           <CategoryCard
             label={s.label}
@@ -71,6 +228,8 @@ const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.servi
             blurb={s.desc}
             badge="Servicio"
             ctaLabel="Ver detalle"
+            image={SERVICIOS_AFONDO[s.id]?.image}
+            imageAlt={`Servicio de ${s.label.toLowerCase()} — ver detalle`}
             index={i}
           />
         ))}
@@ -78,13 +237,314 @@ const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.servi
     </div>
   </section>
 
-  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando el sitio" />
+  {/* ── CADA SERVICIO, POR DENTRO ─────────────────────────────────────────── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Los servicios a fondo"
+        title="Cada servicio, por dentro"
+        desc="La vitrina te muestra las cards; aquí abrimos cada servicio: qué incluye, cómo se trabaja y qué resultado esperar antes de contratar."
+        body={[
+          'Antes de cotizar es importante entender qué incluye cada servicio y qué NO incluye. El diagnóstico honesto del alcance es la base del trato: evita los malentendidos, alinea expectativas y permite que el cliente compare propuestas con claridad.',
+          'Los tres servicios comparten el proceso de 3 pasos (diagnóstico → propuesta → entrega). Lo que cambia es el entregable principal de cada uno: el documento de diagnóstico, el sitio publicado, o el contenido actualizado.',
+        ]}
+      />
+      <div class="afondo">
+        {SERVICES.map((s, i) => {
+          const af = SERVICIOS_AFONDO[s.id]
+          return (
+            <CategoryDetail
+              eyebrow="El servicio a fondo"
+              title={s.label}
+              as="h3"
+              body={af?.body ?? [s.desc]}
+              points={af?.points ?? []}
+              cta={{ label: `Ver ${s.label}`, href: `/servicios/${s.id}` }}
+              gallery={servGallery(s.id, i)}
+            />
+          )
+        })}
+      </div>
+    </div>
+  </section>
+
+  {/* ── RESPONSIVE Y MÓVIL ────────────────────────────────────────────────── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="El catálogo, en el teléfono"
+        desc="La vitrina, los bloques de servicio y el FAQ+formulario no se encogen: se reordenan. Mobile-first en cada capa."
+        body={[
+          'El catálogo de servicios tiene tres bloques con comportamiento responsive propio: la vitrina de cards (3 columnas → 1), los bloques CategoryDetail de 2 columnas que se apilan verticalmente, y el par FAQ+formulario que pasa de 2 columnas a una sola. Los tres son mobile-first.',
+          'Los tokens del sistema central (mobile.css) aportan lo demás: imágenes fluidas, áreas táctiles de 44 px en botones y ancho al 100% en móvil. Sin media queries duplicadas por componente.',
+        ]}
+      />
+
+      <div class="pats">
+
+        {/* 1 · Vitrina apilada */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="La vitrina de 3 servicios colapsa a una sola columna en el teléfono">
+              <div class="ss-head">
+                <span class="ss-logo">S</span>
+                <span class="ss-sp"></span>
+                <span class="ss-burg" aria-hidden="true">≡</span>
+              </div>
+              <div class="ss-stack">
+                {['Consultoría', 'Implementación'].map((t) => (
+                  <div class="ss-card">
+                    <i class="ss-card__img"></i>
+                    <b class="ss-card__t">{t}</b>
+                    <span class="ss-card__chips"><i></i><i></i></span>
+                    <span class="ss-card__cta">Ver detalle →</span>
+                  </div>
+                ))}
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · De tres por fila a una columna</h3>
+            <p class="pat__desc">La vitrina de servicios es <strong>mobile-first</strong>: arranca en 1 columna y sube a 2 en tablet y 3 en escritorio. Las cards no se reescalan: solo cambia cuántas caben por fila. El orden de lectura es el mismo en todos los viewports.</p>
+            <Receta titulo="servicios/index.astro · vitrina mobile-first" lang="css" code={recetaVitrina} />
+          </div>
+        </article>
+
+        {/* 2 · CategoryDetail apilado */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="El bloque de servicio a fondo muestra info arriba y galería debajo en el teléfono">
+              <div class="ss-head">
+                <span class="ss-logo">S</span>
+                <span class="ss-sp"></span>
+              </div>
+              <div class="ss-detail">
+                <div class="ss-detail__info">
+                  <span class="ss-eyebrow"></span>
+                  <span class="ss-title"></span>
+                  <span class="ss-body"></span>
+                  <span class="ss-body ss-body--short"></span>
+                  <span class="ss-cta-btn">Ver servicio →</span>
+                </div>
+                <div class="ss-detail__gal">
+                  <span class="ss-gal__main"></span>
+                  <div class="ss-gal__thumbs"><span></span><span></span></div>
+                </div>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · Servicio a fondo apilado</h3>
+            <p class="pat__desc">En escritorio cada bloque «a fondo» muestra texto e imagen en 2 columnas. En el teléfono se apila: el texto aparece primero, la imagen debajo. Sin inversión en ningún caso: el orden es siempre el natural.</p>
+            <Receta titulo="CategoryDetail.astro · apilado en móvil, 2 cols en escritorio" lang="css" code={recetaDetail} />
+          </div>
+        </article>
+
+        {/* 3 · FAQ + Formulario */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="FAQ y formulario de cotización en columna única en el teléfono">
+              <div class="ss-head">
+                <span class="ss-logo">S</span>
+                <span class="ss-sp"></span>
+              </div>
+              <div class="ss-faqform">
+                <div class="ss-faq">
+                  <div class="ss-faq__item">
+                    <b class="ss-faq__q"></b><i class="ss-faq__ico">▾</i>
+                  </div>
+                  <div class="ss-faq__item ss-faq__item--open">
+                    <div class="ss-faq__row"><b class="ss-faq__q"></b><i class="ss-faq__ico">▴</i></div>
+                    <p class="ss-faq__a"></p>
+                  </div>
+                  <div class="ss-faq__item">
+                    <b class="ss-faq__q"></b><i class="ss-faq__ico">▾</i>
+                  </div>
+                </div>
+                <div class="ss-form">
+                  <span class="ss-form__field"></span>
+                  <span class="ss-form__field"></span>
+                  <span class="ss-form__btn">Cotizar →</span>
+                </div>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · FAQ y formulario en columna única</h3>
+            <p class="pat__desc">En escritorio el FAQ y el formulario van en 2 columnas (1.1fr · 0.9fr). En el teléfono pasan a columna única: FAQ primero para resolver la duda, formulario debajo para pedir el dato. La jerarquía no cambia, solo el eje.</p>
+            <Receta titulo="servicios/index.astro · faqgrid mobile-first" lang="css" code={recetaFaq} />
+          </div>
+        </article>
+
+      </div>
+
+      <GuiaNota titulo="El responsive del catálogo vive en el sistema" archivo="src/pages/servicios/index.astro · src/components/CategoryDetail.astro · src/styles/mobile.css">
+        <p>
+          Los tres layouts de esta página — vitrina <code>.showcase</code>, bloques
+          <code>.afondo</code> y el par <code>.faqgrid</code> — son
+          <strong>mobile-first</strong>: declaran una columna y crecen con
+          <code>min-width</code> al haber más ancho. Los tokens de toque (44 px),
+          imágenes fluidas y ancho al 100% en móvil los aporta
+          <code>src/styles/mobile.css</code>, la hoja central del sitio.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── PROCESO — del primer mensaje a la entrega ─────────────────────────── */}
+  <ProcessSteps
+    eyebrow="Cómo trabajamos"
+    title="Del primer mensaje"
+    titleAccent="a la entrega documentada"
+    desc="Un proceso predecible en 3 pasos que aplica a todos los servicios del catálogo."
+    body={[
+      'El proceso de trabajo es el mismo para todos los servicios: diagnóstico por escrito, ejecución con avance comunicado y entrega documentada. No cambia el proceso; cambia el entregable principal de cada servicio.',
+      'Publicar el proceso en la página responde antes la pregunta más frecuente del cliente: «¿qué pasa si te escribo?». El primer clic deja de parecer un salto al vacío y se convierte en el paso 1 de algo predecible.',
+    ]}
+    steps={demoPasos}
+  />
+
+  {/* ── RESEÑAS — prueba social data-driven desde `casos` (B4) ──────────── */}
+  {resenas.length > 0 && (
+    <section class="section">
+      <div class="container">
+        <SectionHeading
+          layout="duo"
+          eyebrow="Reseñas"
+          title="Lo que dicen los clientes"
+          desc="Testimonios concretos de proyectos reales. Una cita específica — con nombre y contexto — convence más que diez adjetivos."
+          body={[
+            'La gente confía en la gente: una frase concreta de un cliente real pesa más que cualquier promesa propia. Por eso las reseñas llevan nombre, rol y contexto del proyecto.',
+            'Regla B4: las reseñas son datos reales de la colección de casos. Nunca fabricadas, nunca anónimas. En esta plantilla son datos DEMO; en un sitio real, reemplázalas por testimonios verificables.',
+          ]}
+        />
+        <div class="reviews">
+          {resenas.map((r) => (
+            <ReviewCard quote={r.quote} name={r.name} role={r.role} rating={r.rating} />
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  {/* ── FAQ + FORMULARIO DE COTIZACIÓN ───────────────────────────────────── */}
+  <section class="section section--surface">
+    <div class="container faqgrid">
+      <div class="faqgrid__faq">
+        <FAQAccordion items={faqs} title="Preguntas frecuentes" openFirst />
+      </div>
+      <div class="faqgrid__form">
+        <ContactForm
+          heading="Cotiza tu servicio"
+          note="Respuesta en menos de 24 h hábiles · Sin compromiso"
+          asuntos={['Quiero cotizar un servicio', 'Necesito un diagnóstico', 'Soporte para mi sitio actual', 'Otro']}
+        />
+      </div>
+    </div>
+  </section>
+
+  {/* ── NOTA DIDÁCTICA ────────────────────────────────────────────────────── */}
+  <section class="section">
+    <div class="container">
+      <GuiaNota titulo="Cómo está hecha esta página (catálogo de servicios L2)" archivo="src/pages/servicios/index.astro">
+        <p>
+          Esta página es el <strong>catálogo de venta de servicios</strong> (nivel L2):
+          ensambla módulos que ya existen en el sistema —
+          <code>TrustBar</code>, <code>CategoryCard</code>, <code>CategoryDetail</code>,
+          <code>ProcessSteps</code>, <code>ReviewCard</code>, <code>FAQAccordion</code>,
+          <code>ContactForm</code> — sin construir nada nuevo. Los servicios salen de
+          <code>SERVICES</code> en <code>site.ts</code> (SSoT): la misma fuente que
+          alimenta el dropdown del Header.
+        </p>
+        <p>
+          ¿Quieres ver <strong>cómo se crea una página de servicio profesional</strong>,
+          pieza por pieza? Vive en{' '}
+          <a href="/servicios/guia">la guía de servicios</a>. Los datos de reseñas
+          son <strong>DEMO</strong>: en un sitio real reemplaza los casos de
+          <code>src/content/casos/</code> por testimonios verificables (regla B4: nunca fabricados).
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── CIERRE ────────────────────────────────────────────────────────────── */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Explora los servicios y cotiza" />
 </PageLayout>
 
 <style>
+  /* Estructura base */
   .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
   .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
   @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
-  .grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
-  @media (min-width: 640px)  { .grid { grid-template-columns: repeat(3, 1fr); } }
+
+  /* Vitrina: 1 → 2 → 3 por fila (mobile-first) */
+  .showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .showcase { grid-template-columns: repeat(3, 1fr); } }
+
+  /* Pila «a fondo» (CategoryDetail) — separación uniforme, SIN zig-zag */
+  .afondo { display: grid; gap: clamp(2.5rem, 6vw, 5rem); margin-top: var(--sp-6); }
+
+  /* Reseñas: 1 → 2 → 3 */
+  .reviews { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 640px)  { .reviews { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .reviews { grid-template-columns: repeat(3, 1fr); } }
+
+  /* FAQ | Formulario */
+  .faqgrid { display: grid; grid-template-columns: 1fr; gap: var(--sp-7); align-items: start; }
+  @media (min-width: 900px) { .faqgrid { grid-template-columns: 1.1fr .9fr; gap: var(--sp-8); } }
+
+  /* Sección responsive — patrones */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: start; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); align-items: center; } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pat__desc strong { color: var(--c-ink); }
+  .pat__desc code { font-family: ui-monospace, Menlo, monospace; font-size: .85em; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
+
+  /* Mini-header compartido (.ss-head) */
+  .ss-head { display: flex; align-items: center; gap: 7px; padding: 8px 11px; background: var(--c-white); border-bottom: 1px solid var(--c-border); flex-shrink: 0; }
+  .ss-logo { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-black); font-size: 12px; }
+  .ss-sp { margin-left: auto; }
+  .ss-burg { font-size: 16px; color: var(--c-ink-2); }
+
+  /* Patrón 1: vitrina de servicios apilada */
+  .ss-stack { display: grid; gap: 8px; padding: 10px; overflow-y: auto; }
+  .ss-card { display: grid; gap: 5px; padding: 7px; border-radius: 9px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .ss-card__img { display: block; height: 52px; border-radius: 6px; background: linear-gradient(135deg, color-mix(in srgb, var(--c-primary) 30%, white), var(--c-primary)); }
+  .ss-card__t { display: block; height: 8px; width: 58%; border-radius: 4px; background: var(--c-ink); opacity: .75; }
+  .ss-card__chips { display: flex; gap: 4px; }
+  .ss-card__chips i { width: 28px; height: 8px; border-radius: 99px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .ss-card__cta { font-size: 9px; font-weight: 700; color: var(--c-primary); }
+
+  /* Patrón 2: CategoryDetail apilado */
+  .ss-detail { display: flex; flex-direction: column; gap: 9px; padding: 10px; overflow-y: auto; }
+  .ss-detail__info { display: flex; flex-direction: column; gap: 5px; }
+  .ss-eyebrow { display: block; height: 6px; width: 40%; border-radius: 4px; background: var(--c-primary); opacity: .55; }
+  .ss-title { display: block; height: 10px; width: 70%; border-radius: 4px; background: var(--c-ink); opacity: .85; }
+  .ss-body { display: block; height: 6px; width: 96%; border-radius: 3px; background: var(--c-ink); opacity: .18; }
+  .ss-body--short { width: 68%; }
+  .ss-cta-btn { display: inline-block; font-style: normal; font-size: 9px; font-weight: 700; color: #fff; background: var(--c-primary); border-radius: 6px; padding: 3px 8px; align-self: flex-start; margin-top: 2px; }
+  .ss-detail__gal { display: flex; flex-direction: column; gap: 5px; }
+  .ss-gal__main { display: block; height: 70px; border-radius: 8px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .ss-gal__thumbs { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .ss-gal__thumbs span { display: block; height: 36px; border-radius: 6px; background: var(--c-surface); border: 1px solid var(--c-border); opacity: .6; }
+
+  /* Patrón 3: FAQ + Formulario en columna */
+  .ss-faqform { display: flex; flex-direction: column; gap: 8px; padding: 10px; overflow-y: auto; }
+  .ss-faq { display: flex; flex-direction: column; gap: 4px; }
+  .ss-faq__item { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 8px; border-radius: 7px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .ss-faq__item--open { flex-direction: column; align-items: stretch; gap: 4px; background: var(--c-surface); }
+  .ss-faq__row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  .ss-faq__q { display: block; height: 7px; flex: 1; border-radius: 3px; background: var(--c-ink); opacity: .5; }
+  .ss-faq__ico { font-style: normal; font-size: 9px; color: var(--c-primary); flex-shrink: 0; }
+  .ss-faq__a { display: block; margin: 0; height: 5px; width: 88%; border-radius: 3px; background: var(--c-ink); opacity: .18; }
+  .ss-form { display: flex; flex-direction: column; gap: 5px; padding: 8px; border-radius: 9px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .ss-form__field { display: block; height: 22px; border-radius: 5px; border: 1px solid var(--c-border); background: var(--c-surface); }
+  .ss-form__btn { display: grid; place-items: center; height: 26px; margin-top: 2px; border-radius: 7px; background: var(--c-primary); color: #fff; font-size: 10px; font-weight: 700; }
 </style>

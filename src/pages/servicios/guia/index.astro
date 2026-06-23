@@ -1,0 +1,352 @@
+---
+// ============================================================================
+// /servicios/guia/ — ÍNDICE de la serie «Guía de servicios».
+// ----------------------------------------------------------------------------
+// Cuarta serie hermana de /modulos, /niveles y /productos/guia, acotada al
+// FLUJO de crear una página de servicio profesional. Las 6 fichas
+// /servicios/guia/<slug> documentan cada pieza del proceso con el molde canónico
+// de 10 secciones (el mismo de Módulos, Niveles y Productos).
+//
+// Data-driven desde SERVICIOS_GUIA (site.ts, SSoT) — la misma fuente que
+// alimenta el dropdown «Servicios» del Header. pageType="page" (documentación),
+// igual que /modulos, /niveles y /productos/guia.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionHeading from '@components/SectionHeading.astro'
+import CategoryCard from '@components/CategoryCard.astro'
+import CategoryDetail from '@components/CategoryDetail.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import FAQAccordion from '@components/FAQAccordion.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import { SERVICIOS_GUIA, waUrl, WA_MESSAGES } from '@config/site'
+import {
+  SERVICIO_GUIA_CARD_META as SG_META,
+  SERVICIO_GUIA_AFONDO,
+  servicioGuiaGallery,
+} from '@lib/servicios'
+
+// ── La GUÍA (data-driven desde SERVICIOS_GUIA, SSoT) ─────────────────────────
+const guiaListos = SERVICIOS_GUIA.filter((p) => p.estado === 'listo')
+const piezas = guiaListos.length
+
+// ── Recetas de la sección «Responsive y móvil» ────────────────────────────────
+const recetaGrid = `/* La vitrina de la guía es mobile-first: 1 → 2 → 3.
+   Arranca en UNA columna en el teléfono y crece con el ancho disponible.
+   Nunca al revés: el caso base (teléfono) es el más simple y robusto. */
+.showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
+@media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .showcase { grid-template-columns: repeat(3, 1fr); } }`
+
+const recetaCard = `/* mobile.css · área táctil mínima de 44 px en toda la card. */
+@media (max-width: 1024px) {
+  a, button, [role="button"] {
+    -webkit-tap-highlight-color: rgba(91, 61, 245, .15); /* feedback al tap */
+  }
+}
+@media (max-width: 768px) {
+  /* chips de subcategoría con altura tappable */
+  .ccard__sub { min-height: 44px; display: inline-flex; align-items: center; }
+}`
+
+const recetaWa = `/* El CTA de conversión siempre via waUrl(): cero wa.me hardcodeados. */
+import { waUrl, WA_MESSAGES } from '@config/site'
+
+// ✓ CORRECTO: número y mensaje centralizados; cambiar uno cambia todos.
+<a href={waUrl(WA_MESSAGES.servicios)} target="_blank" rel="noopener">
+  Cotizar por WhatsApp
+</a>
+
+// ✗ INCORRECTO: número hardcodeado → se desactualiza sin avisar.
+<a href="https://wa.me/525500000000?text=Hola">Cotizar</a>`
+
+// ── FAQs de la GUÍA ───────────────────────────────────────────────────────────
+const faqs = [
+  {
+    question: '¿En qué se diferencia esta guía de la de Productos?',
+    answer: 'Productos documenta el FLUJO de crear un producto (colección, categorías, imágenes, precio, ficha, schema). Servicios documenta el FLUJO de crear una página de servicio profesional (colección, copy, alcance, proceso, objeciones, conversión). Misma estructura de 10 secciones, distinto contenido: el servicio no tiene variantes ni carrito; su conversión es WhatsApp-first.',
+  },
+  {
+    question: '¿Cuántas piezas tiene la guía?',
+    answer: 'Seis, en orden de flujo: la colección (el dato), el copy (el hero), el alcance (qué incluye), el proceso (cómo se trabaja), las objeciones (FAQ) y la conversión (el cierre). Cada una con su página de detalle y el molde canónico de 10 secciones.',
+  },
+  {
+    question: '¿Agrego un servicio en el código o en Markdown?',
+    answer: 'En Markdown: creas un archivo .md en src/content/servicios/ con su frontmatter (título, descripción, categoría, imagen…). La ficha de detalle se genera sola desde la colección. Para que aparezca en el menú y la landing, también añades el servicio al array SERVICES en src/config/site.ts.',
+  },
+  {
+    question: '¿Puedo tener servicios con precio público y otros «bajo cotización»?',
+    answer: 'Sí. El campo pricing del frontmatter es completamente opcional. Si lo omites, el sistema usa el modelo «bajo cotización» y el CTA abre WhatsApp con un mensaje pre-armado (waUrl). Si lo incluyes, puedes poner una nota (pricing.note) con el rango o el modelo, sin inventar una cifra fija que no aplique a todos los casos.',
+  },
+  {
+    question: '¿Los servicios también emiten schema JSON-LD?',
+    answer: 'Sí. La ficha de detalle (/servicios/<id>) emite Service + FAQPage a través del campo schemaData del PageLayout. El mismo dato del frontmatter —descripción, FAQs, zona de cobertura— alimenta el schema sin duplicar información. La regla B3 aplica igual: un único emisor de schema por página.',
+  },
+]
+
+// Menú de cierre
+const cierreItems = [
+  { label: 'La colección', href: '/servicios/guia/la-coleccion', sub: 'Empieza la guía' },
+  { label: 'Ver servicios', href: '/servicios', sub: 'Catálogo de servicios' },
+  { label: 'Módulos', href: '/modulos', sub: 'Las piezas del sitio' },
+  { label: 'Inicio', href: '/', sub: 'Volver a la home' },
+]
+const cierreCta = {
+  label: 'Cotizar por WhatsApp',
+  href: waUrl(WA_MESSAGES.servicios),
+  sub: 'Respuesta inmediata',
+  external: true,
+}
+---
+
+<PageLayout
+  title="Guía de servicios — cómo crear páginas de servicio profesionales"
+  description="La guía exacta de cómo crear una página de servicio profesional en un sitio Astro: la colección, el copy, el alcance, el proceso, las objeciones y la conversión. Pieza por pieza."
+  pageType="page"
+  breadcrumbs={[{ label: 'Servicios', href: '/servicios' }, { label: 'La guía' }]}
+  guia={false}
+>
+  <Hero
+    badge="Servicios · La guía"
+    title="Cómo se crea una página de servicio:"
+    accent="del dato a la conversión"
+    subtitle="La guía exacta de cómo crear una página de servicio profesional en este sitio, pieza por pieza: dónde vive el dato, cómo se comunica el valor, qué incluye, cómo se trabaja, qué se responde y cómo se cierra."
+    descRight={[
+      'Mientras Módulos documenta las piezas con las que se arma cada página, Niveles documenta los tipos de página por profundidad y la guía de Productos documenta el flujo de crear un producto, esta serie documenta el FLUJO de crear una página de servicio. Son seis decisiones encadenadas, cada una con su propia ficha.',
+      'Un servicio bien presentado no enumera tareas: orienta la decisión del cliente. Esta guía documenta cómo construir esa orientación —desde el archivo Markdown hasta el botón de WhatsApp— sobre el mismo sistema, con las mismas piezas, sin código extra.',
+    ]}
+  />
+
+  {/* ── Nota guía ── */}
+  <section class="section">
+    <div class="container">
+      <GuiaNota titulo="Qué es esta página (índice de la guía de servicios)" archivo="src/pages/servicios/guia/index.astro">
+        <p>
+          Es el <strong>índice de la guía</strong> «cómo crear páginas de servicio profesionales»:
+          el catálogo de servicios vive en <a href="/servicios">/servicios</a>; aquí se explica
+          cómo está hecho, pieza por pieza. La lista de abajo sale de <code>SERVICIOS_GUIA</code>
+          en <code>site.ts</code> (SSoT), la misma fuente del dropdown «Servicios» del Header.
+          Cada pieza tiene su página <code>/servicios/guia/&lt;slug&gt;</code> con el molde de
+          10 secciones.
+        </p>
+      </GuiaNota>
+    </div>
+  </section>
+
+  {/* ── 1) ¿QUÉ ES UNA PÁGINA DE SERVICIO? ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Concepto"
+        title="¿Qué es una página de servicio profesional?"
+        desc="Una ficha (L3) que presenta un servicio a fondo: qué resuelve, qué incluye, cómo se trabaja y cómo contratar. No enumera tareas — orienta la decisión del cliente."
+        body={[
+          'Una página de servicio profesional es la que responde cuatro preguntas en orden: ¿esto es lo que necesito? (hero), ¿qué recibo exactamente? (alcance), ¿cómo se trabaja? (proceso) y ¿qué tengo que hacer para contratarlo? (conversión). Si alguna falta, el visitante busca las respuestas en otro sitio —o no las busca y no contrata.',
+          'En este sistema, cada servicio vive como un archivo Markdown en una Content Collection. La ficha de detalle se genera sola, validada por Zod y alimentada por el mismo dato que el menú y el schema. Esta guía documenta cada decisión del camino: de la colección al botón de WhatsApp.',
+        ]}
+      />
+    </div>
+  </section>
+
+  {/* ── 2) LAS 6 PIEZAS — vitrina de cards ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="La guía"
+        title="Cómo se crea una página de servicio, pieza por pieza"
+        desc={`Las ${piezas} piezas del flujo, cada una como tarjeta: foto, nombre, qué resuelve y sus ideas clave. Entra a cualquiera para verla a fondo, con el mismo molde de las series Módulos, Niveles y Productos.`}
+        body={[
+          'Crear una página de servicio bien hecha son seis decisiones encadenadas: dónde vive el dato (la colección), cómo se comunica el valor (el copy), qué promete exactamente (el alcance), cómo se trabaja (el proceso), qué se responde antes de contratar (las objeciones) y cómo se cierra la venta (la conversión).',
+          'Cada tarjeta abre una de ellas. Es el MISMO card del catálogo —coherencia sobre todo—, porque reusar piezas es justo lo que esta guía enseña. Cada pieza tiene su página con el molde de 10 secciones: qué es, para qué sirve, qué lleva, cómo se ve en móvil, dónde encaja y cómo se construye.',
+        ]}
+      />
+      <div class="showcase">
+        {guiaListos.map((p, i) => {
+          const meta = SG_META[p.slug]
+          return (
+            <CategoryCard
+              label={p.label}
+              href={p.href}
+              image={meta?.image}
+              imageAlt={`Imagen de ejemplo de «${p.label}» en la guía de servicios`}
+              badge={p.estado === 'listo' ? 'Guía' : 'Próximamente'}
+              blurb={p.desc}
+              subcategories={(meta?.chips ?? []).map((c) => ({ label: c, href: p.href }))}
+              ctaLabel="Ver la pieza"
+              disabled={p.estado !== 'listo'}
+              index={i}
+            />
+          )
+        })}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 3) CADA PIEZA, POR DENTRO ── */}
+  <section class="section">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Por dentro"
+        title="Cada pieza, por dentro"
+        desc="El índice te dice qué es cada pieza; aquí la abrimos. Mismo formato para todas: qué resuelve, qué decisiones implica y en qué se fija al construirla."
+        body={[
+          'Es el mismo bloque «a fondo» del catálogo del sitio —información a la izquierda, galería a la derecha, idéntico para cada pieza—. Reusar el patrón es, otra vez, la lección: el sitio se arma con piezas que ya existen.',
+          'Aquí está cada pieza del flujo abierta con la misma estructura. Las mismas seis que ves arriba como tarjetas; entra a cualquiera para la versión completa con anatomía, variantes y recetas de código.',
+        ]}
+      />
+      <div class="afondo">
+        {guiaListos.map((p, i) => (
+          <CategoryDetail
+            eyebrow="La pieza a fondo"
+            title={p.label}
+            body={SERVICIO_GUIA_AFONDO[p.slug].body}
+            points={SERVICIO_GUIA_AFONDO[p.slug].points}
+            cta={p.estado === 'listo' ? { label: `Ver «${p.label}»`, href: p.href } : undefined}
+            gallery={servicioGuiaGallery(p.slug, p.label, i)}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ── 4) RESPONSIVE Y MÓVIL ── */}
+  <section class="section section--surface">
+    <div class="container">
+      <SectionHeading
+        layout="duo"
+        eyebrow="Responsive y móvil"
+        title="La guía, en el teléfono"
+        desc="La rejilla no «se encoge»: se reordena. De varias columnas a una sola, con cards táctiles y el CTA de WhatsApp siempre accesible con el pulgar."
+        body={[
+          'La vitrina (.showcase) está pensada mobile-first: nace en una columna y crece conforme hay ancho. Nunca al revés: el teléfono es el caso base, el más simple y robusto, y el escritorio solo añade columnas.',
+          'La conversión WhatsApp-first también se respeta en móvil: el botón tiene área táctil de 44 px, feedback al tap y es el único CTA primario —sin competencia—. Abajo, los tres patrones con su vista en el teléfono y su receta.',
+        ]}
+      />
+
+      <div class="pats">
+        {/* 1 · Rejilla → 1 columna */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="La vitrina de la guía baja a una sola columna en el teléfono">
+              <div class="vm-head"><span class="vm-logo">E</span><span class="vm-sp"></span><span class="vm-burg" aria-hidden="true">≡</span></div>
+              <div class="vm-stack">
+                <span class="vm-mini"><i class="vm-mini__img"></i><b class="vm-mini__t"></b><span class="vm-mini__chips"><i></i><i></i></span></span>
+                <span class="vm-mini"><i class="vm-mini__img"></i><b class="vm-mini__t"></b><span class="vm-mini__chips"><i></i><i></i></span></span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">1 · De varias columnas a una</h3>
+            <p class="pat__desc">La vitrina es <strong>mobile-first</strong>: declara una columna y crece con <code>repeat(…, 1fr)</code> en escritorio. Baja a una columna en el teléfono sin tocar la card.</p>
+            <Receta titulo="CSS · grid mobile-first" lang="css" code={recetaGrid} />
+          </div>
+        </article>
+
+        {/* 2 · Card táctil */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="Card cómoda de tocar, con área táctil de 44 px">
+              <div class="vm-head"><span class="vm-logo">E</span><span class="vm-sp"></span></div>
+              <div class="vm-one">
+                <span class="vm-card">
+                  <i class="vm-card__img"></i>
+                  <b class="vm-card__t"></b>
+                  <span class="vm-chips"><i class="vm-chip">Dato</i><i class="vm-chip">Copy</i><i class="vm-chip">Alcance</i></span>
+                  <span class="vm-cta">Ver la pieza<i class="vm-ruler">44px</i></span>
+                </span>
+              </div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">2 · Cards cómodas de tocar</h3>
+            <p class="pat__desc">Toda la card es un único enlace con área táctil de 44 px y feedback al tap. En el teléfono se toca con el dedo —el cursor no existe—, y el área pequeña genera abandono.</p>
+            <Receta titulo="mobile.css · card táctil" lang="css" code={recetaCard} />
+          </div>
+        </article>
+
+        {/* 3 · CTA WhatsApp siempre accesible */}
+        <article class="pat">
+          <div class="pat__demo">
+            <MarcoMovil ariaLabel="CTA de WhatsApp accesible con el pulgar en el móvil">
+              <div class="vm-head"><span class="vm-logo">E</span><span class="vm-sp"></span></div>
+              <div class="vm-one">
+                <span class="vm-card">
+                  <i class="vm-card__img"></i>
+                  <b class="vm-card__t"></b>
+                  <b class="vm-card__d"></b>
+                  <span class="vm-cta vm-cta--wa">Cotizar por WhatsApp<i class="vm-ruler">44px</i></span>
+                </span>
+              </div>
+              <div class="vm-float" aria-hidden="true">wa</div>
+            </MarcoMovil>
+          </div>
+          <div class="pat__info">
+            <h3 class="pat__title">3 · CTA WhatsApp siempre accesible</h3>
+            <p class="pat__desc">El CTA principal de conversión tiene área táctil de 44 px, está al alcance del pulgar y se construye <strong>siempre</strong> con <code>waUrl()</code>: nunca un <code>wa.me</code> hardcodeado. El flotante refuerza sin competir.</p>
+            <Receta titulo="Astro · waUrl() — nunca wa.me hardcodeado" lang="astro" code={recetaWa} />
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* ── 5) FAQ ── */}
+  <section class="section">
+    <div class="container">
+      <FAQAccordion items={faqs} title="Preguntas frecuentes sobre la guía" openFirst />
+    </div>
+  </section>
+
+  {/* Cierre */}
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando" />
+</PageLayout>
+
+<style>
+  .container { max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-px); }
+  .section { padding: var(--sp-8) 0; }
+  .section--surface { background: var(--c-surface); }
+  @media (min-width: 768px) { .section { padding: var(--sp-10) 0; } }
+
+  /* Vitrina: 1 → 2 → 3 (mobile-first) */
+  .showcase { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); margin-top: var(--sp-6); }
+  @media (min-width: 640px)  { .showcase { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .showcase { grid-template-columns: repeat(3, 1fr); } }
+
+  /* Pila «a fondo» */
+  .afondo { display: grid; gap: clamp(2.5rem, 6vw, 5rem); margin-top: var(--sp-6); }
+
+  /* Responsive */
+  .pats { display: grid; gap: var(--sp-8); margin-top: var(--sp-6); }
+  .pat { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+  @media (min-width: 900px) { .pat { grid-template-columns: 254px 1fr; gap: var(--sp-6); } }
+  .pat__title { margin: 0 0 var(--sp-2); font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--c-ink); }
+  .pat__desc { margin: 0 0 var(--sp-4); font-size: var(--text-sm); line-height: var(--leading-relaxed); color: var(--c-ink-2); }
+  .pat__desc code { font-family: ui-monospace, Menlo, monospace; font-size: .85em; background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: .05em .4em; color: var(--c-primary-dark); }
+
+  /* Mockups */
+  .vm-head { display: flex; align-items: center; gap: 7px; padding: 8px 11px; background: var(--c-white); border-bottom: 1px solid var(--c-border); }
+  .vm-logo { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-black); font-size: 12px; }
+  .vm-sp { margin-left: auto; }
+  .vm-burg { font-size: 16px; color: var(--c-ink-2); }
+  .vm-stack { display: grid; gap: 10px; padding: 12px; }
+  .vm-one { padding: 12px; }
+  .vm-mini, .vm-card { display: grid; gap: 6px; padding: 8px; border-radius: 9px; background: var(--c-white); border: 1px solid var(--c-border); }
+  .vm-mini__img, .vm-card__img { display: block; border-radius: 6px; background: linear-gradient(135deg, var(--c-primary-light), var(--c-primary)); }
+  .vm-mini__img { height: 38px; }
+  .vm-card__img { height: 80px; }
+  .vm-mini__t, .vm-card__t { height: 9px; width: 70%; border-radius: 4px; background: var(--c-ink); opacity: .8; }
+  .vm-card__d { height: 7px; width: 92%; border-radius: 4px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .vm-mini__chips { display: flex; gap: 4px; }
+  .vm-mini__chips i { width: 26px; height: 9px; border-radius: 99px; background: var(--c-surface); border: 1px solid var(--c-border); }
+  .vm-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .vm-chip { font-style: normal; font-size: 9px; color: var(--c-ink-2); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 99px; padding: 3px 7px; }
+  .vm-cta { position: relative; display: grid; place-items: center; min-height: 30px; margin-top: 2px; border-radius: 7px; background: var(--c-primary); color: #fff; font-size: 11px; font-weight: 700; }
+  .vm-cta--wa { background: #25d366; }
+  .vm-ruler { position: absolute; right: 8px; font-style: normal; font-size: 8px; font-weight: 700; color: #fff; background: rgba(255,255,255,.22); border-radius: 4px; padding: 1px 4px; }
+  .vm-float { position: absolute; bottom: 12px; right: 12px; width: 24px; height: 24px; border-radius: 50%; background: #25d366; color: #fff; font-size: 9px; font-weight: 700; display: grid; place-items: center; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+</style>

@@ -1,6 +1,6 @@
 ---
 // ============================================================================
-// /productos/categoria/<categoria> — Landing de CATEGORÍA de producto (Nivel L2.5).
+// /productos/<categoria> — Landing de CATEGORÍA de producto (Nivel L2.5).
 // ----------------------------------------------------------------------------
 // EL NIVEL QUE FALTABA en la jerarquía de catálogo:
 //   Inicio → Productos (L2) → CATEGORÍA (L2.5) → Ficha (L4)
@@ -13,6 +13,8 @@
 // (campo `category`), así NUNCA se genera una categoría vacía (anti thin-content)
 // ni hay que mantener una lista paralela. CollectionPage + ItemList (pageType
 // "category" → lib/seo.ts). Página de CLIENTE (sin capa-guía).
+//
+// RUTA: /productos/<categoria> (sin /categoria/ intermedio, igual que /modulos/<slug>).
 // ============================================================================
 import PageLayout from '@layouts/PageLayout.astro'
 import Hero from '@components/Hero.astro'
@@ -59,7 +61,7 @@ const schemaData = {
   list: {
     name: label,
     description: `Catálogo de ${label.toLowerCase()}: ${n} ${n === 1 ? 'producto disponible' : 'productos disponibles'}, cada uno con su ficha de detalle.`,
-    path: `/productos/categoria/${categoria}`,
+    path: `/productos/${categoria}`,
     items,
   },
 }
@@ -68,7 +70,7 @@ const schemaData = {
 const cierreItems = [
   ...allCats
     .filter((c) => c !== categoria)
-    .map((c) => ({ label: catLabel(c), href: `/productos/categoria/${c}`, sub: 'Otra categoría' })),
+    .map((c) => ({ label: catLabel(c), href: `/productos/${c}`, sub: 'Otra categoría' })),
   { label: 'Ver todo el catálogo', href: '/productos', sub: 'Todas las categorías' },
   { label: 'Contacto', href: '/contacto', sub: '¿Dudas? Escríbenos' },
 ]
@@ -119,6 +121,7 @@ const cierreCta = {
             imageAlt={p.data.title}
             badge={p.data.category}
             description={p.data.description}
+            variants={p.data.variants}
             index={i}
             priority={i === 0}
           />

@@ -21,7 +21,7 @@ const productos = (await getCollection('productos', ({ data }) => !data.draft)).
 );
 
 // Categorías REALES presentes en la colección → enlaces a sus landings
-// /productos/categoria/<cat> (el hub baja a la categoría: cierra el crawl).
+// /productos/<cat> (sin /categoria/ — igual que /modulos/<slug>).
 const catsPresentes = [...new Set(productos.map((p) => p.data.category))];
 
 // Etiqueta de categoría data-driven desde TAXONOMY (no hardcodear por sitio).
@@ -69,7 +69,7 @@ const schemaData = {
         <ul class="cats">
           {catsPresentes.map((c) => (
             <li>
-              <a class="cat-link" href={`/productos/categoria/${c}`}>
+              <a class="cat-link" href={`/productos/${c}`}>
                 {CAT_LABEL[c] ?? (c.charAt(0).toUpperCase() + c.slice(1))}
               </a>
             </li>

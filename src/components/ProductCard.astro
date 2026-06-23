@@ -11,12 +11,14 @@ interface Props {
   description?: string
   /** Texto del CTA. */
   ctaLabel?: string
+  /** Variantes/modelos (medidas, versiones…). Chips bajo la descripción. */
+  variants?: string[]
   /** Posición del card en el grid (para loading eager en los primeros). */
   index?: number
   /** Recurso LCP (primer card del primer grid). */
   priority?: boolean
 }
-const { title, href, image, imageAlt, badge, description, ctaLabel = 'Ver detalles', index = 99, priority = false } = Astro.props
+const { title, href, image, imageAlt, badge, description, variants = [], ctaLabel = 'Ver detalles', index = 99, priority = false } = Astro.props
 const eager = priority || index < 4
 ---
 
@@ -41,6 +43,11 @@ const eager = priority || index < 4
     <div class="pcard__body">
       <h3 class="pcard__title">{title}</h3>
       {description && <p class="pcard__desc">{description}</p>}
+      {variants.length > 0 && (
+        <ul class="pcard__variants" aria-label="Variantes disponibles">
+          {variants.slice(0, 6).map((v) => <li class="pcard__variant">{v}</li>)}
+        </ul>
+      )}
       <span class="pcard__cta">
         {ctaLabel}
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -59,9 +66,12 @@ const eager = priority || index < 4
   .pcard__badge { position: absolute; top: var(--sp-3, .75rem); left: var(--sp-3, .75rem); font-size: var(--text-xs, .6875rem); font-weight: var(--weight-bold, 700); letter-spacing: .04em; text-transform: uppercase; color: #fff; background: var(--color-red, var(--c-primary, #C41E24)); padding: .25rem .55rem; border-radius: var(--radius-sm, .25rem); }
   .pcard__body { display: flex; flex-direction: column; flex-grow: 1; padding: var(--sp-5, 1.25rem); }
   .pcard__title { font-size: var(--text-lg, 1.0625rem); font-weight: var(--weight-semibold, 600); line-height: var(--leading-snug, 1.35); color: var(--c-ink, var(--color-gray-900, #111827)); margin: 0 0 var(--sp-2, .5rem); }
-  .pcard__desc { font-size: var(--text-sm, .875rem); color: var(--text-muted, var(--c-muted, #6b7280)); line-height: var(--leading-normal, 1.5); margin: 0 0 auto; }
+  .pcard__desc { font-size: var(--text-sm, .875rem); color: var(--text-muted, var(--c-muted, #6b7280)); line-height: var(--leading-normal, 1.5); margin: 0 0 var(--sp-3, .75rem); }
+  /* Variantes / modelos: chips NO-enlace (válidos dentro del <a> de la card). */
+  .pcard__variants { list-style: none; display: flex; flex-wrap: wrap; gap: var(--sp-2, .5rem); padding: 0; margin: 0 0 var(--sp-3, .75rem); }
+  .pcard__variant { font-size: var(--text-xs, .6875rem); color: var(--text-muted, var(--c-muted, #6b7280)); background: var(--color-gray-100, #f4f4f5); border: 1px solid var(--c-border, var(--border, #e8e8e8)); border-radius: var(--radius-sm, .25rem); padding: .15em .5em; }
   /* Único elemento que anima: el botón CTA. */
-  .pcard__cta { display: inline-flex; align-items: center; gap: var(--sp-2, .5rem); margin-top: var(--sp-4, 1rem); font-size: var(--text-sm, .875rem); font-weight: var(--weight-semibold, 600); color: var(--color-red, var(--c-primary, #C41E24)); transition: color var(--transition, .18s ease), gap var(--transition, .18s ease); }
+  .pcard__cta { display: inline-flex; align-items: center; gap: var(--sp-2, .5rem); margin-top: auto; padding-top: var(--sp-4, 1rem); font-size: var(--text-sm, .875rem); font-weight: var(--weight-semibold, 600); color: var(--color-red, var(--c-primary, #C41E24)); transition: color var(--transition, .18s ease), gap var(--transition, .18s ease); }
   .pcard:hover .pcard__cta { color: var(--color-red-dark, var(--c-primary-dark, #A01820)); gap: .65rem; }
   @media (prefers-reduced-motion: reduce) { .pcard__cta { transition: none; } }
   .pcard__link:focus-visible { outline: 2px solid var(--color-red, var(--c-primary, #C41E24)); outline-offset: 2px; }

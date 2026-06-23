@@ -1,15 +1,40 @@
 ---
-title: "Accesorio DEMO complementario del catálogo"
-description: "Segundo producto de ejemplo, en la categoría accesorios, para demostrar cómo el grid de catálogo lista múltiples entradas de la misma colección sin tocar código."
+title: "Accesorio complementario · uso general"
+description: "Accesorio complementario de uso general: compatible con toda la línea de equipos, suma una función o protege tu inversión. La pieza que redondea la instalación. (Producto DEMO de la plantilla.)"
 category: "accesorios"
 image: "/images/productos/componentes-plantilla-astro-markdown.avif"
 price: "Cotizar"
+sku: "DEMO-AC-001"
+brand: "Compatibles"
+gallery:
+  - "/images/showcase/enlaces-internos-navegacion-web.avif"
 featured: false
-order: 2
+order: 4
+features:
+  - "Compatible con toda la línea de equipos"
+  - "Instalación sin herramienta especial"
+  - "Repuesto disponible"
+variants:
+  - "Universal"
+  - "Para línea estándar"
+  - "Para línea pro"
+specs:
+  - label: "Compatibilidad"
+    value: "Toda la línea del catálogo"
+  - label: "Material"
+    value: "Polímero técnico"
+  - label: "Garantía"
+    value: "6 meses"
+applications:
+  - "Complemento de un equipo existente"
+  - "Protección y mantenimiento"
+  - "Reemplazo de pieza desgastada"
 ---
 
-## Accesorio de ejemplo
+## Accesorio complementario de uso general
 
-Agrega un archivo `.md` más en `src/content/productos/` y aparecerá
-automáticamente en el catálogo. No se toca ningún componente: la colección es la
-fuente de verdad del listado.
+La pieza que **redondea la instalación**: compatible con toda la línea, suma una
+función o protege tu inversión. Se instala sin herramienta especial.
+
+> Producto **DEMO** de la plantilla. Agrega un `.md` más en
+> `src/content/productos/` y aparece solo en el catálogo, sin tocar código.

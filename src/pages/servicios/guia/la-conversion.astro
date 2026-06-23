@@ -1,0 +1,431 @@
+---
+// ============================================================================
+// /servicios/guia/la-conversion — PIEZA «La conversión» de la guía.
+// Sexta y última pieza: la-coleccion · el-copy · el-alcance · el-proceso ·
+// las-objeciones · la-conversion.
+// Tema: el cierre del servicio — WhatsApp-first con waUrl(), SectionMenu de
+// navegación, un solo CTA principal y el WhatsApp flotante como respaldo.
+// ============================================================================
+import PageLayout from '@layouts/PageLayout.astro'
+import Hero from '@components/Hero.astro'
+import SectionMenu from '@components/SectionMenu.astro'
+import GaleriaDisenos from '@components/GaleriaDisenos.astro'
+import DisenoCard from '@components/DisenoCard.astro'
+import MarcoMovil from '@components/MarcoMovil.astro'
+import Receta from '@components/Receta.astro'
+import GuiaNota from '@components/GuiaNota.astro'
+import RelatedLinks from '@components/RelatedLinks.astro'
+import ModSection from '@components/modulos/ModSection.astro'
+import ModBenefits from '@components/modulos/ModBenefits.astro'
+import ModAnatomy from '@components/modulos/ModAnatomy.astro'
+import ModResponsive from '@components/modulos/ModResponsive.astro'
+import ModPattern from '@components/modulos/ModPattern.astro'
+import ModProse from '@components/modulos/ModProse.astro'
+import ModDosDonts from '@components/modulos/ModDosDonts.astro'
+import { WA_MESSAGES, waUrl, CONTACT } from '@config/site'
+import { siblingsServicios } from '@lib/servicios'
+
+const cierreItems = siblingsServicios('la-conversion')
+const cierreCta = { label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.servicios), sub: 'Respuesta inmediata', external: true }
+
+const partes = [
+  {
+    n: 1,
+    nombre: 'waUrl() — el helper de conversión',
+    que: 'La función waUrl(message) de site.ts construye la URL de WhatsApp: encoda el número y el mensaje de apertura correctamente. Nunca se escribe wa.me/<número> a mano en componentes ni páginas. Un solo lugar para cambiar el número o el mensaje.',
+    dato: 'waUrl(WA_MESSAGES.servicios) — nunca wa.me hardcodeado',
+  },
+  {
+    n: 2,
+    nombre: 'WA_MESSAGES — los mensajes de apertura',
+    que: 'El objeto WA_MESSAGES en site.ts tiene un mensaje por contexto de conversión: servicios, productos, cotizacion, contacto. El mensaje de apertura correcto baja la fricción del primer clic: el cliente llega a WhatsApp con su intención ya expresada, no con una pantalla en blanco.',
+    dato: 'WA_MESSAGES.servicios: string — fuente única del mensaje de apertura',
+  },
+  {
+    n: 3,
+    nombre: 'CTA principal — un solo botón de conversión',
+    que: 'El cierre tiene UN botón principal de conversión: «Cotizar este servicio» o equivalente, usando waUrl(). Un solo CTA elimina la fatiga de decisión. El botón secundario («Ver otros servicios») y el WhatsApp flotante son soporte, no competencia del CTA principal.',
+    dato: 'Un CTA principal · un botón secundario · WhatsApp flotante = respaldo',
+  },
+  {
+    n: 4,
+    nombre: 'SectionMenu de cierre',
+    que: 'El SectionMenu posicionado al final de la ficha enlaza a otros servicios, al catálogo y al contacto. Da al visitante que no está listo una salida que no lo pierde: puede explorar otros servicios sin abandonar el sitio.',
+    dato: 'SectionMenu: otros servicios + catálogo /servicios + contacto',
+  },
+  {
+    n: 5,
+    nombre: 'WhatsApp flotante — el respaldo siempre visible',
+    que: 'El componente WhatsAppFloat en PageLayout aparece en todas las páginas del sitio como botón flotante. No reemplaza el CTA de cierre: lo respalda. El visitante puede escribir desde cualquier sección, no solo desde el cierre.',
+    dato: 'WhatsAppFloat: global en PageLayout · respaldo · no compite con el CTA',
+  },
+]
+
+const beneficios = [
+  {
+    titulo: 'waUrl() centraliza el número y el mensaje',
+    desc: 'Cambiar el número de WhatsApp o el mensaje de apertura de un servicio es editar una sola línea en site.ts. Todos los CTAs del sitio que usan waUrl() se actualizan en el siguiente build. Cero wa.me hardcodeados que se quedan desactualizados.',
+  },
+  {
+    titulo: 'Un CTA principal — cero fatiga de decisión',
+    desc: 'Múltiples CTAs compitiendo en el mismo cierre (formulario + WhatsApp + chat + pop-up) generan parálisis de análisis: el visitante no sabe a dónde ir y no va a ningún lado. Un CTA principal claro produce más contactos que tres CTAs ambiguos.',
+  },
+  {
+    titulo: 'SectionMenu retiene al visitante no listo',
+    desc: 'No todos los visitantes que llegan a una ficha de servicio están listos para contratar. El SectionMenu de cierre les ofrece el siguiente paso natural: otro servicio, el catálogo o el contacto. Sin él, el visitante que no convierte simplemente se va.',
+  },
+]
+
+const sis = [
+  'Usa siempre waUrl(WA_MESSAGES.servicios) para el CTA principal de conversión en páginas de servicio. El mensaje de apertura correcto baja la fricción del primer contacto.',
+  'Un solo CTA principal de conversión por cierre. El botón secundario de navegación y el WhatsApp flotante son soporte, no competencia.',
+  'Posiciona el SectionMenu justo después de las FAQs y antes del CTABanner final. El visitante que resolvió sus objeciones llega al CTA de conversión con la decisión más madura.',
+  'Si el servicio tiene un formulario de contacto además del WhatsApp, el formulario va DESPUÉS del CTA de WhatsApp. WhatsApp-first no excluye el formulario; establece la jerarquía.',
+  'El texto del CTA debe decir exactamente qué va a pasar: «Cotizar por WhatsApp» es mejor que «Contáctanos» porque nombra el canal y la intención.',
+]
+const nos = [
+  'NO pongas wa.me/<número> hardcodeado en ningún componente ni página. Un cambio de número requeriría buscar y reemplazar en decenas de archivos en lugar de editar una línea.',
+  'NO pongas más de un CTA principal en el mismo cierre. Formulario + WhatsApp + «Llámanos» + pop-up en la misma zona de conversión = fatiga de decisión = menos contactos.',
+  'NO omitas el SectionMenu en fichas de servicio. El visitante que no convierte necesita un siguiente paso claro dentro del sitio, no una página sin salida.',
+  'NO uses CTAs genéricos como «Enviar» o «Más información». El texto del botón debe decir la acción («Cotizar») y el canal («por WhatsApp») para reducir la incertidumbre del clic.',
+  'NO dependas exclusivamente del WhatsApp flotante como CTA de conversión. El flotante es el respaldo; el CTA de cierre es la acción principal con contexto completo.',
+]
+
+const disenos = [
+  { nombre: 'CTA único WhatsApp', tag: 'Mínimo · Alta conversión', desc: 'Un solo botón de conversión con waUrl(WA_MESSAGES.servicios) y texto «Cotizar por WhatsApp». El cierre más limpio y el que menos fricción genera para servicios con propuesta clara.' },
+  { nombre: 'CTA + SectionMenu', tag: 'Estándar · Retención', desc: 'CTA principal de WhatsApp + SectionMenu con otros servicios y el catálogo. El más común: convierte a los listos y retiene a los que aún exploran.' },
+  { nombre: 'CTA + Formulario secundario', tag: 'Formal · B2B', desc: 'CTA de WhatsApp como principal y un formulario de contacto como alternativa. Para servicios donde el cliente prefiere dejar un mensaje que abrir WhatsApp directamente (contextos B2B o formales).' },
+  { nombre: 'CTA + CTABanner global', tag: 'Cierre fuerte', desc: 'CTA de WhatsApp + el CTABanner de cierre de sección (full-bleed). Para servicios estratégicos donde el visitante necesita un remate visual fuerte antes de decidir.' },
+  { nombre: 'Doble CTA contextual', tag: 'Dos perfiles de cliente', desc: 'Dos botones paralelos para dos perfiles distintos: «Cotizar un proyecto» (WA cotizacion) y «Agendar una asesoría» (WA servicios). Solo cuando el servicio tiene dos caminos de entrada genuinamente distintos.' },
+  { nombre: 'Sin CTA de WhatsApp', tag: 'Anti-patrón · Evitar', desc: 'Cierre sin waUrl(): solo un formulario o un email de contacto. Anti-patrón en este sistema: WhatsApp convierte 3-5× más que el formulario en el mercado mexicano de pymes. Solo se justifica en clientes corporativos con proceso de compra formal.' },
+]
+
+const recetaWaUrl = `// src/config/site.ts — waUrl() centraliza el número y el mensaje.
+export const WA_MESSAGES = {
+  servicios:  'Hola, me interesa cotizar un servicio. ¿Me pueden dar más información?',
+  productos:  'Hola, me interesa un producto. ¿Me pueden dar información?',
+  cotizacion: 'Hola, quiero cotizar. ¿Pueden ayudarme?',
+  contacto:   'Hola, tengo una consulta.',
+} as const
+
+export function waUrl(msg: string): string {
+  const num = CONTACT.whatsapp.replace(/\D/g, '') // limpia el número
+  return \`https://wa.me/\${num}?text=\${encodeURIComponent(msg)}\`
+}
+
+// En la ficha del servicio:
+// import { WA_MESSAGES, waUrl } from '@config/site'
+// const ctaHref = waUrl(WA_MESSAGES.servicios)
+// → nunca wa.me/<número> escrito a mano`
+
+const recetaCierre = `---
+// Cierre estándar de una ficha de servicio L3.
+import SectionMenu from '@components/SectionMenu.astro'
+import CTABanner   from '@components/CTABanner.astro'
+import { WA_MESSAGES, waUrl, SERVICES } from '@config/site'
+
+// SectionMenu: otros servicios + catálogo + contacto
+const cierreItems = SERVICES.filter(s => s.href !== Astro.url.pathname).slice(0, 3).map(s => ({
+  label: s.label, href: s.href, sub: s.desc ?? '',
+}))
+const cierreCta = {
+  label: 'Cotizar por WhatsApp',
+  href: waUrl(WA_MESSAGES.servicios),
+  sub: 'Respuesta inmediata',
+  external: true,
+}
+---
+
+{/* 1) SectionMenu retiene al visitante no listo */}
+<SectionMenu items={cierreItems} cta={cierreCta}
+  ariaLabel="Más servicios disponibles" />
+
+{/* 2) CTABanner: el remate visual de conversión */}
+<CTABanner
+  title="¿Listo para empezar?"
+  desc="Cuéntanos tu proyecto. Te respondemos por WhatsApp."
+  cta={{ label: 'Cotizar por WhatsApp', href: waUrl(WA_MESSAGES.servicios), external: true }}
+/>`
+
+const recetaMovil = `/* CTA de WhatsApp en móvil: ancho completo, touch target ≥44px.
+   En pantallas pequeñas el botón debe ser fácil de tocar con el pulgar. */
+.cta-wa {
+  display: flex;
+  justify-content: center;
+  padding: var(--sp-8) var(--sp-4);
+}
+.cta-wa a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 52px;       /* cómodo para el pulgar */
+  padding: 0 var(--sp-8);
+  border-radius: var(--radius-full);
+  background: #25d366;    /* verde WhatsApp */
+  color: #fff;
+  font-weight: 700;
+}
+@media (max-width: 480px) {
+  .cta-wa a { width: 100%; justify-content: center; }
+}`
+---
+
+<PageLayout
+  title="La conversión del servicio — WhatsApp-first, waUrl() y CTA sin fricción"
+  description="Cómo cerrar una ficha de servicio con conversión WhatsApp-first: waUrl() como fuente única, un solo CTA principal, SectionMenu de retención y el WhatsApp flotante como respaldo global."
+  pageType="page"
+  schemaType="TechArticle"
+  guia={false}
+  breadcrumbs={[{ label: 'Servicios', href: '/servicios' }, { label: 'La guía', href: '/servicios/guia' }, { label: 'La conversión' }]}
+>
+  <Hero
+    badge="Guía de servicios · La conversión"
+    title="La conversión:"
+    accent="WhatsApp-first sin fricción"
+    subtitle="El cierre del servicio es waUrl() como fuente única del CTA de WhatsApp, un solo botón principal de conversión, un SectionMenu que retiene al visitante no listo, y el WhatsApp flotante como respaldo global."
+    descRight={[
+      'WhatsApp convierte más que el formulario en el mercado mexicano de pymes. La regla del sistema es clara: waUrl(WA_MESSAGES.servicios) en el CTA principal, nunca wa.me escrito a mano. Un cambio de número es una sola línea en site.ts; sin eso, hay que buscar y reemplazar en decenas de archivos.',
+      'El anti-patrón más común en el cierre es la acumulación: formulario + WhatsApp + «Llámanos» + chat en vivo + pop-up compitiendo en la misma zona. Cada CTA añadido por encima del primero reduce las conversiones. Un CTA claro produce más contactos que tres ambiguos.',
+    ]}
+  />
+
+  <ModSection
+    eyebrow="Definición"
+    title="¿Qué es la conversión en un servicio?"
+    desc="El conjunto de piezas del cierre de la ficha L3 que mueven al visitante del «me interesa» al «voy a escribir»: waUrl(), el CTA principal, el SectionMenu de retención y el WhatsApp flotante."
+    body={[
+      'La conversión en un catálogo de servicios es el momento en que el visitante decide dar el primer paso: escribir por WhatsApp. Ese primer paso tiene tres capas. La primera es el CTA principal —un botón que dice exactamente qué va a pasar («Cotizar por WhatsApp») y usa waUrl() para llevar al visitante a WhatsApp con el mensaje de apertura correcto. La segunda es el SectionMenu, que retiene al visitante no listo dándole el siguiente paso natural dentro del sitio. La tercera es el WhatsApp flotante de PageLayout, que aparece en todas las páginas como respaldo siempre visible.',
+      'Lo que une las tres capas es waUrl(): la función de site.ts que construye la URL de WhatsApp con el número y el mensaje de apertura encodeados correctamente. Nunca se escribe wa.me/<número> a mano en un componente o una página: el número y el mensaje viven en un solo lugar y se propagan solos.',
+    ]}
+  />
+
+  <ModSection
+    surface
+    eyebrow="Función e importancia"
+    title="¿Para qué sirve?"
+    desc="Convierte la intención del visitante en un primer contacto con la menor fricción posible. waUrl() centraliza el número. Un CTA elimina la parálisis de decisión. El SectionMenu recupera al visitante que no convierte."
+    body={[
+      'La función del cierre es reducir la distancia entre «me interesa» y «voy a escribir». Cada elemento de fricción en ese camino —URL de WhatsApp rota, texto del CTA ambiguo, múltiples botones compitiendo, página sin salida para quien no está listo— reduce las conversiones. El sistema resuelve cada uno de esos problemas con una pieza concreta.',
+      'waUrl() elimina URLs rotas o desactualizadas. Un CTA principal con texto preciso elimina la ambigüedad. El SectionMenu elimina el callejón sin salida. El WhatsApp flotante elimina el caso donde el visitante quiere escribir pero ya subió de la zona del CTA.',
+    ]}
+  >
+    <ModBenefits items={beneficios} />
+  </ModSection>
+
+  <ModSection
+    eyebrow="Anatomía"
+    title="¿Qué lleva el cierre de conversión?"
+    desc="Cinco piezas: waUrl() como constructora de la URL, WA_MESSAGES como fuente del mensaje, el CTA principal (un botón), el SectionMenu de retención y el WhatsApp flotante global."
+    body={[
+      'El cierre no es un elemento: es un sistema de cinco piezas que trabajan juntas. Dos son helpers de site.ts (waUrl y WA_MESSAGES), dos son componentes de la ficha (el CTA + SectionMenu) y uno es global en PageLayout (WhatsAppFloat).',
+      'Abajo, las cinco piezas anotadas con su función.',
+    ]}
+  >
+    <ModAnatomy partes={partes}>
+      <div class="cta-mock" role="img" aria-label="Anatomía del cierre de conversión: waUrl, CTA, SectionMenu y WhatsApp flotante">
+        <div class="cta-mock__section">
+          <span class="cta-mock__label"><span class="cta-mock__pin cta-mock__pin--1">1</span>waUrl(WA_MESSAGES.servicios)</span>
+          <span class="cta-mock__badge cta-mock__badge--src">site.ts — fuente única</span>
+        </div>
+        <div class="cta-mock__section">
+          <span class="cta-mock__label"><span class="cta-mock__pin cta-mock__pin--2">2</span>WA_MESSAGES.servicios</span>
+          <span class="cta-mock__badge">Mensaje de apertura</span>
+        </div>
+        <div class="cta-mock__section cta-mock__section--cta">
+          <span class="cta-mock__pin cta-mock__pin--3">3</span>
+          <button class="cta-mock__btn" type="button" aria-hidden="true">Cotizar por WhatsApp</button>
+        </div>
+        <div class="cta-mock__section cta-mock__section--menu">
+          <span class="cta-mock__pin cta-mock__pin--4">4</span>
+          <span class="cta-mock__menu-item">Instalación · Mantenimiento · Catálogo</span>
+        </div>
+        <div class="cta-mock__section cta-mock__section--float">
+          <span class="cta-mock__pin cta-mock__pin--5">5</span>
+          <span class="cta-mock__float">WhatsApp flotante — global en PageLayout</span>
+        </div>
+      </div>
+    </ModAnatomy>
+  </ModSection>
+
+  <ModSection
+    surface
+    eyebrow="Variantes"
+    title="Configuraciones del cierre de conversión"
+    desc="Desde el CTA único mínimo hasta el doble CTA para dos perfiles de cliente. El estándar del sistema es CTA WhatsApp + SectionMenu. Cada variante tiene su caso de uso."
+    body={[
+      'El cierre más efectivo es el más simple: un CTA claro con el texto correcto. Las variantes añaden capas solo cuando hay una razón concreta (dos perfiles de cliente distintos, un contexto B2B que prefiere formulario, un servicio estratégico que necesita remate visual fuerte).',
+      'Abajo, seis configuraciones de cierre con su caso de uso.',
+    ]}
+  >
+    <GaleriaDisenos ariaLabel="Configuraciones del cierre de conversión">
+      {disenos.map((d) => (
+        <DisenoCard nombre={d.nombre} tag={d.tag} desc={d.desc}>
+          <div class="ctav">
+            {d.nombre.includes('único') && (
+              <button class="ctav__btn ctav__btn--wa" type="button" aria-hidden="true">Cotizar por WhatsApp</button>
+            )}
+            {d.nombre.includes('SectionMenu') && (
+              <>
+                <button class="ctav__btn ctav__btn--wa" type="button" aria-hidden="true">Cotizar por WhatsApp</button>
+                <span class="ctav__menu">Otros servicios · Catálogo</span>
+              </>
+            )}
+            {d.nombre.includes('Formulario') && (
+              <>
+                <button class="ctav__btn ctav__btn--wa" type="button" aria-hidden="true">WhatsApp (principal)</button>
+                <span class="ctav__form">Formulario de contacto (secundario)</span>
+              </>
+            )}
+            {d.nombre.includes('CTABanner') && (
+              <>
+                <button class="ctav__btn ctav__btn--wa" type="button" aria-hidden="true">Cotizar por WhatsApp</button>
+                <span class="ctav__banner">CTABanner full-bleed</span>
+              </>
+            )}
+            {d.nombre.includes('Doble') && (
+              <>
+                <button class="ctav__btn ctav__btn--wa" type="button" aria-hidden="true">Cotizar proyecto</button>
+                <button class="ctav__btn ctav__btn--sec" type="button" aria-hidden="true">Agendar asesoría</button>
+              </>
+            )}
+            {d.nombre.includes('Sin CTA') && (
+              <span class="ctav__warn">⚠ Anti-patrón: sin waUrl()</span>
+            )}
+          </div>
+        </DisenoCard>
+      ))}
+    </GaleriaDisenos>
+    <GuiaNota titulo="WhatsApp-first no excluye el formulario" archivo="src/config/site.ts">
+      <p>
+        WhatsApp-first establece la jerarquía del CTA, no prohíbe el formulario. Si el
+        servicio lo necesita (contexto B2B, cliente que prefiere dejar un mensaje), el
+        formulario va después del CTA de WhatsApp. La regla es que el primer botón visible
+        en el cierre sea siempre <code>waUrl()</code>, no el formulario.
+      </p>
+    </GuiaNota>
+  </ModSection>
+
+  <ModSection
+    eyebrow="Responsive y móvil"
+    title="El CTA de WhatsApp en pantallas pequeñas"
+    desc="En móvil el CTA de WhatsApp debe ser ancho completo y con touch target ≥52px para el pulgar. El verde #25d366 de WhatsApp es reconocible sin texto: el visitante sabe exactamente a dónde lo lleva."
+    body={[
+      'En móvil, el botón de WhatsApp es la acción más importante de la página. Debe ser fácil de tocar con el pulgar: ancho completo en pantallas pequeñas (≤480px) y con una altura mínima de 52px. El verde #25d366 de WhatsApp es una señal visual inmediata que el visitante reconoce antes de leer el texto.',
+      'El WhatsApp flotante de PageLayout ocupa la esquina inferior derecha. En móvil, el flotante y el CTA de cierre no compiten: el CTA de cierre tiene el contexto completo del servicio; el flotante está disponible cuando el visitante ya subió de esa zona.',
+    ]}
+  >
+    <ModResponsive>
+      <ModPattern
+        title="CTA WhatsApp ancho completo en móvil"
+        desc="En pantallas ≤480px el botón ocupa el ancho completo para que el pulgar lo alcance desde cualquier posición."
+        receta={{ titulo: 'CSS · CTA WhatsApp full-width en móvil', lang: 'css', code: recetaMovil }}
+      >
+        <MarcoMovil ariaLabel="CTA de WhatsApp ancho completo en un teléfono">
+          <div class="mconv">
+            <span class="mconv__title">¿Listo para empezar?</span>
+            <span class="mconv__desc">Cuéntanos tu proyecto. Te respondemos.</span>
+            <button class="mconv__btn" type="button" aria-hidden="true">
+              <span>💬</span> Cotizar por WhatsApp
+            </button>
+            <span class="mconv__nav">Instalación · Mantenimiento · Ver catálogo</span>
+          </div>
+        </MarcoMovil>
+      </ModPattern>
+    </ModResponsive>
+  </ModSection>
+
+  <ModSection
+    surface
+    eyebrow="Posición"
+    title="¿Dónde vive cada pieza?"
+    desc="waUrl() y WA_MESSAGES en site.ts. El CTA y el SectionMenu en la ficha L3 (ServiceLayout). El WhatsApp flotante en PageLayout como componente global."
+    body={[
+      'La distribución de las piezas refleja su alcance. waUrl() y WA_MESSAGES viven en site.ts porque son datos del negocio que aplican a todo el sitio. El CTA principal y el SectionMenu viven en la ficha L3 (ServiceLayout) porque son específicos del servicio en esa página. El WhatsApp flotante vive en PageLayout porque es global: aparece en todas las páginas sin configuración adicional.',
+      'El lugar donde NO debe vivir el número de WhatsApp es en un componente específico. Si está en un .astro individual, cada cambio requiere buscarlo manualmente. Si está en site.ts via waUrl(), un solo cambio propaga a todo el sitio.',
+    ]}
+  />
+
+  <ModSection
+    eyebrow="Implementación"
+    title="Cómo se construye"
+    desc="Dos recetas: waUrl() en site.ts (la fuente) y el cierre estándar de una ficha L3 (CTA + SectionMenu + CTABanner)."
+    body={[
+      'El cierre de conversión se construye en tres pasos: importar waUrl() y WA_MESSAGES de site.ts, pasar el href al CTA principal y al SectionMenu, y agregar el CTABanner si el servicio lo necesita. El WhatsApp flotante es automático desde PageLayout.',
+      'Abajo, las recetas del sistema.',
+    ]}
+  >
+    <div class="recetas">
+      <Receta titulo="site.ts · waUrl() y WA_MESSAGES — la fuente única" lang="ts" code={recetaWaUrl} />
+      <Receta titulo="ServiceLayout · cierre estándar L3 (CTA + SectionMenu)" lang="astro" code={recetaCierre} />
+    </div>
+    <ModProse>
+      <p>
+        <code>waUrl(WA_MESSAGES.servicios)</code> produce la URL correcta en cada build.
+        Si el número cambia, se edita <code>CONTACT.whatsapp</code> en <code>site.ts</code>
+        y todos los CTAs del sitio se actualizan solos. El texto del mensaje de apertura
+        (<code>WA_MESSAGES.servicios</code>) también vive en <code>site.ts</code>: un solo
+        lugar para afinar el primer mensaje que el cliente ve al llegar a WhatsApp.
+      </p>
+    </ModProse>
+  </ModSection>
+
+  <ModSection
+    surface
+    eyebrow="Buenas prácticas"
+    title="Qué hacer y qué evitar"
+    desc="La conversión se optimiza con un CTA claro, waUrl() como fuente única y el SectionMenu como red de seguridad. Se arruina acumulando CTAs que compiten."
+    body={[
+      'El error más común en el cierre es la acumulación: añadir un CTA por cada objeción imaginada hasta tener cinco botones compitiendo. Cada CTA adicional sobre el primero reduce las conversiones porque divide la atención del visitante.',
+      'Abajo, los patrones concretos.',
+    ]}
+  >
+    <ModDosDonts sis={sis} nos={nos} />
+  </ModSection>
+
+  <SectionMenu items={cierreItems} cta={cierreCta} ariaLabel="Sigue explorando la guía de servicios" />
+  <RelatedLinks
+    title="Guía completa de servicios"
+    desc="Las otras piezas del flujo para crear una página de servicio profesional."
+    links={[
+      { label: 'Las objeciones', href: '/servicios/guia/las-objeciones', desc: 'FAQs que convierten: datos primero, voz del cliente.' },
+      { label: 'El proceso', href: '/servicios/guia/el-proceso', desc: 'Los 3 pasos del trabajo: predecible y reproducible.' },
+      { label: 'La colección', href: '/servicios/guia/la-coleccion', desc: 'Cómo nace un servicio: un archivo Markdown validado por Zod.' },
+    ]}
+    limit={3}
+  />
+</PageLayout>
+
+<style>
+  .recetas { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
+
+  /* Mockup anatomía del cierre */
+  .cta-mock { margin: var(--sp-6) auto 0; max-width: 380px; display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-5); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-md); }
+  .cta-mock__section { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) var(--sp-3); background: var(--c-white); border: 1px solid var(--c-border); border-radius: var(--radius-sm); }
+  .cta-mock__section--cta { background: #f0fdf4; border-color: #bbf7d0; justify-content: center; padding: var(--sp-3); }
+  .cta-mock__section--menu { background: var(--c-surface); }
+  .cta-mock__section--float { background: #fff7ed; border-color: #fed7aa; }
+  .cta-mock__label { font-family: ui-monospace, Menlo, monospace; font-size: .65rem; color: var(--c-ink-2); }
+  .cta-mock__badge { margin-left: auto; padding: 2px 7px; border-radius: 10px; font-family: ui-monospace, Menlo, monospace; font-size: .6rem; background: var(--c-surface); color: var(--c-muted); border: 1px solid var(--c-border); white-space: nowrap; }
+  .cta-mock__badge--src { background: rgba(var(--c-primary-rgb), .08); color: var(--c-primary-dark); border-color: rgba(var(--c-primary-rgb), .2); }
+  .cta-mock__btn { padding: .5rem 1.25rem; border-radius: var(--radius-full); background: #25d366; color: #fff; font-family: var(--font-heading); font-size: .75rem; font-weight: 700; border: none; cursor: default; }
+  .cta-mock__menu-item { font-family: ui-monospace, Menlo, monospace; font-size: .65rem; color: var(--c-ink-2); }
+  .cta-mock__float { font-family: ui-monospace, Menlo, monospace; font-size: .65rem; color: #d97706; }
+  .cta-mock__pin { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--c-primary); color: #fff; font-family: var(--font-heading); font-size: .58rem; font-weight: 700; margin-right: 6px; flex-shrink: 0; }
+
+  /* Cards variantes */
+  .ctav { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+  .ctav__btn { padding: .4rem .75rem; border-radius: 20px; font-family: var(--font-heading); font-size: 10px; font-weight: 700; border: none; cursor: default; }
+  .ctav__btn--wa { background: #25d366; color: #fff; }
+  .ctav__btn--sec { background: var(--c-surface); color: var(--c-ink-2); border: 1px solid var(--c-border); }
+  .ctav__menu { font-family: ui-monospace, Menlo, monospace; font-size: 9px; color: var(--c-muted); text-align: center; padding: 4px; border: 1px solid var(--c-border); border-radius: 5px; }
+  .ctav__form { font-family: ui-monospace, Menlo, monospace; font-size: 9px; color: var(--c-ink-2); text-align: center; padding: 4px 8px; border: 1px solid var(--c-border); border-radius: 5px; background: var(--c-surface); }
+  .ctav__banner { font-family: ui-monospace, Menlo, monospace; font-size: 9px; color: var(--c-primary-dark); text-align: center; padding: 4px 8px; border: 1px dashed rgba(var(--c-primary-rgb), .4); border-radius: 5px; background: rgba(var(--c-primary-rgb), .04); }
+  .ctav__warn { font-family: ui-monospace, Menlo, monospace; font-size: 9px; color: #dc2626; text-align: center; padding: 6px; border: 1px solid rgba(239,68,68,.3); border-radius: 5px; background: rgba(239,68,68,.05); width: 100%; }
+
+  /* Mockup móvil */
+  .mconv { padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .mconv__title { font-family: var(--font-heading); font-size: 13px; font-weight: 700; color: var(--c-ink); }
+  .mconv__desc { font-family: ui-monospace, Menlo, monospace; font-size: 9px; color: var(--c-ink-2); line-height: 1.4; }
+  .mconv__btn { width: 100%; min-height: 44px; border-radius: 22px; background: #25d366; color: #fff; font-family: var(--font-heading); font-size: 11px; font-weight: 700; border: none; cursor: default; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 2px; }
+  .mconv__nav { font-family: ui-monospace, Menlo, monospace; font-size: 8px; color: var(--c-muted); text-align: center; }
+</style>

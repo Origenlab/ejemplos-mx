@@ -84,6 +84,14 @@ export default defineConfig({
   output: 'static',
   trailingSlash: 'never', // Canónico B5. Canonical normalizado sin slash final.
 
+  // Redirects permanentes: rutas antiguas /productos/categoria/* → /productos/*.
+  // Necesarios para no romper enlaces externos ni perder juice SEO acumulado.
+  redirects: {
+    '/productos/categoria/equipos':    '/productos/equipos',
+    '/productos/categoria/accesorios': '/productos/accesorios',
+    '/productos/categoria/general':    '/productos/general',
+  },
+
   integrations: [sitemap(sitemapOptions), mdx()],
 
   vite: {
